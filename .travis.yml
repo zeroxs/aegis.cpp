@@ -1,0 +1,25 @@
+sudo: false
+language: cpp
+
+matrix:
+    - TRAVIS_EMPTY_JOB_WORKAROUND=true
+
+addons:
+  apt:
+    packages:
+      - g++-7
+    sources: &sources
+      - ubuntu-toolchain-r-test
+
+matrix:
+  exclude:
+    - env: TRAVIS_EMPTY_JOB_WORKAROUND=true
+  include:
+    # GCC 7
+    - os: linux
+      env: COMPILER=g++-7 COMPILERGCC=gcc-7 CC=gcc-7 CXX=g++-7
+      compiler: gcc
+      packages: libcrypto++-dev
+
+script:
+  - g++-7 -std=c++17 -Iinclude -Ilib/websocketpp/ -Ilib/asio/include -Ilib/json/src src/main.cpp -lssl -lpthread -lcrypto
