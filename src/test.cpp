@@ -68,7 +68,6 @@ int main(int argc, char * argv[])
         std::cout << fmt::format("Uncaught error: {0}", e.what());
         return 1;
     }
-    std::cin.ignore().get();
     return 0;
 }
 
