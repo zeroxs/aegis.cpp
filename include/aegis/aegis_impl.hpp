@@ -26,6 +26,7 @@
 #pragma once
 
 #include "config.hpp"
+#include "structs.hpp"
 
 #include <cstdio>
 #include <iostream>
@@ -86,22 +87,22 @@ inline void Aegis::keepAlive(const asio::error_code& error, const long ms)
     }
 }
 
-inline std::optional<std::string> Aegis::get(const std::string & path)
+inline std::optional<rest_reply> Aegis::get(const std::string & path)
 {
     return call(path, ""s, "GET");
 }
 
-inline std::optional<std::string> Aegis::get(const std::string & path, const std::string & content)
+inline std::optional<rest_reply> Aegis::get(const std::string & path, const std::string & content)
 {
     return call(path, content, "GET");
 }
 
-inline std::optional<std::string> Aegis::post(const std::string & path, const std::string & content)
+inline std::optional<rest_reply> Aegis::post(const std::string & path, const std::string & content)
 {
     return call(path, content, "POST");
 }
 
-inline std::optional<std::string> Aegis::call(const std::string & path, const std::string & content, const std::string method)
+inline std::optional<rest_reply> Aegis::call(const std::string & path, const std::string & content, const std::string method)
 {
     try
     {
@@ -152,7 +153,7 @@ inline std::optional<std::string> Aegis::call(const std::string & path, const st
 
         if (error != asio::error::eof && ERR_GET_REASON(error.value()) != SSL_R_SHORT_READ)
             throw asio::system_error(error);
-        return hresponse.get_body();
+        return { { hresponse.get_status_code() , hresponse.get_body().size() > 0 ? hresponse.get_body() : "" } };
     }
     catch (std::exception& e)
     {

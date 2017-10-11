@@ -104,13 +104,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\main.cpp" />
-    <None Include="test.cpp" />
+    <None Include="..\src\test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\aegis\aegis.hpp" />
     <ClInclude Include="..\include\aegis\aegis_impl.hpp" />
     <ClInclude Include="..\include\aegis\config.hpp" />
     <ClInclude Include="..\include\aegis\error.hpp" />
+    <ClInclude Include="..\include\aegis\structs.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

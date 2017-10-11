@@ -27,6 +27,7 @@
 
 #include "config.hpp"
 #include "error.hpp"
+#include "structs.hpp"
 
 #include <cstdio>
 #include <iostream>
@@ -154,14 +155,14 @@ public:
 
     void websocketcreate()
     {
-        std::optional<std::string> res = get("/gateway/bot");
+        std::optional<rest_reply> res = get("/gateway/bot");
 
         if (!res.has_value())
         {
             throw std::runtime_error("Error retrieving gateway.");
         }
 
-        json ret = json::parse(res.value());
+        json ret = json::parse(res->content);
         if (ret.count("message"))
             if (ret["message"] == "401: Unauthorized")
                 throw std::runtime_error("Token is unauthorized.");
@@ -223,7 +224,7 @@ public:
      * 
      * @returns std::optional<std::string>
      */
-    std::optional<std::string> get(const std::string & path);
+    std::optional<rest_reply> get(const std::string & path);
 
     /// Performs a GET request on the path with content as the request body
     /**
@@ -233,7 +234,7 @@ public:
     *
     * @returns std::optional<std::string>
     */
-    std::optional<std::string> get(const std::string & path, const std::string & content);
+    std::optional<rest_reply> get(const std::string & path, const std::string & content);
 
     /// Performs a GET request on the path with content as the request body
     /**
@@ -243,7 +244,7 @@ public:
     *
     * @returns std::optional<std::string>
     */
-    std::optional<std::string> post(const std::string & path, const std::string & content);
+    std::optional<rest_reply> post(const std::string & path, const std::string & content);
 
     /// Performs an HTTP request on the path with content as the request body using the method method
     /**
@@ -255,7 +256,7 @@ public:
     *
     * @returns std::optional<std::string>
     */
-    std::optional<std::string> call(const std::string & path, const std::string & content, const std::string method);
+    std::optional<rest_reply> call(const std::string & path, const std::string & content, const std::string method);
 
 
     /// wraps the run method of the internal io_service object
