@@ -31,29 +31,42 @@ int main(int argc, char * argv[])
 {
     asio::io_service io_service;
 
-    asio::signal_set signals(io_service, SIGINT, SIGTERM);
-    signals.async_wait([&](const asio::error_code &error, int signal_number)
-    {
-        if (!error)
-        {
-            std::cerr << (signal_number == SIGINT ? "SIGINT" : "SIGTERM") << "received. Shutting down.\n";
-            io_service.stop();
-        }
-    });
+    if (argc <= 5)
+        return -1;
+
+    const int TRAVIS_BUILD_NUMBER = std::stoi(argv[2]);
+    const std::string TRAVIS_PULL_REQUEST_SHA(argv[3]);
+    const bool TRAVIS_SECURE_ENV_VARS = (!memcmp(argv[4], "true", 4));
+    const uint64_t channel_id = std::stoull(argv[5]);
 
     try
     {
-        Aegis bot("TOKEN");
+        Aegis bot(argv[1]);
 
         bot.initialize(&io_service);
-        bot.start_work();
-        bot.websocketcreate();
-        bot.connect();
-        bot.run();
+
+        if (!TRAVIS_SECURE_ENV_VARS)
+        {
+            std::cout << "PULL REQUEST\n";
+            return 0;
+        }
+
+        json obj =
+        {
+            { "content", fmt::format("Aegis library build {}.{}.{}\n\nBuild number: {}\nBuild hash: {}", AEGIS_VERSION_MAJOR, AEGIS_VERSION_MINOR, AEGIS_VERSION_REVISION, TRAVIS_BUILD_NUMBER, TRAVIS_PULL_REQUEST_SHA) }
+        };
+
+        std::thread thd([&] { bot.run(); });
+
+        if (!bot.post(fmt::format("/channels/{}/messages", channel_id), obj.dump()).has_value())
+            return 1;
+
+        return 0;
     }
     catch (std::exception & e)
     {
         std::cout << fmt::format("Uncaught error: {0}", e.what());
+        return 1;
     }
     std::cin.ignore().get();
     return 0;

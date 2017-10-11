@@ -1,6 +1,9 @@
 
 
 
+#define AEGIS_VERSION_MAJOR     0
+#define AEGIS_VERSION_MINOR     1
+#define AEGIS_VERSION_REVISION  0
 
 #define ASIO_STANDALONE
 #define ASIO_HAS_STD_ATOMIC
