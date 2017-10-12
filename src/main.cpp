@@ -35,7 +35,7 @@ int main(int argc, char * argv[])
     try
     {
         // Create bot with token
-        Aegis bot("TOKEN");
+        Aegis<aegis::basebot> bot("TOKEN");
 
         // Configure everything and run bot
         bot.easy_start();
