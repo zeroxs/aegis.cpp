@@ -23,5 +23,3 @@ matrix:
 
 script:
   - g++-7 -std=c++17 -Iinclude -Ilib/spdlog/include -Ilib/websocketpp -Ilib/asio/asio/include -Ilib/json/src src/main.cpp -lssl -lpthread -lcrypto -o aegis
-  - g++-7 -std=c++17 -Iinclude -Ilib/spdlog/include -Ilib/websocketpp -Ilib/asio/asio/include -Ilib/json/src src/test.cpp -lssl -lpthread -lcrypto -o test
-  - ./test $TOKEN $TRAVIS_BUILD_NUMBER $TRAVIS_PULL_REQUEST_SHA $TRAVIS_SECURE_ENV_VARS $CHANNEL_ID
