@@ -67,7 +67,7 @@ inline void Aegis::processReady(json & d)
 
 }
 
-inline void Aegis::keepAlive(const asio::error_code& error, const long ms)
+inline void Aegis::keepAlive(const asio::error_code& error, const int ms)
 {
     if (error != asio::error::operation_aborted)
     {
@@ -130,7 +130,7 @@ inline std::optional<rest_reply> Aegis::call(const std::string & path, const std
         request_stream << "Host: discordapp.com\r\n";
         request_stream << "Accept: */*\r\n";
         request_stream << "Authorization: Bot " << m_token << "\r\n";
-        request_stream << "User-Agent: DiscordBot (https://github.com/aegis-collaboratory/aegis.cpp 0.1)\r\n";
+        request_stream << "User-Agent: DiscordBot (https://github.com/zeroxs/aegis.cpp 0.1.0)\r\n";
         request_stream << "Content-Length: " << content.size() << "\r\n";
         request_stream << "Content-Type: application/json\r\n";
         request_stream << "Connection: close\r\n\r\n";
@@ -182,7 +182,7 @@ std::vector<std::string> split(const std::string &s, char delim)
     return elems;
 }
 
-inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg)
+inline void Aegis::onMessage(const websocketpp::connection_hdl hdl, const message_ptr msg)
 {
     json result;
     std::string payload = msg->get_payload();
@@ -274,6 +274,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg)
                                 { "content", "exiting..." }
                             };
                             post(fmt::format("/channels/{}/messages", channel_id), obj.dump());
+                            m_state = SHUTDOWN;
+                            m_io_service->stop();
                         }
                     }
                 }
@@ -327,6 +329,7 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg)
                 else if (cmd == "READY")
                 {
                     processReady(result["d"]);
+                    m_state = ONLINE;
                     return;
                 }
                 else if (cmd == "CHANNEL_CREATE")
@@ -424,12 +427,13 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg)
             }
             if (result["op"] == 10)
             {
-                long heartbeat = result["d"]["heartbeat_interval"];
+                int heartbeat = result["d"]["heartbeat_interval"];
                 m_websocket.set_timer(heartbeat, std::bind(&Aegis::keepAlive, this, std::placeholders::_1, heartbeat));
             }
             if (result["op"] == 11)
             {
                 //heartbeat ACK
+                m_heartbeatack = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             }
         }
     }
@@ -445,9 +449,10 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg)
 
 }
 
-inline void Aegis::onConnect(websocketpp::connection_hdl hdl)
+inline void Aegis::onConnect(const websocketpp::connection_hdl hdl)
 {
     m_log->info("Connection established.");
+    m_state = CONNECTED;
 
     json obj;
     obj = {
@@ -471,13 +476,14 @@ inline void Aegis::onConnect(websocketpp::connection_hdl hdl)
             }
         }
     };
-    std::cout << "Send: " << obj.dump() << '\n';
+    m_log->debug(fmt::format("Send: {}", obj.dump()));
     m_websocket.send(hdl, obj.dump(), websocketpp::frame::opcode::text);
 }
 
-inline void Aegis::onClose(websocketpp::connection_hdl hdl)
+inline void Aegis::onClose(const websocketpp::connection_hdl hdl)
 {
     std::cout << "Connection closed.\n";
+    m_state = RECONNECTING;
 }
 
 

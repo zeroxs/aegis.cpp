@@ -90,6 +90,7 @@ public:
         , m_sequence(0)
         , m_shardid(0)
         , m_shardidmax(0)
+        , m_heartbeatack(0)
     {
         m_log = spd::stdout_color_mt("aegis");
     }
@@ -279,8 +280,9 @@ public:
         UNINITIALIZED = 0,
         READY = 1,
         CONNECTED = 2,
-        RECONNECTING = 3,
-        SHUTDOWN = 4
+        ONLINE = 3,
+        RECONNECTING = 4,
+        SHUTDOWN = 5
     };
 
     state get_state() const
@@ -322,12 +324,14 @@ private:
     uint64_t m_sequence;
     uint32_t m_shardid, m_shardidmax;
 
-    void onMessage(websocketpp::connection_hdl hdl, message_ptr msg);
-    void onConnect(websocketpp::connection_hdl hdl);
-    void onClose(websocketpp::connection_hdl hdl);
+    int64_t m_heartbeatack;
+
+    void onMessage(const websocketpp::connection_hdl hdl, const message_ptr msg);
+    void onConnect(const websocketpp::connection_hdl hdl);
+    void onClose(const websocketpp::connection_hdl hdl);
     void userMessage(json & obj);
     void processReady(json & d);
-    void keepAlive(const asio::error_code& error, const long ms);
+    void keepAlive(const asio::error_code& error, const int ms);
 };
 
 }
