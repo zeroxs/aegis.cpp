@@ -87,7 +87,7 @@ public:
     /// Type of a shared pointer to an io_service work object
     typedef std::shared_ptr<asio::io_service::work> work_ptr;
 
-    Aegis(std::string_view token)
+    Aegis(std::string token)
         : m_token(token)
         , m_state(UNINITIALIZED)
         , m_sequence(0)
