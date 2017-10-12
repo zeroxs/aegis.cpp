@@ -30,6 +30,7 @@
 #include "structs.hpp"
 #include "selfbot.hpp"
 #include "basebot.hpp"
+#include "ratelimit.hpp"
 
 #include <cstdio>
 #include <iostream>
@@ -64,6 +65,7 @@ using std::function;
 using std::bind;
 using std::ref;
 namespace placeholders = std::placeholders;
+using namespace aegis::rest_limits;
 
 template<typename bottype>
 class Aegis
@@ -92,8 +94,11 @@ public:
         , m_shardid(0)
         , m_shardidmax(0)
         , m_heartbeatack(0)
+        , m_ratelimit(std::bind(&Aegis::call, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
     {
         m_log = spd::stdout_color_mt("aegis");
+        m_ratelimit.add(bucket_type::GUILD);
+        m_ratelimit.add(bucket_type::CHANNEL);
     }
 
     ~Aegis()
@@ -156,6 +161,8 @@ public:
         if (ec) { m_log->error("Initialize fail: {}", ec.message()); return; }
         // Start a work object so that asio won't exit prematurely
         start_work();
+        // Start the REST outgoing thread
+        thd = std::make_unique<std::thread>([&] { rest_thread(); });
         // Create our websocket connection
         websocketcreate(ec);
         if (ec) { m_log->error("Websocket fail: {}", ec.message()); return; }
@@ -167,7 +174,7 @@ public:
     } 
 
     /// Remove the logger instance from spdlog
-    void remove_logger()
+    void remove_logger() const
     {
         spd::drop("aegis");
     }
@@ -216,7 +223,6 @@ public:
             m_shardidmax = 1;
 
         m_gatewayurl = ret["url"].get<std::string>();
-
 
         m_websocket.clear_access_channels(websocketpp::log::alevel::all);
 
@@ -316,7 +322,7 @@ public:
     }
 
     /// Yield execution
-    void yield()
+    void yield() const
     {
         while (m_state != SHUTDOWN)
         {
@@ -370,12 +376,17 @@ private:
     int64_t m_heartbeatack;
     int64_t m_lastheartbeat;
 
+    std::vector<std::unique_ptr<client>> m_clients;
+
+    ratelimit m_ratelimit;
     void onMessage(const websocketpp::connection_hdl hdl, const message_ptr msg);
     void onConnect(const websocketpp::connection_hdl hdl);
     void onClose(const websocketpp::connection_hdl hdl);
     void userMessage(json & obj);
     void processReady(json & d);
     void keepAlive(const asio::error_code& error, const int ms);
+
+    void rest_thread();
 };
 
 }

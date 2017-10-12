@@ -171,9 +171,26 @@ inline std::optional<rest_reply> Aegis<bottype>::call(std::string_view path, std
         websocketpp::http::parser::response hresponse;
         hresponse.consume(istrm);
 
+        int32_t limit = 0;
+        int32_t remaining = 0;
+        int64_t reset = 0;
+        int32_t retry = 0;
+        if (auto test = hresponse.get_header("X-RateLimit-Limit"); test.size() > 0)
+            limit = std::stoul(test);
+        if (auto test = hresponse.get_header("X-RateLimit-Remaining"); test.size() > 0)
+            remaining = std::stoul(test);
+        if (auto test = hresponse.get_header("X-RateLimit-Reset"); test.size() > 0)
+            reset = std::stoul(test);
+        if (auto test = hresponse.get_header("Retry-After"); test.size() > 0)
+            retry = std::stoul(test);
+
+        m_log->info("status: {} limit: {} remaining: {} reset: {}", hresponse.get_status_code(), limit, remaining, reset);
+
+        bool global = !(hresponse.get_header("X-RateLimit-Global").size() == 0);
+
         if (error != asio::error::eof && ERR_GET_REASON(error.value()) != SSL_R_SHORT_READ)
             throw asio::system_error(error);
-        return { { hresponse.get_status_code() , hresponse.get_body().size() > 0 ? hresponse.get_body() : "" } };
+        return { { hresponse.get_status_code(), global, limit, remaining, reset, retry, hresponse.get_body().size() > 0 ? hresponse.get_body() : "" } };
     }
     catch (std::exception& e)
     {
@@ -298,6 +315,45 @@ inline void Aegis<bottype>::onMessage(const websocketpp::connection_hdl hdl, con
                             m_state = SHUTDOWN;
                             m_websocket.close(m_connection, 1002, "");
                             m_work.reset();
+                        }
+                        else if (toks[0] == "?fake")
+                        {
+                            m_websocket.close(m_connection, 1002, "");
+                            std::error_code ec;
+                            connect(ec);
+                        }
+                        else if (toks[0] == "?test")
+                        {
+                            auto sendMessage = [&](/*remove this later*/const uint64_t channel_id, const std::string message)
+                            {
+                                auto & factory = m_ratelimit.get(rest_limits::bucket_type::CHANNEL);
+                                //m_log->info("Posting:\n\n{}\n\nTo:\n\n{}", message, fmt::format("/channels/{}/messages", channel_id));
+                                factory.push(channel_id, fmt::format("/channels/{}/messages", channel_id), json({ { "content", message } }).dump(), "POST");
+                            };
+
+                            auto userfunc = [&](const json & message)
+                            {
+                                /*channel->*/sendMessage(message["channel_id"], message["content"]);
+                            };
+
+
+                            rest_message<bottype> test;
+                            test.endpoint = std::move(fmt::format("/channels/{}/messages", channel_id));
+                            test.content = content;
+                            test.method = "POST";
+                            test.query = "";
+                            test.cmd = "testcommand";
+                            //test._channel = channel
+
+                            json obj;
+                            obj["content"] = "Adding your shit onto mine\n```" + content + "```";
+                            obj["channel_id"] = channel_id;
+
+                            userfunc(obj);
+                        }
+                        else if (toks[0] == "?process")
+                        {
+                            m_ratelimit.process_queue();
                         }
                     }
                 }
@@ -499,13 +555,48 @@ inline void Aegis<bottype>::onConnect(const websocketpp::connection_hdl hdl)
         };
         m_websocket.send(hdl, obj.dump(), websocketpp::frame::opcode::text);
     }
+    else
+    {
+        json obj = {
+            { "op", 2 },
+            {
+                "d",
+                {
+                    { "token", m_token },
+                    { "properties",
+                    {
+                        { "$os", platform::m_platform.data() },
+                        { "$browser", "aegis" },
+                        { "$device", "aegis" }
+                    }
+                    },
+                    { "compress", false },
+                    { "large_threshhold", 250 }
+                }
+            }
+        };
+        m_websocket.send(hdl, obj.dump(), websocketpp::frame::opcode::text);
+    }
 }
 
 template<typename bottype>
 inline void Aegis<bottype>::onClose(const websocketpp::connection_hdl hdl)
 {
     m_log->info("Connection closed");
+    m_keepalivetimer->cancel();
     m_state = RECONNECTING;
+}
+
+template<typename bottype>
+inline void Aegis<bottype>::rest_thread()
+{
+    while (m_state != SHUTDOWN)
+    {
+        m_ratelimit.process_queue();
+
+
+        std::this_thread::yield();
+    }
 }
 
 

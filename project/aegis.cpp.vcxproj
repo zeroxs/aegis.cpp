@@ -70,8 +70,8 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MinimalRebuild>true</MinimalRebuild>
       <BrowseInformation>true</BrowseInformation>
-      <AdditionalOptions>
-      </AdditionalOptions>
+      <AdditionalOptions>/bigobj</AdditionalOptions>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -112,6 +112,7 @@
     <ClInclude Include="..\include\aegis\basebot.hpp" />
     <ClInclude Include="..\include\aegis\config.hpp" />
     <ClInclude Include="..\include\aegis\error.hpp" />
+    <ClInclude Include="..\include\aegis\ratelimit.hpp" />
     <ClInclude Include="..\include\aegis\selfbot.hpp" />
     <ClInclude Include="..\include\aegis\structs.hpp" />
     <ClInclude Include="..\include\aegis\utility.hpp" />

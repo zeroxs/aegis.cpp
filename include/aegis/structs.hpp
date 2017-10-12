@@ -27,14 +27,44 @@
 
 
 #include <string>
+#include <functional>
+#include <websocketpp/http/constants.hpp>
 
 namespace aegis
 {
 
+class client;
+class member;
+class channel;
+class guild;
+
 struct rest_reply
 {
-    int reply_code;
+    websocketpp::http::status_code::value reply_code;
+    bool global = false;
+    int32_t limit = 0;
+    int32_t remaining = 0;
+    int64_t reset = 0;
+    int32_t retry = 0;
     std::string content;
+};
+
+
+template<typename bottype>
+struct rest_message
+{
+    using message_callback = std::function<void(rest_message<bottype>&)>;
+
+    client * shard;
+    member * _member;
+    channel * _channel;
+    guild * _guild;
+    std::string content;
+    std::string cmd;
+    std::string method;
+    std::string endpoint;
+    std::string query;
+    message_callback callback;
 };
 
 }
