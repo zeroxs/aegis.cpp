@@ -39,7 +39,7 @@ int main(int argc, char * argv[])
 
     try
     {
-        Aegis bot(argv[1]);
+        Aegis<aegis::basebot> bot(argv[1]);
         asio::io_service io_service;
 
         bot.initialize(&io_service);
