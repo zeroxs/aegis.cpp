@@ -60,9 +60,9 @@ int main(int argc, char * argv[])
 
         std::optional<aegis::rest_reply> reply = bot.post(fmt::format("/channels/{}/messages", channel_id), obj.dump());
         if (reply.has_value() && reply->reply_code == 200)
-            return 1;
+            return 0;
 
-        return 0;
+        return 1;
     }
     catch (std::exception & e)
     {
