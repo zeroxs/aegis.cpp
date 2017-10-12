@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -64,10 +64,10 @@
       <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;_HAS_AUTO_PTR_ETC=1;_WIN32_WINNT=0x0600;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>..\lib\websocketpp;..\lib\json\src;..\lib\spdlog\include;..\lib\asio\asio\include;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>
       </MultiProcessorCompilation>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MinimalRebuild>true</MinimalRebuild>
       <BrowseInformation>true</BrowseInformation>
       <AdditionalOptions>
@@ -91,7 +91,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;_HAS_AUTO_PTR_ETC=1;_WIN32_WINNT=0x0600;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>..\lib\websocketpp;..\lib\json\src;..\lib\spdlog\include;..\lib\asio\asio\include;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -109,9 +109,12 @@
   <ItemGroup>
     <ClInclude Include="..\include\aegis\aegis.hpp" />
     <ClInclude Include="..\include\aegis\aegis_impl.hpp" />
+    <ClInclude Include="..\include\aegis\basebot.hpp" />
     <ClInclude Include="..\include\aegis\config.hpp" />
     <ClInclude Include="..\include\aegis\error.hpp" />
+    <ClInclude Include="..\include\aegis\selfbot.hpp" />
     <ClInclude Include="..\include\aegis\structs.hpp" />
+    <ClInclude Include="..\include\aegis\utility.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

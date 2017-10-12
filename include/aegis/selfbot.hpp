@@ -1,5 +1,5 @@
 //
-// config.hpp
+// selfbot.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -23,24 +23,18 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+
 #pragma once
 
+#include <string_view>
 
-#define AEGIS_VERSION_MAJOR     0
-#define AEGIS_VERSION_MINOR     1
-#define AEGIS_VERSION_REVISION  0
-
-#define ASIO_STANDALONE
-#define ASIO_HAS_STD_ATOMIC
-#define ASIO_HAS_STD_CHRONO
-#define _WEBSOCKETPP_CPP11_STL_
-#define BOOST_DATE_TIME_NO_LIB
-#define BOOST_REGEX_NO_LIB
 
 namespace aegis
 {
 
-
+struct selfbot
+{
+    const std::string_view bot_type = "Self Bot";
+};
 
 }
-

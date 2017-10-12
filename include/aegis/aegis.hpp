@@ -28,6 +28,8 @@
 #include "config.hpp"
 #include "error.hpp"
 #include "structs.hpp"
+#include "selfbot.hpp"
+#include "basebot.hpp"
 
 #include <cstdio>
 #include <iostream>
@@ -63,6 +65,7 @@ using std::bind;
 using std::ref;
 namespace placeholders = std::placeholders;
 
+template<typename bottype>
 class Aegis
 {
 public:
@@ -82,7 +85,7 @@ public:
     /// Type of a shared pointer to an io_service work object
     typedef std::shared_ptr<asio::io_service::work> work_ptr;
 
-    explicit Aegis(std::string token)
+    explicit Aegis(std::string_view token)
         : m_token(token)
         , m_state(UNINITIALIZED)
         , m_sequence(0)
@@ -107,6 +110,7 @@ public:
 
     void initialize(io_service_ptr ptr, std::error_code & ec)
     {
+        m_log->info("Initializing");
         if (m_state != UNINITIALIZED)
         {
             m_log->critical("aegis::initialize() called in the wrong state");
@@ -144,8 +148,9 @@ public:
         service.release();
     }
 
-    void easy_start(std::error_code & ec)
+    void easy_start()
     {
+        std::error_code ec;
         // Pass our io_service object to bot to initialize
         initialize(ec);
         if (ec) { m_log->error("Initialize fail: {}", ec.message()); return; }
@@ -159,7 +164,7 @@ public:
         if (ec) { m_log->error("Connect fail: {}", ec.message()); return; }
         // Run the bot
         run();
-    }
+    } 
 
     /// Remove the logger instance from spdlog
     void remove_logger()
@@ -169,6 +174,7 @@ public:
 
     void websocketcreate(std::error_code & ec)
     {
+        m_log->info("Creating websocket");
         using error::make_error_code;
         if (m_state != READY)
         {
@@ -177,13 +183,19 @@ public:
             return;
         }
 
-        std::optional<rest_reply> res = get("/gateway/bot");
+        std::optional<rest_reply> res;
+
+        if constexpr (std::is_same<bottype, basebot>::value)
+            res = get("/gateway/bot");
+        else
+            res = get("/gateway");
 
         if (!res.has_value() || res->content.size() == 0)
         {
             ec = make_error_code(error::get_gateway);
             return;
         }
+
 
         json ret = json::parse(res->content);
         if (ret.count("message"))
@@ -194,6 +206,14 @@ public:
                 return;
             }
         }
+
+        if constexpr (std::is_same<bottype, basebot>::value)
+        {
+            m_shardidmax = ret["shards"];
+            m_log->info("Shard count: {}", m_shardidmax);
+        }
+        else
+            m_shardidmax = 1;
 
         m_gatewayurl = ret["url"].get<std::string>();
 
@@ -221,10 +241,12 @@ public:
     /// Initiate websocket connection
     void connect(std::error_code & ec)
     {
+        m_log->info("Websocket connecting");
         m_connection = m_websocket.get_connection("wss://gateway.discord.gg/?encoding=json&v=6", ec);
         if (ec)
         {
-            throw std::runtime_error(fmt::format("Websocket connection failed: {0}", ec.message()));
+            m_log->error("Websocket connection failed: {0}", ec.message());
+            return;
         }
         m_websocket.connect(m_connection);
     }
