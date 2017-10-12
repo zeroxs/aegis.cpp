@@ -30,7 +30,7 @@ using aegis::Aegis;
 int main(int argc, char * argv[])
 {
     auto err = spd::stdout_color_mt("err");
-    spd::set_pattern("%Y-%m-%d %H:%M:%S.%e %l th#%t : %v");
+    spd::set_pattern("%Y-%m-%d %H:%M:%S.%e %l [th#%t] : %v");
 
     try
     {

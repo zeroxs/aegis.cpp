@@ -29,8 +29,6 @@ using aegis::Aegis;
 
 int main(int argc, char * argv[])
 {
-    asio::io_service io_service;
-
     if (argc <= 5)
         return -1;
 
@@ -42,12 +40,13 @@ int main(int argc, char * argv[])
     try
     {
         Aegis bot(argv[1]);
+        asio::io_service io_service;
 
         bot.initialize(&io_service);
 
         if (!TRAVIS_SECURE_ENV_VARS)
         {
-            std::cout << "PULL REQUEST\n";
+            std::cout << "PULL REQUEST - skipping some tests\n";
             return 0;
         }
 
@@ -59,6 +58,10 @@ int main(int argc, char * argv[])
         std::thread thd([&] { bot.run(); });
 
         std::optional<aegis::rest_reply> reply = bot.post(fmt::format("/channels/{}/messages", channel_id), obj.dump());
+
+        bot.io_service().stop();
+        thd.join();
+
         if (reply.has_value() && reply->reply_code == 200)
             return 0;
 

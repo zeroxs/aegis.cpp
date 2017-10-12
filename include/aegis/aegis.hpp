@@ -97,7 +97,8 @@ public:
     {
         m_work.reset();
         m_websocket.reset();
-        m_keepalivetimer->cancel();
+        if (m_keepalivetimer)
+            m_keepalivetimer->cancel();
     }
 
     Aegis(const Aegis &) = delete;
