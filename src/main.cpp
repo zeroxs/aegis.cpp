@@ -37,9 +37,8 @@ int main(int argc, char * argv[])
         // Create bot with token
         Aegis bot("TOKEN");
 
-        std::error_code ec;
         // Configure everything and run bot
-        bot.easy_start(ec);
+        bot.easy_start();
     }
     catch (std::exception & e)
     {
