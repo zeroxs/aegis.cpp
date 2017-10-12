@@ -281,10 +281,18 @@ inline void Aegis<bottype>::onMessage(const websocketpp::connection_hdl hdl, con
                         auto toks = split(content, ' ');
                         if (toks[0] == "?info")
                         {
+
+                            fmt::MemoryWriter w;
+                            w << "[Latest bot source](https://github.com/zeroxs/aegis)\n[Official Bot Server](https://discord.gg/w7Y3Bb8)\n\nMemory usage: "
+                                << double(utility::getCurrentRSS()) / (1024 * 1024) << "MB\nMax Memory: "
+                                << double(utility::getPeakRSS()) / (1024 * 1024) << "MB";
+                            std::string stats = w.str();
+
+
                             json obj;
                             json t = {
                                 { "title", "AegisBot" },
-                                { "description", "Test data" },
+                                { "description", stats },
                                 { "color", rand() % 0xFFFFFF },
                                 { "fields",
                                 json::array(
@@ -486,7 +494,7 @@ inline void Aegis<bottype>::onMessage(const websocketpp::connection_hdl hdl, con
                                 { "token", m_token },
                                 { "properties",
                                 {
-                                    { "$os", platform::m_platform.data() },
+                                    { "$os", utility::platform::m_platform.data() },
                                     { "$browser", "aegis" },
                                     { "$device", "aegis" }
                                 }
@@ -541,7 +549,7 @@ inline void Aegis<bottype>::onConnect(const websocketpp::connection_hdl hdl)
                     { "token", m_token },
                     { "properties",
                     {
-                        { "$os", platform::m_platform.data() },
+                        { "$os", utility::platform::m_platform.data() },
                         { "$browser", "aegis" },
                         { "$device", "aegis" }
                     }
@@ -565,7 +573,7 @@ inline void Aegis<bottype>::onConnect(const websocketpp::connection_hdl hdl)
                     { "token", m_token },
                     { "properties",
                     {
-                        { "$os", platform::m_platform.data() },
+                        { "$os", utility::platform::m_platform.data() },
                         { "$browser", "aegis" },
                         { "$device", "aegis" }
                     }

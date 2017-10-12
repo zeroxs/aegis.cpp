@@ -169,6 +169,7 @@ public:
         // Connect the websocket
         connect(ec);
         if (ec) { m_log->error("Connect fail: {}", ec.message()); return; }
+        starttime = std::chrono::steady_clock::now();
         // Run the bot
         run();
     } 
@@ -376,7 +377,7 @@ private:
     int64_t m_heartbeatack;
     int64_t m_lastheartbeat;
 
-    std::vector<std::unique_ptr<client>> m_clients;
+    //std::vector<std::unique_ptr<client>> m_clients;
 
     ratelimit m_ratelimit;
     void onMessage(const websocketpp::connection_hdl hdl, const message_ptr msg);
@@ -387,6 +388,30 @@ private:
     void keepAlive(const asio::error_code& error, const int ms);
 
     void rest_thread();
+
+    std::chrono::steady_clock::time_point starttime;
+    std::string uptime()
+    {
+        std::stringstream ss;
+        std::chrono::steady_clock::time_point timenow = std::chrono::steady_clock::now();
+
+        int64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(timenow - starttime).count();
+
+        uint32_t seconds = (ms / 1000) % 60;
+        uint32_t minutes = (((ms / 1000) - seconds) / 60) % 60;
+        uint32_t hours = (((((ms / 1000) - seconds) / 60) - minutes) / 60) % 24;
+        uint32_t days = (((((((ms / 1000) - seconds) / 60) - minutes) / 60) - hours) / 24);
+
+        if (days > 0)
+            ss << days << "d ";
+        if (hours > 0)
+            ss << hours << "h ";
+        if (minutes > 0)
+            ss << minutes << "m ";
+        if (seconds > 0)
+            ss << seconds << "s";
+        return ss.str();
+    }
 };
 
 }

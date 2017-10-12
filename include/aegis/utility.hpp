@@ -57,6 +57,9 @@ namespace aegis
 {
 using namespace std::string_view_literals;
 
+namespace utility
+{
+
 namespace platform
 {
 
@@ -104,19 +107,24 @@ constexpr std::string_view m_platform = "undefined"sv;
 constexpr OS m_os = OS::undefined;
 #endif
 
-//////////////////////////////////////////////////////////////////////////
-/*
-* Author:  David Robert Nadeau
-* Site:    http://NadeauSoftware.com/
-* License: Creative Commons Attribution 3.0 Unported License
-*          http://creativecommons.org/licenses/by/3.0/deed.en_US
-*/
-/**
-* Returns the peak (maximum so far) resident set size (physical
-* memory use) measured in bytes, or zero if the value cannot be
-* determined on this OS.
-*/
-static size_t getPeakRSS()
+} //platform
+
+  //////////////////////////////////////////////////////////////////////////
+  /*
+  * Author:  David Robert Nadeau
+  * Site:    http://NadeauSoftware.com/
+  * License: Creative Commons Attribution 3.0 Unported License
+  *          http://creativecommons.org/licenses/by/3.0/deed.en_US
+  */
+  /**
+  * Returns the peak (maximum so far) resident set size (physical
+  * memory use) measured in bytes, or zero if the value cannot be
+  * determined on this OS.
+  */
+size_t getPeakRSS();
+size_t getCurrentRSS();
+
+inline size_t getPeakRSS()
 {
 #if defined(_WIN32)
     /* Windows -------------------------------------------------- */
@@ -144,7 +152,7 @@ static size_t getPeakRSS()
 * Returns the current resident set size (physical memory use) measured
 * in bytes, or zero if the value cannot be determined on this OS.
 */
-static size_t getCurrentRSS()
+inline size_t getCurrentRSS()
 {
 #if defined(_WIN32)
     /* Windows -------------------------------------------------- */
@@ -182,6 +190,6 @@ static size_t getCurrentRSS()
 }
 //////////////////////////////////////////////////////////////////////////
 
-}
+} //utility
 
-}
+} //aegis
