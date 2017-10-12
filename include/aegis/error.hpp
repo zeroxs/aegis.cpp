@@ -47,7 +47,10 @@ enum value
     invalid_token,
 
     /// Bot was in the wrong state for this operation
-    invalid_state
+    invalid_state,
+
+    /// REST did not return websocket gateway url
+    get_gateway
 
 
 

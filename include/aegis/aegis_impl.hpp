@@ -73,12 +73,21 @@ inline void Aegis::keepAlive(const asio::error_code& error, const int ms)
     {
         try
         {
+            if (m_lastheartbeat > m_heartbeatack)
+            {
+                m_log->error("Heartbeat ack not received. Reconnecting.");
+                m_websocket.close(m_connection, 1002, "");
+                return;
+            }
+
+
             json obj;
             obj["d"] = m_sequence;
             obj["op"] = 1;
 
             m_websocket.send(m_connection, obj.dump(), websocketpp::frame::opcode::text);
-            m_websocket.set_timer(ms, std::bind(&Aegis::keepAlive, this, std::placeholders::_1, ms));
+            m_lastheartbeat = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            m_keepalivetimer = m_websocket.set_timer(ms, std::bind(&Aegis::keepAlive, this, std::placeholders::_1, ms));
         }
         catch (websocketpp::exception & e)
         {
@@ -87,26 +96,26 @@ inline void Aegis::keepAlive(const asio::error_code& error, const int ms)
     }
 }
 
-inline std::optional<rest_reply> Aegis::get(const std::string & path)
+inline std::optional<rest_reply> Aegis::get(std::string_view path)
 {
     return call(path, ""s, "GET");
 }
 
-inline std::optional<rest_reply> Aegis::get(const std::string & path, const std::string & content)
+inline std::optional<rest_reply> Aegis::get(std::string_view path, std::string_view content)
 {
     return call(path, content, "GET");
 }
 
-inline std::optional<rest_reply> Aegis::post(const std::string & path, const std::string & content)
+std::optional<aegis::rest_reply> Aegis::post(std::string_view path, std::string_view content)
 {
     return call(path, content, "POST");
 }
 
-inline std::optional<rest_reply> Aegis::call(const std::string & path, const std::string & content, const std::string method)
+inline std::optional<rest_reply> Aegis::call(std::string_view path, std::string_view content, std::string_view method)
 {
     try
     {
-        asio::ip::tcp::resolver resolver(*m_io_service);
+        asio::ip::tcp::resolver resolver(io_service());
         asio::ip::tcp::resolver::query query("discordapp.com", "443");
         asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
         asio::ssl::context ctx(asio::ssl::context::tlsv12);
@@ -116,7 +125,7 @@ inline std::optional<rest_reply> Aegis::call(const std::string & path, const std
             | asio::ssl::context::no_sslv2
             | asio::ssl::context::no_sslv3);
 
-        asio::ssl::stream<asio::ip::tcp::socket> socket(*m_io_service, ctx);
+        asio::ssl::stream<asio::ip::tcp::socket> socket(io_service(), ctx);
         SSL_set_tlsext_host_name(socket.native_handle(), "discordapp.com");
 
         asio::connect(socket.lowest_layer(), endpoint_iterator);
@@ -185,7 +194,7 @@ std::vector<std::string> split(const std::string &s, char delim)
 inline void Aegis::onMessage(const websocketpp::connection_hdl hdl, const message_ptr msg)
 {
     json result;
-    std::string payload = msg->get_payload();
+    std::string_view payload = msg->get_payload();
 
     try
     {
@@ -275,7 +284,8 @@ inline void Aegis::onMessage(const websocketpp::connection_hdl hdl, const messag
                             };
                             post(fmt::format("/channels/{}/messages", channel_id), obj.dump());
                             m_state = SHUTDOWN;
-                            m_io_service->stop();
+                            m_websocket.close(m_connection, 1002, "");
+                            m_work.reset();
                         }
                     }
                 }
@@ -428,7 +438,7 @@ inline void Aegis::onMessage(const websocketpp::connection_hdl hdl, const messag
             if (result["op"] == 10)
             {
                 int heartbeat = result["d"]["heartbeat_interval"];
-                m_websocket.set_timer(heartbeat, std::bind(&Aegis::keepAlive, this, std::placeholders::_1, heartbeat));
+                m_keepalivetimer = m_websocket.set_timer(heartbeat, std::bind(&Aegis::keepAlive, this, std::placeholders::_1, heartbeat));
             }
             if (result["op"] == 11)
             {

@@ -29,33 +29,22 @@ using aegis::Aegis;
 
 int main(int argc, char * argv[])
 {
-    asio::io_service io_service;
-
-    asio::signal_set signals(io_service, SIGINT, SIGTERM);
-    signals.async_wait([&](const asio::error_code &error, int signal_number)
-    {
-        if (!error)
-        {
-            std::cerr << (signal_number == SIGINT ? "SIGINT" : "SIGTERM") << "received. Shutting down.\n";
-            io_service.stop();
-        }
-    });
+    auto err = spd::stdout_color_mt("err");
+    spd::set_pattern("%Y-%m-%d %H:%M:%S.%e %l th#%t : %v");
 
     try
     {
+        // Create bot with token
         Aegis bot("TOKEN");
 
-        bot.initialize(&io_service);
-        bot.start_work();
-        bot.websocketcreate();
-        bot.connect();
-        bot.run();
+        std::error_code ec;
+        // Configure everything and run bot
+        bot.easy_start(ec);
     }
     catch (std::exception & e)
     {
-        std::cout << fmt::format("Uncaught error: {0}", e.what());
+        err->error(fmt::format("Uncaught error: {0}", e.what()));
     }
-    std::cin.ignore().get();
     return 0;
 }
 

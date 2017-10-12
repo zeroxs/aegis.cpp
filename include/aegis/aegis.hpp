@@ -83,9 +83,7 @@ public:
     typedef std::shared_ptr<asio::io_service::work> work_ptr;
 
     explicit Aegis(std::string token)
-        : m_io_service(nullptr)
-        , m_external_io_service(false)
-        , m_token(token)
+        : m_token(token)
         , m_state(UNINITIALIZED)
         , m_sequence(0)
         , m_shardid(0)
@@ -98,8 +96,8 @@ public:
     ~Aegis()
     {
         m_work.reset();
-        if (m_state != UNINITIALIZED && !m_external_io_service)
-            delete m_io_service;
+        m_websocket.reset();
+        m_keepalivetimer->cancel();
     }
 
     Aegis(const Aegis &) = delete;
@@ -111,14 +109,13 @@ public:
         if (m_state != UNINITIALIZED)
         {
             m_log->critical("aegis::initialize() called in the wrong state");
-            using aegis::error::make_error_code;
-            ec = make_error_code(aegis::error::invalid_state);
+            using error::make_error_code;
+            ec = make_error_code(error::invalid_state);
             return;
         }
 
         m_log->debug("aegis::initialize()");
-        m_io_service = ptr;
-        m_external_io_service = true;
+        m_websocket.init_asio(ptr, ec);
         m_state = READY;
         ec = std::error_code();
     }
@@ -137,7 +134,6 @@ public:
         std::unique_ptr<asio::io_service> service(new asio::io_service());
         initialize(service.get(), ec);
         if (!ec) service.release();
-        m_external_io_service = false;
     }
 
     void initialize()
@@ -145,7 +141,23 @@ public:
         std::unique_ptr<asio::io_service> service(new asio::io_service());
         initialize(service.get());
         service.release();
-        m_external_io_service = false;
+    }
+
+    void easy_start(std::error_code & ec)
+    {
+        // Pass our io_service object to bot to initialize
+        initialize(ec);
+        if (ec) { m_log->error("Initialize fail: {}", ec.message()); return; }
+        // Start a work object so that asio won't exit prematurely
+        start_work();
+        // Create our websocket connection
+        websocketcreate(ec);
+        if (ec) { m_log->error("Websocket fail: {}", ec.message()); return; }
+        // Connect the websocket
+        connect(ec);
+        if (ec) { m_log->error("Connect fail: {}", ec.message()); return; }
+        // Run the bot
+        run();
     }
 
     /// Remove the logger instance from spdlog
@@ -154,19 +166,33 @@ public:
         spd::drop("aegis");
     }
 
-    void websocketcreate()
+    void websocketcreate(std::error_code & ec)
     {
+        using error::make_error_code;
+        if (m_state != READY)
+        {
+            m_log->critical("aegis::websocketcreate() called in the wrong state");
+            ec = make_error_code(error::invalid_state);
+            return;
+        }
+
         std::optional<rest_reply> res = get("/gateway/bot");
 
-        if (!res.has_value())
+        if (!res.has_value() || res->content.size() == 0)
         {
-            throw std::runtime_error("Error retrieving gateway.");
+            ec = make_error_code(error::get_gateway);
+            return;
         }
 
         json ret = json::parse(res->content);
         if (ret.count("message"))
+        {
             if (ret["message"] == "401: Unauthorized")
-                throw std::runtime_error("Token is unauthorized.");
+            {
+                ec = make_error_code(error::invalid_token);
+                return;
+            }
+        }
 
         m_gatewayurl = ret["url"].get<std::string>();
 
@@ -178,22 +204,22 @@ public:
             return websocketpp::lib::make_shared<asio::ssl::context>(asio::ssl::context::tlsv1);
         });
 
-        m_websocket.init_asio(m_io_service);
-
         m_websocket.set_message_handler(std::bind(&Aegis::onMessage, this, std::placeholders::_1, std::placeholders::_2));
         m_websocket.set_open_handler(std::bind(&Aegis::onConnect, this, std::placeholders::_1));
         m_websocket.set_close_handler(std::bind(&Aegis::onClose, this, std::placeholders::_1));
         m_websocket.set_fail_handler(std::bind(&Aegis::onClose, this, std::placeholders::_1));
+        ec = std::error_code();
     }
 
-    asio::io_service & get_io_service()
+    /// Get the internal (or external) io_service object
+    asio::io_service & io_service()
     {
-        return *m_io_service;
+        return m_websocket.get_io_service();
     }
 
-    void connect()
+    /// Initiate websocket connection
+    void connect(std::error_code & ec)
     {
-        asio::error_code ec;
         m_connection = m_websocket.get_connection("wss://gateway.discord.gg/?encoding=json&v=6", ec);
         if (ec)
         {
@@ -204,7 +230,7 @@ public:
 
     void start_work()
     {
-        m_work = std::make_shared<asio::io_service::work>(std::ref(*m_io_service));
+        m_work = std::make_shared<asio::io_service::work>(std::ref(io_service()));
     }
 
     void stop_work()
@@ -225,7 +251,7 @@ public:
      * 
      * @returns std::optional<std::string>
      */
-    std::optional<rest_reply> get(const std::string & path);
+    std::optional<rest_reply> get(std::string_view path);
 
     /// Performs a GET request on the path with content as the request body
     /**
@@ -235,7 +261,7 @@ public:
     *
     * @returns std::optional<std::string>
     */
-    std::optional<rest_reply> get(const std::string & path, const std::string & content);
+    std::optional<rest_reply> get(std::string_view path, std::string_view content);
 
     /// Performs a GET request on the path with content as the request body
     /**
@@ -245,7 +271,7 @@ public:
     *
     * @returns std::optional<std::string>
     */
-    std::optional<rest_reply> post(const std::string & path, const std::string & content);
+    std::optional<rest_reply> post(std::string_view path, std::string_view content);
 
     /// Performs an HTTP request on the path with content as the request body using the method method
     /**
@@ -257,13 +283,13 @@ public:
     *
     * @returns std::optional<std::string>
     */
-    std::optional<rest_reply> call(const std::string & path, const std::string & content, const std::string method);
+    std::optional<rest_reply> call(std::string_view path, std::string_view content, std::string_view method);
 
 
     /// wraps the run method of the internal io_service object
     std::size_t run()
     {
-        return m_io_service->run();
+        return io_service().run();
     }
 
     /// Yield execution
@@ -298,12 +324,6 @@ private:
     // Gateway URL for the Discord Websocket
     std::string m_gatewayurl;
 
-    // pointer to ASIO io_service object
-    io_service_ptr m_io_service;
-
-    // true if io_service object is not managed by this library
-    bool m_external_io_service;
-
     // Websocket++ object
     websocket m_websocket;
 
@@ -314,7 +334,7 @@ private:
     std::string m_token;
 
     // 
-    std::shared_ptr<asio::steady_timer> keepalive_timer;
+    std::shared_ptr<asio::steady_timer> m_keepalivetimer;
 
     // Work object for ASIO
     work_ptr m_work;
@@ -325,6 +345,7 @@ private:
     uint32_t m_shardid, m_shardidmax;
 
     int64_t m_heartbeatack;
+    int64_t m_lastheartbeat;
 
     void onMessage(const websocketpp::connection_hdl hdl, const message_ptr msg);
     void onConnect(const websocketpp::connection_hdl hdl);
