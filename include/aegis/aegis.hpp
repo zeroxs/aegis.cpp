@@ -100,6 +100,10 @@ public:
         , m_state(UNINITIALIZED)
         , m_shardidmax(0)
         , m_ratelimit(std::bind(&Aegis::call, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
+        , m_id(0)
+        , m_mfa_enabled(false)
+        , m_discriminator(0)
+        , m_isuserset(false)
     {
         m_log = spd::stdout_color_mt("aegis");
         m_ratelimit.add(bucket_type::GUILD);
@@ -230,7 +234,7 @@ public:
         else
             m_shardidmax = 1;
 
-        m_gatewayurl = ret["url"].get<std::string>();
+        gateway = ret["url"].get<std::string>();
 
         m_websocket.clear_access_channels(websocketpp::log::alevel::all);
 
@@ -254,7 +258,8 @@ public:
         m_log->info("Websocket connecting");
 
         auto shard = new client();
-        shard->m_connection = m_websocket.get_connection(m_gatewayurl + "/?encoding=json&v=6", ec);
+        m_gatewayurl = gateway + "/?encoding=json&v=6";
+        shard->m_connection = m_websocket.get_connection(m_gatewayurl, ec);
         shard->m_shardid = 0;
         shard->cb = []() {};
         
@@ -404,6 +409,8 @@ public:
 
     uint32_t m_shardidmax;
 
+    std::string gateway;
+
     std::vector<client*> m_clients;
     std::vector<std::shared_ptr<member>> m_members;
     std::vector<std::shared_ptr<channel>> m_channels;
@@ -434,6 +441,13 @@ public:
             ss << seconds << "s";
         return ss.str();
     }
+
+    int64_t m_id;
+    std::string m_username;
+    bool m_mfa_enabled;
+    int16_t m_discriminator;
+    std::string m_mention;
+    bool m_isuserset;
 
 private:
 
@@ -468,8 +482,7 @@ private:
     void onClose(websocketpp::connection_hdl hdl, client & shard);
     void onFail(websocketpp::connection_hdl hdl, client & shard);
     void onTerminate(websocketpp::connection_hdl hdl, client & shard);
-    void userMessage(json & obj);
-    void processReady(json & d);
+    void processReady(json & d, client & shard);
     void keepAlive(const asio::error_code& error, const int ms, client & shard);
 
     void rest_thread();

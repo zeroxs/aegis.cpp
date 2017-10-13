@@ -44,6 +44,7 @@
 #include <websocketpp/common/random.hpp>
 #include <websocketpp/common/thread.hpp>
 #include <websocketpp/common/connection_hdl.hpp>
+#include <websocketpp/roles/client_endpoint.hpp>
 
 #include <websocketpp/config/asio_client.hpp>
 #include <websocketpp/client.hpp>
@@ -66,8 +67,23 @@ inline void Aegis<bottype>::set_option(AegisOption opt, bool val)
 }
 
 template<typename bottype>
-inline void Aegis<bottype>::processReady(json & d)
+inline void Aegis<bottype>::processReady(json & d, client & shard)
 {
+    shard.m_sessionId = d["session_id"].get<std::string>();
+    if (m_isuserset)
+        return;
+    json & userdata = d["user"];
+    m_discriminator = std::stoi(userdata["discriminator"].get<std::string>());
+    m_id = std::stoull(userdata["id"].get<std::string>());
+    m_username = userdata["username"].get<std::string>();
+    m_mfa_enabled = userdata["mfa_enabled"];
+    if (m_mention.size() == 0)
+    {
+        std::stringstream ss;
+        ss << "<@" << m_id << ">";
+        m_mention = ss.str();
+    }
+    m_isuserset = true;
 }
 
 template<typename bottype>
@@ -87,6 +103,7 @@ inline void Aegis<bottype>::keepAlive(const asio::error_code & ec, const int ms,
                     if (ec == asio::error::operation_aborted)
                         return;
                     shard.m_state = CONNECTING;
+                    shard.m_connection = m_websocket.get_connection(std::make_shared<websocketpp::uri>(m_gatewayurl), asio::error_code());
                     m_websocket.connect(shard.m_connection);
                 });
 
@@ -354,11 +371,10 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
                 else if (cmd == "READY")
                 {
                     if (i_ready)
-                        if (!i_ready(result, shard, *this))
-                            return;
-                    processReady(result["d"]);
+                        i_ready(result, shard, *this);
+                    processReady(result["d"], shard);
                     shard.m_state = ONLINE;
-                    m_log->info("Shard#[{}] Ready Processed", shard.m_shardid);
+                    m_log->info("Shard#[{}] READY Processed", shard.m_shardid);
                     return;
                 }
                 else if (cmd == "CHANNEL_CREATE")
@@ -502,7 +518,7 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
                                 { "shard", json::array({ shard.m_shardid, m_shardidmax }) },
                                 { "compress", true },
                                 { "large_threshhold", 250 },
-                                { "presence", self_presence }
+                                { "presence",{ { "game",{ { "name", self_presence },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
                             }
                         }
                     };
@@ -557,7 +573,7 @@ inline void Aegis<bottype>::onConnect(websocketpp::connection_hdl hdl, client & 
                     { "shard", json::array({ shard.m_shardid, m_shardidmax }) },
                     { "compress", true },
                     { "large_threshhold", 250 },
-                    { "presence", self_presence }
+                    { "presence",{ { "game",{ { "name", self_presence },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
                 }
             }
         };
@@ -580,7 +596,7 @@ inline void Aegis<bottype>::onConnect(websocketpp::connection_hdl hdl, client & 
                     },
                     { "compress", true },
                     { "large_threshhold", 250 },
-                    { "presence", self_presence }
+                    { "presence",{ { "game",{ { "name", self_presence },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
                 }
             }
         };
@@ -600,6 +616,7 @@ inline void Aegis<bottype>::onClose(websocketpp::connection_hdl hdl, client & sh
         if (ec == asio::error::operation_aborted)
             return;
         shard.m_state = CONNECTING;
+        shard.m_connection = m_websocket.get_connection(std::make_shared<websocketpp::uri>(m_gatewayurl), asio::error_code());
         m_websocket.connect(shard.m_connection);
 
     });
@@ -617,6 +634,7 @@ inline void Aegis<bottype>::onFail(websocketpp::connection_hdl hdl, client & sha
         if (ec == asio::error::operation_aborted)
             return;
         shard.m_state = CONNECTING;
+        shard.m_connection = m_websocket.get_connection(std::make_shared<websocketpp::uri>(m_gatewayurl), asio::error_code());
         m_websocket.connect(shard.m_connection);
     });
 }
@@ -633,6 +651,7 @@ inline void Aegis<bottype>::onTerminate(websocketpp::connection_hdl hdl, client 
         if (ec == asio::error::operation_aborted)
             return;
         shard.m_state = CONNECTING;
+        shard.m_connection = m_websocket.get_connection(std::make_shared<websocketpp::uri>(m_gatewayurl), asio::error_code());
         m_websocket.connect(shard.m_connection);
     });
 }

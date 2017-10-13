@@ -70,7 +70,7 @@ public:
 
     std::shared_ptr<asio::steady_timer> m_reconnect_timer;
 
-
+    std::string m_sessionId;
 
     std::chrono::steady_clock::time_point starttime;
     std::string uptime()
