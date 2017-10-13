@@ -146,10 +146,10 @@ enum bucket_type
 };
 
 
-class ratelimit
+class ratelimiter
 {
 public:
-    explicit ratelimit(rest_call call)
+    explicit ratelimiter(rest_call call)
         : _call(call)
     {
     };

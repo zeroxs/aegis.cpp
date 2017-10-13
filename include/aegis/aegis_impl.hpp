@@ -35,7 +35,6 @@
 #include <sstream>
 #include <functional>
 #include <memory>
-#include <unordered_map>
 #include <optional>
 #include <set>
 
@@ -252,6 +251,7 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
 
         result = json::parse(payload);
 
+
         if (!result.is_null())
         {
             if (!result["t"].is_null())
@@ -265,184 +265,44 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
 
                 if (cmd == "TYPING_START")
                 {
-                    //do we care? it'd easily be the most sent event
+                    if (i_typing_start)
+                        if (!i_typing_start(result, shard, *this))
+                            return;
                     return;
                 }
                 if (cmd == "MESSAGE_CREATE")
                 {
-                    //userMessage(result["d"]);
-
-                    json author = result["d"]["author"];
-
-                    uint64_t userid = std::stoull(author["id"].get<std::string>());
-                    std::string username = author["username"];
-
-                    uint64_t channel_id = std::stoull(result["d"]["channel_id"].get<std::string>());
-                    uint64_t id = std::stoull(result["d"]["id"].get<std::string>());
-                    std::string content = result["d"]["content"];
-
-                    std::string avatar = author["avatar"].is_string() ? author["avatar"] : "";
-                    uint16_t discriminator = std::stoi(author["discriminator"].get<std::string>());
-
-                    uint64_t msgid = std::stoull(result["d"]["id"].get<std::string>());
-
-                    if (userid == 171000788183678976)
-                    {
-                        auto toks = split(content, ' ');
-                        if (toks[0] == "?info")
-                        {
-                            uint64_t guild_count = m_guilds.size();
-                            uint64_t member_count = m_members.size();
-                            uint64_t member_count_unique = 0;
-                            uint64_t member_online_count = 0;
-                            uint64_t member_dnd_count = 0;
-                            uint64_t channel_count = m_channels.size();
-                            uint64_t channel_text_count = 0;
-                            uint64_t channel_voice_count = 0;
-                            uint64_t member_count_active = 0;
-
-                            uint64_t eventsseen = 0;
-
-                            {
-                                //std::scoped_lock<std::mutex> lock(m);
-
-                                for (auto bot : m_clients)
-                                    eventsseen += bot->m_sequence;
-
-                                for (auto & member : m_members)
-                                {
-                                    /*if (member.second->status == MEMBER_STATUS::ONLINE)
-                                        member_online_count++;
-                                    else if (member.second->status == MEMBER_STATUS::DND)
-                                        member_dnd_count++;*/
-                                }
-
-                                for (auto & channel : m_channels)
-                                {
-                                    /*if (channel.second->type == ChannelType::TEXT)
-                                        channel_text_count++;
-                                    else
-                                        channel_voice_count++;*/
-                                }
-
-                                /*for (auto & guild : AegisBot::guildlist)
-                                    member_count_active += guild.second->memberlist.size();
-
-                                member_count = message.bot().memberlist.size();
-
-                                member_count_unique = message.bot().memberlist.size();*/
-                            }
-
-                            std::string members = fmt::format("{0} seen\n\n{2} unique\n{3} online", member_count, member_count_active, member_count_unique);
-                            std::string channels = fmt::format("{0} total\n{1} text\n{2} voice", channel_count, channel_text_count, channel_voice_count);
-                            std::string guilds = fmt::format("{0}", guild_count);
-                            std::string events = fmt::format("{0}", eventsseen);
-                            std::string misc = fmt::format("I am shard {0} of {1} running on `{2}`", shard.m_shardid, m_shardidmax, utility::platform::get_platform());
-
-                            fmt::MemoryWriter w;
-                            w << "[Latest bot source](https://github.com/zeroxs/aegis)\n[Official Bot Server](https://discord.gg/w7Y3Bb8)\n\nMemory usage: "
-                                << double(utility::getCurrentRSS()) / (1024 * 1024) << "MB\nMax Memory: "
-                                << double(utility::getPeakRSS()) / (1024 * 1024) << "MB";
-                            std::string stats = w.str();
-
-
-                            json obj;
-                            json t = {
-                                { "title", "AegisBot" },
-                                { "description", stats },
-                                { "color", rand() % 0xFFFFFF },
-                                { "fields",
-                                json::array(
-                            {
-                                { { "name", "Members" },{ "value", members },{ "inline", true } },
-                                { { "name", "Channels" },{ "value", channels },{ "inline", true } },
-                                { { "name", "Uptime" },{ "value", uptime() },{ "inline", true } },
-                                { { "name", "Guilds" },{ "value", guilds },{ "inline", true } },
-                                { { "name", "Events Seen" },{ "value", events },{ "inline", true } },
-                                { { "name", u8"\u200b" },{ "value", u8"\u200b" },{ "inline", true } },
-                                { { "name", "misc" },{ "value", misc },{ "inline", false } }
-                            }
-                                    )
-                                },
-                                { "footer",{ { "icon_url", "https://cdn.discordapp.com/emojis/289276304564420608.png" },{ "text", "Made in c++ running aegis library" } } }
-                            };
-                            obj["embed"] = t;
-
-                            post(fmt::format("/channels/{}/messages", channel_id), obj.dump());
+                    if (i_message_create)
+                        if (!i_message_create(result, shard, *this))
                             return;
-                        }
-                        else if (toks[0] == "?exit")
-                        {
-                            json obj =
-                            {
-                                { "content", "exiting..." }
-                            };
-                            post(fmt::format("/channels/{}/messages", channel_id), obj.dump());
-                            m_state = SHUTDOWN;
-                            m_websocket.close(shard.m_connection, 1002, "");
-                            m_work.reset();
-                            return;
-                        }
-                        else if (toks[0] == "?test")
-                        {
-                            auto sendMessage = [&](/*remove this later*/const uint64_t channel_id, const std::string message)
-                            {
-                                auto & factory = m_ratelimit.get(rest_limits::bucket_type::CHANNEL);
-                                //m_log->info("Posting:\n\n{}\n\nTo:\n\n{}", message, fmt::format("/channels/{}/messages", channel_id));
-                                factory.push(channel_id, fmt::format("/channels/{}/messages", channel_id), json({ { "content", message } }).dump(), "POST");
-                            };
-
-                            auto userfunc = [&](const json & message)
-                            {
-                                /*channel->*/sendMessage(message["channel_id"], message["content"]);
-                            };
-
-
-                            rest_message<bottype> test;
-                            test.endpoint = std::move(fmt::format("/channels/{}/messages", channel_id));
-                            test.content = content;
-                            test.method = "POST";
-                            test.query = "";
-                            test.cmd = "testcommand";
-                            //test._channel = channel
-
-                            json obj;
-                            obj["content"] = "Adding your shit onto mine\n```" + content + "```";
-                            obj["channel_id"] = channel_id;
-
-                            userfunc(obj);
-                            return;
-                        }
-                        else if (toks[0] == "?shard")
-                        {
-                            auto & factory = m_ratelimit.get(rest_limits::bucket_type::CHANNEL);
-                            factory.push(channel_id, fmt::format("/channels/{}/messages", channel_id), json({ { "content", fmt::format("I am shard#[{}]", shard.m_shardid) } }).dump(), "POST");
-                            return;
-                        }
-                    }
+                    return;
                 }
-
                 if (cmd == "MESSAGE_UPDATE")
                 {
-                    json message = result["d"];
-
-                    if (message["embeds"].size() > 0)
-                    {
-                    }
-                    else
-                    {
-                    }
+                    if (i_message_update)
+                        if (!i_message_update(result, shard, *this))
+                            return;
+                    return;
                 }
                 else if (cmd == "GUILD_CREATE")
                 {
-                    //guildCreate(result["d"]);
+                    if (i_guild_create)
+                        if (!i_guild_create(result, shard, *this))
+                            return;
+                    return;
                 }
                 else if (cmd == "GUILD_UPDATE")
                 {
-                    //guildCreate(result["d"]);
+                    if (i_guild_update)
+                        if (!i_guild_update(result, shard, *this))
+                            return;
+                    return;
                 }
                 else if (cmd == "GUILD_DELETE")
                 {
+                    if (i_guild_delete)
+                        if (!i_guild_delete(result, shard, *this))
+                            return;
                     if (result["d"]["unavailable"] == true)
                     {
                         //outage
@@ -452,24 +312,48 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
                         uint64_t id = std::stoull(result["d"]["id"].get<std::string>());
                         //kicked or left
                     }
+                    return;
                 }
                 else if (cmd == "MESSAGE_DELETE")
                 {
+                    if (i_message_delete)
+                        if (!i_message_delete(result, shard, *this))
+                            return;
+                    return;
                 }
                 else if (cmd == "MESSAGE_DELETE_BULK")
                 {
+                    if (i_message_delete_bulk)
+                        if (!i_message_delete_bulk(result, shard, *this))
+                            return;
+                    return;
                 }
                 else if (cmd == "USER_SETTINGS_UPDATE")
                 {
+                    if (i_user_settings_update)
+                        if (!i_user_settings_update(result, shard, *this))
+                            return;
+                    return;
                 }
                 else if (cmd == "USER_UPDATE")
                 {
+                    if (i_user_update)
+                        if (!i_user_update(result, shard, *this))
+                            return;
+                    return;
                 }
                 else if (cmd == "VOICE_STATE_UPDATE")
                 {
+                    if (i_voice_state_update)
+                        if (!i_voice_state_update(result, shard, *this))
+                            return;
+                    return;
                 }
                 else if (cmd == "READY")
                 {
+                    if (i_ready)
+                        if (!i_ready(result, shard, *this))
+                            return;
                     processReady(result["d"]);
                     shard.m_state = ONLINE;
                     m_log->info("Shard#[{}] Ready Processed", shard.m_shardid);
@@ -477,6 +361,9 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
                 }
                 else if (cmd == "CHANNEL_CREATE")
                 {
+                    if (i_channel_create)
+                        if (!i_channel_create(result, shard, *this))
+                            return;
                     return;
                 }
 
@@ -488,50 +375,108 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
                 {
                     if (cmd == "CHANNEL_CREATE")
                     {
-                         return;
+                        if (i_channel_create)
+                            if (!i_channel_create(result, shard, *this))
+                                return;
+                        return;
                     }
                     if (cmd == "CHANNEL_UPDATE")
                     {
+                        if (i_channel_update)
+                            if (!i_channel_update(result, shard, *this))
+                                return;
+                        return;
                     }
                     else if (cmd == "CHANNEL_DELETE")
                     {
+                        if (i_channel_delete)
+                            if (!i_channel_delete(result, shard, *this))
+                                return;
+                        return;
                     }
                     else if (cmd == "GUILD_BAN_ADD")
                     {
+                        if (i_guild_ban_add)
+                            if (!i_guild_ban_add(result, shard, *this))
+                                return;
+                        return;
                     }
                     else if (cmd == "GUILD_BAN_REMOVE")
                     {
+                        if (i_guild_ban_remove)
+                            if (!i_guild_ban_remove(result, shard, *this))
+                                return;
+                        return;
                     }
                     else if (cmd == "GUILD_EMOJIS_UPDATE")
                     {
+                        if (i_guild_emojis_update)
+                            if (!i_guild_emojis_update(result, shard, *this))
+                                return;
+                        return;
                     }
                     else if (cmd == "GUILD_INTEGRATIONS_UPDATE")
                     {
+                        if (i_guild_integrations_update)
+                            if (!i_guild_integrations_update(result, shard, *this))
+                                return;
+                        return;
                     }
                     else if (cmd == "GUILD_MEMBER_ADD")
                     {
+                        if (i_guild_member_add)
+                            if (!i_guild_member_add(result, shard, *this))
+                                return;
                         return;
                     }
                     else if (cmd == "GUILD_MEMBER_REMOVE")
                     {
+                        if (i_guild_member_remove)
+                            if (!i_guild_member_remove(result, shard, *this))
+                                return;
+                        return;
                     }
                     else if (cmd == "GUILD_MEMBER_UPDATE")
                     {
+                        if (i_guild_member_update)
+                            if (!i_guild_member_update(result, shard, *this))
+                                return;
+                        return;
                     }
                     else if (cmd == "GUILD_MEMBER_CHUNK")
                     {
+                        if (i_guild_member_chunk)
+                            if (!i_guild_member_chunk(result, shard, *this))
+                                return;
+                        return;
                     }
                     else if (cmd == "GUILD_ROLE_CREATE")
                     {
+                        if (i_guild_role_create)
+                            if (!i_guild_role_create(result, shard, *this))
+                                return;
+                        return;
                     }
                     else if (cmd == "GUILD_ROLE_UPDATE")
                     {
+                        if (i_guild_role_update)
+                            if (!i_guild_role_update(result, shard, *this))
+                                return;
+                        return;
                     }
                     else if (cmd == "GUILD_ROLE_DELETE")
                     {
+                        if (i_guild_role_delete)
+                            if (!i_guild_role_delete(result, shard, *this))
+                                return;
+                        return;
                     }
                     else if (cmd == "VOICE_SERVER_UPDATE")
                     {
+                        if (i_voice_server_update)
+                            if (!i_voice_server_update(result, shard, *this))
+                                return;
+                        return;
                     }
                 }
             }
@@ -560,7 +505,7 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
                                 { "shard", json::array({ shard.m_shardid, m_shardidmax }) },
                                 { "compress", false },
                                 { "large_threshhold", 250 },
-                                { "presence",{ { "game",{ { "name", "@Aegis help" },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
+                                { "presence", self_presence }
                             }
                         }
                     };
@@ -615,7 +560,7 @@ inline void Aegis<bottype>::onConnect(websocketpp::connection_hdl hdl, client & 
                     { "shard", json::array({ shard.m_shardid, m_shardidmax }) },
                     { "compress", false },
                     { "large_threshhold", 250 },
-                    { "presence",{ { "game",{ { "name", "@Aegis help" },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
+                    { "presence", self_presence }
                 }
             }
         };
@@ -637,7 +582,8 @@ inline void Aegis<bottype>::onConnect(websocketpp::connection_hdl hdl, client & 
                     }
                     },
                     { "compress", false },
-                    { "large_threshhold", 250 }
+                    { "large_threshhold", 250 },
+                    { "presence", self_presence }
                 }
             }
         };

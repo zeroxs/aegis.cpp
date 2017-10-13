@@ -23,19 +23,33 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+
+#include "example.hpp"
 #include <aegis/aegis.hpp>
 
+
 using aegis::Aegis;
+using example_bot::example;
+
 
 int main(int argc, char * argv[])
 {
     auto err = spd::stdout_color_mt("err");
     spd::set_pattern("%Y-%m-%d %H:%M:%S.%e %l [th#%t] : %v");
 
+    
     try
     {
         // Create bot with token
         Aegis<aegis::basebot> bot("TOKEN");
+        
+        bot.self_presence = { { "game",{ { "name", "@Aegis help" },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } };
+        
+        example<aegis::basebot> commands;
+
+        commands.inject(bot);
+
+
 
         // Configure everything and run bot
         bot.easy_start();

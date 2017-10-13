@@ -71,16 +71,20 @@ using std::ref;
 namespace placeholders = std::placeholders;
 using namespace aegis::rest_limits;
 
+
+
 template<typename bottype>
 class Aegis
 {
 public:
 
+    using c_inject = std::function<bool(json & msg, client & shard, Aegis<bottype> & bot)>;
+
     /// Type of a pointer to the ASIO io_service
     typedef asio::io_service * io_service_ptr;
 
     /// Type of a pointer to the Websocket++ client
-    typedef websocketpp::client<websocketpp::config::asio_tls_client> websocket;
+    typedef websocketpp::client<websocketpp::config::asio_tls_client> websocket_o;
 
     /// Type of a pointer to the Websocket++ TLS connection
     typedef websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr connection_ptr;
@@ -342,7 +346,6 @@ public:
     */
     std::optional<rest_reply> call(std::string_view path, std::string_view content, std::string_view method);
 
-
     /// wraps the run method of the internal io_service object
     std::size_t run()
     {
@@ -363,28 +366,42 @@ public:
         return m_state;
     }
 
-private:
+    /// User callbacks
+    c_inject i_typing_start;
+    c_inject i_message_create;
+    c_inject i_message_update;
+    c_inject i_message_delete;
+    c_inject i_message_delete_bulk;
+    c_inject i_guild_create;
+    c_inject i_guild_update;
+    c_inject i_guild_delete;
+    c_inject i_user_settings_update;
+    c_inject i_user_update;
+    c_inject i_ready;
+    c_inject i_resumed;
+    c_inject i_channel_create;
+    c_inject i_channel_update;
+    c_inject i_channel_delete;
+    c_inject i_guild_ban_add;
+    c_inject i_guild_ban_remove;
+    c_inject i_guild_emojis_update;
+    c_inject i_guild_integrations_update;
+    c_inject i_guild_member_add;
+    c_inject i_guild_member_remove;
+    c_inject i_guild_member_update;
+    c_inject i_guild_member_chunk;
+    c_inject i_guild_role_create;
+    c_inject i_guild_role_update;
+    c_inject i_guild_role_delete;
+    c_inject i_presence_update;
+    c_inject i_voice_state_update;
+    c_inject i_voice_server_update;
 
-    std::unique_ptr<std::thread> thd;
-    std::shared_ptr<spd::logger> m_log;
+    ratelimiter & ratelimit() { return m_ratelimit; }
+    websocket_o & websocket() { return m_websocket; }
+    state get_state() { return m_state; }
+    void set_state(state s) { m_state = s; }
 
-    // Gateway URL for the Discord Websocket
-    std::string m_gatewayurl;
-
-    // Websocket++ object
-    websocket m_websocket;
-
-    // Bot's token
-    std::string m_token;
-
-    // 
-    std::shared_ptr<asio::steady_timer> m_keepalivetimer;
-
-    // Work object for ASIO
-    work_ptr m_work;
-
-
-    state m_state;
     uint32_t m_shardidmax;
 
     std::vector<client*> m_clients;
@@ -392,18 +409,7 @@ private:
     std::vector<std::shared_ptr<channel>> m_channels;
     std::vector<std::shared_ptr<guild>> m_guilds;
 
-    ratelimit m_ratelimit;
-
-    void onMessage(websocketpp::connection_hdl hdl, message_ptr msg, client & shard);
-    void onConnect(websocketpp::connection_hdl hdl, client & shard);
-    void onClose(websocketpp::connection_hdl hdl, client & shard);
-    void onFail(websocketpp::connection_hdl hdl, client & shard);
-    void onTerminate(websocketpp::connection_hdl hdl, client & shard);
-    void userMessage(json & obj);
-    void processReady(json & d);
-    void keepAlive(const asio::error_code& error, const int ms, client & shard);
-
-    void rest_thread();
+    json self_presence;
 
     std::chrono::steady_clock::time_point starttime;
     std::string uptime()
@@ -428,6 +434,45 @@ private:
             ss << seconds << "s";
         return ss.str();
     }
+
+private:
+
+    //std::map<std::string, c_inject> m_cbmap;
+
+    std::unique_ptr<std::thread> thd;
+    std::shared_ptr<spd::logger> m_log;
+
+    // Gateway URL for the Discord Websocket
+    std::string m_gatewayurl;
+
+    // Websocket++ object
+    websocket_o m_websocket;
+
+    // Bot's token
+    std::string m_token;
+
+    // 
+    std::shared_ptr<asio::steady_timer> m_keepalivetimer;
+
+    // Work object for ASIO
+    work_ptr m_work;
+
+
+    state m_state;
+
+
+    ratelimiter m_ratelimit;
+
+    void onMessage(websocketpp::connection_hdl hdl, message_ptr msg, client & shard);
+    void onConnect(websocketpp::connection_hdl hdl, client & shard);
+    void onClose(websocketpp::connection_hdl hdl, client & shard);
+    void onFail(websocketpp::connection_hdl hdl, client & shard);
+    void onTerminate(websocketpp::connection_hdl hdl, client & shard);
+    void userMessage(json & obj);
+    void processReady(json & d);
+    void keepAlive(const asio::error_code& error, const int ms, client & shard);
+
+    void rest_thread();
 };
 
 }
