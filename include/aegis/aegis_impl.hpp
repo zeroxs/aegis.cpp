@@ -103,7 +103,8 @@ inline void Aegis<bottype>::keepAlive(const asio::error_code & ec, const int ms,
                     if (ec == asio::error::operation_aborted)
                         return;
                     shard.m_state = CONNECTING;
-                    shard.m_connection = m_websocket.get_connection(m_gatewayurl, asio::error_code());
+                    asio::error_code wsec;
+                    shard.m_connection = m_websocket.get_connection(m_gatewayurl, wsec);
                     m_websocket.connect(shard.m_connection);
                 });
 
@@ -616,7 +617,8 @@ inline void Aegis<bottype>::onClose(websocketpp::connection_hdl hdl, client & sh
         if (ec == asio::error::operation_aborted)
             return;
         shard.m_state = CONNECTING;
-        shard.m_connection = m_websocket.get_connection(m_gatewayurl, asio::error_code());
+        asio::error_code wsec;
+        shard.m_connection = m_websocket.get_connection(m_gatewayurl, wsec);
         m_websocket.connect(shard.m_connection);
 
     });
@@ -634,7 +636,8 @@ inline void Aegis<bottype>::onFail(websocketpp::connection_hdl hdl, client & sha
         if (ec == asio::error::operation_aborted)
             return;
         shard.m_state = CONNECTING;
-        shard.m_connection = m_websocket.get_connection(m_gatewayurl, asio::error_code());
+        asio::error_code wsec;
+        shard.m_connection = m_websocket.get_connection(m_gatewayurl, wsec);
         m_websocket.connect(shard.m_connection);
     });
 }
@@ -651,7 +654,8 @@ inline void Aegis<bottype>::onTerminate(websocketpp::connection_hdl hdl, client 
         if (ec == asio::error::operation_aborted)
             return;
         shard.m_state = CONNECTING;
-        shard.m_connection = m_websocket.get_connection(m_gatewayurl, asio::error_code());
+        asio::error_code wsec;
+        shard.m_connection = m_websocket.get_connection(m_gatewayurl, wsec);
         m_websocket.connect(shard.m_connection);
     });
 }
