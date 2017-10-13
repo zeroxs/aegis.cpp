@@ -51,6 +51,10 @@ public:
     example() = default;
     ~example() = default;
 
+    std::map<int64_t, int8_t> m_members;
+    std::map<int64_t, int8_t> m_guilds;
+    std::map<int64_t, int8_t> m_channels;
+
     void inject(aegis::Aegis<bottype> & b)
     {
         b.i_message_create = std::bind(&example::message_create, this, _1, _2, _3);
@@ -87,12 +91,12 @@ public:
             auto toks = split(content, ' ');
             if (toks[0] == "?info")
             {
-                uint64_t guild_count = bot.m_guilds.size();
-                uint64_t member_count = bot.m_members.size();
+                uint64_t guild_count = m_guilds.size();
+                uint64_t member_count = m_members.size();
                 uint64_t member_count_unique = 0;
                 uint64_t member_online_count = 0;
                 uint64_t member_dnd_count = 0;
-                uint64_t channel_count = bot.m_channels.size();
+                uint64_t channel_count = m_channels.size();
                 uint64_t channel_text_count = 0;
                 uint64_t channel_voice_count = 0;
                 uint64_t member_count_active = 0;
@@ -122,11 +126,11 @@ public:
                     }
 
                     /*for (auto & guild : AegisBot::guildlist)
-                    member_count_active += guild.second->memberlist.size();
+                    member_count_active += guild.second->memberlist.size();*/
 
-                    member_count = message.bot().memberlist.size();
+                    member_count = m_members.size();
 
-                    member_count_unique = message.bot().memberlist.size();*/
+                    //member_count_unique = message.bot().memberlist.size();
                 }
 
                 std::string members = fmt::format("{0} seen\n{1} unique\n{2} online", member_count, member_count_active, member_count_unique);
@@ -237,6 +241,37 @@ public:
 
     bool guild_create(json & msg, client & shard, Aegis<bottype> & bot)
     {
+        int64_t id = std::stoll(msg["d"]["id"].get<std::string>());
+
+        if (!m_guilds.count(id))
+            m_guilds.emplace(id,0);
+
+
+        if (msg["d"].count("channels"))
+        {
+            json channels = msg["d"]["channels"];
+
+            for (auto & channel : channels)
+            {
+                int64_t id = std::stoll(channel["id"].get<std::string>());
+                if (!m_channels.count(id))
+                    m_channels.emplace(id, 0);
+            }
+        }
+
+
+        if (msg["d"].count("members"))
+        {
+            json members = msg["d"]["members"];
+
+            for (auto & member : members)
+            {
+                int64_t id = std::stoll(member["user"]["id"].get<std::string>());
+                if (!m_members.count(id))
+                    m_members.emplace(id, 0);
+            }
+        }
+
         return true;
     }
 
@@ -272,6 +307,11 @@ public:
 
     bool channel_create(json & msg, client & shard, Aegis<bottype> & bot)
     {
+        int64_t id = std::stoll(msg["d"]["id"].get<std::string>());
+
+        if (!m_channels.count(id))
+            m_channels.emplace(id,0);
+
         return true;
     }
 
@@ -307,6 +347,11 @@ public:
 
     bool guild_member_add(json & msg, client & shard, Aegis<bottype> & bot)
     {
+        int64_t id = std::stoll(msg["d"]["id"].get<std::string>());
+
+        if (!m_members.count(id))
+            m_members.emplace(id,0);
+
         return true;
     }
 
