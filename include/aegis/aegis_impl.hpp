@@ -251,6 +251,8 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
 
         result = json::parse(payload);
 
+        if (!result["s"].is_null())
+            shard.m_sequence = result["s"].get<uint64_t>();
 
         if (!result.is_null())
         {
@@ -480,11 +482,6 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
                     }
                 }
             }
-            if (!result["s"].is_null())
-                shard.m_sequence = result["s"].get<uint64_t>();
-            else
-                shard.m_sequence++;
-
             if (result["op"] == 9)
             {
                 if constexpr (std::is_same<bottype, basebot>::value)

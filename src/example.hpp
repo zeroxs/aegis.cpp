@@ -46,7 +46,6 @@ class example
 {
 public:
 
-    template<typename bottype>
     using c_inject = std::function<bool(json & msg, client & shard, Aegis<bottype> & bot)>;
 
     example() = default;
