@@ -49,6 +49,7 @@
 #include <websocketpp/client.hpp>
 
 #include <json.hpp>
+#include <zstr.hpp>
 
 namespace aegis
 {
@@ -232,23 +233,22 @@ template<typename bottype>
 inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, client & shard)
 {
     json result;
-    std::string_view payload = msg->get_payload();
+    std::string payload = msg->get_payload();
 
     try
     {
         if (payload[0] == (char)0x78 && (payload[1] == (char)0x01 || payload[1] == (char)0x9C || payload[1] == (char)0xDA))
         {
-            //TODO use boost.iostreams for zlib? this code is so easy to use...
-//             boost::iostreams::filtering_streambuf<boost::iostreams::input> in;
-//             std::stringstream origin(payload);
-//             in.push(boost::iostreams::zlib_decompressor());
-//             in.push(origin);
-//             payload.clear();
-//             std::stringstream ss;
-//             boost::iostreams::copy(in, ss);
-//             payload = ss.str();
+            std::stringstream origin(msg->get_payload());
+            zstr::istream is(origin);
+            std::stringstream ss;
+            std::string s;
+            while (getline(is, s))
+                ss << s;
+            ss << '\0';
+            payload = ss.str();
         }
-
+        
         result = json::parse(payload);
 
         if (!result["s"].is_null())
@@ -500,7 +500,7 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
                                 }
                                 },
                                 { "shard", json::array({ shard.m_shardid, m_shardidmax }) },
-                                { "compress", false },
+                                { "compress", true },
                                 { "large_threshhold", 250 },
                                 { "presence", self_presence }
                             }
@@ -555,7 +555,7 @@ inline void Aegis<bottype>::onConnect(websocketpp::connection_hdl hdl, client & 
                     }
                     },
                     { "shard", json::array({ shard.m_shardid, m_shardidmax }) },
-                    { "compress", false },
+                    { "compress", true },
                     { "large_threshhold", 250 },
                     { "presence", self_presence }
                 }
@@ -578,7 +578,7 @@ inline void Aegis<bottype>::onConnect(websocketpp::connection_hdl hdl, client & 
                         { "$device", "aegis" }
                     }
                     },
-                    { "compress", false },
+                    { "compress", true },
                     { "large_threshhold", 250 },
                     { "presence", self_presence }
                 }
