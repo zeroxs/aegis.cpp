@@ -40,3 +40,6 @@ project/x64/Debug/
 project/Win32/
 project/Debug/
 project/bin/
+*.vspx
+*.psess
+project/obj/

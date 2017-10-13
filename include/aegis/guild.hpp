@@ -1,5 +1,5 @@
 //
-// config.hpp
+// guild.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -26,31 +26,15 @@
 #pragma once
 
 
-#define AEGIS_VERSION_MAJOR     0
-#define AEGIS_VERSION_MINOR     1
-#define AEGIS_VERSION_REVISION  0
-
-#define ASIO_STANDALONE
-#define ASIO_HAS_STD_ATOMIC
-#define ASIO_HAS_STD_CHRONO
-#define _WEBSOCKETPP_CPP11_STL_
-#define BOOST_DATE_TIME_NO_LIB
-#define BOOST_REGEX_NO_LIB
+#include <string>
 
 namespace aegis
 {
 
-
-enum state
+class guild
 {
-    UNINITIALIZED = 0,
-    READY = 1,
-    CONNECTING = 2,
-    ONLINE = 3,
-    RECONNECTING = 4,
-    SHUTDOWN = 5
+public:
+    explicit guild();
 };
 
-
 }
-

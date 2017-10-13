@@ -75,37 +75,37 @@ enum class OS
 };
 
 #if defined(_WIN64)
-#define PLATFORM_NAME "Windows x64" // Windows
 constexpr std::string_view m_platform = "Windows x64"sv;
 constexpr OS m_os = OS::Windows64;
 #elif defined(_WIN32)
-#define PLATFORM_NAME "Windows x86" // Windows
 constexpr std::string_view m_platform = "Windows x86"sv;
 constexpr OS m_os = OS::Windows32;
 #elif defined(__CYGWIN__) && !defined(_WIN32)
-#define PLATFORM_NAME "Windows (Cygwin)" // Windows (Cygwin POSIX under Microsoft Window)
-constexpr std::string_view m_platform = "Windows (Cygwin)"sv;
+const std::string_view m_platform = "Windows (Cygwin)"sv;
 constexpr OS m_os = OS::undefined;
 #elif defined(__linux__)
-#define PLATFORM_NAME "Linux" // Debian, Ubuntu, Gentoo, Fedora, openSUSE, RedHat, Centos and other
 constexpr std::string_view m_platform = "Linux"sv;
 constexpr OS m_os = OS::Linux;
 #elif defined(__unix__) || defined(__APPLE__) && defined(__MACH__)
 #include <sys/param.h>
 #if defined(BSD)
-#define PLATFORM_NAME "*BSD" // FreeBSD, NetBSD, OpenBSD, DragonFly BSD
 constexpr std::string_view m_platform = "*BSD"sv;
 constexpr OS m_os = OS::BSD;
 #endif
 #elif defined(__APPLE__) && defined(__MACH__) // Apple OSX and iOS (Darwin)
 #include <TargetConditionals.h>
-#define PLATFORM_NAME "OSX" // Apple OSX
 constexpr std::string_view m_platform = "OSX"sv;
 constexpr OS m_os = OS::Mac;
 #else
 constexpr std::string_view m_platform = "undefined"sv;
 constexpr OS m_os = OS::undefined;
 #endif
+
+
+inline const std::string get_platform()
+{
+    return std::string(m_platform);
+};
 
 } //platform
 

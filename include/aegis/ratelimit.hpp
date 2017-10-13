@@ -46,6 +46,7 @@ namespace rest_limits
 {
 
 using rest_call = std::function<std::optional<rest_reply>(std::string path, std::string content, std::string method)>;
+using namespace std::chrono;
 
 class bucket
 {
@@ -64,10 +65,12 @@ public:
     {
         if (_queue.size() == 0)
             return false;
-        int64_t time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        int64_t time = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
         if (remaining > 0)
             return true;
-        return false;
+        if (time < reset)
+            return false;
+        return true;
     }
 
     std::queue<std::tuple<std::string, std::string, std::string>> _queue;
@@ -89,6 +92,7 @@ public:
         {
             if (!v->can_work())
                 continue;
+
             int64_t time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
             spdlog::get("aegis")->info("chrono: {} reset: {}", time, v->reset);

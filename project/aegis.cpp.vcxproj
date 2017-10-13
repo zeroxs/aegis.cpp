@@ -88,18 +88,20 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
       <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;_HAS_AUTO_PTR_ETC=1;_WIN32_WINNT=0x0600;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>..\lib\websocketpp;..\lib\json\src;..\lib\spdlog\include;..\lib\asio\asio\include;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <AdditionalDependencies>psapi.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <LinkTimeCodeGeneration>PGInstrument</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -110,8 +112,12 @@
     <ClInclude Include="..\include\aegis\aegis.hpp" />
     <ClInclude Include="..\include\aegis\aegis_impl.hpp" />
     <ClInclude Include="..\include\aegis\basebot.hpp" />
+    <ClInclude Include="..\include\aegis\channel.hpp" />
+    <ClInclude Include="..\include\aegis\client.hpp" />
     <ClInclude Include="..\include\aegis\config.hpp" />
     <ClInclude Include="..\include\aegis\error.hpp" />
+    <ClInclude Include="..\include\aegis\guild.hpp" />
+    <ClInclude Include="..\include\aegis\member.hpp" />
     <ClInclude Include="..\include\aegis\ratelimit.hpp" />
     <ClInclude Include="..\include\aegis\selfbot.hpp" />
     <ClInclude Include="..\include\aegis\structs.hpp" />

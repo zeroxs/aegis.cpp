@@ -54,6 +54,7 @@
 namespace aegis
 {
 
+using namespace std::chrono;
 namespace spd = spdlog;
 using json = nlohmann::json;
 using namespace std::literals;
@@ -70,27 +71,36 @@ inline void Aegis<bottype>::processReady(json & d)
 }
 
 template<typename bottype>
-inline void Aegis<bottype>::keepAlive(const asio::error_code& error, const int ms)
+inline void Aegis<bottype>::keepAlive(const asio::error_code & ec, const int ms, client & shard)
 {
-    if (error != asio::error::operation_aborted)
+    if (ec != asio::error::operation_aborted)
     {
         try
         {
-            if (m_lastheartbeat > m_heartbeatack)
+            if (shard.m_heartbeatack != 0 && shard.m_lastheartbeat > shard.m_heartbeatack)
             {
                 m_log->error("Heartbeat ack not received. Reconnecting.");
-                m_websocket.close(m_connection, 1002, "");
+                m_websocket.close(shard.m_connection, 1002, "");
+                shard.m_state = RECONNECTING;
+                shard.m_reconnect_timer = m_websocket.set_timer(10000, [&shard, this](const asio::error_code & ec)
+                {
+                    if (ec == asio::error::operation_aborted)
+                        return;
+                    shard.m_state = CONNECTING;
+                    m_websocket.connect(shard.m_connection);
+                });
+
                 return;
             }
 
 
             json obj;
-            obj["d"] = m_sequence;
+            obj["d"] = shard.m_sequence;
             obj["op"] = 1;
 
-            m_websocket.send(m_connection, obj.dump(), websocketpp::frame::opcode::text);
-            m_lastheartbeat = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            m_keepalivetimer = m_websocket.set_timer(ms, std::bind(&Aegis::keepAlive, this, std::placeholders::_1, ms));
+            m_websocket.send(shard.m_connection, obj.dump(), websocketpp::frame::opcode::text);
+            shard.m_lastheartbeat = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+            shard.m_keepalivetimer = m_websocket.set_timer(ms, std::bind(&Aegis::keepAlive, this, std::placeholders::_1, ms, shard));
         }
         catch (websocketpp::exception & e)
         {
@@ -220,7 +230,7 @@ std::vector<std::string> split(const std::string &s, char delim)
 }
 
 template<typename bottype>
-inline void Aegis<bottype>::onMessage(const websocketpp::connection_hdl hdl, const message_ptr msg)
+inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, client & shard)
 {
     json result;
     std::string_view payload = msg->get_payload();
@@ -281,6 +291,53 @@ inline void Aegis<bottype>::onMessage(const websocketpp::connection_hdl hdl, con
                         auto toks = split(content, ' ');
                         if (toks[0] == "?info")
                         {
+                            uint64_t guild_count = m_guilds.size();
+                            uint64_t member_count = m_members.size();
+                            uint64_t member_count_unique = 0;
+                            uint64_t member_online_count = 0;
+                            uint64_t member_dnd_count = 0;
+                            uint64_t channel_count = m_channels.size();
+                            uint64_t channel_text_count = 0;
+                            uint64_t channel_voice_count = 0;
+                            uint64_t member_count_active = 0;
+
+                            uint64_t eventsseen = 0;
+
+                            {
+                                //std::scoped_lock<std::mutex> lock(m);
+
+                                for (auto bot : m_clients)
+                                    eventsseen += bot->m_sequence;
+
+                                for (auto & member : m_members)
+                                {
+                                    /*if (member.second->status == MEMBER_STATUS::ONLINE)
+                                        member_online_count++;
+                                    else if (member.second->status == MEMBER_STATUS::DND)
+                                        member_dnd_count++;*/
+                                }
+
+                                for (auto & channel : m_channels)
+                                {
+                                    /*if (channel.second->type == ChannelType::TEXT)
+                                        channel_text_count++;
+                                    else
+                                        channel_voice_count++;*/
+                                }
+
+                                /*for (auto & guild : AegisBot::guildlist)
+                                    member_count_active += guild.second->memberlist.size();
+
+                                member_count = message.bot().memberlist.size();
+
+                                member_count_unique = message.bot().memberlist.size();*/
+                            }
+
+                            std::string members = fmt::format("{0} seen\n\n{2} unique\n{3} online", member_count, member_count_active, member_count_unique);
+                            std::string channels = fmt::format("{0} total\n{1} text\n{2} voice", channel_count, channel_text_count, channel_voice_count);
+                            std::string guilds = fmt::format("{0}", guild_count);
+                            std::string events = fmt::format("{0}", eventsseen);
+                            std::string misc = fmt::format("I am shard {0} of {1} running on `{2}`", shard.m_shardid, m_shardidmax, utility::platform::get_platform());
 
                             fmt::MemoryWriter w;
                             w << "[Latest bot source](https://github.com/zeroxs/aegis)\n[Official Bot Server](https://discord.gg/w7Y3Bb8)\n\nMemory usage: "
@@ -297,13 +354,13 @@ inline void Aegis<bottype>::onMessage(const websocketpp::connection_hdl hdl, con
                                 { "fields",
                                 json::array(
                             {
-                                { { "name", "Members" },{ "value", 0 },{ "inline", true } },
-                                { { "name", "Channels" },{ "value", 0 },{ "inline", true } },
-                                { { "name", "Uptime" },{ "value", 0 },{ "inline", true } },
-                                { { "name", "Guilds" },{ "value", 0 },{ "inline", true } },
-                                { { "name", "Events Seen" },{ "value", 0 },{ "inline", true } },
+                                { { "name", "Members" },{ "value", members },{ "inline", true } },
+                                { { "name", "Channels" },{ "value", channels },{ "inline", true } },
+                                { { "name", "Uptime" },{ "value", uptime() },{ "inline", true } },
+                                { { "name", "Guilds" },{ "value", guilds },{ "inline", true } },
+                                { { "name", "Events Seen" },{ "value", events },{ "inline", true } },
                                 { { "name", u8"\u200b" },{ "value", u8"\u200b" },{ "inline", true } },
-                                { { "name", "misc" },{ "value", 0 },{ "inline", false } }
+                                { { "name", "misc" },{ "value", misc },{ "inline", false } }
                             }
                                     )
                                 },
@@ -312,6 +369,7 @@ inline void Aegis<bottype>::onMessage(const websocketpp::connection_hdl hdl, con
                             obj["embed"] = t;
 
                             post(fmt::format("/channels/{}/messages", channel_id), obj.dump());
+                            return;
                         }
                         else if (toks[0] == "?exit")
                         {
@@ -321,14 +379,9 @@ inline void Aegis<bottype>::onMessage(const websocketpp::connection_hdl hdl, con
                             };
                             post(fmt::format("/channels/{}/messages", channel_id), obj.dump());
                             m_state = SHUTDOWN;
-                            m_websocket.close(m_connection, 1002, "");
+                            m_websocket.close(shard.m_connection, 1002, "");
                             m_work.reset();
-                        }
-                        else if (toks[0] == "?fake")
-                        {
-                            m_websocket.close(m_connection, 1002, "");
-                            std::error_code ec;
-                            connect(ec);
+                            return;
                         }
                         else if (toks[0] == "?test")
                         {
@@ -358,10 +411,13 @@ inline void Aegis<bottype>::onMessage(const websocketpp::connection_hdl hdl, con
                             obj["channel_id"] = channel_id;
 
                             userfunc(obj);
+                            return;
                         }
-                        else if (toks[0] == "?process")
+                        else if (toks[0] == "?shard")
                         {
-                            m_ratelimit.process_queue();
+                            auto & factory = m_ratelimit.get(rest_limits::bucket_type::CHANNEL);
+                            factory.push(channel_id, fmt::format("/channels/{}/messages", channel_id), json({ { "content", fmt::format("I am shard#[{}]", shard.m_shardid) } }).dump(), "POST");
+                            return;
                         }
                     }
                 }
@@ -415,8 +471,8 @@ inline void Aegis<bottype>::onMessage(const websocketpp::connection_hdl hdl, con
                 else if (cmd == "READY")
                 {
                     processReady(result["d"]);
-                    m_state = ONLINE;
-                    m_log->info("Bot online");
+                    shard.m_state = ONLINE;
+                    m_log->info("Shard#[{}] Ready Processed", shard.m_shardid);
                     return;
                 }
                 else if (cmd == "CHANNEL_CREATE")
@@ -480,7 +536,9 @@ inline void Aegis<bottype>::onMessage(const websocketpp::connection_hdl hdl, con
                 }
             }
             if (!result["s"].is_null())
-                m_sequence = result["s"].get<uint64_t>();
+                shard.m_sequence = result["s"].get<uint64_t>();
+            else
+                shard.m_sequence++;
 
             if (result["op"] == 9)
             {
@@ -494,12 +552,12 @@ inline void Aegis<bottype>::onMessage(const websocketpp::connection_hdl hdl, con
                                 { "token", m_token },
                                 { "properties",
                                 {
-                                    { "$os", utility::platform::m_platform.data() },
+                                    { "$os", utility::platform::get_platform() },
                                     { "$browser", "aegis" },
                                     { "$device", "aegis" }
                                 }
                                 },
-                                { "shard", json::array({ m_shardid, m_shardidmax }) },
+                                { "shard", json::array({ shard.m_shardid, m_shardidmax }) },
                                 { "compress", false },
                                 { "large_threshhold", 250 },
                                 { "presence",{ { "game",{ { "name", "@Aegis help" },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
@@ -512,12 +570,12 @@ inline void Aegis<bottype>::onMessage(const websocketpp::connection_hdl hdl, con
             if (result["op"] == 10)
             {
                 int heartbeat = result["d"]["heartbeat_interval"];
-                m_keepalivetimer = m_websocket.set_timer(heartbeat, std::bind(&Aegis::keepAlive, this, std::placeholders::_1, heartbeat));
+                shard.m_keepalivetimer = m_websocket.set_timer(heartbeat, std::bind(&Aegis::keepAlive, this, std::placeholders::_1, heartbeat, shard));
             }
             if (result["op"] == 11)
             {
                 //heartbeat ACK
-                m_heartbeatack = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                shard.m_heartbeatack = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
             }
         }
     }
@@ -534,10 +592,10 @@ inline void Aegis<bottype>::onMessage(const websocketpp::connection_hdl hdl, con
 }
 
 template<typename bottype>
-inline void Aegis<bottype>::onConnect(const websocketpp::connection_hdl hdl)
+inline void Aegis<bottype>::onConnect(websocketpp::connection_hdl hdl, client & shard)
 {
     m_log->info("Connection established");
-    m_state = CONNECTED;
+    shard.m_state = CONNECTING;
 
     if constexpr (std::is_same<bottype, basebot>::value)
     {
@@ -549,12 +607,12 @@ inline void Aegis<bottype>::onConnect(const websocketpp::connection_hdl hdl)
                     { "token", m_token },
                     { "properties",
                     {
-                        { "$os", utility::platform::m_platform.data() },
+                        { "$os", utility::platform::get_platform() },
                         { "$browser", "aegis" },
                         { "$device", "aegis" }
                     }
                     },
-                    { "shard", json::array({ m_shardid, m_shardidmax }) },
+                    { "shard", json::array({ shard.m_shardid, m_shardidmax }) },
                     { "compress", false },
                     { "large_threshhold", 250 },
                     { "presence",{ { "game",{ { "name", "@Aegis help" },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
@@ -573,7 +631,7 @@ inline void Aegis<bottype>::onConnect(const websocketpp::connection_hdl hdl)
                     { "token", m_token },
                     { "properties",
                     {
-                        { "$os", utility::platform::m_platform.data() },
+                        { "$os", utility::platform::get_platform() },
                         { "$browser", "aegis" },
                         { "$device", "aegis" }
                     }
@@ -588,22 +646,75 @@ inline void Aegis<bottype>::onConnect(const websocketpp::connection_hdl hdl)
 }
 
 template<typename bottype>
-inline void Aegis<bottype>::onClose(const websocketpp::connection_hdl hdl)
+inline void Aegis<bottype>::onClose(websocketpp::connection_hdl hdl, client & shard)
 {
     m_log->info("Connection closed");
-    m_keepalivetimer->cancel();
-    m_state = RECONNECTING;
+    if (m_keepalivetimer)
+        m_keepalivetimer->cancel();
+    shard.m_state = RECONNECTING;
+    shard.m_reconnect_timer = m_websocket.set_timer(10000, [&shard, this](const asio::error_code & ec)
+    {
+        if (ec == asio::error::operation_aborted)
+            return;
+        shard.m_state = CONNECTING;
+        m_websocket.connect(shard.m_connection);
+
+    });
+}
+
+template<typename bottype>
+inline void Aegis<bottype>::onFail(websocketpp::connection_hdl hdl, client & shard)
+{
+    m_log->info("Connection failed");
+    if (m_keepalivetimer)
+        m_keepalivetimer->cancel();
+    shard.m_state = RECONNECTING;
+    shard.m_reconnect_timer = m_websocket.set_timer(10000, [&shard, this](const asio::error_code & ec)
+    {
+        if (ec == asio::error::operation_aborted)
+            return;
+        shard.m_state = CONNECTING;
+        m_websocket.connect(shard.m_connection);
+    });
+}
+
+template<typename bottype>
+inline void Aegis<bottype>::onTerminate(websocketpp::connection_hdl hdl, client & shard)
+{
+    m_log->info("Connection terminated");
+    if (m_keepalivetimer)
+        m_keepalivetimer->cancel();
+    shard.m_state = RECONNECTING;
+    shard.m_reconnect_timer = m_websocket.set_timer(20000, [&shard, this](const asio::error_code & ec)
+    {
+        if (ec == asio::error::operation_aborted)
+            return;
+        shard.m_state = CONNECTING;
+        m_websocket.connect(shard.m_connection);
+    });
 }
 
 template<typename bottype>
 inline void Aegis<bottype>::rest_thread()
 {
+    using namespace std::chrono_literals;
     while (m_state != SHUTDOWN)
     {
-        m_ratelimit.process_queue();
+        try
+        {
+            m_ratelimit.process_queue();
 
 
-        std::this_thread::yield();
+            std::this_thread::sleep_for(5ms);
+        }
+        catch (std::exception & e)
+        {
+            m_log->error("rest_thread() error : {}", e.what());
+        }
+        catch (...)
+        {
+            m_log->error("rest_thread() error : unknown");
+        }
     }
 }
 

@@ -33,7 +33,6 @@
 namespace aegis
 {
 
-class client;
 class member;
 class channel;
 class guild;
@@ -53,9 +52,6 @@ struct rest_reply
 template<typename bottype>
 struct rest_message
 {
-    using message_callback = std::function<void(rest_message<bottype>&)>;
-
-    client * shard;
     member * _member;
     channel * _channel;
     guild * _guild;
@@ -64,7 +60,6 @@ struct rest_message
     std::string method;
     std::string endpoint;
     std::string query;
-    message_callback callback;
 };
 
 }

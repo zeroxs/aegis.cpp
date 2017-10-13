@@ -30,6 +30,10 @@
 #include "structs.hpp"
 #include "selfbot.hpp"
 #include "basebot.hpp"
+#include "member.hpp"
+#include "channel.hpp"
+#include "guild.hpp"
+#include "client.hpp"
 #include "ratelimit.hpp"
 
 #include <cstdio>
@@ -90,10 +94,7 @@ public:
     Aegis(std::string token)
         : m_token(token)
         , m_state(UNINITIALIZED)
-        , m_sequence(0)
-        , m_shardid(0)
         , m_shardidmax(0)
-        , m_heartbeatack(0)
         , m_ratelimit(std::bind(&Aegis::call, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
     {
         m_log = spd::stdout_color_mt("aegis");
@@ -103,6 +104,8 @@ public:
 
     ~Aegis()
     {
+        for (auto c : m_clients)
+            delete c;
         m_work.reset();
         m_websocket.reset();
         if (m_keepalivetimer)
@@ -165,10 +168,10 @@ public:
         thd = std::make_unique<std::thread>([&] { rest_thread(); });
         // Create our websocket connection
         websocketcreate(ec);
-        if (ec) { m_log->error("Websocket fail: {}", ec.message()); return; }
+        if (ec) { m_log->error("Websocket fail: {}", ec.message()); stop_work();  return; }
         // Connect the websocket
-        connect(ec);
-        if (ec) { m_log->error("Connect fail: {}", ec.message()); return; }
+        connect(ec, m_shardidmax);
+        if (ec) { m_log->error("Connect fail: {}", ec.message()); stop_work(); return; }
         starttime = std::chrono::steady_clock::now();
         // Run the bot
         run();
@@ -232,10 +235,6 @@ public:
             return websocketpp::lib::make_shared<asio::ssl::context>(asio::ssl::context::tlsv1);
         });
 
-        m_websocket.set_message_handler(std::bind(&Aegis::onMessage, this, std::placeholders::_1, std::placeholders::_2));
-        m_websocket.set_open_handler(std::bind(&Aegis::onConnect, this, std::placeholders::_1));
-        m_websocket.set_close_handler(std::bind(&Aegis::onClose, this, std::placeholders::_1));
-        m_websocket.set_fail_handler(std::bind(&Aegis::onClose, this, std::placeholders::_1));
         ec = std::error_code();
     }
 
@@ -246,16 +245,44 @@ public:
     }
 
     /// Initiate websocket connection
-    void connect(std::error_code & ec)
+    void connect(std::error_code & ec, int32_t m_shardidmax)
     {
         m_log->info("Websocket connecting");
-        m_connection = m_websocket.get_connection("wss://gateway.discord.gg/?encoding=json&v=6", ec);
+
+        auto shard = new client();
+        shard->m_connection = m_websocket.get_connection(m_gatewayurl + "/?encoding=json&v=6", ec);
+        shard->m_shardid = 0;
+        shard->cb = []() {};
+        
+        shard->m_connection->set_message_handler([_shard = shard, this](websocketpp::connection_hdl hdl, message_ptr msg)
+        {
+            this->onMessage(hdl, msg, *_shard);
+        });
+        shard->m_connection->set_open_handler([_shard = shard, this](websocketpp::connection_hdl hdl)
+        {
+            this->onConnect(hdl, *_shard);
+        });
+        shard->m_connection->set_close_handler([_shard = shard, this](websocketpp::connection_hdl hdl)
+        {
+            this->onClose(hdl, *_shard);
+        });
+        shard->m_connection->set_fail_handler([_shard = shard, this](websocketpp::connection_hdl hdl)
+        {
+            this->onFail(hdl, *_shard);
+        });
+        shard->m_connection->set_termination_handler([_shard = shard, this](websocketpp::connection_hdl hdl)
+        {
+            this->onTerminate(hdl, *_shard);
+        });
+
         if (ec)
         {
+            delete shard;
             m_log->error("Websocket connection failed: {0}", ec.message());
             return;
         }
-        m_websocket.connect(m_connection);
+        m_websocket.connect(shard->m_connection);
+        m_clients.push_back(shard);
     }
 
     void start_work()
@@ -331,16 +358,6 @@ public:
         }
     }
 
-    enum state
-    {
-        UNINITIALIZED = 0,
-        READY = 1,
-        CONNECTED = 2,
-        ONLINE = 3,
-        RECONNECTING = 4,
-        SHUTDOWN = 5
-    };
-
     state get_state() const
     {
         return m_state;
@@ -357,9 +374,6 @@ private:
     // Websocket++ object
     websocket m_websocket;
 
-    // Websocket++ connection
-    connection_ptr m_connection;
-
     // Bot's token
     std::string m_token;
 
@@ -371,21 +385,23 @@ private:
 
 
     state m_state;
-    uint64_t m_sequence;
-    uint32_t m_shardid, m_shardidmax;
+    uint32_t m_shardidmax;
 
-    int64_t m_heartbeatack;
-    int64_t m_lastheartbeat;
-
-    //std::vector<std::unique_ptr<client>> m_clients;
+    std::vector<client*> m_clients;
+    std::vector<std::shared_ptr<member>> m_members;
+    std::vector<std::shared_ptr<channel>> m_channels;
+    std::vector<std::shared_ptr<guild>> m_guilds;
 
     ratelimit m_ratelimit;
-    void onMessage(const websocketpp::connection_hdl hdl, const message_ptr msg);
-    void onConnect(const websocketpp::connection_hdl hdl);
-    void onClose(const websocketpp::connection_hdl hdl);
+
+    void onMessage(websocketpp::connection_hdl hdl, message_ptr msg, client & shard);
+    void onConnect(websocketpp::connection_hdl hdl, client & shard);
+    void onClose(websocketpp::connection_hdl hdl, client & shard);
+    void onFail(websocketpp::connection_hdl hdl, client & shard);
+    void onTerminate(websocketpp::connection_hdl hdl, client & shard);
     void userMessage(json & obj);
     void processReady(json & d);
-    void keepAlive(const asio::error_code& error, const int ms);
+    void keepAlive(const asio::error_code& error, const int ms, client & shard);
 
     void rest_thread();
 
@@ -397,10 +413,10 @@ private:
 
         int64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(timenow - starttime).count();
 
-        uint32_t seconds = (ms / 1000) % 60;
-        uint32_t minutes = (((ms / 1000) - seconds) / 60) % 60;
-        uint32_t hours = (((((ms / 1000) - seconds) / 60) - minutes) / 60) % 24;
-        uint32_t days = (((((((ms / 1000) - seconds) / 60) - minutes) / 60) - hours) / 24);
+        uint64_t seconds = (ms / 1000) % 60;
+        uint64_t minutes = (((ms / 1000) - seconds) / 60) % 60;
+        uint64_t hours = (((((ms / 1000) - seconds) / 60) - minutes) / 60) % 24;
+        uint64_t days = (((((((ms / 1000) - seconds) / 60) - minutes) / 60) - hours) / 24);
 
         if (days > 0)
             ss << days << "d ";
