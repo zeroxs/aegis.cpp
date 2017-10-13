@@ -46,25 +46,73 @@ class example
 {
 public:
 
+    //////////////////////////////////////////////////////////////////////////
+
+    class member
+    {
+    public:
+        member() {}
+        member(int64_t id) : member_id(id) {}
+        int64_t member_id = 0;
+
+    };
+
+    class channel
+    {
+    public:
+        channel() {}
+        channel(int64_t id, int64_t g_id) : channel_id(id), guild_id(g_id) {}
+        int64_t channel_id = 0;
+        int64_t guild_id = 0;
+        void sendMessage(std::string content, Aegis<bottype> & bot)
+        {
+            bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_id, fmt::format("/channels/{}/messages", channel_id), content, "POST");
+        }
+        void sendMessageEmbed(std::string content, std::string embed, Aegis<bottype> & bot)
+        {
+            json obj;
+            if (!content.empty())
+                obj["content"] = content;
+            obj["embed"] = embed;
+
+            bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_id, fmt::format("/channels/{}/messages", channel_id), obj.dump(), "POST");
+        }
+    };
+
+    class guild
+    {
+    public:
+        guild() {}
+        guild(int64_t id) : guild_id(id) {}
+        int64_t guild_id = 0;
+
+    };
+
+    //////////////////////////////////////////////////////////////////////////
+
     using c_inject = std::function<bool(json & msg, client & shard, Aegis<bottype> & bot)>;
 
     example() = default;
     ~example() = default;
 
-    std::map<int64_t, int8_t> m_members;
-    std::map<int64_t, int8_t> m_guilds;
-    std::map<int64_t, int8_t> m_channels;
+    std::map<int64_t, member> m_members;
+    std::map<int64_t, guild> m_guilds;
+    std::map<int64_t, channel> m_channels;
 
-    void inject(aegis::Aegis<bottype> & b)
+    // Functions you wish you hook into
+    void inject(aegis::Aegis<bottype> & bot)
     {
-        b.i_message_create = std::bind(&example::message_create, this, _1, _2, _3);
-        b.i_guild_create = std::bind(&example::guild_create, this, _1, _2, _3);
-        b.i_guild_delete = std::bind(&example::guild_delete, this, _1, _2, _3);
-        b.i_ready = std::bind(&example::ready, this, _1, _2, _3);
-        b.i_resumed = std::bind(&example::resumed, this, _1, _2, _3);
+        bot.i_message_create = std::bind(&example::message_create, this, _1, _2, _3);
+        bot.i_guild_create = std::bind(&example::guild_create, this, _1, _2, _3);
+        bot.i_guild_delete = std::bind(&example::guild_delete, this, _1, _2, _3);
+        bot.i_ready = std::bind(&example::ready, this, _1, _2, _3);
+        bot.i_resumed = std::bind(&example::resumed, this, _1, _2, _3);
     }
 
 
+    // All the hooks into the websocket stream
+    // Your hooked functions take priority over the library for processing.
+    // Returning a false makes the library skip handling the data when you are done. (except READY)
     bool typing_start(json & msg, client & shard, Aegis<bottype> & bot)
     {
         return true;
@@ -104,8 +152,6 @@ public:
                 uint64_t eventsseen = 0;
 
                 {
-                    //std::scoped_lock<std::mutex> lock(m);
-
                     for (auto & bot_ptr : bot.m_clients)
                         eventsseen += bot_ptr->m_sequence;
 
@@ -129,11 +175,9 @@ public:
                     member_count_active += guild.second->memberlist.size();*/
 
                     member_count = m_members.size();
-
-                    //member_count_unique = message.bot().memberlist.size();
                 }
 
-                std::string members = fmt::format("{0} seen\n{1} unique\n{2} online", member_count, member_count_active, member_count_unique);
+                std::string members = fmt::format("{0} seen online", member_count);
                 std::string channels = fmt::format("{0} total\n{1} text\n{2} voice", channel_count, channel_text_count, channel_voice_count);
                 std::string guilds = fmt::format("{0}", guild_count);
                 std::string events = fmt::format("{0}", eventsseen);
@@ -167,8 +211,8 @@ public:
                     { "footer",{ { "icon_url", "https://cdn.discordapp.com/emojis/289276304564420608.png" },{ "text", "Made in c++ running aegis library" } } }
                 };
                 obj["embed"] = t;
-
-                bot.post(fmt::format("/channels/{}/messages", channel_id), obj.dump());
+                
+                m_channels[channel_id].sendMessageEmbed("", obj.dump(), bot);
                 return true;
             }
             else if (toks[0] == "?exit")
@@ -177,7 +221,7 @@ public:
                 {
                     { "content", "exiting..." }
                 };
-                bot.post(fmt::format("/channels/{}/messages", channel_id), obj.dump());
+                m_channels[channel_id].sendMessage(obj.dump(), bot);
                 bot.set_state(SHUTDOWN);
                 bot.websocket().close(shard.m_connection, 1002, "");
                 bot.stop_work();
@@ -185,38 +229,12 @@ public:
             }
             else if (toks[0] == "?test")
             {
-                auto sendMessage = [&](/*remove this later*/const uint64_t channel_id, const std::string message)
-                {
-                    auto & factory = bot.ratelimit().get(rest_limits::bucket_type::CHANNEL);
-                    //m_log->info("Posting:\n\n{}\n\nTo:\n\n{}", message, fmt::format("/channels/{}/messages", channel_id));
-                    factory.push(channel_id, fmt::format("/channels/{}/messages", channel_id), json({ { "content", message } }).dump(), "POST");
-                };
-
-                auto userfunc = [&](const json & message)
-                {
-                    /*channel->*/sendMessage(message["channel_id"], message["content"]);
-                };
-
-
-                rest_message<bottype> test;
-                test.endpoint = std::move(fmt::format("/channels/{}/messages", channel_id));
-                test.content = content;
-                test.method = "POST";
-                test.query = "";
-                test.cmd = "testcommand";
-                //test._channel = channel
-
-                json obj;
-                obj["content"] = "Adding your shit onto mine\n```" + content + "```";
-                obj["channel_id"] = channel_id;
-
-                userfunc(obj);
+                m_channels[channel_id].sendMessage("test message", bot);
                 return true;
             }
             else if (toks[0] == "?shard")
             {
-                auto & factory = bot.ratelimit().get(rest_limits::bucket_type::CHANNEL);
-                factory.push(channel_id, fmt::format("/channels/{}/messages", channel_id), json({ { "content", fmt::format("I am shard#[{}]", shard.m_shardid) } }).dump(), "POST");
+                m_channels[channel_id].sendMessage(json({ { "content", fmt::format("I am shard#[{}]", shard.m_shardid) } }).dump(), bot);
                 return true;
             }
         }
@@ -241,21 +259,19 @@ public:
 
     bool guild_create(json & msg, client & shard, Aegis<bottype> & bot)
     {
-        int64_t id = std::stoll(msg["d"]["id"].get<std::string>());
+        int64_t g_id = std::stoll(msg["d"]["id"].get<std::string>());
 
-        if (!m_guilds.count(id))
-            m_guilds.emplace(id,0);
+        m_guilds.try_emplace(g_id, guild(g_id));
 
 
         if (msg["d"].count("channels"))
         {
             json channels = msg["d"]["channels"];
 
-            for (auto & channel : channels)
+            for (auto & channel_r : channels)
             {
-                int64_t id = std::stoll(channel["id"].get<std::string>());
-                if (!m_channels.count(id))
-                    m_channels.emplace(id, 0);
+                int64_t c_id = std::stoll(channel_r["id"].get<std::string>());
+                m_channels.try_emplace(c_id, channel( c_id, g_id ));
             }
         }
 
@@ -264,11 +280,10 @@ public:
         {
             json members = msg["d"]["members"];
 
-            for (auto & member : members)
+            for (auto & member_r : members)
             {
-                int64_t id = std::stoll(member["user"]["id"].get<std::string>());
-                if (!m_members.count(id))
-                    m_members.emplace(id, 0);
+                int64_t m_id = std::stoll(member_r["user"]["id"].get<std::string>());
+                m_members.try_emplace(m_id, member(m_id));
             }
         }
 
@@ -307,11 +322,6 @@ public:
 
     bool channel_create(json & msg, client & shard, Aegis<bottype> & bot)
     {
-        int64_t id = std::stoll(msg["d"]["id"].get<std::string>());
-
-        if (!m_channels.count(id))
-            m_channels.emplace(id,0);
-
         return true;
     }
 
@@ -347,11 +357,6 @@ public:
 
     bool guild_member_add(json & msg, client & shard, Aegis<bottype> & bot)
     {
-        int64_t id = std::stoll(msg["d"]["id"].get<std::string>());
-
-        if (!m_members.count(id))
-            m_members.emplace(id,0);
-
         return true;
     }
 

@@ -63,7 +63,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;_HAS_AUTO_PTR_ETC=1;_WIN32_WINNT=0x0600;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\lib\websocketpp;..\lib\json\src;..\lib\spdlog\include;..\lib\asio\asio\include;..\include;..\lib\zsttr\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\lib\websocketpp;..\lib\json\src;..\lib\spdlog\include;..\lib\asio\asio\include;..\include;..\lib\zstr\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>
       </MultiProcessorCompilation>
@@ -92,7 +92,7 @@
       <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;_HAS_AUTO_PTR_ETC=1;_WIN32_WINNT=0x0600;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>..\lib\websocketpp;..\lib\json\src;..\lib\spdlog\include;..\lib\asio\asio\include;..\include;..\lib\zsttr\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\lib\websocketpp;..\lib\json\src;..\lib\spdlog\include;..\lib\asio\asio\include;..\include;..\lib\zstr\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>

@@ -16,6 +16,7 @@ Libraries used:
 - [spdlog](https://github.com/gabime/spdlog)
 - [OpenSSL](https://www.openssl.org)
 - [zlib](https://zlib.net)
+- [zstr](https://github.com/mateidavid/zstr)
 
 
 
@@ -28,6 +29,6 @@ Libraries used:
 `#include "aegis/aegis.hpp"`
 
 Quick and dirty g++-7 command
-`g++-7 -std=c++17 -Iinclude -Ilib/websocketpp/ -Ilib/asio/include -Ilib/json/src src/main.cpp -lssl -lpthread -lcrypto`
+`g++-7 -std=c++17 -Iinclude -Ilib/spdlog/include -Ilib/websocketpp -Ilib/asio/asio/include -Ilib/json/src -Ilib/zsttr/src src/main.cpp -lssl -lpthread -lcrypto -lz -o aegis`
 
 Visual Studio solution inside `project/`

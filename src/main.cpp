@@ -43,13 +43,14 @@ int main(int argc, char * argv[])
         // Create bot with token
         Aegis<aegis::basebot> bot("TOKEN");
         
-        bot.self_presence = { { "game",{ { "name", "@Aegis help" },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } };
+        // Bot will automatically set this presence when it connects
+        bot.self_presence = "with my friends";
         
+        // Construct the example class for handling the websocket interceptions
         example<aegis::basebot> commands;
 
+        // Inject the hooks for any messages
         commands.inject(bot);
-
-
 
         // Configure everything and run bot
         bot.easy_start();
