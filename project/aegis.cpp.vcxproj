@@ -106,7 +106,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\main.cpp" />
-    <None Include="..\src\test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\aegis\aegis.hpp" />

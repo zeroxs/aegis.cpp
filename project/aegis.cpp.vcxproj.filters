@@ -63,9 +63,4 @@
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="..\src\test.cpp">
-      <Filter>Source Files</Filter>
-    </None>
-  </ItemGroup>
 </Project>
