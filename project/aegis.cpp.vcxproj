@@ -119,6 +119,7 @@
     <ClInclude Include="..\include\aegis\member.hpp" />
     <ClInclude Include="..\include\aegis\ratelimit.hpp" />
     <ClInclude Include="..\include\aegis\selfbot.hpp" />
+    <ClInclude Include="..\include\aegis\snowflake.hpp" />
     <ClInclude Include="..\include\aegis\structs.hpp" />
     <ClInclude Include="..\include\aegis\utility.hpp" />
     <ClInclude Include="..\src\example.hpp" />

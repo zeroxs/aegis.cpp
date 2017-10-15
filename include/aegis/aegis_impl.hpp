@@ -74,13 +74,13 @@ inline void Aegis<bottype>::processReady(json & d, client & shard)
         return;
     json & userdata = d["user"];
     m_discriminator = std::stoi(userdata["discriminator"].get<std::string>());
-    m_id = std::stoull(userdata["id"].get<std::string>());
+    m_snowflake = std::stoull(userdata["id"].get<std::string>());
     m_username = userdata["username"].get<std::string>();
     m_mfa_enabled = userdata["mfa_enabled"];
     if (m_mention.size() == 0)
     {
         std::stringstream ss;
-        ss << "<@" << m_id << ">";
+        ss << "<@" << m_snowflake() << ">";
         m_mention = ss.str();
     }
     m_isuserset = true;
@@ -227,26 +227,6 @@ inline std::optional<rest_reply> Aegis<bottype>::call(std::string_view path, std
     return {};
 }
 
-template<typename Out>
-void split(const std::string &s, char delim, Out result)
-{
-    std::stringstream ss;
-    ss.str(s);
-    std::string item;
-    while (std::getline(ss, item, delim))
-    {
-        if (!item.empty())
-            *(result++) = item;
-    }
-}
-
-std::vector<std::string> split(const std::string &s, char delim)
-{
-    std::vector<std::string> elems;
-    split(s, delim, std::back_inserter(elems));
-    return elems;
-}
-
 template<typename bottype>
 inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, client & shard)
 {
@@ -387,8 +367,8 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
                 }
 
                 //////////////////////////////////////////////////////////////////////////
-                //start of guild_id events
-                //everything beyond here has a guild_id
+                //start of guild_snowflake events
+                //everything beyond here has a guild_snowflake
 
                 if (result["d"].count("guild_id"))
                 {

@@ -30,6 +30,7 @@
 #include <aegis/client.hpp>
 #include <json.hpp>
 #include <functional>
+#include <aegis/snowflake.hpp>
 
 
 namespace example_bot
@@ -52,8 +53,8 @@ public:
     {
     public:
         member() {}
-        member(int64_t id) : member_id(id) {}
-        int64_t member_id = 0;
+        member(snowflake id) : member_id(id) {}
+        snowflake member_id = 0;
 
     };
 
@@ -61,21 +62,23 @@ public:
     {
     public:
         channel() {}
-        channel(int64_t id, int64_t g_id) : channel_id(id), guild_id(g_id) {}
-        int64_t channel_id = 0;
-        int64_t guild_id = 0;
+        channel(snowflake id, snowflake g_id) : channel_snowflake(id), guild_snowflake(g_id) {}
+        snowflake channel_snowflake = 0;
+        snowflake guild_snowflake = 0;
         void sendMessage(std::string content, Aegis<bottype> & bot)
         {
-            bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_id, fmt::format("/channels/{}/messages", channel_id), content, "POST");
+            json obj;
+            obj["content"] = content;
+            bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_snowflake, fmt::format("/channels/{}/messages", channel_snowflake()), obj.dump(), "POST");
         }
-        void sendMessageEmbed(std::string content, std::string embed, Aegis<bottype> & bot)
+        void sendMessageEmbed(json content, json embed, Aegis<bottype> & bot)
         {
             json obj;
             if (!content.empty())
                 obj["content"] = content;
             obj["embed"] = embed;
 
-            bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_id, fmt::format("/channels/{}/messages", channel_id), obj.dump(), "POST");
+            bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_snowflake, fmt::format("/channels/{:d}/messages", channel_snowflake()), obj.dump(), "POST");
         }
     };
 
@@ -83,12 +86,33 @@ public:
     {
     public:
         guild() {}
-        guild(int64_t id) : guild_id(id) {}
-        int64_t guild_id = 0;
+        guild(snowflake id) : guild_snowflake(id) {}
+        snowflake guild_snowflake = 0;
 
     };
 
     //////////////////////////////////////////////////////////////////////////
+
+
+    template<typename Out>
+    void split(const std::string &s, char delim, Out result)
+    {
+        std::stringstream ss;
+        ss.str(s);
+        std::string item;
+        while (std::getline(ss, item, delim))
+        {
+            if (!item.empty())
+                *(result++) = item;
+        }
+    }
+
+    std::vector<std::string> split(const std::string &s, char delim)
+    {
+        std::vector<std::string> elems;
+        split(s, delim, std::back_inserter(elems));
+        return elems;
+    }
 
     using c_inject = std::function<bool(json & msg, client & shard, Aegis<bottype> & bot)>;
 
@@ -125,8 +149,13 @@ public:
         uint64_t userid = std::stoull(author["id"].get<std::string>());
         std::string username = author["username"];
 
-        uint64_t channel_id = std::stoull(msg["d"]["channel_id"].get<std::string>());
-        uint64_t id = std::stoull(msg["d"]["id"].get<std::string>());
+        //test
+        //auto[_ctime, _, _, _] = snowflake::c_get_all(userid);
+        //auto[_time, _worker,_,_] = (snowflake(userid)).get_all();
+        //test
+
+        snowflake channel_id = std::stoull(msg["d"]["channel_id"].get<std::string>());
+        snowflake message_id = std::stoull(msg["d"]["id"].get<std::string>());
         std::string content = msg["d"]["content"];
 
         std::string avatar = author["avatar"].is_string() ? author["avatar"] : "";
@@ -134,109 +163,116 @@ public:
 
         uint64_t msgid = std::stoull(msg["d"]["id"].get<std::string>());
 
-        if (userid == 171000788183678976)
+        auto toks = split(content, ' ');
+        if (toks.size() == 0)
+            return true;
+        if (toks[0] == "?info")
         {
-            auto toks = split(content, ' ');
-            if (toks[0] == "?info")
+            uint64_t guild_count = m_guilds.size();
+            uint64_t member_count = m_members.size();
+            uint64_t member_count_unique = 0;
+            uint64_t member_online_count = 0;
+            uint64_t member_dnd_count = 0;
+            uint64_t channel_count = m_channels.size();
+            uint64_t channel_text_count = 0;
+            uint64_t channel_voice_count = 0;
+            uint64_t member_count_active = 0;
+
+            uint64_t eventsseen = 0;
+
             {
-                uint64_t guild_count = m_guilds.size();
-                uint64_t member_count = m_members.size();
-                uint64_t member_count_unique = 0;
-                uint64_t member_online_count = 0;
-                uint64_t member_dnd_count = 0;
-                uint64_t channel_count = m_channels.size();
-                uint64_t channel_text_count = 0;
-                uint64_t channel_voice_count = 0;
-                uint64_t member_count_active = 0;
+                for (auto & bot_ptr : bot.m_clients)
+                    eventsseen += bot_ptr->m_sequence;
 
-                uint64_t eventsseen = 0;
-
+                for (auto & member : bot.m_members)
                 {
-                    for (auto & bot_ptr : bot.m_clients)
-                        eventsseen += bot_ptr->m_sequence;
-
-                    for (auto & member : bot.m_members)
-                    {
-                        /*if (member.second->status == MEMBER_STATUS::ONLINE)
-                        member_online_count++;
-                        else if (member.second->status == MEMBER_STATUS::DND)
-                        member_dnd_count++;*/
-                    }
-
-                    for (auto & channel : bot.m_channels)
-                    {
-                        /*if (channel.second->type == ChannelType::TEXT)
-                        channel_text_count++;
-                        else
-                        channel_voice_count++;*/
-                    }
-
-                    /*for (auto & guild : AegisBot::guildlist)
-                    member_count_active += guild.second->memberlist.size();*/
-
-                    member_count = m_members.size();
+                    /*if (member.second->status == MEMBER_STATUS::ONLINE)
+                    member_online_count++;
+                    else if (member.second->status == MEMBER_STATUS::DND)
+                    member_dnd_count++;*/
                 }
 
-                std::string members = fmt::format("{0} seen online", member_count);
-                std::string channels = fmt::format("{0} total\n{1} text\n{2} voice", channel_count, channel_text_count, channel_voice_count);
-                std::string guilds = fmt::format("{0}", guild_count);
-                std::string events = fmt::format("{0}", eventsseen);
-                std::string misc = fmt::format("I am shard {0} of {1} running on `{2}`", shard.m_shardid+1, bot.m_shardidmax, aegis::utility::platform::get_platform());
-
-                fmt::MemoryWriter w;
-                w << "[Latest bot source](https://github.com/zeroxs/aegis)\n[Official Bot Server](https://discord.gg/w7Y3Bb8)\n\nMemory usage: "
-                    << double(aegis::utility::getCurrentRSS()) / (1024 * 1024) << "MB\nMax Memory: "
-                    << double(aegis::utility::getPeakRSS()) / (1024 * 1024) << "MB";
-                std::string stats = w.str();
-
-
-                json obj;
-                json t = {
-                    { "title", "AegisBot" },
-                    { "description", stats },
-                    { "color", rand() % 0xFFFFFF },
-                    { "fields",
-                    json::array(
+                for (auto & channel : bot.m_channels)
                 {
-                    { { "name", "Members" },{ "value", members },{ "inline", true } },
-                    { { "name", "Channels" },{ "value", channels },{ "inline", true } },
-                    { { "name", "Uptime" },{ "value", bot.uptime() },{ "inline", true } },
-                    { { "name", "Guilds" },{ "value", guilds },{ "inline", true } },
-                    { { "name", "Events Seen" },{ "value", events },{ "inline", true } },
-                    { { "name", u8"\u200b" },{ "value", u8"\u200b" },{ "inline", true } },
-                    { { "name", "misc" },{ "value", misc },{ "inline", false } }
+                    /*if (channel.second->type == ChannelType::TEXT)
+                    channel_text_count++;
+                    else
+                    channel_voice_count++;*/
                 }
-                        )
-                    },
-                    { "footer",{ { "icon_url", "https://cdn.discordapp.com/emojis/289276304564420608.png" },{ "text", "Made in c++ running aegis library" } } }
-                };
-                obj["embed"] = t;
-                
-                m_channels[channel_id].sendMessageEmbed("", obj.dump(), bot);
-                return true;
+
+                /*for (auto & guild : AegisBot::guildlist)
+                member_count_active += guild.second->memberlist.size();*/
+
+                member_count = m_members.size();
             }
-            else if (toks[0] == "?exit")
+
+            std::string members = fmt::format("{0} seen online", member_count);
+            std::string channels = fmt::format("{0} total\n{1} text\n{2} voice", channel_count, channel_text_count, channel_voice_count);
+            std::string guilds = fmt::format("{0}", guild_count);
+            std::string events = fmt::format("{0}", eventsseen);
+            std::string misc = fmt::format("I am shard {0} of {1} running on `{2}`", shard.m_shardid+1, bot.m_shardidmax, aegis::utility::platform::get_platform());
+
+            fmt::MemoryWriter w;
+            w << "[Latest bot source](https://github.com/zeroxs/aegis.cpp)\n[Official Bot Server](https://discord.gg/w7Y3Bb8)\n\nMemory usage: "
+                << double(aegis::utility::getCurrentRSS()) / (1024 * 1024) << "MB\nMax Memory: "
+                << double(aegis::utility::getPeakRSS()) / (1024 * 1024) << "MB";
+            std::string stats = w.str();
+
+
+            json t = {
+                { "title", "AegisBot" },
+                { "description", stats },
+                { "color", rand() % 0xFFFFFF },
+                { "fields",
+                json::array(
             {
-                json obj =
-                {
-                    { "content", "exiting..." }
-                };
-                m_channels[channel_id].sendMessage(obj.dump(), bot);
-                bot.set_state(SHUTDOWN);
-                bot.websocket().close(shard.m_connection, 1002, "");
-                bot.stop_work();
-                return true;
+                { { "name", "Members" },{ "value", members },{ "inline", true } },
+                { { "name", "Channels" },{ "value", channels },{ "inline", true } },
+                { { "name", "Uptime" },{ "value", bot.uptime() },{ "inline", true } },
+                { { "name", "Guilds" },{ "value", guilds },{ "inline", true } },
+                { { "name", "Events Seen" },{ "value", events },{ "inline", true } },
+                { { "name", u8"\u200b" },{ "value", u8"\u200b" },{ "inline", true } },
+                { { "name", "misc" },{ "value", misc },{ "inline", false } }
             }
-            else if (toks[0] == "?test")
+                    )
+                },
+                { "footer",{ { "icon_url", "https://cdn.discordapp.com/emojis/289276304564420608.png" },{ "text", "Made in c++ running aegis library" } } }
+            };
+
+            m_channels[channel_id].sendMessageEmbed(nullptr, t, bot);
+            return true;
+        }
+        else if (toks[0] == "?source")
+        {
+            json t = {
+                { "title", "AegisBot" },
+                { "description", "[Latest bot source](https://github.com/zeroxs/aegis.cpp)\n[Official Bot Server](https://discord.gg/w7Y3Bb8)" },
+                { "color", rand() % 0xFFFFFF }
+            };
+            
+            m_channels[channel_id].sendMessageEmbed({}, t, bot);
+        }
+        else if (toks[0] == "?exit")
+        {
+            json obj =
             {
-                m_channels[channel_id].sendMessage("test message", bot);
-                return true;
-            }
-            else if (toks[0] == "?shard")
-            {
-                m_channels[channel_id].sendMessage(json({ { "content", fmt::format("I am shard#[{}]", shard.m_shardid) } }).dump(), bot);
-                return true;
-            }
+                { "content", "exiting..." }
+            };
+            m_channels[channel_id].sendMessage(obj.dump(), bot);
+            bot.set_state(SHUTDOWN);
+            bot.websocket().close(shard.m_connection, 1002, "");
+            bot.stop_work();
+            return true;
+        }
+        else if (toks[0] == "?test")
+        {
+            m_channels[channel_id].sendMessage("test message", bot);
+            return true;
+        }
+        else if (toks[0] == "?shard")
+        {
+            m_channels[channel_id].sendMessage(json({ { "content", fmt::format("I am shard#[{}]", shard.m_shardid) } }).dump(), bot);
+            return true;
         }
 
         return true;
@@ -259,9 +295,9 @@ public:
 
     bool guild_create(json & msg, client & shard, Aegis<bottype> & bot)
     {
-        int64_t g_id = std::stoll(msg["d"]["id"].get<std::string>());
+        snowflake guild_id = std::stoll(msg["d"]["id"].get<std::string>());
 
-        m_guilds.try_emplace(g_id, guild(g_id));
+        m_guilds.try_emplace(guild_id, guild(guild_id));
 
 
         if (msg["d"].count("channels"))
@@ -270,8 +306,8 @@ public:
 
             for (auto & channel_r : channels)
             {
-                int64_t c_id = std::stoll(channel_r["id"].get<std::string>());
-                m_channels.try_emplace(c_id, channel( c_id, g_id ));
+                snowflake channel_id = std::stoll(channel_r["id"].get<std::string>());
+                m_channels.try_emplace(channel_id, channel(channel_id, guild_id ));
             }
         }
 
@@ -282,8 +318,8 @@ public:
 
             for (auto & member_r : members)
             {
-                int64_t m_id = std::stoll(member_r["user"]["id"].get<std::string>());
-                m_members.try_emplace(m_id, member(m_id));
+                snowflake member_id = std::stoll(member_r["user"]["id"].get<std::string>());
+                m_members.try_emplace(member_id, member(member_id));
             }
         }
 

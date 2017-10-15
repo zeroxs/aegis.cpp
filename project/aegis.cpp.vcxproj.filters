@@ -62,5 +62,8 @@
     <ClInclude Include="..\src\example.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\aegis\snowflake.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

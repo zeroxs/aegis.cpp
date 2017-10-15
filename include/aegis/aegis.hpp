@@ -35,6 +35,7 @@
 #include "guild.hpp"
 #include "client.hpp"
 #include "ratelimit.hpp"
+#include "snowflake.hpp"
 
 #include <cstdio>
 #include <iostream>
@@ -100,7 +101,7 @@ public:
         , m_state(UNINITIALIZED)
         , m_shardidmax(0)
         , m_ratelimit(std::bind(&Aegis::call, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
-        , m_id(0)
+        , m_snowflake(0)
         , m_mfa_enabled(false)
         , m_discriminator(0)
         , m_isuserset(false)
@@ -442,7 +443,7 @@ public:
         return ss.str();
     }
 
-    int64_t m_id;
+    snowflake m_snowflake;
     std::string m_username;
     bool m_mfa_enabled;
     int16_t m_discriminator;
