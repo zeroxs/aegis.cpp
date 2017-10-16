@@ -44,7 +44,7 @@ int main(int argc, char * argv[])
         bot.self_presence = "with my friends";
         
         // Construct the example class for handling the websocket interceptions
-        example<aegis::basebot> commands;
+        example commands;
 
         // Inject the hooks for any messages
         commands.inject(bot);

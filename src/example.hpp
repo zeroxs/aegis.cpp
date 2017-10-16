@@ -43,7 +43,6 @@ using namespace std::placeholders;
 using namespace aegis;
 
 
-template<typename bottype>
 class example
 {
 public:
@@ -66,13 +65,13 @@ public:
         channel(snowflake id, snowflake g_id) : channel_snowflake(id), guild_snowflake(g_id) {}
         snowflake channel_snowflake = 0;
         snowflake guild_snowflake = 0;
-        void sendMessage(std::string content, Aegis<bottype> & bot)
+        void sendMessage(std::string content, Aegis & bot)
         {
             json obj;
             obj["content"] = content;
             bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_snowflake, fmt::format("/channels/{}/messages", channel_snowflake()), obj.dump(), "POST");
         }
-        void sendMessageEmbed(json content, json embed, Aegis<bottype> & bot)
+        void sendMessageEmbed(json content, json embed, Aegis & bot)
         {
             json obj;
             if (!content.empty())
@@ -115,7 +114,7 @@ public:
         return elems;
     }
 
-    using c_inject = std::function<bool(json & msg, client & shard, Aegis<bottype> & bot)>;
+    using c_inject = std::function<bool(json & msg, client & shard, Aegis & bot)>;
 
     example() = default;
     ~example() = default;
@@ -125,7 +124,7 @@ public:
     std::map<int64_t, channel> m_channels;
 
     // Functions you wish you hook into
-    void inject(aegis::Aegis<bottype> & bot)
+    void inject(aegis::Aegis & bot)
     {
         bot.i_message_create = std::bind(&example::message_create, this, _1, _2, _3);
         bot.i_guild_create = std::bind(&example::guild_create, this, _1, _2, _3);
@@ -138,12 +137,12 @@ public:
     // All the hooks into the websocket stream
     // Your hooked functions take priority over the library for processing.
     // Returning a false makes the library skip handling the data when you are done. (except READY)
-    bool typing_start(json & msg, client & shard, Aegis<bottype> & bot)
+    bool typing_start(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool message_create(json & msg, client & shard, Aegis<bottype> & bot)
+    bool message_create(json & msg, client & shard, Aegis & bot)
     {
         json author = msg["d"]["author"];
 
@@ -289,22 +288,22 @@ public:
         return true;
     }
 
-    bool message_update(json & msg, client & shard, Aegis<bottype> & bot)
+    bool message_update(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool message_delete(json & msg, client & shard, Aegis<bottype> & bot)
+    bool message_delete(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool message_delete_bulk(json & msg, client & shard, Aegis<bottype> & bot)
+    bool message_delete_bulk(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool guild_create(json & msg, client & shard, Aegis<bottype> & bot)
+    bool guild_create(json & msg, client & shard, Aegis & bot)
     {
         snowflake guild_id = std::stoll(msg["d"]["id"].get<std::string>());
 
@@ -337,117 +336,117 @@ public:
         return true;
     }
 
-    bool guild_update(json & msg, client & shard, Aegis<bottype> & bot)
+    bool guild_update(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool guild_delete(json & msg, client & shard, Aegis<bottype> & bot)
+    bool guild_delete(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool user_settings_update(json & msg, client & shard, Aegis<bottype> & bot)
+    bool user_settings_update(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool user_update(json & msg, client & shard, Aegis<bottype> & bot)
+    bool user_update(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool ready(json & msg, client & shard, Aegis<bottype> & bot)
+    bool ready(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool resumed(json & msg, client & shard, Aegis<bottype> & bot)
+    bool resumed(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool channel_create(json & msg, client & shard, Aegis<bottype> & bot)
+    bool channel_create(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool channel_update(json & msg, client & shard, Aegis<bottype> & bot)
+    bool channel_update(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool channel_delete(json & msg, client & shard, Aegis<bottype> & bot)
+    bool channel_delete(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool guild_ban_add(json & msg, client & shard, Aegis<bottype> & bot)
+    bool guild_ban_add(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool guild_ban_remove(json & msg, client & shard, Aegis<bottype> & bot)
+    bool guild_ban_remove(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool guild_emojis_update(json & msg, client & shard, Aegis<bottype> & bot)
+    bool guild_emojis_update(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool guild_integrations_update(json & msg, client & shard, Aegis<bottype> & bot)
+    bool guild_integrations_update(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool guild_member_add(json & msg, client & shard, Aegis<bottype> & bot)
+    bool guild_member_add(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool guild_member_remove(json & msg, client & shard, Aegis<bottype> & bot)
+    bool guild_member_remove(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool guild_member_update(json & msg, client & shard, Aegis<bottype> & bot)
+    bool guild_member_update(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool guild_member_chunk(json & msg, client & shard, Aegis<bottype> & bot)
+    bool guild_member_chunk(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool guild_role_create(json & msg, client & shard, Aegis<bottype> & bot)
+    bool guild_role_create(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool guild_role_update(json & msg, client & shard, Aegis<bottype> & bot)
+    bool guild_role_update(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool guild_role_delete(json & msg, client & shard, Aegis<bottype> & bot)
+    bool guild_role_delete(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool presence_update(json & msg, client & shard, Aegis<bottype> & bot)
+    bool presence_update(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool voice_state_update(json & msg, client & shard, Aegis<bottype> & bot)
+    bool voice_state_update(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }
 
-    bool voice_server_update(json & msg, client & shard, Aegis<bottype> & bot)
+    bool voice_server_update(json & msg, client & shard, Aegis & bot)
     {
         return true;
     }

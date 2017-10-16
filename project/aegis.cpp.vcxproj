@@ -110,7 +110,6 @@
   <ItemGroup>
     <ClInclude Include="..\include\aegis\aegis.hpp" />
     <ClInclude Include="..\include\aegis\aegis_impl.hpp" />
-    <ClInclude Include="..\include\aegis\basebot.hpp" />
     <ClInclude Include="..\include\aegis\channel.hpp" />
     <ClInclude Include="..\include\aegis\client.hpp" />
     <ClInclude Include="..\include\aegis\config.hpp" />
@@ -118,7 +117,6 @@
     <ClInclude Include="..\include\aegis\guild.hpp" />
     <ClInclude Include="..\include\aegis\member.hpp" />
     <ClInclude Include="..\include\aegis\ratelimit.hpp" />
-    <ClInclude Include="..\include\aegis\selfbot.hpp" />
     <ClInclude Include="..\include\aegis\snowflake.hpp" />
     <ClInclude Include="..\include\aegis\structs.hpp" />
     <ClInclude Include="..\include\aegis\utility.hpp" />

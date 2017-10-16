@@ -78,12 +78,11 @@ struct settings;
 using utility::check_setting;
 
 
-template<typename bottype>
 class Aegis
 {
 public:
 
-    using c_inject = std::function<bool(json & msg, client & shard, Aegis<bottype> & bot)>;
+    using c_inject = std::function<bool(json & msg, client & shard, Aegis & bot)>;
 
     /// Type of a pointer to the ASIO io_service
     typedef asio::io_service * io_service_ptr;
@@ -181,7 +180,7 @@ public:
         websocketcreate(ec);
         if (ec) { m_log->error("Websocket fail: {}", ec.message()); stop_work();  return; }
         // Connect the websocket[s]
-        connect(ec, m_shardidmax);
+        connect(ec);
         if (ec) { m_log->error("Connect fail: {}", ec.message()); stop_work(); return; }
         starttime = std::chrono::steady_clock::now();
         // Run the bot
@@ -207,7 +206,7 @@ public:
 
         std::optional<rest_reply> res;
 
-        if constexpr (std::is_same<bottype, basebot>::value)
+        if constexpr (!check_setting<settings>::selfbot::test())
             res = get("/gateway/bot");
         else
             res = get("/gateway");
@@ -265,17 +264,15 @@ public:
     }
 
     /// Initiate websocket connection
-    void connect(std::error_code & ec, int32_t m_shardidmax)
+    void connect(std::error_code & ec)
     {
         m_log->info("Websocket[s] connecting");
 
-        int k = 0;
-
-        for (auto & shard : m_clients)
+        for (int k = 0; k < m_shardidmax; ++k)
         {
-            auto shard = new client();
+            auto shard = new client(*this);
             shard->m_connection = m_websocket.get_connection(m_gatewayurl, ec);
-            shard->m_shardid = k++;
+            shard->m_shardid = k;
 
             setup_callbacks(*shard);
 
@@ -319,13 +316,6 @@ public:
     {
         m_work.reset();
     }
-
-    enum AegisOption
-    {
-
-    };
-
-    void set_option(AegisOption opt, bool val);
 
     /// Performs a GET request on the path
     /**
@@ -465,12 +455,13 @@ public:
     std::string m_mention;
     bool m_isuserset;
 
+    std::shared_ptr<spd::logger> m_log;
+
 private:
 
     //std::map<std::string, c_inject> m_cbmap;
 
     std::unique_ptr<std::thread> thd;
-    std::shared_ptr<spd::logger> m_log;
 
     // Gateway URL for the Discord Websocket
     std::string m_gatewayurl;

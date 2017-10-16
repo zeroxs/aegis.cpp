@@ -60,14 +60,7 @@ namespace spd = spdlog;
 using json = nlohmann::json;
 using namespace std::literals;
 
-template<typename bottype>
-inline void Aegis<bottype>::set_option(AegisOption opt, bool val)
-{
-
-}
-
-template<typename bottype>
-inline void Aegis<bottype>::processReady(json & d, client & shard)
+inline void Aegis::processReady(json & d, client & shard)
 {
     shard.m_sessionId = d["session_id"].get<std::string>();
     if (m_isuserset)
@@ -86,8 +79,7 @@ inline void Aegis<bottype>::processReady(json & d, client & shard)
     m_isuserset = true;
 }
 
-template<typename bottype>
-inline void Aegis<bottype>::keepAlive(const asio::error_code & ec, const int ms, client & shard)
+inline void Aegis::keepAlive(const asio::error_code & ec, const int ms, client & shard)
 {
     if (ec != asio::error::operation_aborted)
     {
@@ -129,26 +121,22 @@ inline void Aegis<bottype>::keepAlive(const asio::error_code & ec, const int ms,
     }
 }
 
-template<typename bottype>
-inline std::optional<rest_reply> Aegis<bottype>::get(std::string_view path)
+inline std::optional<rest_reply> Aegis::get(std::string_view path)
 {
     return call(path, "", "GET");
 }
 
-template<typename bottype>
-inline std::optional<rest_reply> Aegis<bottype>::get(std::string_view path, std::string_view content)
+inline std::optional<rest_reply> Aegis::get(std::string_view path, std::string_view content)
 {
     return call(path, content, "GET");
 }
 
-template<typename bottype>
-std::optional<aegis::rest_reply> Aegis<bottype>::post(std::string_view path, std::string_view content)
+std::optional<aegis::rest_reply> Aegis::post(std::string_view path, std::string_view content)
 {
     return call(path, content, "POST");
 }
 
-template<typename bottype>
-inline std::optional<rest_reply> Aegis<bottype>::call(std::string_view path, std::string_view content, std::string_view method)
+inline std::optional<rest_reply> Aegis::call(std::string_view path, std::string_view content, std::string_view method)
 {
     try
     {
@@ -175,7 +163,7 @@ inline std::optional<rest_reply> Aegis<bottype>::call(std::string_view path, std
         request_stream << method << " " << "/api/v6" << path << " HTTP/1.0\r\n";
         request_stream << "Host: discordapp.com\r\n";
         request_stream << "Accept: */*\r\n";
-        if constexpr (std::is_same<bottype, basebot>::value)
+        if constexpr (!check_setting<settings>::selfbot::test())
             request_stream << "Authorization: Bot " << m_token << "\r\n";
         else
             request_stream << "Authorization: " << m_token << "\r\n";
@@ -229,8 +217,7 @@ inline std::optional<rest_reply> Aegis<bottype>::call(std::string_view path, std
     return {};
 }
 
-template<typename bottype>
-inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, client & shard)
+inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, client & shard)
 {
     json result;
     std::string payload = msg->get_payload();
@@ -483,31 +470,28 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
             }
             if (result["op"] == 9)
             {
-                if constexpr (std::is_same<bottype, basebot>::value)
-                {
-                    m_log->error("Unable to resume connection. Starting new");
-                    json obj = {
-                        { "op", 2 },
+                m_log->error("Unable to resume or invalid connection. Starting new");
+                json obj = {
+                    { "op", 2 },
+                    {
+                        "d",
                         {
-                            "d",
+                            { "token", m_token },
+                            { "properties",
                             {
-                                { "token", m_token },
-                                { "properties",
-                                {
-                                    { "$os", utility::platform::get_platform() },
-                                    { "$browser", "aegis.cpp" },
-                                    { "$device", "aegis.cpp" }
-                                }
-                                },
-                                { "shard", json::array({ shard.m_shardid, m_shardidmax }) },
-                                { "compress", true },
-                                { "large_threshhold", 250 },
-                                { "presence",{ { "game",{ { "name", self_presence },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
+                                { "$os", utility::platform::get_platform() },
+                                { "$browser", "aegis.cpp" },
+                                { "$device", "aegis.cpp" }
                             }
+                            },
+                            { "shard", json::array({ shard.m_shardid, m_shardidmax }) },
+                            { "compress", true },
+                            { "large_threshhold", 250 },
+                            { "presence",{ { "game",{ { "name", self_presence },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
                         }
-                    };
-                    m_websocket.send(hdl, obj.dump(), websocketpp::frame::opcode::text);
-                }
+                    }
+                };
+                m_websocket.send(hdl, obj.dump(), websocketpp::frame::opcode::text);
             }
             if (result["op"] == 10)
             {
@@ -533,8 +517,7 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
 
 }
 
-template<typename bottype>
-inline void Aegis<bottype>::onConnect(websocketpp::connection_hdl hdl, client & shard)
+inline void Aegis::onConnect(websocketpp::connection_hdl hdl, client & shard)
 {
     m_log->info("Connection established");
     shard.m_state = CONNECTING;
@@ -608,8 +591,7 @@ inline void Aegis<bottype>::onConnect(websocketpp::connection_hdl hdl, client & 
     }
 }
 
-template<typename bottype>
-inline void Aegis<bottype>::onClose(websocketpp::connection_hdl hdl, client & shard)
+inline void Aegis::onClose(websocketpp::connection_hdl hdl, client & shard)
 {
     m_log->info("Connection closed");
     shard.m_state = RECONNECTING;
@@ -627,8 +609,7 @@ inline void Aegis<bottype>::onClose(websocketpp::connection_hdl hdl, client & sh
     });
 }
 
-template<typename bottype>
-inline void Aegis<bottype>::onFail(websocketpp::connection_hdl hdl, client & shard)
+inline void Aegis::onFail(websocketpp::connection_hdl hdl, client & shard)
 {
     m_log->info("Connection failed");
     shard.m_state = RECONNECTING;
@@ -645,8 +626,7 @@ inline void Aegis<bottype>::onFail(websocketpp::connection_hdl hdl, client & sha
     });
 }
 
-template<typename bottype>
-inline void Aegis<bottype>::rest_thread()
+inline void Aegis::rest_thread()
 {
     using namespace std::chrono_literals;
     while (m_state != SHUTDOWN)
