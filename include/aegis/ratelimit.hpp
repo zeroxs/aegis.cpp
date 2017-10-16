@@ -73,7 +73,7 @@ public:
         return true;
     }
 
-    std::queue<std::tuple<std::string, std::string, std::string>> _queue;
+    std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_reply)>>> _queue;
 };
 
 class bucket_factory
@@ -115,22 +115,26 @@ public:
             v->limit = reply->limit;
             v->remaining = reply->remaining;
             v->reset = reply->reset;
+            if (std::get<3>(query) != nullptr)
+            {
+                std::get<3>(query)(std::move(reply));
+            }
         }
 
     }
 
-    void push(uint64_t id, std::string path, std::string content, std::string method)
+    void push(uint64_t id, std::string path, std::string content, std::string method, std::function<void(rest_reply)> callback = nullptr)
     {
 
         try
         {
             auto & bkt = _buckets.at(id);
-            bkt->_queue.emplace(path, content, method);
+            bkt->_queue.emplace(path, content, method, callback);
         }
         catch (std::out_of_range &)
         {
             auto & bkt = _buckets.emplace(id, std::make_shared<bucket>()).first->second;
-            bkt->_queue.emplace(path, content, method);
+            bkt->_queue.emplace(path, content, method, callback);
         }
     }
 
