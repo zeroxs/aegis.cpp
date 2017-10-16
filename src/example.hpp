@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include <stdint.h>
 #include <aegis/aegis.hpp>
 #include <aegis/client.hpp>
 #include <json.hpp>
@@ -260,7 +261,7 @@ public:
             };
             m_channels[channel_id].sendMessage(obj.dump(), bot);
             bot.set_state(SHUTDOWN);
-            bot.websocket().close(shard.m_connection, 1002, "");
+            bot.websocket().close(shard.m_connection, 1001, "");
             bot.stop_work();
             return true;
         }
@@ -271,8 +272,18 @@ public:
         }
         else if (toks[0] == "?shard")
         {
-            m_channels[channel_id].sendMessage(json({ { "content", fmt::format("I am shard#[{}]", shard.m_shardid) } }).dump(), bot);
+            m_channels[channel_id].sendMessage(fmt::format("I am shard#[{}]", shard.m_shardid), bot);
             return true;
+        }
+        else if (toks[0] == "?shards")
+        {
+            std::string s = "```\n";
+            for (auto & shard : bot.m_clients)
+            {
+                s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages\n", shard->m_shardid, 0, 0, 0, 0);
+            }
+            s += "```";
+            m_channels[channel_id].sendMessage(s, bot);
         }
 
         return true;

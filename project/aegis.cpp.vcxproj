@@ -15,7 +15,7 @@
     <ProjectGuid>{F5669477-DCF7-4490-BE64-355A375BFA3F}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>testbuild</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
     <ProjectName>aegis.cpp</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

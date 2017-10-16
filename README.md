@@ -4,13 +4,14 @@
 Aegis Library
 =======
 
-C++17 implementation for the [Discord API](https://discordapp.com/developers/docs/intro)
+C++17 library for interfacing with the [Discord API](https://discordapp.com/developers/docs/intro)
 
 # License #
 
 This project is licensed under the MIT license. See [LICENSE](https://github.com/zeroxs/aegis.cpp/blob/master/LICENSE)
 
 Libraries used:
+- [Asio](https://github.com/chriskohlhoff/asio)
 - [Websocketpp](https://github.com/zaphoyd/websocketpp)
 - [JSON for Modern C++](https://github.com/nlohmann/json)
 - [spdlog](https://github.com/gabime/spdlog)

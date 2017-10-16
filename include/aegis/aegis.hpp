@@ -35,6 +35,7 @@
 #include "guild.hpp"
 #include "client.hpp"
 #include "ratelimit.hpp"
+#include "utility.hpp"
 #include "snowflake.hpp"
 
 #include <cstdio>
@@ -72,6 +73,9 @@ using std::ref;
 namespace placeholders = std::placeholders;
 using namespace aegis::rest_limits;
 
+struct settings;
+
+using utility::check_setting;
 
 
 template<typename bottype>
@@ -117,8 +121,6 @@ public:
             delete c;
         m_work.reset();
         m_websocket.reset();
-        if (m_keepalivetimer)
-            m_keepalivetimer->cancel();
     }
 
     Aegis(const Aegis &) = delete;
@@ -178,7 +180,7 @@ public:
         // Create our websocket connection
         websocketcreate(ec);
         if (ec) { m_log->error("Websocket fail: {}", ec.message()); stop_work();  return; }
-        // Connect the websocket
+        // Connect the websocket[s]
         connect(ec, m_shardidmax);
         if (ec) { m_log->error("Connect fail: {}", ec.message()); stop_work(); return; }
         starttime = std::chrono::steady_clock::now();
@@ -227,15 +229,24 @@ public:
             }
         }
 
-        if constexpr (std::is_same<bottype, basebot>::value)
+        if constexpr (!check_setting<settings>::selfbot::test())
         {
-            m_shardidmax = ret["shards"];
-            m_log->info("Shard count: {}", m_shardidmax);
+            if constexpr (check_setting<settings>::force_shard_count::test())
+            {
+                m_shardidmax = settings::force_shard_count;
+                m_log->info("Forcing Shard count by config: {}", m_shardidmax);
+            }
+            else
+            {
+                m_shardidmax = ret["shards"];
+                m_log->info("Shard count: {}", m_shardidmax);
+            }
         }
         else
             m_shardidmax = 1;
 
-        gateway = ret["url"].get<std::string>();
+        m_getgateway = ret["url"].get<std::string>();
+        m_gatewayurl = m_getgateway + "/?encoding=json&v=6";
 
         m_websocket.clear_access_channels(websocketpp::log::alevel::all);
 
@@ -256,43 +267,47 @@ public:
     /// Initiate websocket connection
     void connect(std::error_code & ec, int32_t m_shardidmax)
     {
-        m_log->info("Websocket connecting");
+        m_log->info("Websocket[s] connecting");
 
-        auto shard = new client();
-        m_gatewayurl = gateway + "/?encoding=json&v=6";
-        shard->m_connection = m_websocket.get_connection(m_gatewayurl, ec);
-        shard->m_shardid = 0;
-        shard->cb = []() {};
-        
-        shard->m_connection->set_message_handler([_shard = shard, this](websocketpp::connection_hdl hdl, message_ptr msg)
-        {
-            this->onMessage(hdl, msg, *_shard);
-        });
-        shard->m_connection->set_open_handler([_shard = shard, this](websocketpp::connection_hdl hdl)
-        {
-            this->onConnect(hdl, *_shard);
-        });
-        shard->m_connection->set_close_handler([_shard = shard, this](websocketpp::connection_hdl hdl)
-        {
-            this->onClose(hdl, *_shard);
-        });
-        shard->m_connection->set_fail_handler([_shard = shard, this](websocketpp::connection_hdl hdl)
-        {
-            this->onFail(hdl, *_shard);
-        });
-        shard->m_connection->set_termination_handler([_shard = shard, this](websocketpp::connection_hdl hdl)
-        {
-            this->onTerminate(hdl, *_shard);
-        });
+        int k = 0;
 
-        if (ec)
+        for (auto & shard : m_clients)
         {
-            delete shard;
-            m_log->error("Websocket connection failed: {0}", ec.message());
-            return;
+            auto shard = new client();
+            shard->m_connection = m_websocket.get_connection(m_gatewayurl, ec);
+            shard->m_shardid = k++;
+
+            setup_callbacks(*shard);
+
+            if (ec)
+            {
+                delete shard;
+                m_log->error("Websocket connection failed: {0}", ec.message());
+                return;
+            }
+            m_websocket.connect(shard->m_connection);
+            m_clients.push_back(shard);
         }
-        m_websocket.connect(shard->m_connection);
-        m_clients.push_back(shard);
+    }
+
+    void setup_callbacks(client & shard)
+    {
+        shard.m_connection->set_message_handler([&shard, this](websocketpp::connection_hdl hdl, message_ptr msg)
+        {
+            this->onMessage(hdl, msg, shard);
+        });
+        shard.m_connection->set_open_handler([&shard, this](websocketpp::connection_hdl hdl)
+        {
+            this->onConnect(hdl, shard);
+        });
+        shard.m_connection->set_close_handler([&shard, this](websocketpp::connection_hdl hdl)
+        {
+            this->onClose(hdl, shard);
+        });
+        shard.m_connection->set_fail_handler([&shard, this](websocketpp::connection_hdl hdl)
+        {
+            this->onFail(hdl, shard);
+        });
     }
 
     void start_work()
@@ -410,7 +425,7 @@ public:
 
     uint32_t m_shardidmax;
 
-    std::string gateway;
+    std::string m_getgateway;
 
     std::vector<client*> m_clients;
     std::vector<std::shared_ptr<member>> m_members;
@@ -466,9 +481,6 @@ private:
     // Bot's token
     std::string m_token;
 
-    // 
-    std::shared_ptr<asio::steady_timer> m_keepalivetimer;
-
     // Work object for ASIO
     work_ptr m_work;
 
@@ -482,7 +494,6 @@ private:
     void onConnect(websocketpp::connection_hdl hdl, client & shard);
     void onClose(websocketpp::connection_hdl hdl, client & shard);
     void onFail(websocketpp::connection_hdl hdl, client & shard);
-    void onTerminate(websocketpp::connection_hdl hdl, client & shard);
     void processReady(json & d, client & shard);
     void keepAlive(const asio::error_code& error, const int ms, client & shard);
 

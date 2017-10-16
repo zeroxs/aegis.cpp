@@ -96,8 +96,9 @@ inline void Aegis<bottype>::keepAlive(const asio::error_code & ec, const int ms,
             if (shard.m_heartbeatack != 0 && shard.m_lastheartbeat > shard.m_heartbeatack)
             {
                 m_log->error("Heartbeat ack not received. Reconnecting.");
-                m_websocket.close(shard.m_connection, 1002, "");
+                m_websocket.close(shard.m_connection, 1001, "");
                 shard.m_state = RECONNECTING;
+                shard.do_reset();
                 shard.m_reconnect_timer = m_websocket.set_timer(10000, [&shard, this](const asio::error_code & ec)
                 {
                     if (ec == asio::error::operation_aborted)
@@ -105,6 +106,7 @@ inline void Aegis<bottype>::keepAlive(const asio::error_code & ec, const int ms,
                     shard.m_state = CONNECTING;
                     asio::error_code wsec;
                     shard.m_connection = m_websocket.get_connection(m_gatewayurl, wsec);
+                    setup_callbacks(shard);
                     m_websocket.connect(shard.m_connection);
                 });
 
@@ -483,6 +485,7 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
             {
                 if constexpr (std::is_same<bottype, basebot>::value)
                 {
+                    m_log->error("Unable to resume connection. Starting new");
                     json obj = {
                         { "op", 2 },
                         {
@@ -492,8 +495,8 @@ inline void Aegis<bottype>::onMessage(websocketpp::connection_hdl hdl, message_p
                                 { "properties",
                                 {
                                     { "$os", utility::platform::get_platform() },
-                                    { "$browser", "aegis" },
-                                    { "$device", "aegis" }
+                                    { "$browser", "aegis.cpp" },
+                                    { "$device", "aegis.cpp" }
                                 }
                                 },
                                 { "shard", json::array({ shard.m_shardid, m_shardidmax }) },
@@ -536,28 +539,48 @@ inline void Aegis<bottype>::onConnect(websocketpp::connection_hdl hdl, client & 
     m_log->info("Connection established");
     shard.m_state = CONNECTING;
 
-    if constexpr (std::is_same<bottype, basebot>::value)
+    if constexpr(!check_setting<settings>::selfbot::test())
     {
-        json obj = {
-            { "op", 2 },
-            {
-                "d",
+        json obj;
+        if (shard.m_sessionId.empty())
+        {
+            obj = {
+                { "op", 2 },
                 {
-                    { "token", m_token },
-                    { "properties",
+                    "d",
                     {
-                        { "$os", utility::platform::get_platform() },
-                        { "$browser", "aegis" },
-                        { "$device", "aegis" }
+                        { "token", m_token },
+                        { "properties",
+                        {
+                            { "$os", utility::platform::get_platform() },
+                            { "$browser", "aegis.cpp" },
+                            { "$device", "aegis.cpp" }
+                        }
+                        },
+                        { "shard", json::array({ shard.m_shardid, m_shardidmax }) },
+                        { "compress", true },
+                        { "large_threshhold", 250 },
+                        { "presence",{ { "game",{ { "name", self_presence },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
                     }
-                    },
-                    { "shard", json::array({ shard.m_shardid, m_shardidmax }) },
-                    { "compress", true },
-                    { "large_threshhold", 250 },
-                    { "presence",{ { "game",{ { "name", self_presence },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
                 }
-            }
-        };
+            };
+        }
+        else
+        {
+            m_log->info("Attemping RESUME with id : {}", shard.m_sessionId);
+            obj = {
+                { "op", 6 },
+                {
+                    "d",
+                    {
+                        { "token", m_token },
+                        { "session_id", shard.m_sessionId },
+                        { "seq", shard.m_sequence }
+                    }
+                }
+            };
+        }
+        m_log->info(obj.dump());
         m_websocket.send(hdl, obj.dump(), websocketpp::frame::opcode::text);
     }
     else
@@ -571,8 +594,8 @@ inline void Aegis<bottype>::onConnect(websocketpp::connection_hdl hdl, client & 
                     { "properties",
                     {
                         { "$os", utility::platform::get_platform() },
-                        { "$browser", "aegis" },
-                        { "$device", "aegis" }
+                        { "$browser", "aegis.cpp" },
+                        { "$device", "aegis.cpp" }
                     }
                     },
                     { "compress", true },
@@ -589,16 +612,16 @@ template<typename bottype>
 inline void Aegis<bottype>::onClose(websocketpp::connection_hdl hdl, client & shard)
 {
     m_log->info("Connection closed");
-    if (m_keepalivetimer)
-        m_keepalivetimer->cancel();
     shard.m_state = RECONNECTING;
-    shard.m_reconnect_timer = m_websocket.set_timer(10000, [&shard, this](const asio::error_code & ec)
+    shard.do_reset();
+    shard.m_reconnect_timer = m_websocket.set_timer(10000, [&](const asio::error_code & ec)
     {
         if (ec == asio::error::operation_aborted)
             return;
         shard.m_state = CONNECTING;
         asio::error_code wsec;
         shard.m_connection = m_websocket.get_connection(m_gatewayurl, wsec);
+        setup_callbacks(shard);
         m_websocket.connect(shard.m_connection);
 
     });
@@ -608,34 +631,16 @@ template<typename bottype>
 inline void Aegis<bottype>::onFail(websocketpp::connection_hdl hdl, client & shard)
 {
     m_log->info("Connection failed");
-    if (m_keepalivetimer)
-        m_keepalivetimer->cancel();
     shard.m_state = RECONNECTING;
-    shard.m_reconnect_timer = m_websocket.set_timer(10000, [&shard, this](const asio::error_code & ec)
+    shard.do_reset();
+    shard.m_reconnect_timer = m_websocket.set_timer(10000, [&](const asio::error_code & ec)
     {
         if (ec == asio::error::operation_aborted)
             return;
         shard.m_state = CONNECTING;
         asio::error_code wsec;
         shard.m_connection = m_websocket.get_connection(m_gatewayurl, wsec);
-        m_websocket.connect(shard.m_connection);
-    });
-}
-
-template<typename bottype>
-inline void Aegis<bottype>::onTerminate(websocketpp::connection_hdl hdl, client & shard)
-{
-    m_log->info("Connection terminated");
-    if (m_keepalivetimer)
-        m_keepalivetimer->cancel();
-    shard.m_state = RECONNECTING;
-    shard.m_reconnect_timer = m_websocket.set_timer(20000, [&shard, this](const asio::error_code & ec)
-    {
-        if (ec == asio::error::operation_aborted)
-            return;
-        shard.m_state = CONNECTING;
-        asio::error_code wsec;
-        shard.m_connection = m_websocket.get_connection(m_gatewayurl, wsec);
+        setup_callbacks(shard);
         m_websocket.connect(shard.m_connection);
     });
 }

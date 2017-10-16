@@ -52,6 +52,14 @@ public:
 
     std::function<void()> cb;
 
+    void do_reset()
+    {
+        m_heartbeatack = 0;
+        m_connection.reset();
+        m_keepalivetimer->cancel();
+        m_keepalivetimer.reset();
+    }
+
     // Websocket++ socket connection
     websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr m_connection;
     websocketpp::connection_hdl hdl;

@@ -25,19 +25,16 @@
 
 
 #include "example.hpp"
-#include <aegis/aegis.hpp>
 
 
 using aegis::Aegis;
 using example_bot::example;
-
 
 int main(int argc, char * argv[])
 {
     auto err = spd::stdout_color_mt("err");
     spd::set_pattern("%Y-%m-%d %H:%M:%S.%e %l [th#%t] : %v");
 
-    
     try
     {
         // Create bot with token

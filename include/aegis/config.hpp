@@ -40,6 +40,12 @@
 namespace aegis
 {
 
+struct settings
+{
+    static constexpr bool selfbot = false;
+    static constexpr uint64_t owner_id = 171000788183678976;
+    static constexpr uint32_t force_shard_count = 0;
+};
 
 enum state
 {
