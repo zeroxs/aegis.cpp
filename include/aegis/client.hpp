@@ -56,9 +56,13 @@ public:
     void do_reset()
     {
         m_heartbeatack = 0;
-        m_connection.reset();
-        m_keepalivetimer->cancel();
-        m_keepalivetimer.reset();
+        if (m_connection != nullptr)
+            m_connection.reset();
+        if (m_keepalivetimer != nullptr)
+        {
+            m_keepalivetimer->cancel();
+            m_keepalivetimer.reset();
+        }
     }
 
     // Websocket++ socket connection
