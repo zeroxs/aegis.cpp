@@ -32,13 +32,13 @@ using example_bot::example;
 
 int main(int argc, char * argv[])
 {
-    auto err = spd::stdout_color_mt("err");
-    spd::set_pattern("%Y-%m-%d %H:%M:%S.%e %l [th#%t] : %v");
+    auto err = spdlog::stdout_color_mt("err");
+    spdlog::set_pattern("%Y-%m-%d %H:%M:%S.%e %l [th#%t] : %v");
 
     try
     {
         // Create bot with token
-        Aegis<aegis::basebot> bot("TOKEN");
+        Aegis bot("TOKEN");
         
         // Bot will automatically set this presence when it connects
         bot.self_presence = "with my friends";
