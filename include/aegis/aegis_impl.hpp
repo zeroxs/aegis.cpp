@@ -110,7 +110,8 @@ inline void Aegis::keepAlive(const asio::error_code & ec, const int ms, client &
             obj["d"] = shard.m_sequence;
             obj["op"] = 1;
 
-            m_websocket.send(shard.m_connection, obj.dump(), websocketpp::frame::opcode::text);
+            m_log->debug("Shard#{}: {}", shard.m_shardid, obj.dump());
+            shard.m_connection->send(obj.dump(), websocketpp::frame::opcode::text);
             shard.m_lastheartbeat = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
             shard.m_keepalivetimer = m_websocket.set_timer(ms, std::bind(&Aegis::keepAlive, this, std::placeholders::_1, ms, shard));
         }
@@ -235,7 +236,7 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
             ss << '\0';
             payload = ss.str();
         }
-        
+
         result = json::parse(payload);
 
         if (!result["s"].is_null())
@@ -498,7 +499,7 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
             }
             if (result["op"] == 9)
             {
-                m_log->error("Unable to resume or invalid connection. Starting new");
+                m_log->error("Shard#{} : Unable to resume or invalid connection. Starting new", shard.m_shardid);
                 json obj = {
                     { "op", 2 },
                     {
@@ -519,7 +520,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         }
                     }
                 };
-                m_websocket.send(hdl, obj.dump(), websocketpp::frame::opcode::text);
+                m_log->debug("Shard#{}: {}", shard.m_shardid, obj.dump());
+                shard.m_connection->send(obj.dump(), websocketpp::frame::opcode::text);
             }
             if (result["op"] == 10)
             {
@@ -591,8 +593,8 @@ inline void Aegis::onConnect(websocketpp::connection_hdl hdl, client & shard)
                 }
             };
         }
-        m_log->info(obj.dump());
-        m_websocket.send(hdl, obj.dump(), websocketpp::frame::opcode::text);
+        m_log->debug("Shard#{}: {}", shard.m_shardid, obj.dump());
+        shard.m_connection->send(obj.dump(), websocketpp::frame::opcode::text);
     }
     else
     {
@@ -615,7 +617,8 @@ inline void Aegis::onConnect(websocketpp::connection_hdl hdl, client & shard)
                 }
             }
         };
-        m_websocket.send(hdl, obj.dump(), websocketpp::frame::opcode::text);
+        m_log->debug("Shard#{}: {}", shard.m_shardid, obj.dump());
+        shard.m_connection->send(obj.dump(), websocketpp::frame::opcode::text);
     }
 }
 
@@ -634,23 +637,6 @@ inline void Aegis::onClose(websocketpp::connection_hdl hdl, client & shard)
         setup_callbacks(shard);
         m_websocket.connect(shard.m_connection);
 
-    });
-}
-
-inline void Aegis::onFail(websocketpp::connection_hdl hdl, client & shard)
-{
-    m_log->info("Connection failed");
-    shard.m_state = RECONNECTING;
-    shard.do_reset();
-    shard.m_reconnect_timer = m_websocket.set_timer(10000, [&](const asio::error_code & ec)
-    {
-        if (ec == asio::error::operation_aborted)
-            return;
-        shard.m_state = CONNECTING;
-        asio::error_code wsec;
-        shard.m_connection = m_websocket.get_connection(m_gatewayurl, wsec);
-        setup_callbacks(shard);
-        m_websocket.connect(shard.m_connection);
     });
 }
 

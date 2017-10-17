@@ -63,7 +63,6 @@ namespace aegis
 namespace spd = spdlog;
 using namespace std::literals;
 using namespace std::chrono;
-namespace placeholders = std::placeholders;
 using namespace aegis::rest_limits;
 using json = nlohmann::json;
 using std::function;
@@ -180,9 +179,12 @@ public:
         // Create our websocket connection
         websocketcreate(ec);
         if (ec) { m_log->error("Websocket fail: {}", ec.message()); stop_work();  return; }
+        std::thread make_connections([&]
+        {
+            connect(ec);
+            if (ec) { m_log->error("Connect fail: {}", ec.message()); stop_work(); return; }
+        });
         // Connect the websocket[s]
-        connect(ec);
-        if (ec) { m_log->error("Connect fail: {}", ec.message()); stop_work(); return; }
         starttime = std::chrono::steady_clock::now();
         // Run the bot
         run();
@@ -271,11 +273,9 @@ public:
 
         for (uint32_t k = 0; k < m_shardidmax; ++k)
         {
-            auto shard = new client(*this);
+            auto shard = new client();
             shard->m_connection = m_websocket.get_connection(m_gatewayurl, ec);
             shard->m_shardid = k;
-
-            setup_callbacks(*shard);
 
             if (ec)
             {
@@ -283,29 +283,20 @@ public:
                 m_log->error("Websocket connection failed: {0}", ec.message());
                 return;
             }
+
+            setup_callbacks(*shard);
+
             m_websocket.connect(shard->m_connection);
             m_clients.push_back(shard);
+            std::this_thread::sleep_for(5200ms);
         }
     }
 
     void setup_callbacks(client & shard)
     {
-        shard.m_connection->set_message_handler([&shard, this](websocketpp::connection_hdl hdl, message_ptr msg)
-        {
-            this->onMessage(hdl, msg, shard);
-        });
-        shard.m_connection->set_open_handler([&shard, this](websocketpp::connection_hdl hdl)
-        {
-            this->onConnect(hdl, shard);
-        });
-        shard.m_connection->set_close_handler([&shard, this](websocketpp::connection_hdl hdl)
-        {
-            this->onClose(hdl, shard);
-        });
-        shard.m_connection->set_fail_handler([&shard, this](websocketpp::connection_hdl hdl)
-        {
-            this->onFail(hdl, shard);
-        });
+        shard.m_connection->set_message_handler(std::bind(&Aegis::onMessage, this, std::placeholders::_1, std::placeholders::_2, shard));
+        shard.m_connection->set_open_handler(std::bind(&Aegis::onConnect, this, std::placeholders::_1, shard));
+        shard.m_connection->set_close_handler(std::bind(&Aegis::onClose, this, std::placeholders::_1, shard));
     }
 
     void start_work()
@@ -495,7 +486,6 @@ private:
     void onMessage(websocketpp::connection_hdl hdl, message_ptr msg, client & shard);
     void onConnect(websocketpp::connection_hdl hdl, client & shard);
     void onClose(websocketpp::connection_hdl hdl, client & shard);
-    void onFail(websocketpp::connection_hdl hdl, client & shard);
     void processReady(json & d, client & shard);
     void keepAlive(const asio::error_code& error, const int ms, client & shard);
 

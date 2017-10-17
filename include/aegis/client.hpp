@@ -43,12 +43,11 @@ class Aegis;
 class client
 {
 public:
-    client(Aegis & main)
+    client()
         : m_heartbeatack(0)
         , m_lastheartbeat(0)
         , m_sequence(0)
         , m_state(aegis::UNINITIALIZED)
-        , m_main(main)
     {
         starttime = std::chrono::steady_clock::now();
     }
@@ -84,8 +83,6 @@ public:
     std::shared_ptr<asio::steady_timer> m_reconnect_timer;
 
     std::string m_sessionId;
-
-    Aegis & m_main;
 
     std::chrono::steady_clock::time_point starttime;
     std::string uptime() const
