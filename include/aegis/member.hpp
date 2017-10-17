@@ -34,7 +34,8 @@ namespace aegis
 class member
 {
 public:
-    explicit member();
+    explicit member(snowflake id) : member_id(id) {}
+    snowflake member_id = 0;
 };
 
 }

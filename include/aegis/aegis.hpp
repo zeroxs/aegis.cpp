@@ -28,8 +28,6 @@
 #include "config.hpp"
 #include "error.hpp"
 #include "structs.hpp"
-#include "selfbot.hpp"
-#include "basebot.hpp"
 #include "member.hpp"
 #include "channel.hpp"
 #include "guild.hpp"
@@ -59,24 +57,27 @@
 
 #include <json.hpp>
 
-namespace spd = spdlog;
-using json = nlohmann::json;
-using namespace std::literals;
-using namespace std::chrono;
-
 namespace aegis
 {
 
+namespace spd = spdlog;
+using namespace std::literals;
+using namespace std::chrono;
+namespace placeholders = std::placeholders;
+using namespace aegis::rest_limits;
+using json = nlohmann::json;
 using std::function;
 using std::bind;
 using std::ref;
-namespace placeholders = std::placeholders;
-using namespace aegis::rest_limits;
 
 struct settings;
 
 using utility::check_setting;
 
+void to_json(json& j, const snowflake& s)
+{
+    j = json{ s };
+}
 
 class Aegis
 {
@@ -268,7 +269,7 @@ public:
     {
         m_log->info("Websocket[s] connecting");
 
-        for (int k = 0; k < m_shardidmax; ++k)
+        for (uint32_t k = 0; k < m_shardidmax; ++k)
         {
             auto shard = new client(*this);
             shard->m_connection = m_websocket.get_connection(m_gatewayurl, ec);
@@ -372,11 +373,6 @@ public:
         }
     }
 
-    state get_state() const
-    {
-        return m_state;
-    }
-
     /// User callbacks
     c_inject i_typing_start;
     c_inject i_message_create;
@@ -410,7 +406,7 @@ public:
 
     ratelimiter & ratelimit() { return m_ratelimit; }
     websocket_o & websocket() { return m_websocket; }
-    state get_state() { return m_state; }
+    state get_state() const { return m_state; }
     void set_state(state s) { m_state = s; }
 
     uint32_t m_shardidmax;
@@ -418,9 +414,24 @@ public:
     std::string m_getgateway;
 
     std::vector<client*> m_clients;
-    std::vector<std::shared_ptr<member>> m_members;
-    std::vector<std::shared_ptr<channel>> m_channels;
-    std::vector<std::shared_ptr<guild>> m_guilds;
+    std::map<int64_t, std::shared_ptr<member>> m_members;
+    std::map<int64_t, std::unique_ptr<channel>> m_channels;//for DMs
+    std::map<int64_t, std::unique_ptr<guild>> m_guilds;
+
+    member & get_member(int64_t id)
+    {
+        return *m_members[id];
+    }
+
+    channel & get_channel(int64_t id)
+    {
+        return *m_channels[id];
+    }
+
+    guild & get_guild(int64_t id)
+    {
+        return *m_guilds[id];
+    }
 
     json self_presence;
 

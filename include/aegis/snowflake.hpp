@@ -28,7 +28,7 @@
 
 #include <inttypes.h>
 #include <type_traits>
-#include <spdlog/spdlog.h>
+#include <spdlog/fmt/fmt.h>
 
 
 namespace aegis
@@ -47,14 +47,9 @@ public:
         return *this;
     }
 
-    operator int64_t()
+    operator int64_t() const
     {
         return static_cast<int64_t>(m_snowflake);
-    }
-
-    operator uint64_t()
-    {
-        return static_cast<uint64_t>(m_snowflake);
     }
 
     constexpr std::tuple<int64_t, int8_t, int8_t, int16_t> get_all()
@@ -117,9 +112,9 @@ public:
         return c_get_timestamp(snowflake) + _discordEpoch;
     };
 
-    int64_t operator()(void)
+    friend std::ostream&operator<<(std::ostream&os, const snowflake &s)
     {
-        return m_snowflake;
+        return os << s.m_snowflake;
     }
 
 private:

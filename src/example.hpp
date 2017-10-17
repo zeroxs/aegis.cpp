@@ -46,53 +46,8 @@ using namespace aegis;
 class example
 {
 public:
-
-    //////////////////////////////////////////////////////////////////////////
-
-    class member
-    {
-    public:
-        member() {}
-        member(snowflake id) : member_id(id) {}
-        snowflake member_id = 0;
-
-    };
-
-    class channel
-    {
-    public:
-        channel() {}
-        channel(snowflake id, snowflake g_id) : channel_snowflake(id), guild_snowflake(g_id) {}
-        snowflake channel_snowflake = 0;
-        snowflake guild_snowflake = 0;
-        void sendMessage(std::string content, Aegis & bot)
-        {
-            json obj;
-            obj["content"] = content;
-            bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_snowflake, fmt::format("/channels/{}/messages", channel_snowflake()), obj.dump(), "POST");
-        }
-        void sendMessageEmbed(json content, json embed, Aegis & bot)
-        {
-            json obj;
-            if (!content.empty())
-                obj["content"] = content;
-            obj["embed"] = embed;
-
-            bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_snowflake, fmt::format("/channels/{:d}/messages", channel_snowflake()), obj.dump(), "POST");
-        }
-    };
-
-    class guild
-    {
-    public:
-        guild() {}
-        guild(snowflake id) : guild_snowflake(id) {}
-        snowflake guild_snowflake = 0;
-
-    };
-
-    //////////////////////////////////////////////////////////////////////////
-
+    example() = default;
+    ~example() = default;
 
     template<typename Out>
     void split(const std::string &s, char delim, Out result)
@@ -115,13 +70,6 @@ public:
     }
 
     using c_inject = std::function<bool(json & msg, client & shard, Aegis & bot)>;
-
-    example() = default;
-    ~example() = default;
-
-    std::map<int64_t, member> m_members;
-    std::map<int64_t, guild> m_guilds;
-    std::map<int64_t, channel> m_channels;
 
     // Functions you wish you hook into
     void inject(aegis::Aegis & bot)
@@ -168,12 +116,12 @@ public:
             return true;
         if (toks[0] == "?info")
         {
-            uint64_t guild_count = m_guilds.size();
-            uint64_t member_count = m_members.size();
+            uint64_t guild_count = bot.m_guilds.size();
+            uint64_t member_count = bot.m_members.size();
             uint64_t member_count_unique = 0;
             uint64_t member_online_count = 0;
             uint64_t member_dnd_count = 0;
-            uint64_t channel_count = m_channels.size();
+            uint64_t channel_count = bot.m_channels.size();
             uint64_t channel_text_count = 0;
             uint64_t channel_voice_count = 0;
             uint64_t member_count_active = 0;
@@ -203,7 +151,7 @@ public:
                 /*for (auto & guild : AegisBot::guildlist)
                 member_count_active += guild.second->memberlist.size();*/
 
-                member_count = m_members.size();
+                member_count = bot.m_members.size();
             }
 
             std::string members = fmt::format("{0} seen online", member_count);
@@ -239,7 +187,7 @@ public:
                 { "footer",{ { "icon_url", "https://cdn.discordapp.com/emojis/289276304564420608.png" },{ "text", "Made in c++ running aegis library" } } }
             };
 
-            m_channels[channel_id].sendMessageEmbed(nullptr, t, bot);
+            bot.get_channel(channel_id).create_message_embed(nullptr, t);
             return true;
         }
         else if (toks[0] == "?source")
@@ -250,7 +198,7 @@ public:
                 { "color", rand() % 0xFFFFFF }
             };
             
-            m_channels[channel_id].sendMessageEmbed({}, t, bot);
+            bot.get_channel(channel_id).create_message_embed({}, t);
         }
         else if (toks[0] == "?exit")
         {
@@ -258,7 +206,7 @@ public:
             {
                 { "content", "exiting..." }
             };
-            m_channels[channel_id].sendMessage(obj.dump(), bot);
+            bot.get_channel(channel_id).create_message(obj.dump());
             bot.set_state(SHUTDOWN);
             bot.websocket().close(shard.m_connection, 1001, "");
             bot.stop_work();
@@ -266,12 +214,12 @@ public:
         }
         else if (toks[0] == "?test")
         {
-            m_channels[channel_id].sendMessage("test message", bot);
+            bot.get_channel(channel_id).create_message("test message");
             return true;
         }
         else if (toks[0] == "?shard")
         {
-            m_channels[channel_id].sendMessage(fmt::format("I am shard#[{}]", shard.m_shardid), bot);
+            bot.get_channel(channel_id).create_message(fmt::format("I am shard#[{}]", shard.m_shardid));
             return true;
         }
         else if (toks[0] == "?shards")
@@ -282,7 +230,15 @@ public:
                 s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages\n", shard->m_shardid, 0, 0, 0, 0);
             }
             s += "```";
-            m_channels[channel_id].sendMessage(s, bot);
+            bot.get_channel(channel_id).create_message(s);
+        }
+        else if (toks[0] == "?createchannel")
+        {
+            bot.get_guild(bot.get_channel(channel_id).m_guild_snowflake).create_text_channel(toks[1], 0, false, {});
+        }
+        else if (toks[0] == "?deletechannel")
+        {
+            bot.get_channel(channel_id).delete_channel();
         }
 
         return true;
@@ -307,7 +263,7 @@ public:
     {
         snowflake guild_id = std::stoll(msg["d"]["id"].get<std::string>());
 
-        m_guilds.try_emplace(guild_id, guild(guild_id));
+        bot.m_guilds.try_emplace(guild_id, new guild(shard, guild_id, bot.ratelimit().get(rest_limits::bucket_type::GUILD)));
 
 
         if (msg["d"].count("channels"))
@@ -317,7 +273,7 @@ public:
             for (auto & channel_r : channels)
             {
                 snowflake channel_id = std::stoll(channel_r["id"].get<std::string>());
-                m_channels.try_emplace(channel_id, channel(channel_id, guild_id ));
+                bot.m_channels.try_emplace(channel_id, new channel(channel_id, guild_id, bot.ratelimit().get(rest_limits::bucket_type::CHANNEL)));
             }
         }
 
@@ -329,7 +285,7 @@ public:
             for (auto & member_r : members)
             {
                 snowflake member_id = std::stoll(member_r["user"]["id"].get<std::string>());
-                m_members.try_emplace(member_id, member(member_id));
+                bot.m_members.try_emplace(member_id, new member(member_id));
             }
         }
 

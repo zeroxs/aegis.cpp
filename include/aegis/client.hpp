@@ -38,19 +38,20 @@
 namespace aegis
 {
 
+class Aegis;
+
 class client
 {
 public:
-    client()
+    client(Aegis & main)
         : m_heartbeatack(0)
         , m_lastheartbeat(0)
         , m_sequence(0)
         , m_state(aegis::UNINITIALIZED)
+        , m_main(main)
     {
         starttime = std::chrono::steady_clock::now();
     }
-
-    std::function<void()> cb;
 
     void do_reset()
     {
@@ -80,8 +81,10 @@ public:
 
     std::string m_sessionId;
 
+    Aegis & m_main;
+
     std::chrono::steady_clock::time_point starttime;
-    std::string uptime()
+    std::string uptime() const
     {
         std::stringstream ss;
         std::chrono::steady_clock::time_point timenow = std::chrono::steady_clock::now();

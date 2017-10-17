@@ -117,7 +117,7 @@ public:
             v->reset = reply->reset;
             if (std::get<3>(query) != nullptr)
             {
-                std::get<3>(query)(std::move(reply));
+                std::get<3>(query)(std::move(reply.value()));
             }
         }
 

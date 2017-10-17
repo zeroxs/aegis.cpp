@@ -29,13 +29,24 @@
 #include <string>
 #include <functional>
 #include <websocketpp/http/constants.hpp>
+#include "snowflake.hpp"
+#include <json.hpp>
 
 namespace aegis
 {
 
-class member;
-class channel;
-class guild;
+struct perm_overwrite
+{
+    snowflake id;
+    //either "role" or "member"
+    std::string type;
+    int64_t allow;
+    int64_t deny;
+    nlohmann::json make()
+    {
+        return { { "id", id }, { "type", type }, { "allow", allow }, { "deny", deny } };
+    }
+};
 
 struct rest_reply
 {
@@ -46,20 +57,6 @@ struct rest_reply
     int64_t reset = 0;
     int32_t retry = 0;
     std::string content;
-};
-
-
-template<typename bottype>
-struct rest_message
-{
-    member * _member;
-    channel * _channel;
-    guild * _guild;
-    std::string content;
-    std::string cmd;
-    std::string method;
-    std::string endpoint;
-    std::string query;
 };
 
 }

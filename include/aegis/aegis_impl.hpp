@@ -73,7 +73,7 @@ inline void Aegis::processReady(json & d, client & shard)
     if (m_mention.size() == 0)
     {
         std::stringstream ss;
-        ss << "<@" << m_snowflake() << ">";
+        ss << "<@" << m_snowflake << ">";
         m_mention = ss.str();
     }
     m_isuserset = true;

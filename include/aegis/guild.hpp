@@ -27,14 +27,38 @@
 
 
 #include <string>
+#include "client.hpp"
+#include "ratelimit.hpp"
+#include "channel.hpp"
+#include "member.hpp"
+#include <json.hpp>
 
 namespace aegis
 {
 
+using rest_limits::bucket_factory;
+using json = nlohmann::json;
+
 class guild
 {
 public:
-    explicit guild();
+    explicit guild(client & shard, snowflake id, bucket_factory & ratelimit)
+        : m_shard(shard)
+        , m_snowflake(id)
+        , m_ratelimit(ratelimit)
+        , m_log(spdlog::get("aegis"))
+    {
+
+    }
+
+    client m_shard;
+    snowflake m_snowflake;
+    bucket_factory & m_ratelimit;
+    std::shared_ptr<spdlog::logger> m_log;
+
+    std::map<int64_t, std::unique_ptr<channel>> m_channels;
+    std::map<int64_t, std::shared_ptr<member>> m_members;
+
 };
 
 }
