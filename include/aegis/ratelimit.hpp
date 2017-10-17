@@ -110,7 +110,6 @@ public:
                 *global_limit = (time + reply->retry);
                 return;
             }
-            v->_queue.pop();
 
             v->limit = reply->limit;
             v->remaining = reply->remaining;
@@ -119,11 +118,13 @@ public:
             {
                 std::get<3>(query)(std::move(reply.value()));
             }
+
+            v->_queue.pop();
         }
 
     }
 
-    void push(uint64_t id, std::string path, std::string content, std::string method, std::function<void(rest_reply)> callback = nullptr)
+    void push(uint64_t id, std::string path, std::string content, std::string method, std::function<void(rest_reply)> callback = {})
     {
 
         try
@@ -146,7 +147,8 @@ public:
 enum bucket_type
 {
     GUILD = 0,
-    CHANNEL = 1
+    CHANNEL = 1,
+    EMOJI = 2
 };
 
 

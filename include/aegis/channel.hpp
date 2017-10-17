@@ -42,10 +42,11 @@ using rest_limits::bucket_factory;
 class channel
 {
 public:
-    explicit channel(snowflake id, snowflake guild_id, bucket_factory & ratelimit)
+    explicit channel(snowflake id, snowflake guild_id, bucket_factory & ratelimit, bucket_factory & emoji)
         : m_snowflake(id)
         , m_guild_snowflake(guild_id)
         , m_ratelimit(ratelimit)
+        , m_emoji(emoji)
         , m_log(spdlog::get("aegis"))
     {
 
