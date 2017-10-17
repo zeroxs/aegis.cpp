@@ -187,7 +187,7 @@ public:
                 { "footer",{ { "icon_url", "https://cdn.discordapp.com/emojis/289276304564420608.png" },{ "text", "Made in c++ running aegis library" } } }
             };
 
-            bot.get_channel(channel_id).create_message_embed(nullptr, t);
+            bot.get_channel(channel_id).create_message_embed({}, t);
             return true;
         }
         else if (toks[0] == "?source")
@@ -261,34 +261,6 @@ public:
 
     bool guild_create(json & msg, client & shard, Aegis & bot)
     {
-        snowflake guild_id = std::stoll(msg["d"]["id"].get<std::string>());
-
-        bot.m_guilds.try_emplace(guild_id, new guild(shard, guild_id, bot.ratelimit().get(rest_limits::bucket_type::GUILD)));
-
-
-        if (msg["d"].count("channels"))
-        {
-            json channels = msg["d"]["channels"];
-
-            for (auto & channel_r : channels)
-            {
-                snowflake channel_id = std::stoll(channel_r["id"].get<std::string>());
-                bot.m_channels.try_emplace(channel_id, new channel(channel_id, guild_id, bot.ratelimit().get(rest_limits::bucket_type::CHANNEL)));
-            }
-        }
-
-
-        if (msg["d"].count("members"))
-        {
-            json members = msg["d"]["members"];
-
-            for (auto & member_r : members)
-            {
-                snowflake member_id = std::stoll(member_r["user"]["id"].get<std::string>());
-                bot.m_members.try_emplace(member_id, new member(member_id));
-            }
-        }
-
         return true;
     }
 

@@ -275,6 +275,34 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                 }
                 else if (cmd == "GUILD_CREATE")
                 {
+                    snowflake guild_id = std::stoll(result["d"]["id"].get<std::string>());
+
+                    m_guilds.try_emplace(guild_id, new guild(shard, guild_id, ratelimit().get(rest_limits::bucket_type::GUILD)));
+
+
+                    if (result["d"].count("channels"))
+                    {
+                        json channels = result["d"]["channels"];
+
+                        for (auto & channel_r : channels)
+                        {
+                            snowflake channel_id = std::stoll(channel_r["id"].get<std::string>());
+                            m_channels.try_emplace(channel_id, new channel(channel_id, guild_id, ratelimit().get(rest_limits::bucket_type::CHANNEL), ratelimit().get(rest_limits::bucket_type::EMOJI)));
+                        }
+                    }
+
+
+                    if (result["d"].count("members"))
+                    {
+                        json members = result["d"]["members"];
+
+                        for (auto & member_r : members)
+                        {
+                            snowflake member_id = std::stoll(member_r["user"]["id"].get<std::string>());
+                            m_members.try_emplace(member_id, new member(member_id));
+                        }
+                    }
+
                     if (i_guild_create)
                         if (!i_guild_create(result, shard, *this))
                             return;
