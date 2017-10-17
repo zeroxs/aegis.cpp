@@ -112,11 +112,6 @@ public:
         return c_get_timestamp(snowflake) + _discordEpoch;
     };
 
-    friend std::ostream&operator<<(std::ostream&os, const snowflake &s)
-    {
-        return os << s.m_snowflake;
-    }
-
 private:
     uint64_t m_snowflake;
     static constexpr int64_t _countMask = 0x0000000000000FFFL;
