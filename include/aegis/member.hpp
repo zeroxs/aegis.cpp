@@ -27,15 +27,80 @@
 
 
 #include <string>
+#include <optional>
+#include <queue>
 
 namespace aegis
 {
 
+class guild;
+
+//this method of splitting the members causes some data duplication
+//such as snowflake tracking, but keeps the objects separate
+
+// class for Aegis to track
+// contains info that is universal across Discord and
+// tracks guilds they are in
+class minimember
+{
+public:
+    explicit minimember(snowflake id) : m_id(id) {}
+    snowflake m_id = 0;
+    struct guild_info
+    {
+        std::vector<int64_t> roles;
+        std::string nickname;
+        guild * _guild;
+    };
+
+    enum member_status
+    {
+        OFFLINE,
+        ONLINE,
+        IDLE,
+        STREAM,
+        DND
+    };
+
+    std::map<int64_t, guild_info> m_guilds;
+    member_status m_status = member_status::OFFLINE;
+};
+
+// class for guild to track
+// contains guild-specific data
 class member
 {
 public:
-    explicit member(snowflake id) : member_id(id) {}
-    snowflake member_id = 0;
+    explicit member(snowflake id) : m_id(id) {}
+    snowflake m_id = 0;
+
+    std::vector<uint64_t> roles;
+    std::map<uint64_t, perm_overwrite> overrides;//channel overrides
+
+    //std::pair<message_snowflake, time_sent>
+    std::queue<std::pair<int64_t, int64_t>> msghistory;
+
+    std::string m_name;
+    std::string m_nickname;
+    uint16_t m_discriminator = 0;
+    std::string m_avatar;
+    bool m_isbot = false;
+    bool m_deaf = false;
+    bool m_mute = false;
+    std::string m_joined_at;
+
+    std::optional<std::string> getName()
+    {
+        if (m_nickname.length() > 0)
+            return m_nickname;
+        return {};
+    }
+
+    std::string getFullName()
+    {
+        return fmt::format("{}#{}", m_name, m_discriminator);
+    }
+
 };
 
 }

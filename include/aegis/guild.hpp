@@ -44,22 +44,45 @@ class guild
 public:
     explicit guild(client & shard, snowflake id, bucket_factory & ratelimit)
         : m_shard(shard)
-        , m_snowflake(id)
+        , m_id(id)
         , m_ratelimit(ratelimit)
         , m_log(spdlog::get("aegis"))
     {
-
+        m_unavailable = false;
     }
 
     client m_shard;
-    snowflake m_snowflake;
+    snowflake m_id;
     bucket_factory & m_ratelimit;
     std::shared_ptr<spdlog::logger> m_log;
 
-    std::map<int64_t, std::unique_ptr<channel>> m_channels;
-    std::map<int64_t, std::shared_ptr<member>> m_members;
+    std::map<int64_t, std::shared_ptr<channel>> m_channels;
+    std::map<int64_t, std::unique_ptr<member>> m_members;
 
-    // move this to aegis?
+
+    std::string m_name;
+    std::string m_icon;
+    std::string m_splash;
+    uint64_t m_owner_id = 0;
+    std::string m_region;
+    uint64_t m_afk_channel_id = 0;
+    uint32_t m_afk_timeout = 0;//in seconds
+    bool m_embed_enabled = false;
+    uint64_t m_embed_channel_id = 0;
+    uint32_t m_verification_level = 0;
+    uint32_t m_default_message_notifications = 0;
+    uint32_t m_mfa_level = 0;
+    std::string m_joined_at;
+    bool m_large = false;
+    bool m_unavailable = true;
+    uint32_t m_member_count = 0;
+    //std::string m_voice_states;//this is really an array
+
+    bool m_silenterrors = false;
+    bool m_silentperms = false;
+    bool m_preventbotparse = false;
+
+    // move this to aegis::Aegis?
     void create_guild() const
     {
         //TODO: 
@@ -94,10 +117,10 @@ public:
         if (splash.has_value())//VIP only
             obj["splash"] = splash.value();
 
-        m_ratelimit.push(m_snowflake, fmt::format("/guilds/{}", m_snowflake), std::move(obj) , "PATCH", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/guilds/{}", m_id), std::move(obj) , "PATCH", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("modify_guild success : {}", m_snowflake);
+                m_log->debug("modify_guild success : {}", m_id);
             else
                 m_log->debug("modify_guild fail response: " + reply.content);
         });
@@ -106,10 +129,10 @@ public:
     void delete_guild() const
     {
         //requires OWNER
-        m_ratelimit.push(m_snowflake, fmt::format("/guilds/{}", m_snowflake), "", "DELETE", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/guilds/{}", m_id), "", "DELETE", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("delete_guild success : {}", m_snowflake);
+                m_log->debug("delete_guild success : {}", m_id);
             else
                 m_log->debug("delete_guild fail response: " + reply.content);
         });
@@ -128,7 +151,7 @@ public:
             obj["permission_overwrites"].push_back(p_ow.make());
         }
 
-        m_ratelimit.push(m_snowflake, fmt::format("/guilds/{}/channels", m_snowflake), obj.dump(), "POST", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/guilds/{}/channels", m_id), obj.dump(), "POST", [&](rest_reply reply)
         {
         });
     }
@@ -144,7 +167,7 @@ public:
             obj["permission_overwrites"].push_back(p_ow.make());
         }
 
-        m_ratelimit.push(m_snowflake, fmt::format("/guilds/{}/channels", m_snowflake), obj.dump(), "POST", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/guilds/{}/channels", m_id), obj.dump(), "POST", [&](rest_reply reply)
         {
         });
     }
@@ -160,7 +183,7 @@ public:
             obj["permission_overwrites"].push_back(p_ow.make());
         }
 
-        m_ratelimit.push(m_snowflake, fmt::format("/guilds/{}/channels", m_snowflake), obj.dump(), "POST", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/guilds/{}/channels", m_id), obj.dump(), "POST", [&](rest_reply reply)
         {
         });
     }
@@ -185,10 +208,10 @@ public:
         if (channel_id.has_value())
             obj["channel_id"] = channel_id.value();//requires MOVE_MEMBERS
 
-        m_ratelimit.push(m_snowflake, fmt::format("/guilds/{}/members/{}", m_snowflake, user_id), obj.dump(), "PATCH", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/guilds/{}/members/{}", m_id, user_id), obj.dump(), "PATCH", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("modify_guild_member success : {}", m_snowflake);
+                m_log->debug("modify_guild_member success : {}", m_id);
             else
                 m_log->debug("modify_guild_member fail response: " + reply.content);
         });
@@ -198,10 +221,10 @@ public:
     {
         //requires CHANGE_NICKNAME
         json obj = { "nick", newname };
-        m_ratelimit.push(m_snowflake, fmt::format("/guilds/{}/members/@me/nick", m_snowflake), obj.dump(), "PATCH", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/guilds/{}/members/@me/nick", m_id), obj.dump(), "PATCH", [&](rest_reply reply)
         {
             if (reply.reply_code == 200)
-                m_log->debug("modify_my_nick success : {}", m_snowflake);
+                m_log->debug("modify_my_nick success : {}", m_id);
             else
                 m_log->debug("modify_my_nick fail response: " + reply.content);
         });
@@ -210,10 +233,10 @@ public:
     void add_guild_member_role(snowflake user_id, snowflake role_id) const
     {
         //requires MANAGE_ROLES
-        m_ratelimit.push(m_snowflake, fmt::format("/guilds/{}/members/{}/roles/{}", m_snowflake, user_id, role_id), "", "PUT", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/guilds/{}/members/{}/roles/{}", m_id, user_id, role_id), "", "PUT", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("add_guild_member_role success : {}", m_snowflake);
+                m_log->debug("add_guild_member_role success : {}", m_id);
             else
                 m_log->debug("add_guild_member_role fail response: " + reply.content);
         });
@@ -222,10 +245,10 @@ public:
     void remove_guild_member_role(snowflake user_id, snowflake role_id) const
     {
         //requires MANAGE_ROLES
-        m_ratelimit.push(m_snowflake, fmt::format("/guilds/{}/members/{}/roles/{}", m_snowflake, user_id, role_id), "", "DELETE", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/guilds/{}/members/{}/roles/{}", m_id, user_id, role_id), "", "DELETE", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("remove_guild_member_role success : {}", m_snowflake);
+                m_log->debug("remove_guild_member_role success : {}", m_id);
             else
                 m_log->debug("remove_guild_member_role fail response: " + reply.content);
         });
@@ -234,10 +257,10 @@ public:
     void remove_guild_member(snowflake user_id) const
     {
         //requires KICK_MEMBERS
-        m_ratelimit.push(m_snowflake, fmt::format("/guilds/{}/members/{}", m_snowflake, user_id), "", "DELETE", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/guilds/{}/members/{}", m_id, user_id), "", "DELETE", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("remove_guild_member success : {}", m_snowflake);
+                m_log->debug("remove_guild_member success : {}", m_id);
             else
                 m_log->debug("remove_guild_member fail response: " + reply.content);
         });
@@ -247,10 +270,10 @@ public:
     {
         //requires BAN_MEMBERS
         json obj = { "delete-message-days", delete_message_days };
-        m_ratelimit.push(m_snowflake, fmt::format("/guilds/{}/bans/{}", m_snowflake, user_id), obj.dump(), "PUT", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/guilds/{}/bans/{}", m_id, user_id), obj.dump(), "PUT", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("create_guild_ban success : {}", m_snowflake);
+                m_log->debug("create_guild_ban success : {}", m_id);
             else
                 m_log->debug("create_guild_ban fail response: " + reply.content);
         });
@@ -259,10 +282,10 @@ public:
     void remove_guild_ban(snowflake user_id) const
     {
         //requires BAN_MEMBERS
-        m_ratelimit.push(m_snowflake, fmt::format("/guilds/{}/bans/{}", m_snowflake, user_id), "", "DELETE", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/guilds/{}/bans/{}", m_id, user_id), "", "DELETE", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("remove_guild_ban success : {}", m_snowflake);
+                m_log->debug("remove_guild_ban success : {}", m_id);
             else
                 m_log->debug("remove_guild_ban fail response: " + reply.content);
         });
@@ -342,7 +365,7 @@ public:
 
     void leave() const
     {
-        m_ratelimit.push(m_snowflake, fmt::format("/users/@me/guilds/{0}", m_snowflake), "", "DELETE", [](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/users/@me/guilds/{0}", m_id), "", "DELETE", [](rest_reply reply)
         {
             json response = json::parse(reply.content);
         });

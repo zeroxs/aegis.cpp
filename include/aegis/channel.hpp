@@ -38,32 +38,66 @@ namespace aegis
 
 using json = nlohmann::json;
 using rest_limits::bucket_factory;
+class guild;
 
 class channel
 {
 public:
     explicit channel(snowflake id, snowflake guild_id, bucket_factory & ratelimit, bucket_factory & emoji)
-        : m_snowflake(id)
-        , m_guild_snowflake(guild_id)
+        : m_id(id)
+        , m_guild_id(guild_id)
         , m_ratelimit(ratelimit)
         , m_emoji(emoji)
         , m_log(spdlog::get("aegis"))
+        , _guild(0)
     {
 
     }
 
+    enum ChannelType
+    {
+        TEXT = 0,
+        DM = 1,
+        VOICE = 2,
+        GROUP_DM = 3,
+        CATEGORY = 4
+    };
 
-    snowflake m_snowflake;
-    snowflake m_guild_snowflake;
+    snowflake m_id;
+    snowflake m_guild_id;
     bucket_factory & m_ratelimit;
     bucket_factory & m_emoji;
     std::shared_ptr<spdlog::logger> m_log;
+
+    uint64_t m_last_message_id = 0;
+    std::string m_name;
+    std::string m_topic;
+    uint32_t m_position = 0;
+    ChannelType m_type = ChannelType::TEXT;
+
+    uint16_t m_bitrate = 0;
+    uint16_t m_user_limit = 0;
+
+    std::map<uint64_t, perm_overwrite> overrides;
+    //std::map<uint64_t, Permission> permission_cache;
+
+    guild & get_guild()
+    {
+        return *_guild;
+    }
+
+    guild * _guild;
+
+    void update_permission_cache()
+    {
+
+    }
 
     void create_message(std::string content)
     {
         json obj;
         obj["content"] = content;
-        m_ratelimit.push(m_snowflake, fmt::format("/channels/{}/messages", m_snowflake), obj.dump(), "POST");
+        m_ratelimit.push(m_id, fmt::format("/channels/{}/messages", m_id), obj.dump(), "POST");
     }
 
     void create_message_embed(std::string content, json embed)
@@ -73,14 +107,14 @@ public:
             obj["content"] = content;
         obj["embed"] = embed;
 
-        m_ratelimit.push(m_snowflake, fmt::format("/channels/{:d}/messages", m_snowflake), obj.dump(), "POST");
+        m_ratelimit.push(m_id, fmt::format("/channels/{:d}/messages", m_id), obj.dump(), "POST");
     }
 
     void edit_message(snowflake message_id, std::string content)
     {
         json obj;
         obj["content"] = content;
-        m_ratelimit.push(m_snowflake, fmt::format("/channels/{}/messages/{}", m_snowflake, message_id), obj.dump(), "PATCH");
+        m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/{}", m_id, message_id), obj.dump(), "PATCH");
     }
 
     void edit_message_embed(snowflake message_id, std::string content, json embed)
@@ -90,18 +124,18 @@ public:
             obj["content"] = content;
         obj["embed"] = embed;
         obj["content"] = content;
-        m_ratelimit.push(m_snowflake, fmt::format("/channels/{}/messages/{}", m_snowflake, message_id), obj.dump(), "PATCH");
+        m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/{}", m_id, message_id), obj.dump(), "PATCH");
     }
 
     void delete_message(snowflake message_id)
     {
-        m_ratelimit.push(m_snowflake, fmt::format("/channels/{}/messages/{}", m_snowflake, message_id), "", "DELETE");
+        m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/{}", m_id, message_id), "", "DELETE");
     }
 
     void bulk_delete_message(snowflake message_id, std::vector<int64_t> messages)
     {
         json obj = messages;
-        m_ratelimit.push(m_snowflake, fmt::format("/channels/{}/messages/bulk-delete", m_snowflake), obj.dump(), "POST");
+        m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/bulk-delete", m_id), obj.dump(), "POST");
     }
 
     void modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
@@ -132,10 +166,10 @@ public:
         if (parent_id.has_value())//VIP only
             obj["parent_id"] = parent_id.value();
 
-        m_ratelimit.push(m_snowflake, fmt::format("/channels/{}", m_snowflake), std::move(obj), "PATCH", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/channels/{}", m_id), std::move(obj), "PATCH", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("modify_channel success : {}", m_snowflake);
+                m_log->debug("modify_channel success : {}", m_id);
             else
                 m_log->debug("modify_channel fail response: " + reply.content);
         });
@@ -144,10 +178,10 @@ public:
     void delete_channel() const
     {
         //requires MANAGE_CHANNELS
-        m_ratelimit.push(m_snowflake, fmt::format("/channels/{}", m_snowflake), "", "DELETE", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/channels/{}", m_id), "", "DELETE", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("delete_channel success : {}", m_snowflake);
+                m_log->debug("delete_channel success : {}", m_id);
             else
                 m_log->debug("delete_channel fail response: " + reply.content);
         });
@@ -156,10 +190,10 @@ public:
     void create_reaction(snowflake message_id, std::string emoji) const
     {
         //requires ADD_REACTIONS
-        m_emoji.push(m_snowflake, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", m_snowflake, message_id, emoji), "", "PUT", [&](rest_reply reply)
+        m_emoji.push(m_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", m_id, message_id, emoji), "", "PUT", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("create_reaction success : {}", m_snowflake);
+                m_log->debug("create_reaction success : {}", m_id);
             else
                 m_log->debug("create_reaction fail response: " + reply.content);
         });
@@ -168,10 +202,10 @@ public:
     void delete_own_reaction(snowflake message_id, std::string emoji) const
     {
         //requires ADD_REACTIONS
-        m_emoji.push(m_snowflake, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", m_snowflake, message_id, emoji), "", "DELETE", [&](rest_reply reply)
+        m_emoji.push(m_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", m_id, message_id, emoji), "", "DELETE", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("delete_own_reaction success : {}", m_snowflake);
+                m_log->debug("delete_own_reaction success : {}", m_id);
             else
                 m_log->debug("delete_own_reaction fail response: " + reply.content);
         });
@@ -180,10 +214,10 @@ public:
     void delete_user_reaction(snowflake message_id, std::string emoji, snowflake user_id) const
     {
         //requires ADD_REACTIONS
-        m_emoji.push(m_snowflake, fmt::format("/channels/{}/messages/{}/reactions/{}/{}", m_snowflake, message_id, emoji, user_id), "", "DELETE", [&](rest_reply reply)
+        m_emoji.push(m_id, fmt::format("/channels/{}/messages/{}/reactions/{}/{}", m_id, message_id, emoji, user_id), "", "DELETE", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("delete_user_reaction success : {}", m_snowflake);
+                m_log->debug("delete_user_reaction success : {}", m_id);
             else
                 m_log->debug("delete_user_reaction fail response: " + reply.content);
         });
@@ -193,10 +227,10 @@ public:
     {
         //TODO: support query params?
         //before[snowflake], after[snowflake], limit[int]
-        m_ratelimit.push(m_snowflake, fmt::format("/channels/{}/messages/{}/reactions/{}", m_snowflake, message_id, emoji), "", "GET", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/{}/reactions/{}", m_id, message_id, emoji), "", "GET", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("get_reactions success : {}", m_snowflake);
+                m_log->debug("get_reactions success : {}", m_id);
             else
                 m_log->debug("get_reactions fail response: " + reply.content);
         });
@@ -205,10 +239,10 @@ public:
     void delete_all_reactions(snowflake message_id) const
     {
         //requires ADD_REACTIONS
-        m_emoji.push(m_snowflake, fmt::format("/channels/{}/messages/{}/reactions", m_snowflake, message_id), "", "DELETE", [&](rest_reply reply)
+        m_emoji.push(m_id, fmt::format("/channels/{}/messages/{}/reactions", m_id, message_id), "", "DELETE", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("delete_all_reactions success : {}", m_snowflake);
+                m_log->debug("delete_all_reactions success : {}", m_id);
             else
                 m_log->debug("delete_all_reactions fail response: " + reply.content);
         });
@@ -221,10 +255,10 @@ public:
         obj["allow"] = allow;
         obj["deny"] = deny;
         obj["type"] = type;
-        m_ratelimit.push(m_snowflake, fmt::format("/channels/{}/permissions/{}", m_snowflake, overwrite_id), obj.dump(), "PUT", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/channels/{}/permissions/{}", m_id, overwrite_id), obj.dump(), "PUT", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("edit_channel_permissions success : {}", m_snowflake);
+                m_log->debug("edit_channel_permissions success : {}", m_id);
             else
                 m_log->debug("edit_channel_permissions fail response: " + reply.content);
         });
@@ -234,10 +268,10 @@ public:
     {
         //requires MANAGE_CHANNELS
         //returns
-        m_ratelimit.push(m_snowflake, fmt::format("/channels/{}/invites", m_snowflake), "", "GET", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/channels/{}/invites", m_id), "", "GET", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("get_channel_invites success : {}", m_snowflake);
+                m_log->debug("get_channel_invites success : {}", m_id);
             else
                 m_log->debug("get_channel_invites fail response: " + reply.content);
         });
@@ -256,10 +290,10 @@ public:
             obj["temporary"] = temporary.value();
         if (unique.has_value())
             obj["unique"] = unique.value();
-        m_ratelimit.push(m_snowflake, fmt::format("/channels/{}/invites", m_snowflake), obj.dump(), "POST", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/channels/{}/invites", m_id), obj.dump(), "POST", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("create_channel_invite success : {}", m_snowflake);
+                m_log->debug("create_channel_invite success : {}", m_id);
             else
                 m_log->debug("create_channel_invite fail response: " + reply.content);
         });
@@ -269,10 +303,10 @@ public:
     void delete_channel_permission(snowflake overwrite_id) const
     {
         //requires MANAGE_ROLES
-        m_ratelimit.push(m_snowflake, fmt::format("/channels/{}/permissions/{}", m_snowflake, overwrite_id), "", "DELETE", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/channels/{}/permissions/{}", m_id, overwrite_id), "", "DELETE", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("edit_channel_permissions success : {}", m_snowflake);
+                m_log->debug("edit_channel_permissions success : {}", m_id);
             else
                 m_log->debug("edit_channel_permissions fail response: " + reply.content);
         });
@@ -280,10 +314,10 @@ public:
 
     void trigger_typing_indicator()
     {
-        m_ratelimit.push(m_snowflake, fmt::format("/channels/{}/typing", m_snowflake), "", "POST", [&](rest_reply reply)
+        m_ratelimit.push(m_id, fmt::format("/channels/{}/typing", m_id), "", "POST", [&](rest_reply reply)
         {
             if (reply.reply_code == 204)
-                m_log->debug("trigger_typing_indicator success : {}", m_snowflake);
+                m_log->debug("trigger_typing_indicator success : {}", m_id);
             else
                 m_log->debug("trigger_typing_indicator fail response: " + reply.content);
         });

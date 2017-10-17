@@ -63,20 +63,278 @@ using namespace std::literals;
 inline void Aegis::processReady(json & d, client & shard)
 {
     shard.m_sessionId = d["session_id"].get<std::string>();
+
+    json guilds = d["guilds"];
+    size_t connectguilds = guilds.size();
+    for (auto & guildobj : guilds)
+    {
+        snowflake id = std::stoull(guildobj["id"].get<std::string>());
+
+        bool unavailable = false;
+        if (guildobj.count("unavailable"))
+            unavailable = guildobj["unavailable"];
+
+        guild & _guild = get_guild_create(id, shard);
+        _guild.m_unavailable = unavailable;
+
+        if (!unavailable)
+            guild_create(_guild, guildobj, shard);
+    }
+
     if (m_isuserset)
         return;
     json & userdata = d["user"];
     m_discriminator = std::stoi(userdata["discriminator"].get<std::string>());
-    m_snowflake = std::stoull(userdata["id"].get<std::string>());
+    m_id = std::stoull(userdata["id"].get<std::string>());
     m_username = userdata["username"].get<std::string>();
     m_mfa_enabled = userdata["mfa_enabled"];
     if (m_mention.size() == 0)
     {
         std::stringstream ss;
-        ss << "<@" << m_snowflake << ">";
+        ss << "<@" << m_id << ">";
         m_mention = ss.str();
     }
     m_isuserset = true;
+}
+
+inline void Aegis::guild_create(guild & _guild, json & obj, client & shard)
+{
+    //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
+    snowflake g_id = std::stoull(obj["id"].get<std::string>());
+
+    try
+    {
+        json voice_states;
+
+        if (!obj["name"].is_null()) _guild.m_name = obj["name"].get<std::string>();
+        if (!obj["icon"].is_null()) _guild.m_icon = obj["icon"].get<std::string>();
+        if (!obj["splash"].is_null()) _guild.m_splash = obj["splash"].get<std::string>();
+        _guild.m_owner_id = std::stoull(obj["owner_id"].get<std::string>());
+        _guild.m_region = obj["region"].get<std::string>();
+        if (!obj["afk_channel_id"].is_null()) _guild.m_afk_channel_id = std::stoull(obj["afk_channel_id"].get<std::string>());
+        _guild.m_afk_timeout = obj["afk_timeout"];//in seconds
+        if (!obj["embed_enabled"].is_null()) _guild.m_embed_enabled = obj["embed_enabled"].get<bool>();
+        //_guild.m_embed_channel_id = obj->get("embed_channel_id").convert<uint64_t>();
+        _guild.m_verification_level = obj["verification_level"];
+        _guild.m_default_message_notifications = obj["default_message_notifications"];
+        _guild.m_mfa_level = obj["mfa_level"];
+        if (!obj["joined_at"].is_null()) _guild.m_joined_at = obj["joined_at"].get<std::string>();
+        if (!obj["large"].is_null()) _guild.m_large = obj["large"];
+        if (!obj["unavailable"].is_null()) _guild.m_unavailable = obj["unavailable"].get<bool>();
+        if (!obj["member_count"].is_null()) _guild.m_member_count = obj["member_count"];
+        if (!obj["voice_states"].is_null()) voice_states = obj["voice_states"];
+
+        if (obj.count("roles"))
+        {
+            json roles = obj["roles"];
+
+            for (auto & role : roles)
+            {
+                //loadRole(role, _guild);
+            }
+        }
+
+        if (obj.count("members"))
+        {
+            json members = obj["members"];
+
+            for (auto & member : members)
+            {
+                member_create(_guild, member, shard);
+                //++counters.members;
+            }
+        }
+
+        if (obj.count("channels"))
+        {
+            json channels = obj["channels"];
+
+            for (auto & channel : channels)
+            {
+                channel_create(_guild, channel, shard);
+                //++counters.channels;
+            }
+        }
+
+        if (obj.count("presences"))
+        {
+            json presences = obj["presences"];
+
+            for (auto & presence : presences)
+            {
+                load_presence(presence, _guild);
+            }
+        }
+
+        if (obj.count("emojis"))
+        {
+            json emojis = obj["emojis"];
+
+            for (auto & emoji : emojis)
+            {
+                //loadEmoji(emoji, _guild);
+            }
+        }
+
+        if (obj.count("features"))
+        {
+            json features = obj["features"];
+
+        }
+
+        //if (shardloaded)
+            //_guild.UpdatePermissions();
+
+        //bot commands
+
+        //for (auto cmd : defaultcmdlist)
+            //_guild.cmdlist[cmd.first] = ABCallbackPair(ABCallbackOptions(), cmd.second);
+
+
+
+
+        /*
+        for (auto & feature : features)
+        {
+        //??
+        }
+
+        for (auto & voicestate : voice_states)
+        {
+        //no voice yet
+        }*/
+
+
+        m_log->info("Shard#{} : Guild created: {} [{}]", shard.m_shardid, g_id, _guild.m_name);
+
+    }
+    catch (std::exception&e)
+    {
+        m_log->error("Shard#{} : Error processing guild[{}] {}", shard.m_shardid, g_id, (std::string)e.what());
+    }
+}
+
+inline void Aegis::channel_create(guild & _guild, json & obj, client & shard)
+{
+    snowflake channel_id = std::stoull(obj["id"].get<std::string>());
+    channel & _channel = get_guild_channel_create(channel_id, _guild.m_id, shard);
+    _channel.m_guild_id = _guild.m_id;
+
+    try
+    {
+        //does channel exist?
+        m_log->debug("Shard#{} : Channel[{}] created for guild[{}]", shard.m_shardid, channel_id, _channel.m_guild_id);
+        if (!obj["name"].is_null()) _channel.m_name = obj["name"].get<std::string>();
+        _channel.m_position = obj["position"];
+        _channel.m_type = static_cast<channel::ChannelType>(obj["type"].get<int>());// 0 = text, 2 = voice
+
+        //voice channels
+        if (!obj["bitrate"].is_null())
+        {
+            _channel.m_bitrate = obj["bitrate"];
+            _channel.m_user_limit = obj["user_limit"];
+        }
+        else
+        {
+            //not a voice channel, so has a topic field and last message id
+            if (!obj["topic"].is_null()) _channel.m_topic = obj["topic"].get<std::string>();
+            if (!obj["last_message_id"].is_null()) _channel.m_last_message_id = std::stoull(obj["last_message_id"].get<std::string>());
+        }
+
+
+        json permission_overwrites = obj["permission_overwrites"];
+        for (auto & permission : permission_overwrites)
+        {
+            uint32_t allow = permission["allow"];
+            uint32_t deny = permission["deny"];
+            uint64_t p_id = std::stoull(permission["id"].get<std::string>());
+            std::string p_type = permission["type"];
+
+            _channel.overrides[p_id].allow = allow;
+            _channel.overrides[p_id].deny = deny;
+            _channel.overrides[p_id].id = channel_id;
+            if (p_type == "role")
+                _channel.overrides[p_id].type = perm_overwrite::ROLE;
+            else
+                _channel.overrides[p_id].type = perm_overwrite::USER;
+        }
+
+        //_channel.update_permission_cache();
+    }
+    catch (std::exception&e)
+    {
+        m_log->error("Shard#{} : Error processing channel[{}] of guild[{}] {}", shard.m_shardid, channel_id, _channel.m_guild_id, e.what());
+    }
+}
+
+inline void Aegis::member_create(guild & _guild, json & obj, client & shard)
+{
+    json & user = obj["user"];
+    snowflake member_id = std::stoull(user["id"].get<std::string>());
+    minimember & _member = get_member_create(member_id);
+    
+    try
+    {
+        m_log->debug("Shard#{} : Member[{}] created for guild[{}]", shard.m_shardid, member_id, _guild.m_id);
+        
+        if (_guild.m_members.count(member_id))
+        {
+            //exists
+            m_log->error("wat :waitwhat:");
+        }
+        else
+        {
+            auto g_member = std::make_unique<member>(member_id);
+            auto ptr = g_member.get();
+            _guild.m_members.emplace(member_id, std::move(g_member));
+
+            if (!user["avatar"].is_null()) ptr->m_avatar = user["avatar"].get<std::string>();
+            ptr->m_discriminator = std::stoi(user["discriminator"].get<std::string>());
+            ptr->m_deaf = obj["deaf"];
+            ptr->m_joined_at = obj["joined_at"].get<std::string>();
+            ptr->m_mute = obj["mute"];
+            ptr->m_isbot = user["bot"].is_null() ? false : true;
+
+            if (_member.m_guilds.count(_guild.m_id))
+            {
+                m_log->error("wat :waitwhat: #2");
+                return;
+            }
+            auto & g_info = _member.m_guilds.try_emplace(_guild.m_id, minimember::guild_info()).first->second;
+            g_info._guild = m_guilds[_guild.m_id].get();
+            g_info.roles.push_back(_guild.m_id);//default everyone role
+
+            json roles = obj["roles"];
+            for (auto & r : roles)
+                g_info.roles.push_back(std::stoull(r.get<std::string>()));
+
+            if (!obj["nick"].is_null())
+                g_info.nickname = obj["nick"].get<std::string>();
+        }
+    }
+    catch (std::exception&e)
+    {
+        m_log->error("Shard#{} : Error processing member[{}] of guild[{}] {}", shard.m_shardid, member_id, _guild.m_id, e.what());
+    }
+}
+
+void Aegis::load_presence(json & member, guild & _guild)
+{
+    json user = member["user"];
+
+    minimember::member_status status;
+    if (member["status"] == "idle")
+        status = minimember::IDLE;
+    else if (member["status"] == "dnd")
+        status = minimember::DND;
+    else if (member["status"] == "online")
+        status = minimember::ONLINE;
+    else if (member["status"] == "offline")
+        status = minimember::OFFLINE;
+
+    minimember & _member = get_member(std::stoll(user["id"].get<std::string>()));
+    _member.m_status = status;
+    return;
 }
 
 inline void Aegis::keepAlive(const asio::error_code & ec, const int ms, client & shard)
@@ -225,6 +483,7 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
 
     try
     {
+        //zlib detection and decoding
         if (payload[0] == (char)0x78 && (payload[1] == (char)0x01 || payload[1] == (char)0x9C || payload[1] == (char)0xDA))
         {
             std::stringstream origin(msg->get_payload());
@@ -276,37 +535,15 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                 }
                 else if (cmd == "GUILD_CREATE")
                 {
-                    snowflake guild_id = std::stoll(result["d"]["id"].get<std::string>());
-
-                    m_guilds.try_emplace(guild_id, new guild(shard, guild_id, ratelimit().get(rest_limits::bucket_type::GUILD)));
-
-
-                    if (result["d"].count("channels"))
-                    {
-                        json channels = result["d"]["channels"];
-
-                        for (auto & channel_r : channels)
-                        {
-                            snowflake channel_id = std::stoll(channel_r["id"].get<std::string>());
-                            m_channels.try_emplace(channel_id, new channel(channel_id, guild_id, ratelimit().get(rest_limits::bucket_type::CHANNEL), ratelimit().get(rest_limits::bucket_type::EMOJI)));
-                        }
-                    }
-
-
-                    if (result["d"].count("members"))
-                    {
-                        json members = result["d"]["members"];
-
-                        for (auto & member_r : members)
-                        {
-                            snowflake member_id = std::stoll(member_r["user"]["id"].get<std::string>());
-                            m_members.try_emplace(member_id, new member(member_id));
-                        }
-                    }
-
                     if (i_guild_create)
                         if (!i_guild_create(result, shard, *this))
                             return;
+                    
+                    snowflake guild_id = std::stoll(result["d"]["id"].get<std::string>());
+
+                    guild & _guild = get_guild_create(guild_id, shard);
+                    guild_create(_guild, result["d"], shard);
+
                     return;
                 }
                 else if (cmd == "GUILD_UPDATE")

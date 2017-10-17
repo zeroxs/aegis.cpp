@@ -104,7 +104,7 @@ public:
         , m_state(UNINITIALIZED)
         , m_shardidmax(0)
         , m_ratelimit(std::bind(&Aegis::call, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
-        , m_snowflake(0)
+        , m_id(0)
         , m_mfa_enabled(false)
         , m_discriminator(0)
         , m_isuserset(false)
@@ -112,6 +112,7 @@ public:
         m_log = spd::stdout_color_mt("aegis");
         m_ratelimit.add(bucket_type::GUILD);
         m_ratelimit.add(bucket_type::CHANNEL);
+        m_ratelimit.add(bucket_type::EMOJI);
     }
 
     ~Aegis()
@@ -405,24 +406,98 @@ public:
     std::string m_getgateway;
 
     std::vector<client*> m_clients;
-    std::map<int64_t, std::shared_ptr<member>> m_members;
-    std::map<int64_t, std::unique_ptr<channel>> m_channels;//for DMs
+    std::map<int64_t, std::unique_ptr<minimember>> m_members;
+    std::map<int64_t, std::shared_ptr<channel>> m_channels;
     std::map<int64_t, std::unique_ptr<guild>> m_guilds;
 
-    member & get_member(int64_t id)
+    minimember & get_member(int64_t id)
     {
+        if (!m_members.count(id))
+            throw std::out_of_range("member");
         return *m_members[id];
     }
 
     channel & get_channel(int64_t id)
     {
+        if (!m_channels.count(id))
+            throw std::out_of_range("channel");
         return *m_channels[id];
     }
 
     guild & get_guild(int64_t id)
     {
+        if (!m_guilds.count(id))
+            throw std::out_of_range("guild");
         return *m_guilds[id];
     }
+
+    minimember & get_member_create(int64_t id)
+    {
+        if (!m_members.count(id))
+        {
+            auto g = std::make_unique<minimember>(id);
+            auto ptr = g.get();
+            m_members.emplace(id, std::move(g));
+            ptr->m_id = id;
+            return *ptr;
+        }
+        return *m_members[id];
+    }
+
+    channel & get_channel_create(int64_t id)
+    {
+        if (!m_channels.count(id))
+        {
+            auto g = std::make_unique<channel>(id, 0, ratelimit().get(rest_limits::bucket_type::CHANNEL), ratelimit().get(rest_limits::bucket_type::EMOJI));
+            auto ptr = g.get();
+            m_channels.emplace(id, std::move(g));
+            ptr->m_id = id;
+            return *ptr;
+        }
+        return *m_channels[id];
+    }
+
+    channel & get_guild_channel_create(int64_t id, int64_t guild_id, client & shard)
+    {
+        guild & _guild = get_guild_create(guild_id, shard);
+        if (!_guild.m_channels.count(id))
+        {
+            auto g = std::make_shared<channel>(id, guild_id, ratelimit().get(rest_limits::bucket_type::CHANNEL), ratelimit().get(rest_limits::bucket_type::EMOJI));
+            auto ptr = g.get();
+            _guild.m_channels.emplace(id, g);
+            m_channels.emplace(id, g);
+            g->_guild = m_guilds[guild_id].get();
+            ptr->m_id = id;
+            return *ptr;
+        }
+        return *_guild.m_channels[id];
+    }
+
+    guild & get_guild_create(int64_t id, client & shard)
+    {
+        if (!m_guilds.count(id))
+        {
+            auto g = std::make_unique<guild>(shard, id, ratelimit().get(rest_limits::bucket_type::GUILD));
+            auto ptr = g.get();
+            m_guilds.emplace(id, std::move(g));
+            ptr->m_id = id;
+            return *ptr;
+        }
+        return *m_guilds[id];
+    }
+
+    //called by GUILD_CREATE
+    void guild_create(guild & _guild, json & obj, client & shard);
+
+    //called by CHANNEL_CREATE
+    void channel_create(guild & _guild, json & obj, client & shard);
+
+    //called by GUILD_MEMBER_ADD
+    //creating members from DMs will be handled elsewhere
+    void member_create(guild & _guild, json & obj, client & shard);
+    
+    void load_presence(json & member, guild & _guild);
+
 
     json self_presence;
 
@@ -450,7 +525,7 @@ public:
         return ss.str();
     }
 
-    snowflake m_snowflake;
+    snowflake m_id;
     std::string m_username;
     bool m_mfa_enabled;
     int16_t m_discriminator;

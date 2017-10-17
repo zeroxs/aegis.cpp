@@ -37,9 +37,15 @@ namespace aegis
 
 struct perm_overwrite
 {
+    enum ORType
+    {
+        USER,
+        ROLE
+    };
+
     snowflake id;
     //either "role" or "member"
-    std::string type;
+    ORType type;
     int64_t allow;
     int64_t deny;
     nlohmann::json make()

@@ -111,15 +111,19 @@ public:
 
         uint64_t msgid = std::stoull(msg["d"]["id"].get<std::string>());
 
+        channel & _channel = bot.get_channel(channel_id);
+        guild & _guild = _channel.get_guild();
+
         auto toks = split(content, ' ');
         if (toks.size() == 0)
             return true;
         if (toks[0] == "?info")
         {
             uint64_t guild_count = bot.m_guilds.size();
-            uint64_t member_count = bot.m_members.size();
-            uint64_t member_count_unique = 0;
+            uint64_t member_count = 0;
+            uint64_t member_count_unique = bot.m_members.size();
             uint64_t member_online_count = 0;
+            uint64_t member_idle_count = 0;
             uint64_t member_dnd_count = 0;
             uint64_t channel_count = bot.m_channels.size();
             uint64_t channel_text_count = 0;
@@ -132,33 +136,38 @@ public:
                 for (auto & bot_ptr : bot.m_clients)
                     eventsseen += bot_ptr->m_sequence;
 
-                for (auto & member : bot.m_members)
+                for (auto & m: bot.m_members)
                 {
-                    /*if (member.second->status == MEMBER_STATUS::ONLINE)
-                    member_online_count++;
-                    else if (member.second->status == MEMBER_STATUS::DND)
-                    member_dnd_count++;*/
+                    auto & membr = m.second;
+                    if (membr->m_status == aegis::minimember::member_status::ONLINE)
+                        member_online_count++;
+                    else if (membr->m_status == aegis::minimember::member_status::IDLE)
+                        member_idle_count++;
+                    else if (membr->m_status == aegis::minimember::member_status::DND)
+                        member_dnd_count++;
                 }
 
-                for (auto & channel : bot.m_channels)
+                for (auto & c : bot.m_channels)
                 {
-                    /*if (channel.second->type == ChannelType::TEXT)
-                    channel_text_count++;
+                    auto & chnl = c.second;
+                    if (chnl->m_type == channel::ChannelType::TEXT)
+                        channel_text_count++;
                     else
-                    channel_voice_count++;*/
+                        channel_voice_count++;
                 }
 
-                /*for (auto & guild : AegisBot::guildlist)
-                member_count_active += guild.second->memberlist.size();*/
-
-                member_count = bot.m_members.size();
+                for (auto & g : bot.m_guilds)
+                {
+                    auto & gld = g.second;
+                    member_count += gld->m_members.size();
+                }
             }
 
-            std::string members = fmt::format("{0} seen online", member_count);
-            std::string channels = fmt::format("{0} total\n{1} text\n{2} voice", channel_count, channel_text_count, channel_voice_count);
-            std::string guilds = fmt::format("{0}", guild_count);
-            std::string events = fmt::format("{0}", eventsseen);
-            std::string misc = fmt::format("I am shard {0} of {1} running on `{2}`", shard.m_shardid+1, bot.m_shardidmax, aegis::utility::platform::get_platform());
+            std::string members = fmt::format("{} seen\n{} unique\n{} online\n{} idle\n{} dnd", member_count, member_count_unique, member_online_count, member_idle_count, member_dnd_count);
+            std::string channels = fmt::format("{} total\n{} text\n{} voice", channel_count, channel_text_count, channel_voice_count);
+            std::string guilds = fmt::format("{}", guild_count);
+            std::string events = fmt::format("{}", eventsseen);
+            std::string misc = fmt::format("I am shard {} of {} running on `{}`", shard.m_shardid+1, bot.m_shardidmax, aegis::utility::platform::get_platform());
 
             fmt::MemoryWriter w;
             w << "[Latest bot source](https://github.com/zeroxs/aegis.cpp)\n[Official Bot Server](https://discord.gg/w7Y3Bb8)\n\nMemory usage: "
@@ -187,7 +196,7 @@ public:
                 { "footer",{ { "icon_url", "https://cdn.discordapp.com/emojis/289276304564420608.png" },{ "text", "Made in c++ running aegis library" } } }
             };
 
-            bot.get_channel(channel_id).create_message_embed({}, t);
+            _channel.create_message_embed({}, t);
             return true;
         }
         else if (toks[0] == "?source")
@@ -198,7 +207,7 @@ public:
                 { "color", rand() % 0xFFFFFF }
             };
             
-            bot.get_channel(channel_id).create_message_embed({}, t);
+            _channel.create_message_embed({}, t);
         }
         else if (toks[0] == "?exit")
         {
@@ -214,12 +223,12 @@ public:
         }
         else if (toks[0] == "?test")
         {
-            bot.get_channel(channel_id).create_message("test message");
+            _channel.create_message("test message");
             return true;
         }
         else if (toks[0] == "?shard")
         {
-            bot.get_channel(channel_id).create_message(fmt::format("I am shard#[{}]", shard.m_shardid));
+            _channel.create_message(fmt::format("I am shard#[{}]", shard.m_shardid));
             return true;
         }
         else if (toks[0] == "?shards")
@@ -230,15 +239,52 @@ public:
                 s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages\n", shard->m_shardid, 0, 0, 0, 0);
             }
             s += "```";
-            bot.get_channel(channel_id).create_message(s);
+            _channel.create_message(s);
         }
         else if (toks[0] == "?createchannel")
         {
-            bot.get_guild(bot.get_channel(channel_id).m_guild_snowflake).create_text_channel(toks[1], 0, false, {});
+            _guild.create_text_channel(toks[1], 0, false, {});
         }
         else if (toks[0] == "?deletechannel")
         {
-            bot.get_channel(channel_id).delete_channel();
+            //_channel.delete_channel();
+        }
+        else if (toks[0] == "?react")
+        {
+            _channel.create_reaction(std::stoll(toks[1]), toks[2]);
+        }
+        else if (toks[0] == "?deletereact")
+        {
+            _channel.delete_own_reaction(std::stoll(toks[1]), toks[2]);
+        }
+        else if (toks[0] == "?options")
+        {
+            _channel.create_reaction(std::stoll(toks[1]), "e:289276304564420608");
+            _channel.create_reaction(std::stoll(toks[1]), "e:367566538427072523");
+            _channel.create_reaction(std::stoll(toks[1]), "e:288902947046424576");
+        }
+        else if (toks[0] == "?remoptions")
+        {
+            _channel.delete_own_reaction(std::stoll(toks[1]), "e:289276304564420608");
+            _channel.delete_own_reaction(std::stoll(toks[1]), "e:367566538427072523");
+            _channel.delete_own_reaction(std::stoll(toks[1]), "e:288902947046424576");
+        }
+        else if (toks[0] == "?serverlist")
+        {
+            std::stringstream w;
+            for (auto & g : bot.m_guilds)
+            {
+                auto & gld = g.second;
+                w << "*" << gld->m_name << "*  :  " << gld->m_id << "\n";
+            }
+
+
+            json t = {
+                { "title", "Server List" },
+                { "description", w.str() },
+                { "color", 10599460 }
+            };
+            _channel.create_message(t);
         }
 
         return true;
