@@ -477,7 +477,7 @@ public:
     {
         if (!m_guilds.count(id))
         {
-            auto g = std::make_unique<guild>(shard, id, ratelimit().get(rest_limits::bucket_type::GUILD));
+            auto g = std::make_unique<guild>(shard, *self.get(), id, ratelimit().get(rest_limits::bucket_type::GUILD));
             auto ptr = g.get();
             m_guilds.emplace(id, std::move(g));
             ptr->m_id = id;
@@ -535,6 +535,8 @@ public:
     std::shared_ptr<spd::logger> m_log;
 
 private:
+    friend guild;
+    std::shared_ptr<member> self;
 
     //std::map<std::string, c_inject> m_cbmap;
 

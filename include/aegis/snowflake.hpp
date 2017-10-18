@@ -49,7 +49,12 @@ public:
 
     operator int64_t() const
     {
-        return static_cast<int64_t>(m_snowflake);
+        return m_snowflake;
+    }
+
+    constexpr int64_t get()
+    {
+        return m_snowflake;
     }
 
     constexpr std::tuple<int64_t, int8_t, int8_t, int16_t> get_all()
@@ -113,7 +118,7 @@ public:
     };
 
 private:
-    uint64_t m_snowflake;
+    int64_t m_snowflake;
     static constexpr int64_t _countMask = 0x0000000000000FFFL;
     static constexpr int64_t _processMask = 0x000000000001F000L;
     static constexpr int64_t _workerMask = 0x00000000003E0000L;

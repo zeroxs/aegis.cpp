@@ -95,6 +95,16 @@ inline void Aegis::processReady(json & d, client & shard)
         m_mention = ss.str();
     }
     m_isuserset = true;
+
+    auto ptr = std::make_shared<member>(m_id);
+    m_members.emplace(m_id, ptr);
+    ptr->m_id = m_id;
+    ptr->m_isbot = true;
+    ptr->m_name = m_username;
+    ptr->m_discriminator = m_discriminator;
+    ptr->m_status = member::ONLINE;
+    
+    self = ptr;
 }
 
 inline void Aegis::guild_create(guild & _guild, json & obj, client & shard)
