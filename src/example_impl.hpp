@@ -346,6 +346,11 @@ inline bool example::extremely_simplified_message_handler(json & msg, client & s
                 { "footer",{ { "icon_url", "https://cdn.discordapp.com/emojis/289276304564420608.png" },{ "text", "Made in c++ running aegis library" } } }
             };
 
+            json obj;
+            if (!content.empty())
+                obj["content"] = "";
+            obj["embed"] = t;
+
             //manual call with instant response
 //             std::optional<rest_reply> reply = bot.call(fmt::format("/channels/{:d}/messages", channel_id), t.dump(), "POST");
 //             if (reply.has_value() && reply->reply_code == 200)
@@ -355,7 +360,7 @@ inline bool example::extremely_simplified_message_handler(json & msg, client & s
 //             }
 
             //ratelimit controlled call with callback response
-            bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_id, fmt::format("/channels/{:d}/messages", channel_id), t.dump(), "POST", [&](aegis::rest_reply & reply)
+            bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_id, fmt::format("/channels/{:d}/messages", channel_id), obj.dump(), "POST", [&](aegis::rest_reply & reply)
             {
                 if (reply.reply_code == 200)
                 {
