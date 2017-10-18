@@ -26,7 +26,7 @@
 #pragma once
 
 
-#include "aegis/config.hpp"
+#include "config.hpp"
 #include <string>
 #include <chrono>
 #include <sstream>
@@ -42,21 +42,13 @@ public:
         : heartbeat_ack(0)
         , lastheartbeat(0)
         , sequence(0)
-        , state_o(aegis::Uninitialized)
+        , connection_state(aegis::Uninitialized)
     {
     }
 
-    void do_reset()
-    {
-        heartbeat_ack = 0;
-        if (connection != nullptr)
-            connection.reset();
-        if (keepalivetimer != nullptr)
-        {
-            keepalivetimer->cancel();
-            keepalivetimer.reset();
-        }
-    }
+    void do_reset();
+
+    bool conn_test(std::function<void()> func);
 
     // Websocket++ socket connection
     websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr connection;
@@ -72,7 +64,9 @@ public:
 
     uint64_t sequence;
 
-    state state_o;
+    state_c * state_o;
+
+    state connection_state;
 
     std::shared_ptr<asio::steady_timer> reconnect_timer;
 

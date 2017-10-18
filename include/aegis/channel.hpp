@@ -36,6 +36,7 @@ using json = nlohmann::json;
 using rest_limits::bucket_factory;
 
 class aegis_guild;
+class aegis_shard;
 
 class aegis_channel
 {
@@ -80,6 +81,9 @@ public:
     std::map<int64_t, perm_overwrite> m_overrides;
 
     aegis_guild & get_guild();
+
+
+    void load_with_guild(aegis_guild & _guild, json & obj, aegis_shard * shard);
 
     bool create_message(std::string content, std::function<void(rest_reply)> callback = nullptr);
 

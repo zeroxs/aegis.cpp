@@ -37,14 +37,7 @@ class snowflake
 {
 public:
     snowflake() : m_snowflake(0) {}
-    snowflake(uint64_t snowflake) : m_snowflake(snowflake) {}
-
-    template<typename integral, typename = std::enable_if<std::numeric_limits<integral>::is_integer>>
-    snowflake & operator=(const integral & rhs)
-    {
-        m_snowflake = rhs;
-        return *this;
-    }
+    snowflake(int64_t snowflake) : m_snowflake(snowflake) {}
 
     operator int64_t() const
     {
@@ -126,7 +119,7 @@ void from_json(const nlohmann::json& j, snowflake& s)
 }
 void to_json(nlohmann::json& j, const snowflake& s)
 {
-    j = json{ s };
+    j = json{ static_cast<int64_t>(s) };
 }
 
 }

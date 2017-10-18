@@ -1,5 +1,5 @@
 //
-// aegis.hpp
+// reaction.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -26,29 +26,34 @@
 #pragma once
 
 
-#include "aegis/config.hpp"
-#include "aegis/common.hpp"
-#include "aegis/utility.hpp"
-#include "aegis/state_c.hpp"
+#include "../config.hpp"
+#include "../snowflake.hpp"
+#include "emoji.hpp"
 
-#include "aegis/events/typing_start.hpp"
-#include "aegis/events/message_create.hpp"
 
-#include "aegis/snowflake.hpp"
-#include "aegis/role.hpp"
-#include "aegis/structs.hpp"
-#include "aegis/ratelimit.hpp"
-#include "aegis/error.hpp"
+namespace aegis
+{
 
-#include "aegis/member.hpp"
-#include "aegis/shard.hpp"
 
-#include "aegis/channel.hpp"
-#include "aegis/guild.hpp"
-#include "aegis/aegis.hpp"
-#include "aegis/shard_impl.hpp"
-#include "aegis/member_impl.hpp"
-#include "aegis/channel_impl.hpp"
-#include "aegis/guild_impl.hpp"
-#include "aegis/aegis_impl.hpp"
+struct reaction
+{
+    int32_t count;
+    bool me;
+    emoji emoji_;
+};
+
+void from_json(const nlohmann::json& j, reaction& m)
+{
+    m.count = j["count"];
+    m.me = j["me"];
+    m.emoji_ = j["emoji_"];
+}
+void to_json(nlohmann::json& j, const reaction& m)
+{
+    j["count"] = m.count;
+    j["me"] = m.me;
+    j["emoji_"] = m.emoji_;
+}
+
+}
 

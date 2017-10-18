@@ -42,7 +42,9 @@ class aegis_core
 {
 public:
 
-    using c_inject = std::function<bool(json & msg, aegis_shard & shard, aegis_core & bot)>;
+    using c_inject = std::function<bool(json & msg, aegis_shard * shard, aegis_core & bot)>;
+    using cb_typing_start = std::function<bool(typing_start obj)>;
+    using cb_message_create = std::function<bool(message_create obj)>;
 
     /// Type of a pointer to the ASIO io_service
     typedef asio::io_service * io_service_ptr;
@@ -101,6 +103,7 @@ public:
         log->debug("aegis::initialize()");
         websocket_o.init_asio(ptr, ec);
         if (ec)
+            throw std::system_error(ec);
         bot_state = Ready;
         ec.clear();
     }
@@ -141,7 +144,9 @@ public:
         // Create our websocket connection
         websocketcreate(ec);
         if (ec) { log->error("Websocket fail: {}", ec.message()); stop_work();  return; }
+        state_o.core = this;
         // Connect the websocket[s]
+        starttime = std::chrono::steady_clock::now();
         std::thread make_connections([&]
         {
             connect(ec);
@@ -238,7 +243,7 @@ public:
                 return;
             }
 
-            setup_callbacks(*shard);
+            setup_callbacks(shard.get());
 
             websocket_o.connect(shard->connection);
             shards.push_back(std::move(shard));
@@ -246,17 +251,17 @@ public:
         }
     }
 
-    void setup_callbacks(aegis_shard & shard)
+    void setup_callbacks(aegis_shard * shard)
     {
-        shard.connection->set_message_handler([&shard, this](websocketpp::connection_hdl hdl, message_ptr msg)
+        shard->connection->set_message_handler([shard, this](websocketpp::connection_hdl hdl, message_ptr msg)
         {
             this->onMessage(hdl, msg, shard);
         });
-        shard.connection->set_open_handler([&shard, this](websocketpp::connection_hdl hdl)
+        shard->connection->set_open_handler([shard, this](websocketpp::connection_hdl hdl)
         {
             this->onConnect(hdl, shard);
         });
-        shard.connection->set_close_handler([&shard, this](websocketpp::connection_hdl hdl)
+        shard->connection->set_close_handler([shard, this](websocketpp::connection_hdl hdl)
         {
             this->onClose(hdl, shard);
         });
@@ -272,22 +277,22 @@ public:
         websocket_o.stop_perpetual();
     }
 
-    void debug_trace(aegis_shard & shard)
+    void debug_trace(aegis_shard * shard)
     {
-        auto iter = shard.debug_messages.rend();
+        auto iter = shard->debug_messages.rend();
         fmt::MemoryWriter w;
 
         w << "==========<Start Error Trace>==========\n"
-            << "Shard: " << shard.shardid << '\n'
-            << "Seq: " << shard.sequence << '\n';
+            << "Shard: " << shard->shardid << '\n'
+            << "Seq: " << shard->sequence << '\n';
         int i = 0;
-        for (auto iter = shard.debug_messages.rbegin(); (i < 5 && iter != shard.debug_messages.rend()) ; ++i, --iter )
+        for (auto iter = shard->debug_messages.rbegin(); (i < 5 && iter != shard->debug_messages.rend()) ; ++i, ++iter )
             w << (*iter).second << '\n';
 
 
         for (auto & c : shards)
         {
-            w << fmt::format("Shard#{} shard:{:p} m_connection:{:p}\n", shard.shardid, static_cast<void*>(c.get()), static_cast<void*>(c->connection.get()));
+            w << fmt::format("Shard#{} shard:{:p} m_connection:{:p}\n", shard->shardid, static_cast<void*>(c.get()), static_cast<void*>(c->connection.get()));
         }
 
         w << "==========<End Error Trace>==========";
@@ -351,8 +356,8 @@ public:
     }
 
     /// User callbacks
-    c_inject i_typing_start;
-    c_inject i_message_create;
+    cb_typing_start i_typing_start;
+    cb_message_create i_message_create;
     c_inject i_message_update;
     c_inject i_message_delete;
     c_inject i_message_delete_bulk;
@@ -395,98 +400,76 @@ public:
     std::map<int64_t, std::shared_ptr<aegis_channel>> channels;
     std::map<int64_t, std::unique_ptr<aegis_guild>> guilds;
 
-    aegis_member & get_member(int64_t id)
+    std::shared_ptr<aegis_member> get_member(snowflake id) const noexcept
     {
-        if (!members.count(id))
-            throw std::out_of_range("member");
-        return *members[id];
+        auto it = members.find(id);
+        if (it == members.end())
+            return nullptr;
+        return it->second;
     }
 
-    aegis_channel & get_channel(int64_t id)
+    std::shared_ptr<aegis_channel> get_channel(snowflake id) const noexcept
     {
-        if (!channels.count(id))
-            throw std::out_of_range("channel");
-        return *channels[id];
+        auto it = channels.find(id);
+        if (it == channels.end())
+            return nullptr;
+        return it->second;
     }
 
-    aegis_guild & get_guild(int64_t id)
+    aegis_guild * get_guild(snowflake id) const noexcept
     {
-        if (!guilds.count(id))
-            throw std::out_of_range("guild");
-        return *guilds[id];
+        auto it = guilds.find(id);
+        if (it == guilds.end())
+            return nullptr;
+        return it->second.get();
     }
 
-    aegis_member & get_member_create(int64_t id)
+    std::shared_ptr<aegis_member> get_member_create(snowflake id)
     {
-        if (!members.count(id))
+//         if (id == 362588408180375555)
+//         {
+//             log->critical("Trigger");
+//         }
+        auto it = members.find(id);
+        if (it == members.end())
         {
             auto g = std::make_shared<aegis_member>(id);
-            auto ptr = g.get();
             members.emplace(id, g);
-            ptr->member_id = id;
-            return *ptr;
+            g->member_id = id;
+            return g;
         }
-        return *members[id];
+        return it->second;
     }
 
-    aegis_channel & get_channel_create(int64_t id)
+    std::shared_ptr<aegis_channel> get_channel_create(snowflake id)
     {
-        if (!channels.count(id))
+        auto it = channels.find(id);
+        if (it == channels.end())
         {
-            auto g = std::make_unique<aegis_channel>(id, 0, ratelimit().get(rest_limits::bucket_type::CHANNEL), ratelimit().get(rest_limits::bucket_type::EMOJI));
-            auto ptr = g.get();
-            channels.emplace(id, std::move(g));
-            ptr->channel_id = id;
-            return *ptr;
-        }
-        return *channels[id];
-    }
-
-    aegis_channel & get_guild_channel_create(int64_t id, int64_t guild_id, aegis_shard & shard)
-    {
-        aegis_guild & _guild = get_guild_create(guild_id, shard);
-        if (!_guild.channels.count(id))
-        {
-            auto g = std::make_shared<aegis_channel>(id, guild_id, ratelimit().get(rest_limits::bucket_type::CHANNEL), ratelimit().get(rest_limits::bucket_type::EMOJI));
-            auto ptr = g.get();
-            _guild.channels.emplace(id, g);
+            auto g = std::make_shared<aegis_channel>(id, 0, ratelimit().get(rest_limits::bucket_type::CHANNEL), ratelimit().get(rest_limits::bucket_type::EMOJI));
             channels.emplace(id, g);
-            g->_guild = guilds[guild_id].get();
-            ptr->channel_id = id;
-            return *ptr;
+            g->channel_id = id;
+            return g;
         }
-        return *_guild.channels[id];
+        return it->second;
     }
 
-    aegis_guild & get_guild_create(int64_t id, aegis_shard & shard)
+    aegis_guild * get_guild_create(snowflake id, aegis_shard * shard)
     {
-        if (!guilds.count(id))
+        auto _guild = get_guild(id);
+        if (_guild == nullptr)
         {
-            auto g = std::make_unique<aegis_guild>(shard.shardid, &state_o, id, ratelimit().get(rest_limits::bucket_type::GUILD));
+            auto g = std::make_unique<aegis_guild>(shard->shardid, &state_o, id, ratelimit().get(rest_limits::bucket_type::GUILD));
             auto ptr = g.get();
             guilds.emplace(id, std::move(g));
             ptr->guild_id = id;
-            return *ptr;
+            return ptr;
         }
-        return *guilds[id];
+        return _guild;
     }
 
-    //called by GUILD_CREATE
-    void guild_create(aegis_guild & _guild, json & obj, aegis_shard & shard);
-
-    //called by CHANNEL_CREATE (guilds)
-    void channel_guild_create(aegis_guild & _guild, json & obj, aegis_shard & shard);
-
     //called by CHANNEL_CREATE (DirectMessage)
-    void channel_create(json & obj, aegis_shard & shard);
-
-    //called by GUILD_MEMBER_ADD
-    //creating members from DMs will be handled elsewhere
-    void member_create(aegis_guild & _guild, json & obj, aegis_shard & shard);
-    
-    void load_presence(json & member, aegis_guild & _guild);
-    void load_role(json & role, aegis_guild & _guild);
-
+    void channel_create(json & obj, aegis_shard * shard);
 
     json self_presence;
 
@@ -538,8 +521,10 @@ public:
 
         if (d)
             ss << d << "d ";
-        ss << h << "h ";
-        ss << m << "m ";
+        if (h)
+            ss << h << "h ";
+        if (m)
+            ss << m << "m ";
         ss << s << "s ";
         return ss.str();
     }
@@ -548,6 +533,7 @@ public:
 private:
     friend class aegis_guild;
     friend class aegis_channel;
+    friend class aegis_shard;
 
     //std::map<std::string, c_inject> m_cbmap;
 
@@ -566,11 +552,11 @@ private:
 
     ratelimiter ratelimit_o;
 
-    void onMessage(websocketpp::connection_hdl hdl, message_ptr msg, aegis_shard & shard);
-    void onConnect(websocketpp::connection_hdl hdl, aegis_shard & shard);
-    void onClose(websocketpp::connection_hdl hdl, aegis_shard & shard);
-    void processReady(json & d, aegis_shard & shard);
-    void keepAlive(const asio::error_code& error, const int ms, aegis_shard & shard);
+    void onMessage(websocketpp::connection_hdl hdl, message_ptr msg, aegis_shard * shard);
+    void onConnect(websocketpp::connection_hdl hdl, aegis_shard * shard);
+    void onClose(websocketpp::connection_hdl hdl, aegis_shard * shard);
+    void processReady(json & d, aegis_shard * shard);
+    void keepAlive(const asio::error_code& error, const int ms, aegis_shard * shard);
 
     void rest_thread();
 };

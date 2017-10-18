@@ -1,5 +1,5 @@
 //
-// aegis.hpp
+// message_create.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -26,29 +26,30 @@
 #pragma once
 
 
-#include "aegis/config.hpp"
-#include "aegis/common.hpp"
-#include "aegis/utility.hpp"
-#include "aegis/state_c.hpp"
+#include "../config.hpp"
+#include "../snowflake.hpp"
+#include "../objects/message.hpp"
+#include <string>
+#include <vector>
 
-#include "aegis/events/typing_start.hpp"
-#include "aegis/events/message_create.hpp"
 
-#include "aegis/snowflake.hpp"
-#include "aegis/role.hpp"
-#include "aegis/structs.hpp"
-#include "aegis/ratelimit.hpp"
-#include "aegis/error.hpp"
 
-#include "aegis/member.hpp"
-#include "aegis/shard.hpp"
+namespace aegis
+{
 
-#include "aegis/channel.hpp"
-#include "aegis/guild.hpp"
-#include "aegis/aegis.hpp"
-#include "aegis/shard_impl.hpp"
-#include "aegis/member_impl.hpp"
-#include "aegis/channel_impl.hpp"
-#include "aegis/guild_impl.hpp"
-#include "aegis/aegis_impl.hpp"
+class aegis_member;
+class aegis_channel;
+
+
+
+struct message_create
+{
+    aegis_channel * channel;
+    aegis_member * author;
+    message msg;
+    aegis_shard * shard;
+    aegis_core * bot;
+};
+
+}
 

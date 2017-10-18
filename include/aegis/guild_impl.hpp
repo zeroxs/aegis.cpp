@@ -36,6 +36,195 @@ using rest_limits::bucket_factory;
 using json = nlohmann::json;
 
 
+
+inline aegis_guild::~aegis_guild()
+{
+    for (auto &[k, v] : members)
+        v->leave(guild_id);
+}
+
+inline void aegis_guild::load(json & obj, aegis_shard * shard) noexcept
+{
+    //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
+    snowflake g_id = obj["id"];
+
+    aegis_core & bot = *state_o->core;
+    try
+    {
+        json voice_states;
+
+        if (!obj["name"].is_null()) name = obj["name"].get<std::string>();
+        if (!obj["icon"].is_null()) m_icon = obj["icon"].get<std::string>();
+        if (!obj["splash"].is_null()) m_splash = obj["splash"].get<std::string>();
+        m_owner_id = obj["owner_id"];
+        m_region = obj["region"].get<std::string>();
+        if (!obj["afk_channel_id"].is_null()) m_afk_channel_id = obj["afk_channel_id"];
+        m_afk_timeout = obj["afk_timeout"];//in seconds
+        if (!obj["embed_enabled"].is_null()) m_embed_enabled = obj["embed_enabled"].get<bool>();
+        //_guild.m_embed_channel_id = obj->get("embed_channel_id").convert<uint64_t>();
+        m_verification_level = obj["verification_level"];
+        m_default_message_notifications = obj["default_message_notifications"];
+        m_mfa_level = obj["mfa_level"];
+        if (!obj["joined_at"].is_null()) joined_at = obj["joined_at"].get<std::string>();
+        if (!obj["large"].is_null()) m_large = obj["large"];
+        if (!obj["unavailable"].is_null()) unavailable = obj["unavailable"].get<bool>();
+        if (!obj["member_count"].is_null()) m_member_count = obj["member_count"];
+        if (!obj["voice_states"].is_null()) voice_states = obj["voice_states"];
+
+        if (obj.count("members"))
+        {
+            json members = obj["members"];
+
+            for (auto & member : members)
+            {
+                snowflake member_id = member["user"]["id"];
+                auto _member = bot.get_member_create(member_id);
+                this->members.emplace(member_id, _member);
+                _member->load(*this, member, shard);
+                ++shard->counters.members;
+            }
+        }
+
+        if (obj.count("channels"))
+        {
+            json channels = obj["channels"];
+
+            for (auto & channel : channels)
+            {
+                snowflake channel_id = channel["id"];
+                auto _channel = get_channel_create(channel_id, shard);
+                _channel->load_with_guild(*this, channel, shard);
+                ++shard->counters.channels;
+            }
+        }
+
+        if (obj.count("roles"))
+        {
+            json roles = obj["roles"];
+
+            for (auto & role : roles)
+            {
+                load_role(role);
+            }
+        }
+
+        if (obj.count("presences"))
+        {
+            json presences = obj["presences"];
+
+            for (auto & presence : presences)
+            {
+                load_presence(presence);
+            }
+        }
+
+        if (obj.count("emojis"))
+        {
+            json emojis = obj["emojis"];
+
+            for (auto & emoji : emojis)
+            {
+                //loadEmoji(emoji, _guild);
+            }
+        }
+
+        if (obj.count("features"))
+        {
+            json features = obj["features"];
+
+        }
+
+        /*
+        for (auto & feature : features)
+        {
+        //??
+        }
+
+        for (auto & voicestate : voice_states)
+        {
+        //no voice yet
+        }*/
+
+
+        log->info("Shard#{} : Guild created: {} [{}]", shard->shardid, g_id, name);
+
+    }
+    catch (std::exception&e)
+    {
+        log->error("Shard#{} : Error processing guild[{}] {}", shard->shardid, g_id, (std::string)e.what());
+    }
+}
+
+inline aegis_channel * aegis_guild::get_channel_create(snowflake id, aegis_shard * shard) noexcept
+{
+    auto _channel = get_channel(id);
+    if (_channel == nullptr)
+    {
+        auto g = std::make_shared<aegis_channel>(id, guild_id, state_o->core->ratelimit().get(rest_limits::bucket_type::CHANNEL), state_o->core->ratelimit().get(rest_limits::bucket_type::EMOJI));
+        auto ptr = g.get();
+        channels.emplace(id, g);
+        state_o->core->channels.emplace(id, g);
+        g->_guild = this;
+        ptr->channel_id = id;
+        return ptr;
+    }
+    return _channel;
+}
+
+inline void aegis_guild::load_presence(json & obj) noexcept
+{
+    json user = obj["user"];
+
+    aegis_member::member_status status;
+    if (obj["status"] == "idle")
+        status = aegis_member::Idle;
+    else if (obj["status"] == "dnd")
+        status = aegis_member::DoNotDisturb;
+    else if (obj["status"] == "online")
+        status = aegis_member::Online;
+    else if (obj["status"] == "offline")
+        status = aegis_member::Offline;
+
+    auto _member = get_member(user["id"]);
+    if (_member == nullptr)
+    {
+        //state_o->core->log->error("User doesn't exist {}", user["id"].get<std::string>());
+        return;
+    }
+    _member->status = status;
+    return;
+}
+
+inline void aegis_guild::load_role(json & obj) noexcept
+{
+    snowflake role_id = obj["id"];
+    if (!roles.count(role_id))
+    {
+        auto r = std::make_unique<role>();
+        auto & _role = *r.get();
+        roles.emplace(role_id, std::move(r));
+    }
+    auto & _role = *roles[role_id].get();
+    _role.role_id = role_id;
+    _role.hoist = obj["hoist"];
+    _role.managed = obj["managed"];
+    _role.mentionable = obj["mentionable"];
+    _role._permission = permission(obj["permissions"].get<uint64_t>());
+    _role.position = obj["position"];
+    if (!obj["name"].is_null()) _role.name = obj["name"].get<std::string>();
+    _role.color = obj["color"];
+    return;
+}
+
+
+inline aegis_channel * aegis_guild::get_channel(snowflake id) const noexcept
+{
+    auto it = channels.find(id);
+    if (it == channels.end())
+        return nullptr;
+    return it->second.get();
+}
+
 inline aegis_member * aegis_guild::get_member(snowflake member_id) const noexcept
 {
     auto m = members.find(member_id);
@@ -44,14 +233,14 @@ inline aegis_member * aegis_guild::get_member(snowflake member_id) const noexcep
     return m->second.get();
 }
 
-inline permission aegis_guild::get_permissions(snowflake member_id, snowflake channel_id)
+inline permission aegis_guild::get_permissions(snowflake member_id, snowflake channel_id) noexcept
 {
     if (!members.count(member_id) || !channels.count(channel_id))
         return 0;
     return get_permissions(*members[guild_id], *channels[channel_id]);
 }
 
-inline permission aegis_guild::get_permissions(aegis_member & _member, aegis_channel & _channel)
+inline permission aegis_guild::get_permissions(aegis_member & _member, aegis_channel & _channel) noexcept
 {
     int64_t _base_permissions = base_permissions(_member);
 
@@ -120,7 +309,7 @@ inline int64_t aegis_guild::compute_overwrites(int64_t _base_permissions, aegis_
 
 inline role & aegis_guild::get_role(int64_t r) const
 {
-    for (auto & kv : m_roles)
+    for (auto & kv : roles)
         if (kv.second->role_id == r)
             return *kv.second.get();
     throw std::out_of_range(fmt::format("G: {} role:[{}] does not exist", guild_id, r));
@@ -154,10 +343,10 @@ inline void aegis_guild::remove_role(snowflake role_id)
             }
         }
     }
-    m_roles.erase(role_id);
+    roles.erase(role_id);
 }
 
-inline int32_t aegis_guild::get_member_count()
+inline int32_t aegis_guild::get_member_count() const noexcept
 {
     return static_cast<int32_t>(members.size());
 }

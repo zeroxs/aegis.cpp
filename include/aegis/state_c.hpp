@@ -1,5 +1,5 @@
 //
-// member.hpp
+// state_c.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -26,11 +26,13 @@
 #pragma once
 
 #include "aegis/config.hpp"
-#include <string>
 #include "snowflake.hpp"
+#include <string>
 
 namespace aegis
 {
+
+class aegis_core;
 
 struct state_c
 {
@@ -41,6 +43,7 @@ struct state_c
     };
 
     user_c user;
+    aegis_core * core;
 
 };
 

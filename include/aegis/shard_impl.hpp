@@ -1,5 +1,5 @@
 //
-// aegis.hpp
+// shard_impl.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -26,29 +26,50 @@
 #pragma once
 
 
-#include "aegis/config.hpp"
-#include "aegis/common.hpp"
-#include "aegis/utility.hpp"
-#include "aegis/state_c.hpp"
+#include "config.hpp"
+#include "aegis.hpp"
+#include <string>
+#include <chrono>
+#include <sstream>
 
-#include "aegis/events/typing_start.hpp"
-#include "aegis/events/message_create.hpp"
 
-#include "aegis/snowflake.hpp"
-#include "aegis/role.hpp"
-#include "aegis/structs.hpp"
-#include "aegis/ratelimit.hpp"
-#include "aegis/error.hpp"
+namespace aegis
+{
 
-#include "aegis/member.hpp"
-#include "aegis/shard.hpp"
 
-#include "aegis/channel.hpp"
-#include "aegis/guild.hpp"
-#include "aegis/aegis.hpp"
-#include "aegis/shard_impl.hpp"
-#include "aegis/member_impl.hpp"
-#include "aegis/channel_impl.hpp"
-#include "aegis/guild_impl.hpp"
-#include "aegis/aegis_impl.hpp"
+inline void aegis_shard::do_reset()
+{
+    heartbeat_ack = 0;
+    if (connection != nullptr)
+        connection.reset();
+    if (keepalivetimer != nullptr)
+    {
+        keepalivetimer->cancel();
+        keepalivetimer.reset();
+    }
+}
 
+inline bool aegis_shard::conn_test(std::function<void()> func)
+{
+    if (connection == nullptr)
+    {
+        connection_state = Reconnecting;
+        do_reset();
+        reconnect_timer = state_o->core->websocket_o.set_timer(10000, [this](const asio::error_code & ec)
+        {
+            if (ec == asio::error::operation_aborted)
+                return;
+            connection_state = Connecting;
+            asio::error_code wsec;
+            connection = state_o->core->websocket_o.get_connection(state_o->core->gateway_url, wsec);
+            state_o->core->setup_callbacks(this);
+            state_o->core->websocket_o.connect(connection);
+        });
+        return false;
+    }
+    func();
+    return true;
+}
+
+
+}

@@ -1,5 +1,5 @@
 //
-// channel.hpp
+// channel_impl.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -46,6 +46,59 @@ inline aegis_guild & aegis_channel::get_guild()
     return *_guild;
 }
 
+
+inline void aegis_channel::load_with_guild(aegis_guild & _guild, json & obj, aegis_shard * shard)
+{
+    snowflake channel_id = obj["id"];
+    aegis_channel * _channel = _guild.get_channel_create(channel_id, shard);
+    _channel->guild_id = _guild.guild_id;
+
+    try
+    {
+        //log->debug("Shard#{} : Channel[{}] created for guild[{}]", shard.m_shardid, channel_id, _channel.m_guild_id);
+        if (!obj["name"].is_null()) _channel->name = obj["name"].get<std::string>();
+        _channel->m_position = obj["position"];
+        _channel->m_type = static_cast<aegis_channel::ChannelType>(obj["type"].get<int>());// 0 = text, 2 = voice
+
+                                                                                           //voice channels
+        if (!obj["bitrate"].is_null())
+        {
+            _channel->m_bitrate = obj["bitrate"];
+            _channel->m_user_limit = obj["user_limit"];
+        }
+        else
+        {
+            //not a voice channel, so has a topic field and last message id
+            if (!obj["topic"].is_null()) _channel->m_topic = obj["topic"].get<std::string>();
+            if (!obj["last_message_id"].is_null()) _channel->m_last_message_id = obj["last_message_id"];
+        }
+
+
+        json permission_overwrites = obj["permission_overwrites"];
+        for (auto & permission : permission_overwrites)
+        {
+            uint32_t allow = permission["allow"];
+            uint32_t deny = permission["deny"];
+            snowflake p_id = permission["id"];
+            std::string p_type = permission["type"];
+
+            _channel->m_overrides[p_id].allow = allow;
+            _channel->m_overrides[p_id].deny = deny;
+            _channel->m_overrides[p_id].id = p_id;
+            if (p_type == "role")
+                _channel->m_overrides[p_id].type = perm_overwrite::Role;
+            else
+                _channel->m_overrides[p_id].type = perm_overwrite::User;
+        }
+
+        //_channel.update_permission_cache();
+    }
+    catch (std::exception&e)
+    {
+        log->error("Shard#{} : Error processing channel[{}] of guild[{}] {}", shard->shardid, channel_id, _channel->guild_id, e.what());
+    }
+}
+
 inline bool aegis_channel::create_message(std::string content, std::function<void(rest_reply)> callback)
 {
     if (!permission(_guild->base_permissions(_guild->self())).canSendMessages())
@@ -53,7 +106,7 @@ inline bool aegis_channel::create_message(std::string content, std::function<voi
 
     json obj;
     obj["content"] = content;
-    ratelimit.push(guild_id, fmt::format("/channels/{}/messages", guild_id), obj.dump(), "POST", callback);
+    ratelimit.push(channel_id, fmt::format("/channels/{}/messages", channel_id), obj.dump(), "POST", callback);
     return true;
 }
 
@@ -67,7 +120,7 @@ inline bool aegis_channel::create_message_embed(std::string content, json embed,
         obj["content"] = content;
     obj["embed"] = embed;
 
-    ratelimit.push(guild_id, fmt::format("/channels/{:d}/messages", guild_id), obj.dump(), "POST", callback);
+    ratelimit.push(channel_id, fmt::format("/channels/{:d}/messages", channel_id), obj.dump(), "POST", callback);
     return true;
 }
 
@@ -75,7 +128,7 @@ inline bool aegis_channel::edit_message(snowflake message_id, std::string conten
 {
     json obj;
     obj["content"] = content;
-    ratelimit.push(guild_id, fmt::format("/channels/{}/messages/{}", guild_id, message_id), obj.dump(), "PATCH", callback);
+    ratelimit.push(channel_id, fmt::format("/channels/{}/messages/{}", channel_id, message_id), obj.dump(), "PATCH", callback);
     return true;
 }
 
@@ -86,7 +139,7 @@ inline bool aegis_channel::edit_message_embed(snowflake message_id, std::string 
         obj["content"] = content;
     obj["embed"] = embed;
     obj["content"] = content;
-    ratelimit.push(guild_id, fmt::format("/channels/{}/messages/{}", guild_id, message_id), obj.dump(), "PATCH", callback);
+    ratelimit.push(channel_id, fmt::format("/channels/{}/messages/{}", channel_id, message_id), obj.dump(), "PATCH", callback);
     return true;
 }
 
@@ -108,7 +161,7 @@ inline bool aegis_channel::bulk_delete_message(snowflake message_id, std::vector
         return false;
 
     json obj = messages;
-    ratelimit.push(guild_id, fmt::format("/channels/{}/messages/bulk-delete", guild_id), obj.dump(), "POST", callback);
+    ratelimit.push(channel_id, fmt::format("/channels/{}/messages/bulk-delete", channel_id), obj.dump(), "POST", callback);
     return true;
 }
 
@@ -147,7 +200,7 @@ inline bool aegis_channel::modify_channel(std::optional<std::string> name, std::
     if (parent_id.has_value())//VIP only
         obj["parent_id"] = parent_id.value();
 
-    ratelimit.push(guild_id, fmt::format("/channels/{}", guild_id), std::move(obj), "PATCH", callback);
+    ratelimit.push(channel_id, fmt::format("/channels/{}", channel_id), std::move(obj), "PATCH", callback);
     return true;
 }
 
@@ -156,7 +209,7 @@ inline bool aegis_channel::delete_channel(std::function<void(rest_reply)> callba
     if (!permission(_guild->base_permissions(_guild->self())).canManageChannels())
         return false;
 
-    ratelimit.push(guild_id, fmt::format("/channels/{}", guild_id), "", "DELETE", callback);
+    ratelimit.push(channel_id, fmt::format("/channels/{}", channel_id), "", "DELETE", callback);
     return true;
 }
 
@@ -165,7 +218,7 @@ inline bool aegis_channel::create_reaction(snowflake message_id, std::string emo
     if (!permission(_guild->base_permissions(_guild->self())).canAddReactions())
         return false;
 
-    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", guild_id, message_id, emoji_text), "", "PUT", callback);
+    emoji.push(channel_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "", "PUT", callback);
     return true;
 }
 
@@ -174,7 +227,7 @@ inline bool aegis_channel::delete_own_reaction(snowflake message_id, std::string
     if (!permission(_guild->base_permissions(_guild->self())).canAddReactions())
         return false;
 
-    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", guild_id, message_id, emoji_text), "", "DELETE", callback);
+    emoji.push(channel_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "", "DELETE", callback);
     return true;
 }
 
@@ -183,7 +236,7 @@ inline bool aegis_channel::delete_user_reaction(snowflake message_id, std::strin
     if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
         return false;
 
-    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/{}", guild_id, message_id, emoji_text, user_id), "", "DELETE", callback);
+    emoji.push(channel_id, fmt::format("/channels/{}/messages/{}/reactions/{}/{}", channel_id, message_id, emoji_text, user_id), "", "DELETE", callback);
     return true;
 }
 
@@ -191,7 +244,7 @@ inline bool aegis_channel::get_reactions(snowflake message_id, std::string emoji
 {
     //TODO: support query params?
     //before[snowflake], after[snowflake], limit[int]
-    ratelimit.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}", guild_id, message_id, emoji_text), "", "GET", callback);
+    ratelimit.push(channel_id, fmt::format("/channels/{}/messages/{}/reactions/{}", channel_id, message_id, emoji_text), "", "GET", callback);
     return true;
 }
 
@@ -200,7 +253,7 @@ inline bool aegis_channel::delete_all_reactions(snowflake message_id, std::funct
     if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
         return false;
 
-    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions", guild_id, message_id), "", "DELETE", callback);
+    emoji.push(channel_id, fmt::format("/channels/{}/messages/{}/reactions", channel_id, message_id), "", "DELETE", callback);
     return true;
 }
 
@@ -213,7 +266,7 @@ inline bool aegis_channel::edit_channel_permissions(snowflake overwrite_id, int6
     obj["allow"] = allow;
     obj["deny"] = deny;
     obj["type"] = type;
-    ratelimit.push(guild_id, fmt::format("/channels/{}/permissions/{}", guild_id, overwrite_id), obj.dump(), "PUT", callback);
+    ratelimit.push(channel_id, fmt::format("/channels/{}/permissions/{}", channel_id, overwrite_id), obj.dump(), "PUT", callback);
     return true;
 }
 
@@ -222,7 +275,7 @@ inline bool aegis_channel::get_channel_invites(std::function<void(rest_reply)> c
     if (!permission(_guild->base_permissions(_guild->self())).canManageChannels())
         return false;
 
-    ratelimit.push(guild_id, fmt::format("/channels/{}/invites", guild_id), "", "GET", callback);
+    ratelimit.push(channel_id, fmt::format("/channels/{}/invites", channel_id), "", "GET", callback);
     return true;
 }
 
@@ -240,7 +293,7 @@ inline bool aegis_channel::create_channel_invite(std::optional<int> max_age, std
         obj["temporary"] = temporary.value();
     if (unique.has_value())
         obj["unique"] = unique.value();
-    ratelimit.push(guild_id, fmt::format("/channels/{}/invites", guild_id), obj.dump(), "POST", callback);
+    ratelimit.push(channel_id, fmt::format("/channels/{}/invites", channel_id), obj.dump(), "POST", callback);
     return true;
 }
 
@@ -250,13 +303,13 @@ inline bool aegis_channel::delete_channel_permission(snowflake overwrite_id, std
     if (!permission(_guild->base_permissions(_guild->self())).canManageRoles())
         return false;
 
-    ratelimit.push(guild_id, fmt::format("/channels/{}/permissions/{}", guild_id, overwrite_id), "", "DELETE", callback);
+    ratelimit.push(channel_id, fmt::format("/channels/{}/permissions/{}", channel_id, overwrite_id), "", "DELETE", callback);
     return true;
 }
 
 inline bool aegis_channel::trigger_typing_indicator(std::function<void(rest_reply)> callback)
 {
-    ratelimit.push(guild_id, fmt::format("/channels/{}/typing", guild_id), "", "POST", callback);
+    ratelimit.push(channel_id, fmt::format("/channels/{}/typing", channel_id), "", "POST", callback);
     return true;
 }
 

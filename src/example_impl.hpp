@@ -30,35 +30,29 @@
 namespace example_bot
 {
 
-inline bool example::typing_start(json & msg, aegis_shard & shard, aegis_core & bot)
+inline bool example::TypingStart(typing_start obj)
 {
+    obj.bot->log->info("Typing start");
     return true;
 }
 
-inline bool example::message_create(json & msg, aegis_shard & shard, aegis_core & bot)
+inline bool example::MessageCreate(aegis::message_create obj)
 {
-    if constexpr (check_setting<settings>::disable_cache::test())
-        return extremely_simplified_message_handler(msg, shard, bot);
-        
-    json author = msg["d"]["author"];
+//     if constexpr (check_setting<settings>::disable_cache::test())
+//         return extremely_simplified_message_handler(msg);
 
-    snowflake member_id = author["id"];
-    std::string username = author["username"];
 
-    //test
-    //auto[_ctime, _, _, _] = snowflake::c_get_all(member_id);
-    //auto[_time, _worker, _process, _count] = member_id.get_all();
-    //test
+    std::string username;
+    auto member = obj.author;
+    if (member != nullptr)
+        username = obj.author->name;
 
-    snowflake channel_id = msg["d"]["channel_id"];
-    snowflake message_id = msg["d"]["id"];
-    std::string content = msg["d"]["content"];
+    auto _channel = obj.channel;
+    auto & _guild = _channel->get_guild();
 
-    std::string avatar = author["avatar"].is_string() ? author["avatar"] : "";
-    uint16_t discriminator = std::stoi(author["discriminator"].get<std::string>());
-
-    aegis_channel & _channel = bot.get_channel(channel_id);
-    aegis_guild & _guild = _channel.get_guild();
+    snowflake channel_id = _channel->channel_id;
+    snowflake message_id = obj.msg.message_id;
+    std::string content = obj.msg.content;
 
     auto toks = split(content, ' ');
     if (toks.size() == 0)
@@ -67,13 +61,13 @@ inline bool example::message_create(json & msg, aegis_shard & shard, aegis_core 
     // basic stats of the example bot
     if (toks[0] == "?info")
     {
-        uint64_t guild_count = bot.guilds.size();
+        uint64_t guild_count = obj.bot->guilds.size();
         uint64_t member_count = 0;
-        uint64_t member_count_unique = bot.members.size();
+        uint64_t member_count_unique = obj.bot->members.size();
         uint64_t member_online_count = 0;
         uint64_t member_idle_count = 0;
         uint64_t member_dnd_count = 0;
-        uint64_t channel_count = bot.channels.size();
+        uint64_t channel_count = obj.bot->channels.size();
         uint64_t channel_text_count = 0;
         uint64_t channel_voice_count = 0;
         uint64_t member_count_active = 0;
@@ -81,10 +75,10 @@ inline bool example::message_create(json & msg, aegis_shard & shard, aegis_core 
         uint64_t eventsseen = 0;
 
         {
-            for (auto & bot_ptr : bot.shards)
+            for (auto & bot_ptr : obj.bot->shards)
                 eventsseen += bot_ptr->sequence;
 
-            for (auto &[k, v] : bot.members)
+            for (auto &[k, v] : obj.bot->members)
             {
                 if (v->status == aegis::aegis_member::member_status::Online)
                     member_online_count++;
@@ -94,7 +88,7 @@ inline bool example::message_create(json & msg, aegis_shard & shard, aegis_core 
                     member_dnd_count++;
             }
 
-            for (auto & [k,v] : bot.channels)
+            for (auto & [k,v] : obj.bot->channels)
             {
                 if (v->m_type == aegis_channel::ChannelType::Text)
                     channel_text_count++;
@@ -102,7 +96,7 @@ inline bool example::message_create(json & msg, aegis_shard & shard, aegis_core 
                     channel_voice_count++;
             }
 
-            member_count = bot.get_member_count();
+            member_count = obj.bot->get_member_count();
         }
 
         std::string members = fmt::format("{} seen\n{} unique\n{} online\n{} idle\n{} dnd", member_count, member_count_unique, member_online_count, member_idle_count, member_dnd_count);
@@ -114,7 +108,7 @@ inline bool example::message_create(json & msg, aegis_shard & shard, aegis_core 
 #else
         std::string build_mode = "RELEASE";
 #endif
-        std::string misc = fmt::format("I am shard {} of {} running on `{}` in `{}` mode", shard.shardid + 1, bot.shard_max_count, aegis::utility::platform::get_platform(), build_mode);
+        std::string misc = fmt::format("I am shard {} of {} running on `{}` in `{}` mode", obj.shard->shardid + 1, obj.bot->shard_max_count, aegis::utility::platform::get_platform(), build_mode);
 
         fmt::MemoryWriter w;
         w << "[Latest bot source](https://github.com/zeroxs/aegis.cpp)\n[Official Bot Server](https://discord.gg/w7Y3Bb8)\n\nMemory usage: "
@@ -132,7 +126,7 @@ inline bool example::message_create(json & msg, aegis_shard & shard, aegis_core 
         {
             { { "name", "Members" },{ "value", members },{ "inline", true } },
             { { "name", "Channels" },{ "value", channels },{ "inline", true } },
-            { { "name", "Uptime" },{ "value", bot.uptime() },{ "inline", true } },
+            { { "name", "Uptime" },{ "value", obj.bot->uptime() },{ "inline", true } },
             { { "name", "Guilds" },{ "value", guilds },{ "inline", true } },
             { { "name", "Events Seen" },{ "value", events },{ "inline", true } },
             { { "name", u8"\u200b" },{ "value", u8"\u200b" },{ "inline", true } },
@@ -143,7 +137,7 @@ inline bool example::message_create(json & msg, aegis_shard & shard, aegis_core 
             { "footer",{ { "icon_url", "https://cdn.discordapp.com/emojis/289276304564420608.png" },{ "text", "Made in c++ running aegis library" } } }
         };
 
-        _channel.create_message_embed({}, t);
+        _channel->create_message_embed({}, t);
         return true;
     }
     else if (toks[0] == "?source")
@@ -154,18 +148,18 @@ inline bool example::message_create(json & msg, aegis_shard & shard, aegis_core 
             { "color", rand() % 0xFFFFFF }
         };
 
-        _channel.create_message_embed({}, t);
+        _channel->create_message_embed({}, t);
     }
     else if (toks[0] == "?exit")
     {
-        json obj =
+        json t =
         {
             { "content", "exiting..." }
         };
-        bot.get_channel(channel_id).create_message(obj.dump());
-        bot.set_state(Shutdown);
-        bot.get_websocket().close(shard.connection, 1001, "");
-        bot.stop_work();
+        obj.bot->get_channel(channel_id)->create_message(t.dump());
+        obj.bot->set_state(Shutdown);
+        obj.bot->get_websocket().close(obj.shard->connection, 1001, "");
+        obj.bot->stop_work();
         return true;
     }
     else if (toks[0] == "?test")
@@ -175,42 +169,42 @@ inline bool example::message_create(json & msg, aegis_shard & shard, aegis_core 
     }
     else if (toks[0] == "?shard")
     {
-        _channel.create_message(fmt::format("I am shard#[{}]", shard.shardid));
+        _channel->create_message(fmt::format("I am shard#[{}]", obj.shard->shardid));
         return true;
     }
     else if (toks[0] == "?shards")
     {
         std::string s = "```\n";
-        for (auto & shard : bot.shards)
+        for (auto & shard : obj.bot->shards)
         {
-            s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages {:4} presence updates\n", shard->shardid, shard->counters.guilds, shard->counters.channels, shard->counters.members, shard->counters.messages, shard->counters.presence_changes);
+            s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages {:4} presence updates\n", obj.shard->shardid, obj.shard->counters.guilds, obj.shard->counters.channels, obj.shard->counters.members, obj.shard->counters.messages, obj.shard->counters.presence_changes);
         }
         s += "```";
-        _channel.create_message(s);
+        _channel->create_message(s);
     }
     else if (toks[0] == "?createchannel")
     {
         if (!_guild.create_text_channel(toks[1], 0, false, {}))
         {
-            _channel.create_message("No perms CREATE_CHANNEL");
+            _channel->create_message("No perms CREATE_CHANNEL");
         }
     }
     else if (toks[0] == "?deletechannel")
     {
-        if (member_id == 171000788183678976)
+        if (member->member_id == 171000788183678976)
         {
-            if (!_channel.delete_channel())
+            if (!_channel->delete_channel())
             {
-                _channel.create_message("No perms DELETE_CHANNEL");
+                _channel->create_message("No perms DELETE_CHANNEL");
             }
         }
     }
     else if (toks[0] == "?serverlist")
     {
         std::stringstream w;
-        for (auto & g : bot.guilds)
+        for (auto & g : obj.bot->guilds)
         {
-            auto & gld = g.second;
+            auto gld = g.second.get();
             w << "*" << gld->get_name() << "*  :  " << gld->guild_id << "\n";
         }
 
@@ -220,13 +214,13 @@ inline bool example::message_create(json & msg, aegis_shard & shard, aegis_core 
             { "description", w.str() },
             { "color", 10599460 }
         };
-        _channel.create_message_embed("", t);
+        _channel->create_message_embed("", t);
     }
     else if (toks[0] == "?mroles")
     {
         snowflake role_check;
         if (toks.size() == 1)
-            role_check = member_id;
+            role_check = member->member_id;
         else
             role_check = std::stoll(toks[1]);
 
@@ -238,13 +232,13 @@ inline bool example::message_create(json & msg, aegis_shard & shard, aegis_core 
             w << "[" << r.role_id << "] : [A:" << r._permission.getAllowPerms() << "] : [D:" << r._permission.getDenyPerms() << "] : [" << r.name << "]\n";
 
         }
-        _channel.create_message(w.str());
+        _channel->create_message(w.str());
     }
 
     return true;
 }
 
-inline bool example::extremely_simplified_message_handler(json & msg, aegis_shard & shard, aegis_core & bot)
+inline bool example::extremely_simplified_message_handler(json & msg, aegis_shard * shard, aegis_core & bot)
 {
     json author = msg["d"]["author"];
 
@@ -277,7 +271,7 @@ inline bool example::extremely_simplified_message_handler(json & msg, aegis_shar
 #else
             std::string build_mode = "RELEASE";
 #endif
-            std::string misc = fmt::format("I am shard {} of {} running on `{}` in `{}` mode", shard.shardid + 1, bot.shard_max_count, aegis::utility::platform::get_platform(), build_mode);
+            std::string misc = fmt::format("I am shard {} of {} running on `{}` in `{}` mode", shard->shardid + 1, bot.shard_max_count, aegis::utility::platform::get_platform(), build_mode);
 
             fmt::MemoryWriter w;
             w << "[Latest bot source](https://github.com/zeroxs/aegis.cpp)\n[Official Bot Server](https://discord.gg/w7Y3Bb8)\n\nMemory usage: "

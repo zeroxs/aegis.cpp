@@ -1,0 +1,130 @@
+//
+// message.hpp
+// aegis.cpp
+//
+// Copyright (c) 2017 Sara W (sara at xandium dot net)
+//
+// This file is part of aegis.cpp .
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy of
+// this software and associated documentation files (the "Software"), to deal in
+// the Software without restriction, including without limitation the rights to
+// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+// the Software, and to permit persons to whom the Software is furnished to do so,
+// subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+#pragma once
+
+
+#include "../config.hpp"
+#include "../snowflake.hpp"
+#include "../structs.hpp"
+#include "attachment.hpp"
+#include "embed.hpp"
+#include "reaction.hpp"
+#include <json.hpp>
+#include <string>
+#include <vector>
+
+
+
+namespace aegis
+{
+
+class aegis_member;
+class aegis_channel;
+
+struct message
+{
+    using json = nlohmann::json;
+
+    snowflake message_id;
+    std::string content;
+    std::string timestamp;
+    std::string edited_timestamp;
+    bool tts;
+    bool mention_everyone;
+    std::vector<snowflake> mentions;
+    std::vector<snowflake> mention_roles;
+    std::vector<attachment> attachments;
+    std::vector<embed> embeds;
+    bool pinned;
+    std::vector<reaction> reactions;
+    snowflake nonce;
+    std::string webhook_id;
+    message_type type;
+};
+
+void from_json(const nlohmann::json& j, message& m)
+{
+    m.message_id = j["id"];
+    if (!j["content"].is_null())
+        m.content = j["content"].get<std::string>();
+    m.timestamp = j["timestamp"].get<std::string>();
+    if (!j["edited_timestamp"].is_null())
+        m.edited_timestamp = j["edited_timestamp"].get<std::string>();
+    m.tts = j["tts"];
+    m.mention_everyone = j["mention_everyone"];
+    m.pinned = j["pinned"];
+    m.type = j["type"];
+    if (j.count("nonce") && !j["nonce"].is_null())
+        m.nonce = j["nonce"];
+    if (j.count("webhook_id") && !j["webhook_id"].is_null())
+        m.webhook_id = j["webhook_id"].get<std::string>();
+    if (j.count("mentions") && !j["mentions"].is_null())
+        for (auto i : j["mentions"])
+            m.mentions.push_back(i["id"]);
+    if (j.count("roles") && !j["roles"].is_null())
+        for (auto i : j["roles"])
+            m.mention_roles.push_back(i);
+    if (j.count("attachments") && !j["attachments"].is_null())
+        for (auto i : j["attachments"])
+            m.attachments.push_back(i);
+    if (j.count("embeds") && !j["embeds"].is_null())
+        for (auto i : j["embeds"])
+            m.embeds.push_back(i);
+    if (j.count("reactions") && !j["reactions"].is_null())
+        for (auto i : j["reactions"])
+            m.reactions.push_back(i);
+}
+void to_json(nlohmann::json& j, const message& m)
+{
+    j["id"] = m.message_id;
+    j["content"] = m.content;
+    j["timestamp"] = m.timestamp;
+    j["edited_timestamp"] = m.edited_timestamp;
+    j["tts"] = m.tts;
+    j["mention_everyone"] = m.mention_everyone;
+    j["pinned"] = m.pinned;
+    j["type"] = m.type;
+    if (m.nonce != 0)
+        j["nonce"] = m.nonce;
+    if (m.webhook_id.size() > 0)
+        j["webhook_id"] = m.webhook_id;
+    for (auto i : m.mentions)
+        j["mentions"].push_back(i);
+    for (auto i : m.mention_roles)
+        j["roles"].push_back(i);
+    for (auto i : m.attachments)
+        j["attachments"].push_back(i);
+    for (auto i : m.embeds)
+        j["embeds"].push_back(i);
+    if (m.reactions.size() > 0)
+        for (auto i : m.reactions)
+            j["reactions"].push_back(i);
+}
+
+
+
+}
+

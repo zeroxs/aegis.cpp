@@ -52,11 +52,11 @@ public:
         unavailable = false;
     }
 
-    ~aegis_guild()
-    {
-        for (auto & [k,v] : members)
-            v->leave(guild_id);
-    }
+    ~aegis_guild();
+
+    aegis_guild(const aegis_guild &) = delete;
+    aegis_guild(aegis_guild &&) = delete;
+    aegis_guild & operator=(const aegis_guild &) = delete;
 
     int16_t shard_id;
     snowflake guild_id;
@@ -64,10 +64,13 @@ public:
     std::shared_ptr<spdlog::logger> log;
     state_c * state_o;
 
-    aegis_member * self() const noexcept
+    aegis_member * self() const
     {
         auto self_id = state_o->user.id;
-        return get_member(self_id);
+        auto slf = get_member(self_id);
+        if (slf == nullptr)
+            throw std::runtime_error("guild::self() is nullptr");
+        return slf;
     }
 
     std::string get_name()
@@ -75,13 +78,23 @@ public:
         return name;
     }
 
+    aegis_channel * get_channel_create(snowflake id, aegis_shard * shard) noexcept;
+
+    void load(json & obj, aegis_shard * shard) noexcept;
+    
+    void load_presence(json & obj) noexcept;
+    
+    void load_role(json & obj) noexcept;
+
+    aegis_channel * get_channel(snowflake id) const noexcept;
+
     aegis_member * get_member(snowflake member_id) const noexcept;
 
-    int32_t get_member_count();
+    int32_t get_member_count() const noexcept;
 
-    permission get_permissions(snowflake guild_id, snowflake channel_id);
+    permission get_permissions(snowflake guild_id, snowflake channel_id) noexcept;
 
-    permission get_permissions(aegis_member & _member, aegis_channel & _channel);
+    permission get_permissions(aegis_member & _member, aegis_channel & _channel) noexcept;
 
     int64_t base_permissions(aegis_member * _member) const noexcept
     {
@@ -174,7 +187,7 @@ private:
     friend class aegis_member;
     std::map<int64_t, std::shared_ptr<aegis_channel>> channels;
     std::map<int64_t, std::shared_ptr<aegis_member>> members;
-    std::map<int64_t, std::unique_ptr<role>> m_roles;
+    std::map<int64_t, std::unique_ptr<role>> roles;
 
 
     std::string name;

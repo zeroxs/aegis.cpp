@@ -69,31 +69,21 @@ public:
     // Messages you want to process
     void inject(aegis::aegis_core & bot)
     {
-        bot.i_message_create = std::bind(&example::message_create, this, _1, _2, _3);
-        bot.i_guild_create = std::bind(&example::guild_create, this, _1, _2, _3);
-        bot.i_guild_delete = std::bind(&example::guild_delete, this, _1, _2, _3);
-        bot.i_ready = std::bind(&example::ready, this, _1, _2, _3);
-        bot.i_resumed = std::bind(&example::resumed, this, _1, _2, _3);
+        bot.i_typing_start = std::bind(&example::TypingStart, this, _1);
+        bot.i_message_create = std::bind(&example::MessageCreate, this, _1);
+        //bot.i_guild_create = std::bind(&example::guild_create, this, _1, _2, _3);
+        //bot.i_guild_delete = std::bind(&example::guild_delete, this, _1, _2, _3);
+        //bot.i_ready = std::bind(&example::ready, this, _1, _2, _3);
+        //bot.i_resumed = std::bind(&example::resumed, this, _1, _2, _3);
     }
 
 
     // All the hooks into the websocket stream
-    // Your hooked functions take priority over the library for processing.
-    // Returning a false makes the library skip handling the data when you are done. (except READY)
-    // Caveat: since you receive messages before the library can process, it can make
-    // accessing objects related to that message difficult. eg: a GUILD_CREATE event
-    // won't create a guild object until after you return control back to the library
-    // along with a true.
-    // Caveat2: You can effectively handle most caches and objects yourself by returning
-    // false on every message. If you decide to, you should disable the internal caching 
-    // of objects by setting
-    // aegis::settings::disable_cache = true
-    // in aegis/utility.hpp . Failure to do so may cause exceptions.
-    bool typing_start(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool TypingStart(typing_start obj);
 
-    bool message_create(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool MessageCreate(aegis::message_create msg);
     
-    bool extremely_simplified_message_handler(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool extremely_simplified_message_handler(json & msg, aegis_shard * shard, aegis_core & bot);
 
     bool message_update(json & msg, aegis_shard & shard, aegis_core & bot);
 

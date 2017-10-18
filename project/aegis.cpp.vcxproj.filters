@@ -19,6 +19,9 @@
     <Filter Include="Header Files\aegis\gateway events">
       <UniqueIdentifier>{40336c3f-fe1c-4294-bf3b-0d67e8bb51db}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\aegis\objects">
+      <UniqueIdentifier>{e8b84655-fb65-4647-aead-e6553cf2d1d1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\example.hpp">
@@ -84,14 +87,50 @@
     <ClInclude Include="..\include\aegis\shard.hpp">
       <Filter>Header Files\aegis</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\aegis\typing_start.hpp">
+    <ClInclude Include="..\include\aegis\events\message_create.hpp">
       <Filter>Header Files\aegis\gateway events</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\aegis\message.hpp">
+    <ClInclude Include="..\include\aegis\events\typing_start.hpp">
       <Filter>Header Files\aegis\gateway events</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\aegis\message_create.hpp">
-      <Filter>Header Files\aegis\gateway events</Filter>
+    <ClInclude Include="..\include\aegis\objects\field.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\message.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\reaction.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\attachment.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\embed.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\emoji.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\member_impl.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\footer.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\image.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\provider.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\thumbnail.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\video.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\shard_impl.hpp">
+      <Filter>Header Files\aegis</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

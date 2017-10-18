@@ -26,7 +26,8 @@
 #pragma once
 
 
-#include "aegis/config.hpp"
+#include "config.hpp"
+#include "guild.hpp"
 #include <string>
 #include <optional>
 #include <queue>
@@ -67,6 +68,8 @@ public:
     };
 
     member_status status = member_status::Offline;
+
+    void load(aegis_guild & _guild, json & obj, aegis_shard * shard);
 
     std::optional<std::string> getName(snowflake guild_id)
     {

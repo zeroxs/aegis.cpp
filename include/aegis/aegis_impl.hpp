@@ -25,8 +25,10 @@
 
 #pragma once
 
-#include "aegis/config.hpp"
-
+#include "config.hpp"
+#include "objects/message.hpp"
+#include "events/message_create.hpp"
+#include "events/typing_start.hpp"
 
 namespace aegis
 {
@@ -36,9 +38,9 @@ namespace spd = spdlog;
 using json = nlohmann::json;
 using namespace std::literals;
 
-inline void aegis_core::processReady(json & d, aegis_shard & shard)
+inline void aegis_core::processReady(json & d, aegis_shard * shard)
 {
-    shard.session_id = d["session_id"].get<std::string>();
+    shard->session_id = d["session_id"].get<std::string>();
 
     json guilds = d["guilds"];
     size_t connectguilds = guilds.size();
@@ -64,6 +66,8 @@ inline void aegis_core::processReady(json & d, aegis_shard & shard)
         ptr->name = username;
         ptr->discriminator = discriminator;
         ptr->status = aegis_member::Online;
+        state_o.user.id = member_id;
+        state_o.user.name = username;
     }
 
     for (auto & guildobj : guilds)
@@ -74,198 +78,29 @@ inline void aegis_core::processReady(json & d, aegis_shard & shard)
         if (guildobj.count("unavailable"))
             unavailable = guildobj["unavailable"];
 
-        aegis_guild & _guild = get_guild_create(id, shard);
-        _guild.unavailable = unavailable;
+        aegis_guild * _guild = get_guild_create(id, shard);
+        _guild->unavailable = unavailable;
 
         if (!unavailable)
-            guild_create(_guild, guildobj, shard);
+            _guild->load(guildobj, shard);
     }
 }
 
-inline void aegis_core::guild_create(aegis_guild & _guild, json & obj, aegis_shard & shard)
-{
-    //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
-    snowflake g_id = obj["id"];
-
-    try
-    {
-        json voice_states;
-
-        if (!obj["name"].is_null()) _guild.name = obj["name"].get<std::string>();
-        if (!obj["icon"].is_null()) _guild.m_icon = obj["icon"].get<std::string>();
-        if (!obj["splash"].is_null()) _guild.m_splash = obj["splash"].get<std::string>();
-        _guild.m_owner_id = obj["owner_id"];
-        _guild.m_region = obj["region"].get<std::string>();
-        if (!obj["afk_channel_id"].is_null()) _guild.m_afk_channel_id = obj["afk_channel_id"];
-        _guild.m_afk_timeout = obj["afk_timeout"];//in seconds
-        if (!obj["embed_enabled"].is_null()) _guild.m_embed_enabled = obj["embed_enabled"].get<bool>();
-        //_guild.m_embed_channel_id = obj->get("embed_channel_id").convert<uint64_t>();
-        _guild.m_verification_level = obj["verification_level"];
-        _guild.m_default_message_notifications = obj["default_message_notifications"];
-        _guild.m_mfa_level = obj["mfa_level"];
-        if (!obj["joined_at"].is_null()) _guild.joined_at = obj["joined_at"].get<std::string>();
-        if (!obj["large"].is_null()) _guild.m_large = obj["large"];
-        if (!obj["unavailable"].is_null()) _guild.unavailable = obj["unavailable"].get<bool>();
-        if (!obj["member_count"].is_null()) _guild.m_member_count = obj["member_count"];
-        if (!obj["voice_states"].is_null()) voice_states = obj["voice_states"];
-
-        if (obj.count("members"))
-        {
-            json members = obj["members"];
-
-            for (auto & member : members)
-            {
-                member_create(_guild, member, shard);
-                //++counters.members;
-            }
-        }
-
-        if (obj.count("channels"))
-        {
-            json channels = obj["channels"];
-
-            for (auto & channel : channels)
-            {
-                channel_guild_create(_guild, channel, shard);
-                //++counters.channels;
-            }
-        }
-
-        if (obj.count("roles"))
-        {
-            json roles = obj["roles"];
-
-            for (auto & role : roles)
-            {
-                load_role(role, _guild);
-            }
-        }
-
-        if (obj.count("presences"))
-        {
-            json presences = obj["presences"];
-
-            for (auto & presence : presences)
-            {
-                load_presence(presence, _guild);
-            }
-        }
-
-        if (obj.count("emojis"))
-        {
-            json emojis = obj["emojis"];
-
-            for (auto & emoji : emojis)
-            {
-                //loadEmoji(emoji, _guild);
-            }
-        }
-
-        if (obj.count("features"))
-        {
-            json features = obj["features"];
-
-        }
-
-        //if (shardloaded)
-            //_guild.UpdatePermissions();
-
-        //bot commands
-
-        //for (auto cmd : defaultcmdlist)
-            //_guild.cmdlist[cmd.first] = ABCallbackPair(ABCallbackOptions(), cmd.second);
-
-
-
-
-        /*
-        for (auto & feature : features)
-        {
-        //??
-        }
-
-        for (auto & voicestate : voice_states)
-        {
-        //no voice yet
-        }*/
-
-
-        log->info("Shard#{} : Guild created: {} [{}]", shard.shardid, g_id, _guild.name);
-
-    }
-    catch (std::exception&e)
-    {
-        log->error("Shard#{} : Error processing guild[{}] {}", shard.shardid, g_id, (std::string)e.what());
-    }
-}
-
-inline void aegis_core::channel_guild_create(aegis_guild & _guild, json & obj, aegis_shard & shard)
+inline void aegis_core::channel_create(json & obj, aegis_shard * shard)
 {
     snowflake channel_id = obj["id"];
-    aegis_channel & _channel = get_guild_channel_create(channel_id, _guild.guild_id, shard);
-    _channel.guild_id = _guild.guild_id;
-
-    try
-    {
-        //log->debug("Shard#{} : Channel[{}] created for guild[{}]", shard.m_shardid, channel_id, _channel.m_guild_id);
-        if (!obj["name"].is_null()) _channel.name = obj["name"].get<std::string>();
-        _channel.m_position = obj["position"];
-        _channel.m_type = static_cast<aegis_channel::ChannelType>(obj["type"].get<int>());// 0 = text, 2 = voice
-
-        //voice channels
-        if (!obj["bitrate"].is_null())
-        {
-            _channel.m_bitrate = obj["bitrate"];
-            _channel.m_user_limit = obj["user_limit"];
-        }
-        else
-        {
-            //not a voice channel, so has a topic field and last message id
-            if (!obj["topic"].is_null()) _channel.m_topic = obj["topic"].get<std::string>();
-            if (!obj["last_message_id"].is_null()) _channel.m_last_message_id = obj["last_message_id"];
-        }
-
-
-        json permission_overwrites = obj["permission_overwrites"];
-        for (auto & permission : permission_overwrites)
-        {
-            uint32_t allow = permission["allow"];
-            uint32_t deny = permission["deny"];
-            snowflake p_id = permission["id"];
-            std::string p_type = permission["type"];
-
-            _channel.m_overrides[p_id].allow = allow;
-            _channel.m_overrides[p_id].deny = deny;
-            _channel.m_overrides[p_id].id = p_id;
-            if (p_type == "role")
-                _channel.m_overrides[p_id].type = perm_overwrite::Role;
-            else
-                _channel.m_overrides[p_id].type = perm_overwrite::User;
-        }
-
-        //_channel.update_permission_cache();
-    }
-    catch (std::exception&e)
-    {
-        log->error("Shard#{} : Error processing channel[{}] of guild[{}] {}", shard.shardid, channel_id, _channel.guild_id, e.what());
-    }
-}
-
-inline void aegis_core::channel_create(json & obj, aegis_shard & shard)
-{
-    snowflake channel_id = obj["id"];
-    aegis_channel & _channel = get_channel_create(channel_id);
+    auto _channel = get_channel_create(channel_id);
 
     try
     {
         //log->debug("Shard#{} : Channel[{}] created for DirectMessage", shard.m_shardid, channel_id);
-        if (!obj["name"].is_null()) _channel.name = obj["name"].get<std::string>();
-        _channel.m_position = obj["position"];
-        _channel.m_type = static_cast<aegis_channel::ChannelType>(obj["type"].get<int>());// 0 = text, 2 = voice
+        if (!obj["name"].is_null()) _channel->name = obj["name"].get<std::string>();
+        _channel->m_position = obj["position"];
+        _channel->m_type = static_cast<aegis_channel::ChannelType>(obj["type"].get<int>());// 0 = text, 2 = voice
 
         //not a voice channel, so has a topic field and last message id
-        if (!obj["topic"].is_null()) _channel.m_topic = obj["topic"].get<std::string>();
-        if (!obj["last_message_id"].is_null()) _channel.m_last_message_id = obj["last_message_id"];
+        if (!obj["topic"].is_null()) _channel->m_topic = obj["topic"].get<std::string>();
+        if (!obj["last_message_id"].is_null()) _channel->m_last_message_id = obj["last_message_id"];
 
         //owner_id DirectMessage creator group DirectMessage
         //application_id DirectMessage creator if bot group DirectMessage
@@ -273,129 +108,31 @@ inline void aegis_core::channel_create(json & obj, aegis_shard & shard)
     }
     catch (std::exception&e)
     {
-        log->error("Shard#{} : Error processing channel[{}] of guild[{}] {}", shard.shardid, channel_id, _channel.guild_id, e.what());
+        log->error("Shard#{} : Error processing channel[{}] of guild[{}] {}", shard->shardid, channel_id, _channel->guild_id, e.what());
     }
 }
 
-inline void aegis_core::member_create(aegis_guild & _guild, json & obj, aegis_shard & shard)
-{
-    json & user = obj["user"];
-    snowflake member_id = user["id"];
-    aegis_member & _member = get_member_create(member_id);
-
-    try
-    {
-        //log->debug("Shard#{} : Member[{}] created for guild[{}]", shard.m_shardid, member_id, _guild.guild_id);
-        
-        auto g_member = members[member_id];
-
-        if (!_guild.members.count(member_id))
-        {
-            //new member
-            _guild.members.emplace(member_id, g_member);
-        }
-        //member update
-        if (!user["username"].is_null()) g_member->name = user["username"].get<std::string>();
-        if (!user["avatar"].is_null()) g_member->avatar = user["avatar"].get<std::string>();
-        if (!user["discriminator"].is_null()) g_member->discriminator = std::stoi(user["discriminator"].get<std::string>());
-        g_member->isbot = user["bot"].is_null() ? false : true;
-
-        auto g_info = _member.get_guild_info(_guild.guild_id);
-        if (g_info == nullptr)
-        {
-            g_info = _member.join(_guild.guild_id);
-        }
-
-        if (!obj["deaf"].is_null()) g_info->deaf = obj["deaf"];
-        if (!obj["mute"].is_null()) g_info->mute = obj["mute"];
-
-        if (!obj["joined_at"].is_null()) g_info->joined_at = obj["joined_at"].get<std::string>();
-
-        if (!obj["roles"].is_null())
-        {
-            if (!_member.guilds.count(_guild.guild_id))
-            {
-                _member.guilds.emplace(_guild.guild_id, std::make_unique<aegis_member::guild_info>());
-            }
-            g_info->roles.clear();
-            g_info->guild_id = _guild.guild_id;
-            g_info->roles.push_back(_guild.guild_id);//default everyone role
-
-            json roles = obj["roles"];
-            for (auto & r : roles)
-                g_info->roles.push_back(r);
-        }
-
-        if (!obj["nick"].is_null())
-            g_info->nickname = obj["nick"].get<std::string>();
-    }
-    catch (std::exception&e)
-    {
-        log->error("Shard#{} : Error processing member[{}] of guild[{}] {}", shard.shardid, member_id, _guild.guild_id, e.what());
-    }
-}
-
-inline void aegis_core::load_presence(json & obj, aegis_guild & _guild)
-{
-    json user = obj["user"];
-
-    aegis_member::member_status status;
-    if (obj["status"] == "idle")
-        status = aegis_member::Idle;
-    else if (obj["status"] == "dnd")
-        status = aegis_member::DoNotDisturb;
-    else if (obj["status"] == "online")
-        status = aegis_member::Online;
-    else if (obj["status"] == "offline")
-        status = aegis_member::Offline;
-
-    aegis_member & _member = get_member(user["id"]);
-    _member.status = status;
-    return;
-}
-
-inline void aegis_core::load_role(json & obj, aegis_guild & _guild)
-{
-    snowflake role_id = obj["id"];
-    if (!_guild.m_roles.count(role_id))
-    {
-        auto r = std::make_unique<role>();
-        auto & _role = *r.get();
-        _guild.m_roles.emplace(role_id, std::move(r));
-    }
-    auto & _role = *_guild.m_roles[role_id].get();
-    _role.role_id = role_id;
-    _role.hoist = obj["hoist"];
-    _role.managed = obj["managed"];
-    _role.mentionable = obj["mentionable"];
-    _role._permission = permission(obj["permissions"].get<uint64_t>());
-    _role.position = obj["position"];
-    if (!obj["name"].is_null()) _role.name = obj["name"].get<std::string>();
-    _role.color = obj["color"];
-    return;
-}
-
-inline void aegis_core::keepAlive(const asio::error_code & ec, const int ms, aegis_shard & shard)
+inline void aegis_core::keepAlive(const asio::error_code & ec, const int ms, aegis_shard * shard)
 {
     if (ec != asio::error::operation_aborted)
     {
         try
         {
-            if (shard.heartbeat_ack != 0 && shard.lastheartbeat > shard.heartbeat_ack)
+            if (shard->heartbeat_ack != 0 && shard->lastheartbeat > shard->heartbeat_ack)
             {
                 log->error("Heartbeat ack not received. Reconnecting.");
-                websocket_o.close(shard.connection, 1001, "");
-                shard.state_o = Reconnecting;
-                shard.do_reset();
-                shard.reconnect_timer = websocket_o.set_timer(10000, [&shard, this](const asio::error_code & ec)
+                websocket_o.close(shard->connection, 1001, "");
+                shard->connection_state = Reconnecting;
+                shard->do_reset();
+                shard->reconnect_timer = websocket_o.set_timer(10000, [&shard, this](const asio::error_code & ec)
                 {
                     if (ec == asio::error::operation_aborted)
                         return;
-                    shard.state_o = Connecting;
+                    shard->connection_state = Connecting;
                     asio::error_code wsec;
-                    shard.connection = websocket_o.get_connection(gateway_url, wsec);
+                    shard->connection = websocket_o.get_connection(gateway_url, wsec);
                     setup_callbacks(shard);
-                    websocket_o.connect(shard.connection);
+                    websocket_o.connect(shard->connection);
                 });
 
                 return;
@@ -403,13 +140,16 @@ inline void aegis_core::keepAlive(const asio::error_code & ec, const int ms, aeg
 
 
             json obj;
-            obj["d"] = shard.sequence;
+            obj["d"] = shard->sequence;
             obj["op"] = 1;
 
-            log->debug("Shard#{}: {}", shard.shardid, obj.dump());
-            shard.connection->send(obj.dump(), websocketpp::frame::opcode::text);
-            shard.lastheartbeat = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-            shard.keepalivetimer = websocket_o.set_timer(ms, std::bind(&aegis_core::keepAlive, this, std::placeholders::_1, ms, shard));
+            log->debug("Shard#{}: {}", shard->shardid, obj.dump());
+            shard->conn_test([&]()
+            {
+                shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
+                shard->lastheartbeat = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+                shard->keepalivetimer = websocket_o.set_timer(ms, std::bind(&aegis_core::keepAlive, this, std::placeholders::_1, ms, shard));
+            });
         }
         catch (websocketpp::exception & e)
         {
@@ -514,7 +254,7 @@ inline std::optional<rest_reply> aegis_core::call(std::string_view path, std::st
     return {};
 }
 
-inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, aegis_shard & shard)
+inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, aegis_shard * shard)
 {
     json result;
     std::string payload = msg->get_payload();
@@ -537,25 +277,25 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
         result = json::parse(payload);
         if (log->level() > spdlog::level::level_enum::trace && !result.is_null()
             && (result["t"].is_null() || (result["t"] != "GUILD_CREATE" && result["t"] != "PRESENCE_UPDATE")))
-            log->trace("Shard#{}: {}", shard.shardid, payload);
+            log->trace("Shard#{}: {}", shard->shardid, payload);
 
 
         //////////////////////////////////////////////////////////////////////////
         if constexpr (check_setting<settings>::debugmode::test())
         {
             int64_t t_time = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-            shard.debug_messages[t_time] = payload;
+            shard->debug_messages[t_time] = payload;
 
             ///check old messages and remove
 
-            for (auto &[k, v] : shard.debug_messages)
+            for (auto &[k, v] : shard->debug_messages)
                 if (k < t_time - 10000)
-                    shard.debug_messages.erase(k);
+                    shard->debug_messages.erase(k);
         }
         //////////////////////////////////////////////////////////////////////////
 
         if (!result["s"].is_null())
-            shard.sequence = result["s"].get<uint64_t>();
+            shard->sequence = result["s"].get<uint64_t>();
 
         if (!result.is_null())
         {
@@ -563,7 +303,7 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
             {
                 if (result["t"] == "PRESENCE_UPDATE")
                 {
-                    shard.counters.presence_changes++;
+                    shard->counters.presence_changes++;
 
                     if (i_presence_update)
                         if (!i_presence_update(result, shard, *this))
@@ -587,10 +327,10 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
                     else if (result["d"]["status"] == "offline")
                         status = aegis_member::Offline;
 
-                    aegis_member & _member = get_member_create(member_id);
-                    aegis_guild & _guild = get_guild(guild_id);
-                    member_create(_guild, result["d"], shard);
-                    _member.status = status;
+                    auto _member = get_member_create(member_id);
+                    auto  _guild = get_guild(guild_id);
+                    _member->load(*_guild, result["d"], shard);
+                    _member->status = status;
 
                     return;
                 }
@@ -599,8 +339,17 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
 
                 if (cmd == "TYPING_START")
                 {
+                    auto channel = get_channel(result["d"]["channel_id"]);
+                    auto member = get_member(result["d"]["user_id"]);
+                    typing_start obj;
+                    obj.channel = channel.get();
+                    obj.member = member.get();
+                    obj.timestamp = result["d"]["timestamp"];
+                    obj.bot = this;
+                    obj.shard = shard;
+
                     if (i_typing_start)
-                        if (!i_typing_start(result, shard, *this))
+                        if (!i_typing_start(std::move(obj)))
                             return;
                     if constexpr (check_setting<settings>::disable_cache::test())
                         return;
@@ -608,10 +357,18 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
                 }
                 if (cmd == "MESSAGE_CREATE")
                 {
-                    shard.counters.messages++;
-                    
+                    shard->counters.messages++;
+
+                    message_create obj;
+                    obj.author = get_member(result["d"]["author"]["id"]).get();
+                    obj.channel = get_channel(result["d"]["channel_id"]).get();
+                    obj.msg = result["d"];
+                    obj.bot = this;
+                    obj.shard = shard;
+                    obj.msg = result["d"];
+
                     if (i_message_create)
-                        if (!i_message_create(result, shard, *this))
+                        if (!i_message_create(obj))
                             return;
                     if constexpr (check_setting<settings>::disable_cache::test())
                         return;
@@ -628,7 +385,7 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
                 }
                 else if (cmd == "GUILD_CREATE")
                 {
-                    shard.counters.guilds++;
+                    shard->counters.guilds++;
                     
                     if (i_guild_create)
                         if (!i_guild_create(result, shard, *this))
@@ -638,14 +395,14 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
 
                     snowflake guild_id = result["d"]["id"];
 
-                    aegis_guild & _guild = get_guild_create(guild_id, shard);
-                    if (_guild.unavailable)
+                    auto _guild = get_guild_create(guild_id, shard);
+                    if (_guild->unavailable)
                     {
                         //outage
-                        shard.counters.guilds_outage--;
+                        shard->counters.guilds_outage--;
                     }
 
-                    guild_create(_guild, result["d"], shard);
+                    _guild->load(result["d"], shard);
 
                     return;
                 }
@@ -659,13 +416,13 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
 
                     snowflake guild_id = result["d"]["id"];
 
-                    aegis_guild & _guild = get_guild(guild_id);
-                    guild_create(_guild, result["d"], shard);
+                    auto _guild = get_guild(guild_id);
+                    _guild->load(result["d"], shard);
                     return;
                 }
                 else if (cmd == "GUILD_DELETE")
                 {
-                    shard.counters.guilds--;
+                    shard->counters.guilds--;
                     
                     if (i_guild_delete)
                         if (!i_guild_delete(result, shard, *this))
@@ -676,13 +433,16 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
                     if (result["d"]["unavailable"] == true)
                     {
                         //outage
-                        shard.counters.guilds_outage++;
+                        shard->counters.guilds_outage++;
                     }
                     else
                     {
                         snowflake id = result["d"]["id"];
-                        //kicked or left - remove from memory
-                        guilds.erase(id);
+                        //kicked or left - remove from memory in 5 seconds to allow for any potential message handling
+                        websocket_o.set_timer(5000, [&](const asio::error_code & ec)
+                        {
+                            guilds.erase(id);
+                        });
                     }
                     return;
                 }
@@ -723,14 +483,14 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
 
                     snowflake member_id = result["d"]["user"]["id"];
 
-                    aegis_member & _member = get_member_create(member_id);
+                    auto _member = get_member_create(member_id);
 
                     json & user = result["d"]["user"];
-                    if (!user["username"].is_null()) _member.name = user["username"].get<std::string>();
-                    if (!user["avatar"].is_null()) _member.avatar = user["avatar"].get<std::string>();
-                    if (!user["discriminator"].is_null()) _member.discriminator = std::stoi(user["discriminator"].get<std::string>());
-                    if (!user["mfa_enabled"].is_null()) _member.mfa_enabled = user["mfa_enabled"];
-                    if (!user["bot"].is_null()) _member.isbot = user["bot"];
+                    if (!user["username"].is_null()) _member->name = user["username"].get<std::string>();
+                    if (!user["avatar"].is_null()) _member->avatar = user["avatar"].get<std::string>();
+                    if (!user["discriminator"].is_null()) _member->discriminator = std::stoi(user["discriminator"].get<std::string>());
+                    if (!user["mfa_enabled"].is_null()) _member->mfa_enabled = user["mfa_enabled"];
+                    if (!user["bot"].is_null()) _member->isbot = user["bot"];
                     //if (!user["verified"].is_null()) _member.m_verified = user["verified"];
                     //if (!user["email"].is_null()) _member.m_email = user["email"].get<std::string>();
 
@@ -749,8 +509,8 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
                 else if (cmd == "READY")
                 {
                     processReady(result["d"], shard);
-                    shard.state_o = Online;
-                    log->info("Shard#[{}] READY Processed", shard.shardid);
+                    shard->connection_state = Online;
+                    log->info("Shard#[{}] READY Processed", shard->shardid);
 
                     if (i_ready)
                         i_ready(result, shard, *this);
@@ -771,15 +531,15 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
                     {
                         //guild channel
                         snowflake guild_id = result["d"]["guild_id"];
-                        aegis_channel & _channel = get_guild_channel_create(channel_id, guild_id, shard);
-                        aegis_guild & _guild = get_guild(guild_id);
-                        channel_guild_create(_guild, result["d"], shard);
-                        shard.counters.channels++;
+                        auto _guild = get_guild(guild_id);
+                        auto _channel = _guild->get_channel_create(channel_id, shard);
+                        _channel->load_with_guild(*_guild, result["d"], shard);
+                        shard->counters.channels++;
                     }
                     else
                     {
                         //dm
-                        aegis_channel & _channel = get_channel_create(channel_id);
+                        auto _channel = get_channel_create(channel_id);
                         channel_create(result["d"], shard);
                     }
 
@@ -806,21 +566,23 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
                         {
                             //guild channel
                             snowflake guild_id = result["d"]["guild_id"];
-                            aegis_channel & _channel = get_guild_channel_create(channel_id, guild_id, shard);
-                            aegis_guild & _guild = get_guild(guild_id);
-                            channel_guild_create(_guild, result["d"], shard);
+                            aegis_guild * _guild = get_guild(guild_id);
+                            if (_guild == nullptr)//TODO: errors
+                                return;
+                            aegis_channel * _channel = _guild->get_channel_create(channel_id, shard);
+                            _channel->load_with_guild(*_guild, result["d"], shard);
                         }
                         else
                         {
                             //dm
-                            aegis_channel & _channel = get_channel_create(channel_id);
+                            auto _channel = get_channel_create(channel_id);
                             channel_create(result["d"], shard);
                         }
                         return;
                     }
                     else if (cmd == "CHANNEL_DELETE")
                     {
-                        shard.counters.channels--;
+                        shard->counters.channels--;
                        
                         if (i_channel_delete)
                             if (!i_channel_delete(result, shard, *this))
@@ -867,7 +629,7 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
                     }
                     else if (cmd == "GUILD_MEMBER_ADD")
                     {
-                        shard.counters.members++;
+                        shard->counters.members++;
                         
                         if (i_guild_member_add)
                             if (!i_guild_member_add(result, shard, *this))
@@ -878,16 +640,16 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
                         snowflake member_id = result["d"]["user"]["id"];
                         snowflake guild_id = result["d"]["guild_id"];
                        
-                        aegis_member & _member = get_member_create(member_id);
-                        aegis_guild & _guild = get_guild(guild_id);
+                        auto _member = get_member_create(member_id);
+                        auto _guild = get_guild(guild_id);
                        
-                        member_create(_guild, result["d"], shard);
+                        _member->load(*_guild, result["d"], shard);
 
                         return;
                     }
                     else if (cmd == "GUILD_MEMBER_REMOVE")
                     {
-                        shard.counters.members--;
+                        shard->counters.members--;
 
                         if (i_guild_member_remove)
                             if (!i_guild_member_remove(result, shard, *this))
@@ -898,10 +660,10 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
                         snowflake member_id = result["d"]["user"]["id"];
                         snowflake guild_id = result["d"]["guild_id"];
                         
-                        aegis_member & _member = get_member(member_id);
-                        aegis_guild & _guild = get_guild(guild_id);
+                        auto _member = get_member(member_id);
+                        auto _guild = get_guild(guild_id);
                        
-                        _guild.remove_member(result["d"]);
+                        _guild->remove_member(result["d"]);
 
                         return;
                     }
@@ -916,10 +678,10 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
                         snowflake member_id = result["d"]["user"]["id"];
                         snowflake guild_id = result["d"]["guild_id"];
 
-                        aegis_member & _member = get_member(member_id);
-                        aegis_guild & _guild = get_guild(guild_id);
+                        auto _member = get_member(member_id);
+                        auto _guild = get_guild(guild_id);
 
-                        member_create(_guild, result["d"], shard);
+                        _member->load(*_guild, result["d"], shard);
                        
                         return;
                     }
@@ -942,8 +704,8 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
 
                         snowflake guild_id = result["d"]["guild_id"];
                        
-                        aegis_guild & _guild = get_guild(guild_id);
-                        load_role(result["d"]["role"], _guild);
+                        auto _guild = get_guild(guild_id);
+                        _guild->load_role(result["d"]["role"]);
                        
                         return;
                     }
@@ -957,8 +719,8 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
 
                         snowflake guild_id = result["d"]["guild_id"];
 
-                        aegis_guild & _guild = get_guild(guild_id);
-                        load_role(result["d"]["role"], _guild);
+                        auto _guild = get_guild(guild_id);
+                        _guild->load_role(result["d"]["role"]);
 
                         return;
                     }
@@ -973,8 +735,8 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
                         snowflake guild_id = result["d"]["guild_id"];
                         snowflake role_id = result["d"]["role_id"];
 
-                        aegis_guild & _guild = get_guild(guild_id);
-                        _guild.remove_role(role_id);
+                        auto _guild = get_guild(guild_id);
+                        _guild->remove_role(role_id);
 
                         return;
                     }
@@ -991,7 +753,7 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
             }
             if (result["op"] == 9)
             {
-                log->error("Shard#{} : Unable to resume or invalid connection. Starting new", shard.shardid);
+                log->error("Shard#{} : Unable to resume or invalid connection. Starting new", shard->shardid);
                 json obj = {
                     { "op", 2 },
                     {
@@ -1005,35 +767,38 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
                                 { "$device", "aegis.cpp" }
                             }
                             },
-                            { "shard", json::array({ shard.shardid, shard_max_count }) },
+                            { "shard", json::array({ shard->shardid, shard_max_count }) },
                             { "compress", true },
                             { "large_threshhold", 250 },
                             { "presence",{ { "game",{ { "name", self_presence },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
                         }
                     }
                 };
-                log->debug("Shard#{}: {}", shard.shardid, obj.dump());
-                shard.connection->send(obj.dump(), websocketpp::frame::opcode::text);
+                log->debug("Shard#{}: {}", shard->shardid, obj.dump());
+                shard->conn_test([obj, shard]()
+                {
+                    shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
+                });
                 debug_trace(shard);
             }
             if (result["op"] == 1)
             {
                 //requested heartbeat
                 json obj;
-                obj["d"] = shard.sequence;
+                obj["d"] = shard->sequence;
                 obj["op"] = 1;
 
-                shard.connection->send(obj.dump(), websocketpp::frame::opcode::text);
+                shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
             }
             if (result["op"] == 10)
             {
                 int heartbeat = result["d"]["heartbeat_interval"];
-                shard.keepalivetimer = websocket_o.set_timer(heartbeat, std::bind(&aegis_core::keepAlive, this, std::placeholders::_1, heartbeat, shard));
+                shard->keepalivetimer = websocket_o.set_timer(heartbeat, std::bind(&aegis_core::keepAlive, this, std::placeholders::_1, heartbeat, shard));
             }
             if (result["op"] == 11)
             {
                 //heartbeat ACK
-                shard.heartbeat_ack = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+                shard->heartbeat_ack = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
             }
         }
     }
@@ -1052,15 +817,15 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
 
 }
 
-inline void aegis_core::onConnect(websocketpp::connection_hdl hdl, aegis_shard & shard)
+inline void aegis_core::onConnect(websocketpp::connection_hdl hdl, aegis_shard * shard)
 {
     log->info("Connection established");
-    shard.state_o = Connecting;
+    shard->connection_state = Connecting;
 
     if constexpr(!check_setting<settings>::selfbot::test())
     {
         json obj;
-        if (shard.session_id.empty())
+        if (shard->session_id.empty())
         {
             obj = {
                 { "op", 2 },
@@ -1075,7 +840,7 @@ inline void aegis_core::onConnect(websocketpp::connection_hdl hdl, aegis_shard &
                             { "$device", "aegis.cpp" }
                         }
                         },
-                        { "shard", json::array({ shard.shardid, shard_max_count }) },
+                        { "shard", json::array({ shard->shardid, shard_max_count }) },
                         { "compress", true },
                         { "large_threshhold", 250 },
                         { "presence",{ { "game",{ { "name", self_presence },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
@@ -1085,21 +850,21 @@ inline void aegis_core::onConnect(websocketpp::connection_hdl hdl, aegis_shard &
         }
         else
         {
-            log->info("Attemping RESUME with id : {}", shard.session_id);
+            log->info("Attemping RESUME with id : {}", shard->session_id);
             obj = {
                 { "op", 6 },
                 {
                     "d",
                     {
                         { "token", token },
-                        { "session_id", shard.session_id },
-                        { "seq", shard.sequence }
+                        { "session_id", shard->session_id },
+                        { "seq", shard->sequence }
                     }
                 }
             };
         }
-        log->debug("Shard#{}: {}", shard.shardid, obj.dump());
-        shard.connection->send(obj.dump(), websocketpp::frame::opcode::text);
+        log->debug("Shard#{}: {}", shard->shardid, obj.dump());
+        shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
     }
     else
     {
@@ -1122,25 +887,25 @@ inline void aegis_core::onConnect(websocketpp::connection_hdl hdl, aegis_shard &
                 }
             }
         };
-        log->debug("Shard#{}: {}", shard.shardid, obj.dump());
-        shard.connection->send(obj.dump(), websocketpp::frame::opcode::text);
+        log->debug("Shard#{}: {}", shard->shardid, obj.dump());
+        shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
     }
 }
 
-inline void aegis_core::onClose(websocketpp::connection_hdl hdl, aegis_shard & shard)
+inline void aegis_core::onClose(websocketpp::connection_hdl hdl, aegis_shard * shard)
 {
     log->info("Connection closed");
-    shard.state_o = Reconnecting;
-    shard.do_reset();
-    shard.reconnect_timer = websocket_o.set_timer(10000, [&](const asio::error_code & ec)
+    shard->connection_state = Reconnecting;
+    shard->do_reset();
+    shard->reconnect_timer = websocket_o.set_timer(10000, [shard, this](const asio::error_code & ec)
     {
         if (ec == asio::error::operation_aborted)
             return;
-        shard.state_o = Connecting;
+        shard->connection_state = Connecting;
         asio::error_code wsec;
-        shard.connection = websocket_o.get_connection(gateway_url, wsec);
+        shard->connection = websocket_o.get_connection(gateway_url, wsec);
         setup_callbacks(shard);
-        websocket_o.connect(shard.connection);
+        websocket_o.connect(shard->connection);
 
     });
 }

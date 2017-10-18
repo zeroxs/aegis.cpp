@@ -105,7 +105,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\aegis\message.hpp" />
     <ClCompile Include="..\src\main.cpp" />
     <None Include="..\.travis.yml" />
     <None Include="..\README.md" />
@@ -117,7 +116,20 @@
     <ClInclude Include="..\include\aegis\aegis_impl.hpp" />
     <ClInclude Include="..\include\aegis\channel.hpp" />
     <ClInclude Include="..\include\aegis\channel_impl.hpp" />
-    <ClInclude Include="..\include\aegis\message_create.hpp" />
+    <ClInclude Include="..\include\aegis\events\message_create.hpp" />
+    <ClInclude Include="..\include\aegis\events\typing_start.hpp" />
+    <ClInclude Include="..\include\aegis\member_impl.hpp" />
+    <ClInclude Include="..\include\aegis\objects\attachment.hpp" />
+    <ClInclude Include="..\include\aegis\objects\embed.hpp" />
+    <ClInclude Include="..\include\aegis\objects\emoji.hpp" />
+    <ClInclude Include="..\include\aegis\objects\field.hpp" />
+    <ClInclude Include="..\include\aegis\objects\footer.hpp" />
+    <ClInclude Include="..\include\aegis\objects\image.hpp" />
+    <ClInclude Include="..\include\aegis\objects\message.hpp" />
+    <ClInclude Include="..\include\aegis\objects\provider.hpp" />
+    <ClInclude Include="..\include\aegis\objects\reaction.hpp" />
+    <ClInclude Include="..\include\aegis\objects\thumbnail.hpp" />
+    <ClInclude Include="..\include\aegis\objects\video.hpp" />
     <ClInclude Include="..\include\aegis\shard.hpp" />
     <ClInclude Include="..\include\aegis\common.hpp" />
     <ClInclude Include="..\include\aegis\config.hpp" />
@@ -128,10 +140,10 @@
     <ClInclude Include="..\include\aegis\permission.hpp" />
     <ClInclude Include="..\include\aegis\ratelimit.hpp" />
     <ClInclude Include="..\include\aegis\role.hpp" />
+    <ClInclude Include="..\include\aegis\shard_impl.hpp" />
     <ClInclude Include="..\include\aegis\snowflake.hpp" />
     <ClInclude Include="..\include\aegis\state_c.hpp" />
     <ClInclude Include="..\include\aegis\structs.hpp" />
-    <ClInclude Include="..\include\aegis\typing_start.hpp" />
     <ClInclude Include="..\include\aegis\utility.hpp" />
     <ClInclude Include="..\src\example.hpp" />
     <ClInclude Include="..\src\example_impl.hpp" />
