@@ -94,7 +94,7 @@ public:
     {
         json author = msg["d"]["author"];
 
-        uint64_t userid = std::stoull(author["id"].get<std::string>());
+        uint64_t userid = std::stoll(author["id"].get<std::string>());
         std::string username = author["username"];
 
         //test
@@ -102,14 +102,14 @@ public:
         //auto[_time, _worker,_,_] = (snowflake(userid)).get_all();
         //test
 
-        snowflake channel_id = std::stoull(msg["d"]["channel_id"].get<std::string>());
-        snowflake message_id = std::stoull(msg["d"]["id"].get<std::string>());
+        snowflake channel_id = std::stoll(msg["d"]["channel_id"].get<std::string>());
+        snowflake message_id = std::stoll(msg["d"]["id"].get<std::string>());
         std::string content = msg["d"]["content"];
 
         std::string avatar = author["avatar"].is_string() ? author["avatar"] : "";
         uint16_t discriminator = std::stoi(author["discriminator"].get<std::string>());
 
-        uint64_t msgid = std::stoull(msg["d"]["id"].get<std::string>());
+        uint64_t msgid = std::stoll(msg["d"]["id"].get<std::string>());
 
         channel & _channel = bot.get_channel(channel_id);
         guild & _guild = _channel.get_guild();
@@ -136,14 +136,14 @@ public:
                 for (auto & bot_ptr : bot.m_clients)
                     eventsseen += bot_ptr->m_sequence;
 
-                for (auto & m: bot.m_members)
+                for (auto & m : bot.m_members)
                 {
                     auto & membr = m.second;
-                    if (membr->m_status == aegis::minimember::member_status::ONLINE)
+                    if (membr->m_status == aegis::member::member_status::ONLINE)
                         member_online_count++;
-                    else if (membr->m_status == aegis::minimember::member_status::IDLE)
+                    else if (membr->m_status == aegis::member::member_status::IDLE)
                         member_idle_count++;
-                    else if (membr->m_status == aegis::minimember::member_status::DND)
+                    else if (membr->m_status == aegis::member::member_status::DND)
                         member_dnd_count++;
                 }
 
@@ -167,7 +167,12 @@ public:
             std::string channels = fmt::format("{} total\n{} text\n{} voice", channel_count, channel_text_count, channel_voice_count);
             std::string guilds = fmt::format("{}", guild_count);
             std::string events = fmt::format("{}", eventsseen);
-            std::string misc = fmt::format("I am shard {} of {} running on `{}`", shard.m_shardid+1, bot.m_shardidmax, aegis::utility::platform::get_platform());
+#if defined(DEBUG) || defined(_DEBUG)
+            std::string build_mode = "DEBUG";
+#else
+            std::string build_mode = "RELEASE";
+#endif
+            std::string misc = fmt::format("I am shard {} of {} running on `{}` in `{}` mode", shard.m_shardid+1, bot.m_shardidmax, aegis::utility::platform::get_platform(), build_mode);
 
             fmt::MemoryWriter w;
             w << "[Latest bot source](https://github.com/zeroxs/aegis.cpp)\n[Official Bot Server](https://discord.gg/w7Y3Bb8)\n\nMemory usage: "
@@ -228,7 +233,7 @@ public:
         }
         else if (toks[0] == "?shard")
         {
-            _channel.create_message(fmt::format("I am shard#[{}]", shard.m_shardid));
+            _channel.create_message(fmt::format("I am shard#[{}]", shard.m_shardid+1));
             return true;
         }
         else if (toks[0] == "?shards")
@@ -236,7 +241,7 @@ public:
             std::string s = "```\n";
             for (auto & shard : bot.m_clients)
             {
-                s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages\n", shard->m_shardid, 0, 0, 0, 0);
+                s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages {:4} presence updates\n", shard->m_shardid, shard->counters.guilds, shard->counters.channels, shard->counters.members, shard->counters.messages, shard->counters.presence_changes);
             }
             s += "```";
             _channel.create_message(s);

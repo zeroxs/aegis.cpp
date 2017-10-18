@@ -30,6 +30,6 @@ Libraries used:
 `#include "aegis/aegis.hpp"`
 
 Quick and dirty g++-7 command
-`g++-7 -std=c++17 -Iinclude -Ilib/spdlog/include -Ilib/websocketpp -Ilib/asio/asio/include -Ilib/json/src -Ilib/zsttr/src src/main.cpp -lssl -lpthread -lcrypto -lz -o aegis`
+`g++-7 -std=c++17 -Iinclude -Ilib/spdlog/include -Ilib/websocketpp -Ilib/asio/asio/include -Ilib/json/src -Ilib/zstr/src src/main.cpp -lssl -lpthread -lcrypto -lz -o aegis`
 
 Visual Studio solution inside `project/`

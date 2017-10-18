@@ -68,7 +68,7 @@ inline void Aegis::processReady(json & d, client & shard)
     size_t connectguilds = guilds.size();
     for (auto & guildobj : guilds)
     {
-        snowflake id = std::stoull(guildobj["id"].get<std::string>());
+        snowflake id = std::stoll(guildobj["id"].get<std::string>());
 
         bool unavailable = false;
         if (guildobj.count("unavailable"))
@@ -85,7 +85,7 @@ inline void Aegis::processReady(json & d, client & shard)
         return;
     json & userdata = d["user"];
     m_discriminator = std::stoi(userdata["discriminator"].get<std::string>());
-    m_id = std::stoull(userdata["id"].get<std::string>());
+    m_id = std::stoll(userdata["id"].get<std::string>());
     m_username = userdata["username"].get<std::string>();
     m_mfa_enabled = userdata["mfa_enabled"];
     if (m_mention.size() == 0)
@@ -100,7 +100,7 @@ inline void Aegis::processReady(json & d, client & shard)
 inline void Aegis::guild_create(guild & _guild, json & obj, client & shard)
 {
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
-    snowflake g_id = std::stoull(obj["id"].get<std::string>());
+    snowflake g_id = std::stoll(obj["id"].get<std::string>());
 
     try
     {
@@ -109,9 +109,9 @@ inline void Aegis::guild_create(guild & _guild, json & obj, client & shard)
         if (!obj["name"].is_null()) _guild.m_name = obj["name"].get<std::string>();
         if (!obj["icon"].is_null()) _guild.m_icon = obj["icon"].get<std::string>();
         if (!obj["splash"].is_null()) _guild.m_splash = obj["splash"].get<std::string>();
-        _guild.m_owner_id = std::stoull(obj["owner_id"].get<std::string>());
+        _guild.m_owner_id = std::stoll(obj["owner_id"].get<std::string>());
         _guild.m_region = obj["region"].get<std::string>();
-        if (!obj["afk_channel_id"].is_null()) _guild.m_afk_channel_id = std::stoull(obj["afk_channel_id"].get<std::string>());
+        if (!obj["afk_channel_id"].is_null()) _guild.m_afk_channel_id = std::stoll(obj["afk_channel_id"].get<std::string>());
         _guild.m_afk_timeout = obj["afk_timeout"];//in seconds
         if (!obj["embed_enabled"].is_null()) _guild.m_embed_enabled = obj["embed_enabled"].get<bool>();
         //_guild.m_embed_channel_id = obj->get("embed_channel_id").convert<uint64_t>();
@@ -216,7 +216,7 @@ inline void Aegis::guild_create(guild & _guild, json & obj, client & shard)
 
 inline void Aegis::channel_create(guild & _guild, json & obj, client & shard)
 {
-    snowflake channel_id = std::stoull(obj["id"].get<std::string>());
+    snowflake channel_id = std::stoll(obj["id"].get<std::string>());
     channel & _channel = get_guild_channel_create(channel_id, _guild.m_id, shard);
     _channel.m_guild_id = _guild.m_id;
 
@@ -238,7 +238,7 @@ inline void Aegis::channel_create(guild & _guild, json & obj, client & shard)
         {
             //not a voice channel, so has a topic field and last message id
             if (!obj["topic"].is_null()) _channel.m_topic = obj["topic"].get<std::string>();
-            if (!obj["last_message_id"].is_null()) _channel.m_last_message_id = std::stoull(obj["last_message_id"].get<std::string>());
+            if (!obj["last_message_id"].is_null()) _channel.m_last_message_id = std::stoll(obj["last_message_id"].get<std::string>());
         }
 
 
@@ -247,7 +247,7 @@ inline void Aegis::channel_create(guild & _guild, json & obj, client & shard)
         {
             uint32_t allow = permission["allow"];
             uint32_t deny = permission["deny"];
-            uint64_t p_id = std::stoull(permission["id"].get<std::string>());
+            uint64_t p_id = std::stoll(permission["id"].get<std::string>());
             std::string p_type = permission["type"];
 
             _channel.overrides[p_id].allow = allow;
@@ -270,9 +270,9 @@ inline void Aegis::channel_create(guild & _guild, json & obj, client & shard)
 inline void Aegis::member_create(guild & _guild, json & obj, client & shard)
 {
     json & user = obj["user"];
-    snowflake member_id = std::stoull(user["id"].get<std::string>());
-    minimember & _member = get_member_create(member_id);
-    
+    snowflake member_id = std::stoll(user["id"].get<std::string>());
+    member & _member = get_member_create(member_id);
+
     try
     {
         m_log->debug("Shard#{} : Member[{}] created for guild[{}]", shard.m_shardid, member_id, _guild.m_id);
@@ -507,6 +507,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
             {
                 if (result["t"] == "PRESENCE_UPDATE")
                 {
+                    shard.counters.presence_changes++;
+                    
                     return;
                 }
 
@@ -521,6 +523,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                 }
                 if (cmd == "MESSAGE_CREATE")
                 {
+                    shard.counters.messages++;
+                    
                     if (i_message_create)
                         if (!i_message_create(result, shard, *this))
                             return;
@@ -535,6 +539,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                 }
                 else if (cmd == "GUILD_CREATE")
                 {
+                    shard.counters.guilds++;
+                    
                     if (i_guild_create)
                         if (!i_guild_create(result, shard, *this))
                             return;
@@ -555,6 +561,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                 }
                 else if (cmd == "GUILD_DELETE")
                 {
+                    shard.counters.guilds--;
+                    
                     if (i_guild_delete)
                         if (!i_guild_delete(result, shard, *this))
                             return;
@@ -564,7 +572,7 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     }
                     else
                     {
-                        uint64_t id = std::stoull(result["d"]["id"].get<std::string>());
+                        uint64_t id = std::stoll(result["d"]["id"].get<std::string>());
                         //kicked or left
                     }
                     return;
@@ -618,6 +626,18 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     if (i_channel_create)
                         if (!i_channel_create(result, shard, *this))
                             return;
+
+                    snowflake channel_id = std::stoll(result["d"]["id"].get<std::string>());
+
+                    if (!result["d"]["guild_id"].is_null())
+                    {
+                        shard.counters.channels++;
+                        //guild channel
+                    }
+                    else
+                    {
+                        //dm
+                    }
                     return;
                 }
 
@@ -627,22 +647,29 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
 
                 if (result["d"].count("guild_id"))
                 {
-                    if (cmd == "CHANNEL_CREATE")
-                    {
-                        if (i_channel_create)
-                            if (!i_channel_create(result, shard, *this))
-                                return;
-                        return;
-                    }
                     if (cmd == "CHANNEL_UPDATE")
                     {
                         if (i_channel_update)
                             if (!i_channel_update(result, shard, *this))
                                 return;
+
+                        snowflake channel_id = std::stoll(result["d"]["id"].get<std::string>());
+
+                        if (!result["d"]["guild_id"].is_null())
+                        {
+                            //guild channel
+                            snowflake guild_id = std::stoll(result["d"]["guild_id"].get<std::string>());
+                        }
+                        else
+                        {
+                            //dm
+                        }
                         return;
                     }
                     else if (cmd == "CHANNEL_DELETE")
                     {
+                        shard.counters.channels--;
+                       
                         if (i_channel_delete)
                             if (!i_channel_delete(result, shard, *this))
                                 return;
@@ -678,13 +705,18 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     }
                     else if (cmd == "GUILD_MEMBER_ADD")
                     {
+                        shard.counters.members++;
+                        
                         if (i_guild_member_add)
                             if (!i_guild_member_add(result, shard, *this))
                                 return;
+
                         return;
                     }
                     else if (cmd == "GUILD_MEMBER_REMOVE")
                     {
+                        shard.counters.members--;
+
                         if (i_guild_member_remove)
                             if (!i_guild_member_remove(result, shard, *this))
                                 return;
