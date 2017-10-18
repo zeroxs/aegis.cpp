@@ -41,6 +41,33 @@ inline void Aegis::processReady(json & d, client & shard)
 
     json guilds = d["guilds"];
     size_t connectguilds = guilds.size();
+
+    if (self == nullptr)
+    {
+        json & userdata = d["user"];
+        m_discriminator = std::stoi(userdata["discriminator"].get<std::string>());
+        m_id = std::stoll(userdata["id"].get<std::string>());
+        m_username = userdata["username"].get<std::string>();
+        m_mfa_enabled = userdata["mfa_enabled"];
+        if (m_mention.size() == 0)
+        {
+            std::stringstream ss;
+            ss << "<@" << m_id << ">";
+            m_mention = ss.str();
+        }
+        m_isuserset = true;
+
+        auto ptr = std::make_shared<member>(m_id);
+        m_members.emplace(m_id, ptr);
+        ptr->m_id = m_id;
+        ptr->m_isbot = true;
+        ptr->m_name = m_username;
+        ptr->m_discriminator = m_discriminator;
+        ptr->m_status = member::ONLINE;
+
+        self = ptr;
+    }
+
     for (auto & guildobj : guilds)
     {
         snowflake id = std::stoll(guildobj["id"].get<std::string>());
@@ -55,31 +82,6 @@ inline void Aegis::processReady(json & d, client & shard)
         if (!unavailable)
             guild_create(_guild, guildobj, shard);
     }
-
-    if (m_isuserset)
-        return;
-    json & userdata = d["user"];
-    m_discriminator = std::stoi(userdata["discriminator"].get<std::string>());
-    m_id = std::stoll(userdata["id"].get<std::string>());
-    m_username = userdata["username"].get<std::string>();
-    m_mfa_enabled = userdata["mfa_enabled"];
-    if (m_mention.size() == 0)
-    {
-        std::stringstream ss;
-        ss << "<@" << m_id << ">";
-        m_mention = ss.str();
-    }
-    m_isuserset = true;
-
-    auto ptr = std::make_shared<member>(m_id);
-    m_members.emplace(m_id, ptr);
-    ptr->m_id = m_id;
-    ptr->m_isbot = true;
-    ptr->m_name = m_username;
-    ptr->m_discriminator = m_discriminator;
-    ptr->m_status = member::ONLINE;
-    
-    self = ptr;
 }
 
 inline void Aegis::guild_create(guild & _guild, json & obj, client & shard)

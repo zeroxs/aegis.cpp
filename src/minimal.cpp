@@ -24,10 +24,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-#include <stdint.h>
-#include <aegis/aegis.hpp>
-#include <aegis/client.hpp>
-#include <aegis/snowflake.hpp>
+#include <aegis.hpp>
 using namespace aegis;
 using json = nlohmann::json;
 int main(int argc, char * argv[])

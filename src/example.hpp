@@ -233,7 +233,7 @@ public:
         }
         else if (toks[0] == "?shard")
         {
-            _channel.create_message(fmt::format("I am shard#[{}]", shard.m_shardid+1));
+            _channel.create_message(fmt::format("I am shard#[{}]", shard.m_shardid));
             return true;
         }
         else if (toks[0] == "?shards")
@@ -248,13 +248,19 @@ public:
         }
         else if (toks[0] == "?createchannel")
         {
-            _guild.create_text_channel(toks[1], 0, false, {});
+            if (!_guild.create_text_channel(toks[1], 0, false, {}))
+            {
+                _channel.create_message("No perms CREATE_CHANNEL");
+            }
         }
         else if (toks[0] == "?deletechannel")
         {
             if (userid == 171000788183678976)
             {
-                _channel.delete_channel();
+                if (!_channel.delete_channel())
+                {
+                    _channel.create_message("No perms DELETE_CHANNEL");
+                }
             }
         }
         else if (toks[0] == "?react")
