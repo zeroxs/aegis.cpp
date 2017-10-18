@@ -26,6 +26,7 @@
 #pragma once
 
 
+#include "aegis/config.hpp"
 #include <string>
 #include <functional>
 #include <websocketpp/http/constants.hpp>
@@ -35,17 +36,30 @@
 namespace aegis
 {
 
+
+enum message_type
+{
+    Default = 0,
+    RecipientAdd = 1,
+    RecipientRemove = 2,
+    Call = 3,
+    ChannelNameChange = 4,
+    ChannelIconChange = 5,
+    ChannelPinnedMessage = 6,
+    GuildMemberJoin = 7
+};
+
 struct perm_overwrite
 {
-    enum ORType
+    enum OverwriteType
     {
-        USER,
-        ROLE
+        User,
+        Role
     };
 
     snowflake id;
     //either "role" or "member"
-    ORType type;
+    OverwriteType type;
     int64_t allow;
     int64_t deny;
     nlohmann::json make()

@@ -25,20 +25,26 @@
 
 #pragma once
 
+#include "aegis/config.hpp"
 #include <string>
 #include <stdint.h>
 #include "permission.hpp"
+#include "snowflake.hpp"
 
-class role
+namespace aegis
 {
-public:
+
+struct role
+{
     uint32_t color = 0;
     bool hoist = false;
-    uint64_t id;
+    snowflake role_id;
     bool managed = false;
     bool mentionable = false;
     std::string name;
     permission _permission;
     uint16_t position = 0;
 };
+
+}
 

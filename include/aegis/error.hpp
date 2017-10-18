@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include "aegis/config.hpp"
 #include <exception>
 #include <string>
 #include <utility>

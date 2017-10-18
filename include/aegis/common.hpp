@@ -41,9 +41,27 @@
 #include <set>
 #include <queue>
 #include <chrono>
+#include <ratio>
 #include <mutex>
 #include <atomic>
 
 #include <json.hpp>
 #include <zstr.hpp>
+#include <inttypes.h>
+#include <type_traits>
+#include <spdlog/spdlog.h>
+
+
+#include <asio.hpp>
+#include <asio/ssl.hpp>
+#include <asio/steady_timer.hpp>
+
+namespace aegis
+{
+using namespace std::chrono;
+namespace spd = spdlog;
+using json = nlohmann::json;
+using namespace std::literals;
+}
+
 

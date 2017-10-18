@@ -1,5 +1,5 @@
 //
-// client.hpp
+// shard.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -26,6 +26,7 @@
 #pragma once
 
 
+#include "aegis/config.hpp"
 #include <string>
 #include <chrono>
 #include <sstream>
@@ -34,49 +35,48 @@
 namespace aegis
 {
 
-class client
+class aegis_shard
 {
 public:
-    client()
-        : m_heartbeatack(0)
-        , m_lastheartbeat(0)
-        , m_sequence(0)
-        , m_state(aegis::UNINITIALIZED)
+    aegis_shard()
+        : heartbeat_ack(0)
+        , lastheartbeat(0)
+        , sequence(0)
+        , state_o(aegis::Uninitialized)
     {
-        starttime = std::chrono::steady_clock::now();
     }
 
     void do_reset()
     {
-        m_heartbeatack = 0;
-        if (m_connection != nullptr)
-            m_connection.reset();
-        if (m_keepalivetimer != nullptr)
+        heartbeat_ack = 0;
+        if (connection != nullptr)
+            connection.reset();
+        if (keepalivetimer != nullptr)
         {
-            m_keepalivetimer->cancel();
-            m_keepalivetimer.reset();
+            keepalivetimer->cancel();
+            keepalivetimer.reset();
         }
     }
 
     // Websocket++ socket connection
-    websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr m_connection;
+    websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr connection;
     websocketpp::connection_hdl hdl;
     
-    int64_t m_heartbeatack;
-    int64_t m_lastheartbeat;
+    int64_t heartbeat_ack;
+    int64_t lastheartbeat;
     
-    int16_t m_shardid;
+    int16_t shardid;
     
     // Timer for heartbeats
-    std::shared_ptr<asio::steady_timer> m_keepalivetimer;
+    std::shared_ptr<asio::steady_timer> keepalivetimer;
 
-    uint64_t m_sequence;
+    uint64_t sequence;
 
-    int16_t m_state;
+    state state_o;
 
-    std::shared_ptr<asio::steady_timer> m_reconnect_timer;
+    std::shared_ptr<asio::steady_timer> reconnect_timer;
 
-    std::string m_sessionId;
+    std::string session_id;
 
     std::map<int64_t, std::string> debug_messages;
 
@@ -89,31 +89,6 @@ public:
         uint32_t messages;
         uint64_t presence_changes;
     } counters = { 0,0,0,0 };
-
-    std::chrono::steady_clock::time_point starttime;
-    std::string uptime() const
-    {
-        std::stringstream ss;
-        std::chrono::steady_clock::time_point timenow = std::chrono::steady_clock::now();
-
-        int64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(timenow - starttime).count();
-
-        int64_t seconds = (ms / 1000) % 60;
-        int64_t minutes = (((ms / 1000) - seconds) / 60) % 60;
-        int64_t hours = (((((ms / 1000) - seconds) / 60) - minutes) / 60) % 24;
-        int64_t days = (((((((ms / 1000) - seconds) / 60) - minutes) / 60) - hours) / 24);
-
-        if (days > 0)
-            ss << days << "d ";
-        if (hours > 0)
-            ss << hours << "h ";
-        if (minutes > 0)
-            ss << minutes << "m ";
-        if (seconds > 0)
-            ss << seconds << "s";
-        return ss.str();
-    }
-
 };
 
 }

@@ -26,23 +26,26 @@
 #pragma once
 
 
+#include "aegis/config.hpp"
+
+
 namespace aegis
 {
 
 using json = nlohmann::json;
 using rest_limits::bucket_factory;
 
-class guild;
+class aegis_guild;
 
-class channel
+class aegis_channel
 {
 public:
-    explicit channel(snowflake id, snowflake guild_id, bucket_factory & ratelimit, bucket_factory & emoji)
-        : m_id(id)
-        , m_guild_id(guild_id)
-        , m_ratelimit(ratelimit)
-        , m_emoji(emoji)
-        , m_log(spdlog::get("aegis"))
+    explicit aegis_channel(snowflake channel_id, snowflake guild_id, bucket_factory & ratelimit, bucket_factory & emoji)
+        : channel_id(channel_id)
+        , guild_id(guild_id)
+        , ratelimit(ratelimit)
+        , emoji(emoji)
+        , log(spdlog::get("aegis"))
         , _guild(0)
     {
 
@@ -50,33 +53,33 @@ public:
 
     enum ChannelType
     {
-        TEXT = 0,
-        DM = 1,
-        VOICE = 2,
-        GROUP_DM = 3,
-        CATEGORY = 4
+        Text = 0,
+        DirectMessage = 1,
+        Voice = 2,
+        GroupDirectMessage = 3,
+        Category = 4
     };
 
-    snowflake m_id;
-    snowflake m_guild_id;
-    bucket_factory & m_ratelimit;
-    bucket_factory & m_emoji;
-    std::shared_ptr<spdlog::logger> m_log;
+    snowflake channel_id;
+    snowflake guild_id;
+    bucket_factory & ratelimit;
+    bucket_factory & emoji;
+    std::shared_ptr<spdlog::logger> log;
 
-    guild * _guild;
+    aegis_guild * _guild;
 
     snowflake m_last_message_id = 0;
-    std::string m_name;
+    std::string name;
     std::string m_topic;
     uint32_t m_position = 0;
-    ChannelType m_type = ChannelType::TEXT;
+    ChannelType m_type = ChannelType::Text;
 
     uint16_t m_bitrate = 0;
     uint16_t m_user_limit = 0;
 
     std::map<int64_t, perm_overwrite> m_overrides;
 
-    guild & get_guild();
+    aegis_guild & get_guild();
 
     bool create_message(std::string content, std::function<void(rest_reply)> callback = nullptr);
 
@@ -96,13 +99,13 @@ public:
 
     bool delete_channel(std::function<void(rest_reply)> callback = nullptr);
 
-    bool create_reaction(snowflake message_id, std::string emoji, std::function<void(rest_reply)> callback = nullptr);
+    bool create_reaction(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback = nullptr);
 
-    bool delete_own_reaction(snowflake message_id, std::string emoji, std::function<void(rest_reply)> callback = nullptr);
+    bool delete_own_reaction(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback = nullptr);
 
-    bool delete_user_reaction(snowflake message_id, std::string emoji, snowflake user_id, std::function<void(rest_reply)> callback = nullptr);
+    bool delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake user_id, std::function<void(rest_reply)> callback = nullptr);
 
-    bool get_reactions(snowflake message_id, std::string emoji, std::function<void(rest_reply)> callback = nullptr);
+    bool get_reactions(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback = nullptr);
 
     bool delete_all_reactions(snowflake message_id, std::function<void(rest_reply)> callback = nullptr);
 
@@ -122,9 +125,9 @@ public:
 
     bool delete_pinned_channel_message(std::function<void(rest_reply)> callback = nullptr);
 
-    bool group_dm_add_recipient(std::function<void(rest_reply)> callback = nullptr);//will go in aegis::Aegis
+    bool group_dm_add_recipient(std::function<void(rest_reply)> callback = nullptr);//will go in aegis::aegis_core
 
-    bool group_dm_remove_recipient(std::function<void(rest_reply)> callback = nullptr);//will go in aegis::Aegis
+    bool group_dm_remove_recipient(std::function<void(rest_reply)> callback = nullptr);//will go in aegis::aegis_core
 
 };
 

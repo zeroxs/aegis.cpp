@@ -105,6 +105,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\aegis\message.hpp" />
     <ClCompile Include="..\src\main.cpp" />
     <None Include="..\.travis.yml" />
     <None Include="..\README.md" />
@@ -112,11 +113,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\aegis.hpp" />
-    <ClInclude Include="..\include\aegis\aegis_lib.hpp" />
+    <ClInclude Include="..\include\aegis\aegis.hpp" />
     <ClInclude Include="..\include\aegis\aegis_impl.hpp" />
     <ClInclude Include="..\include\aegis\channel.hpp" />
     <ClInclude Include="..\include\aegis\channel_impl.hpp" />
-    <ClInclude Include="..\include\aegis\client.hpp" />
+    <ClInclude Include="..\include\aegis\message_create.hpp" />
+    <ClInclude Include="..\include\aegis\shard.hpp" />
     <ClInclude Include="..\include\aegis\common.hpp" />
     <ClInclude Include="..\include\aegis\config.hpp" />
     <ClInclude Include="..\include\aegis\error.hpp" />
@@ -127,7 +129,9 @@
     <ClInclude Include="..\include\aegis\ratelimit.hpp" />
     <ClInclude Include="..\include\aegis\role.hpp" />
     <ClInclude Include="..\include\aegis\snowflake.hpp" />
+    <ClInclude Include="..\include\aegis\state_c.hpp" />
     <ClInclude Include="..\include\aegis\structs.hpp" />
+    <ClInclude Include="..\include\aegis\typing_start.hpp" />
     <ClInclude Include="..\include\aegis\utility.hpp" />
     <ClInclude Include="..\src\example.hpp" />
     <ClInclude Include="..\src\example_impl.hpp" />

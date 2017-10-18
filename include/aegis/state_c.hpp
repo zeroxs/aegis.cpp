@@ -1,5 +1,5 @@
 //
-// main.cpp
+// member.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -23,49 +23,25 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#pragma once
 
-struct settings
+#include "aegis/config.hpp"
+#include <string>
+#include "snowflake.hpp"
+
+namespace aegis
 {
-    static constexpr bool selfbot = false;
-    static constexpr long long int owner_id = 171000788183678976;
-    static constexpr int force_shard_count = 0;
-    static constexpr bool disable_cache = false;
-    static constexpr bool debugmode = true;
+
+struct state_c
+{
+    struct user_c
+    {
+        snowflake id;
+        std::string name;
+    };
+
+    user_c user;
+
 };
 
-#include "example.hpp"
-
-
-using aegis::aegis_core;
-using example_bot::example;
-
-int main(int argc, char * argv[])
-{
-    auto err = spdlog::stdout_color_mt("err");
-    spdlog::set_pattern("%Y-%m-%d %H:%M:%S.%e %l [th#%t] : %v");
-
-    try
-    {
-        // Create bot with token
-        aegis_core bot("TOKEN");
-        
-        // Bot will automatically set this presence when it connects
-        bot.self_presence = "with my friends";
-        
-        // Construct the example class for handling the websocket interceptions
-        example commands;
-
-        // Inject the hooks for any messages
-        commands.inject(bot);
-
-        // Configure everything and run bot
-        bot.easy_start();
-    }
-    catch (std::exception & e)
-    {
-        err->error(fmt::format("Uncaught error: {0}", e.what()));
-    }
-    return 0;
 }
-
-

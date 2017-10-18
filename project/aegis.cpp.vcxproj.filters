@@ -13,67 +13,85 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\aegis">
+      <UniqueIdentifier>{afe62982-4e66-4d5d-885c-cda55a8231ba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\aegis\gateway events">
+      <UniqueIdentifier>{40336c3f-fe1c-4294-bf3b-0d67e8bb51db}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\aegis\aegis_impl.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\config.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\error.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\structs.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\utility.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\client.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\member.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\channel.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\guild.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\ratelimit.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\example.hpp">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\snowflake.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\role.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\permission.hpp">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\aegis.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\aegis\channel_impl.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\guild_impl.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\common.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\aegis\aegis_lib.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\example_impl.hpp">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\utility.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\aegis_impl.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\aegis.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\channel.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\channel_impl.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\common.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\config.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\error.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\guild.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\guild_impl.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\member.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\permission.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\ratelimit.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\role.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\snowflake.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\state_c.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\structs.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\shard.hpp">
+      <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\typing_start.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\message.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\message_create.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

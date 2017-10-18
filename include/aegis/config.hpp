@@ -38,25 +38,18 @@
 namespace aegis
 {
 
-struct settings
-{
-    static constexpr bool selfbot = false;
-    static constexpr uint64_t owner_id = 171000788183678976;
-    static constexpr uint32_t force_shard_count = 0;
-    static constexpr bool disable_cache = false;
-    static constexpr uint32_t debugmode = 0;
-};
 
 enum state
 {
-    UNINITIALIZED = 0,
-    READY = 1,
-    CONNECTING = 2,
-    ONLINE = 3,
-    RECONNECTING = 4,
-    SHUTDOWN = 5
+    Uninitialized = 0,
+    Ready = 1,
+    Connecting = 2,
+    Online = 3,
+    Reconnecting = 4,
+    Shutdown = 5
 };
 
 
 }
+
 

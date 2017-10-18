@@ -26,6 +26,7 @@
 #pragma once
 
 
+#include "aegis/config.hpp"
 #include <string>
 #include <optional>
 #include <queue>
@@ -33,58 +34,78 @@
 namespace aegis
 {
 
-class member
+class aegis_member
 {
 public:
-    explicit member(snowflake id) : m_id(id) {}
-    snowflake m_id = 0;
+    explicit aegis_member(snowflake id) : member_id(id) {}
+    snowflake member_id = 0;
 
-    //std::pair<message_snowflake, time_sent>
-    std::queue<std::pair<int64_t, int64_t>> m_msghistory;
 
-    std::string m_name;
-    uint16_t m_discriminator = 0;
-    std::string m_avatar;
-    bool m_isbot = false;
-    bool m_mfa_enabled = false;
+    std::string name;
+    uint16_t discriminator = 0;
+    std::string avatar;
+    bool isbot = false;
+    bool mfa_enabled = false;
 
     struct guild_info
     {
         std::vector<snowflake> roles;
         std::string nickname;
-        snowflake _guild;
-        std::string m_joined_at;
-        bool m_deaf;
-        bool m_mute;
+        snowflake guild_id;
+        std::string joined_at;
+        bool deaf;
+        bool mute;
     };
 
     enum member_status
     {
-        OFFLINE,
-        ONLINE,
-        IDLE,
-        STREAM,
-        DND
+        Offline,
+        Online,
+        Idle,
+        Streaming,
+        DoNotDisturb
     };
 
-    std::map<int64_t, guild_info> m_guilds;
-    member_status m_status = member_status::OFFLINE;
+    member_status status = member_status::Offline;
 
     std::optional<std::string> getName(snowflake guild_id)
     {
-        if (m_guilds.count(guild_id))
-        {
-            if (m_guilds[guild_id].nickname.length() > 0)
-                return m_guilds[guild_id].nickname;
-        }
-        return {};
+        auto g = get_guild_info(guild_id);
+        if (g == nullptr)
+            return {};
+        return g->nickname;
+    }
+
+    guild_info * get_guild_info(snowflake guild_id)
+    {
+        auto g = guilds.find(guild_id);
+        if (g == guilds.end())
+            return nullptr;
+        return g->second.get();
+    }
+
+    guild_info * join(snowflake guild_id)
+    {
+        auto g = get_guild_info(guild_id);
+        if (g != nullptr)
+            return g;
+        auto g2 = guilds.emplace(guild_id, std::make_unique<guild_info>());
+        return g2.first->second.get();
     }
 
     std::string getFullName()
     {
-        return fmt::format("{}#{}", m_name, m_discriminator);
+        return fmt::format("{}#{}", name, discriminator);
     }
 
+    std::map<int64_t, std::unique_ptr<guild_info>> guilds;
+    //std::pair<message_snowflake, time_sent>
+    std::queue<std::pair<snowflake, int64_t>> msghistory;
+
+    void leave(snowflake guild_id)
+    {
+        guilds.erase(guild_id);
+    }
 };
 
 }

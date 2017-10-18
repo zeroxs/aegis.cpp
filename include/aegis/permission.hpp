@@ -26,6 +26,12 @@
 #pragma once
 
 
+#include "aegis/config.hpp"
+
+
+namespace aegis
+{
+
 class permission
 {
 public:
@@ -71,3 +77,4 @@ private:
     int64_t _deny_permissions = 0;
 };
 
+}

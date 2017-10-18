@@ -25,6 +25,11 @@
 
 #pragma once
 
+#include "config.hpp"
+#include "channel.hpp"
+#include "member.hpp"
+#include "state_c.hpp"
+
 
 namespace aegis
 {
@@ -32,68 +37,61 @@ namespace aegis
 using rest_limits::bucket_factory;
 using json = nlohmann::json;
 
-class channel;
+class aegis_channel;
 
-class guild
+class aegis_guild
 {
 public:
-    explicit guild(client & shard, member & self, snowflake id, bucket_factory & ratelimit)
-        : m_shard(shard)
-        , m_id(id)
-        , m_ratelimit(ratelimit)
-        , m_log(spdlog::get("aegis"))
-        , m_self(self)
+    explicit aegis_guild(int16_t shard_id, state_c * state, snowflake id, bucket_factory & ratelimit)
+        : shard_id(shard_id)
+        , guild_id(id)
+        , ratelimit(ratelimit)
+        , log(spdlog::get("aegis"))
+        , state_o(state)
     {
-        m_unavailable = false;
+        unavailable = false;
     }
 
-    ~guild()
+    ~aegis_guild()
     {
-        for (auto & m : m_members)
-            m.second->m_guilds.erase(m_id);
+        for (auto & [k,v] : members)
+            v->leave(guild_id);
     }
 
-    client & m_shard;
-    snowflake m_id;
-    bucket_factory & m_ratelimit;
-    std::shared_ptr<spdlog::logger> m_log;
-    member & m_self;
+    int16_t shard_id;
+    snowflake guild_id;
+    bucket_factory & ratelimit;
+    std::shared_ptr<spdlog::logger> log;
+    state_c * state_o;
 
-    std::map<int64_t, std::shared_ptr<channel>> m_channels;
-    std::map<int64_t, std::shared_ptr<member>> m_members;
-    std::map<int64_t, std::unique_ptr<role>> m_roles;
+    aegis_member * self() const noexcept
+    {
+        auto self_id = state_o->user.id;
+        return get_member(self_id);
+    }
 
+    std::string get_name()
+    {
+        return name;
+    }
 
-    std::string m_name;
-    std::string m_icon;
-    std::string m_splash;
-    snowflake m_owner_id = 0;
-    std::string m_region;
-    snowflake m_afk_channel_id = 0;
-    uint32_t m_afk_timeout = 0;//in seconds
-    bool m_embed_enabled = false;
-    snowflake m_embed_channel_id = 0;
-    uint32_t m_verification_level = 0;
-    uint32_t m_default_message_notifications = 0;
-    uint32_t m_mfa_level = 0;
-    std::string m_joined_at;
-    bool m_large = false;
-    bool m_unavailable = false;
-    uint32_t m_member_count = 0;
-    //std::string m_voice_states;//this is really an array
+    aegis_member * get_member(snowflake member_id) const noexcept;
 
-    bool m_silenterrors = false;
-    bool m_silentperms = false;
-    bool m_preventbotparse = false;
+    int32_t get_member_count();
 
-    permission get_permissions(snowflake member_id, snowflake channel_id);
+    permission get_permissions(snowflake guild_id, snowflake channel_id);
 
-    permission get_permissions(member & _member, channel & _channel);
+    permission get_permissions(aegis_member & _member, aegis_channel & _channel);
 
-    int64_t base_permissions(member & _member) const;
+    int64_t base_permissions(aegis_member * _member) const noexcept
+    {
+        return base_permissions(*_member);
+    }
+
+    int64_t base_permissions(aegis_member & _member) const noexcept;
 
     //permission compute_overwrites
-    int64_t compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const;
+    int64_t compute_overwrites(int64_t _base_permissions, aegis_member & _member, aegis_channel & _channel) const noexcept;
 
     role & get_role(int64_t r) const;
 
@@ -101,7 +99,11 @@ public:
 
     void remove_role(snowflake role_id);
 
-    // move this to aegis::Aegis?
+
+
+    /// REST CALLS
+
+    // move this to aegis::aegis_core?
     bool create_guild(std::function<void(rest_reply)> callback = nullptr);
 
     bool get_guild(std::function<void(rest_reply)> callback = nullptr);
@@ -164,6 +166,38 @@ public:
     bool modify_guild_embed(std::function<void(rest_reply)> callback = nullptr);
 
     bool leave(std::function<void(rest_reply)> callback = nullptr);
+
+
+private:
+    friend class aegis_core;
+    friend class aegis_channel;
+    friend class aegis_member;
+    std::map<int64_t, std::shared_ptr<aegis_channel>> channels;
+    std::map<int64_t, std::shared_ptr<aegis_member>> members;
+    std::map<int64_t, std::unique_ptr<role>> m_roles;
+
+
+    std::string name;
+    std::string m_icon;
+    std::string m_splash;
+    snowflake m_owner_id = 0;
+    std::string m_region;
+    snowflake m_afk_channel_id = 0;
+    uint32_t m_afk_timeout = 0;//in seconds
+    bool m_embed_enabled = false;
+    snowflake m_embed_channel_id = 0;
+    uint32_t m_verification_level = 0;
+    uint32_t m_default_message_notifications = 0;
+    uint32_t m_mfa_level = 0;
+    std::string joined_at;
+    bool m_large = false;
+    bool unavailable = false;
+    uint32_t m_member_count = 0;
+    //std::string m_voice_states;//this is really an array
+
+    bool m_silenterrors = false;
+    bool m_silentperms = false;
+    bool m_preventbotparse = false;
 };
 
 }

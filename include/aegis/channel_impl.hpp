@@ -34,32 +34,32 @@ using rest_limits::bucket_factory;
 
 enum ChannelType
 {
-    TEXT = 0,
-    DM = 1,
-    VOICE = 2,
-    GROUP_DM = 3,
-    CATEGORY = 4
+    Text = 0,
+    DirectMessage = 1,
+    Voice = 2,
+    GroupDirectMessage = 3,
+    Category = 4
 };
 
-inline guild & channel::get_guild()
+inline aegis_guild & aegis_channel::get_guild()
 {
     return *_guild;
 }
 
-inline bool channel::create_message(std::string content, std::function<void(rest_reply)> callback)
+inline bool aegis_channel::create_message(std::string content, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canSendMessages())
+    if (!permission(_guild->base_permissions(_guild->self())).canSendMessages())
         return false;
 
     json obj;
     obj["content"] = content;
-    m_ratelimit.push(m_id, fmt::format("/channels/{}/messages", m_id), obj.dump(), "POST", callback);
+    ratelimit.push(guild_id, fmt::format("/channels/{}/messages", guild_id), obj.dump(), "POST", callback);
     return true;
 }
 
-inline bool channel::create_message_embed(std::string content, json embed, std::function<void(rest_reply)> callback)
+inline bool aegis_channel::create_message_embed(std::string content, json embed, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canSendMessages())
+    if (!permission(_guild->base_permissions(_guild->self())).canSendMessages())
         return false;
 
     json obj;
@@ -67,56 +67,56 @@ inline bool channel::create_message_embed(std::string content, json embed, std::
         obj["content"] = content;
     obj["embed"] = embed;
 
-    m_ratelimit.push(m_id, fmt::format("/channels/{:d}/messages", m_id), obj.dump(), "POST", callback);
+    ratelimit.push(guild_id, fmt::format("/channels/{:d}/messages", guild_id), obj.dump(), "POST", callback);
     return true;
 }
 
-inline bool channel::edit_message(snowflake message_id, std::string content, std::function<void(rest_reply)> callback)
+inline bool aegis_channel::edit_message(snowflake message_id, std::string content, std::function<void(rest_reply)> callback)
 {
     json obj;
     obj["content"] = content;
-    m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/{}", m_id, message_id), obj.dump(), "PATCH", callback);
+    ratelimit.push(guild_id, fmt::format("/channels/{}/messages/{}", guild_id, message_id), obj.dump(), "PATCH", callback);
     return true;
 }
 
-inline bool channel::edit_message_embed(snowflake message_id, std::string content, json embed, std::function<void(rest_reply)> callback)
+inline bool aegis_channel::edit_message_embed(snowflake message_id, std::string content, json embed, std::function<void(rest_reply)> callback)
 {
     json obj;
     if (!content.empty())
         obj["content"] = content;
     obj["embed"] = embed;
     obj["content"] = content;
-    m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/{}", m_id, message_id), obj.dump(), "PATCH", callback);
+    ratelimit.push(guild_id, fmt::format("/channels/{}/messages/{}", guild_id, message_id), obj.dump(), "PATCH", callback);
     return true;
 }
 
 //TODO: can delete your own messages freely - provide separate function or keep history of messages
-inline bool channel::delete_message(snowflake message_id, std::function<void(rest_reply)> callback)
+inline bool aegis_channel::delete_message(snowflake message_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canManageMessages())
+    if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
         return false;
 
-    m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/{}", m_id, message_id), "", "DELETE", callback);
+    ratelimit.push(guild_id, fmt::format("/channels/{}/messages/{}", guild_id, message_id), "", "DELETE", callback);
     return true;
 }
 
-inline bool channel::bulk_delete_message(snowflake message_id, std::vector<int64_t> messages, std::function<void(rest_reply)> callback)
+inline bool aegis_channel::bulk_delete_message(snowflake message_id, std::vector<int64_t> messages, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canManageMessages())
+    if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
         return false;
     if (messages.size() < 2 || messages.size() > 100)
         return false;
 
     json obj = messages;
-    m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/bulk-delete", m_id), obj.dump(), "POST", callback);
+    ratelimit.push(guild_id, fmt::format("/channels/{}/messages/bulk-delete", guild_id), obj.dump(), "POST", callback);
     return true;
 }
 
-inline bool channel::modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
+inline bool aegis_channel::modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
                                     std::optional<bool> nsfw, std::optional<int> bitrate, std::optional<int> user_limit,
                                     std::optional<std::vector<perm_overwrite>> permission_overwrites, std::optional<snowflake> parent_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canManageChannels())
+    if (!permission(_guild->base_permissions(_guild->self())).canManageChannels())
         return false;
 
     json obj;
@@ -134,7 +134,7 @@ inline bool channel::modify_channel(std::optional<std::string> name, std::option
         obj["user_limit"] = user_limit.value();
     if (permission_overwrites.has_value())//requires OWNER
     {
-        if (!_guild->m_owner_id != _guild->m_self.m_id)
+        if (!_guild->m_owner_id != _guild->self()->member_id)
             return false;
 
 
@@ -147,88 +147,88 @@ inline bool channel::modify_channel(std::optional<std::string> name, std::option
     if (parent_id.has_value())//VIP only
         obj["parent_id"] = parent_id.value();
 
-    m_ratelimit.push(m_id, fmt::format("/channels/{}", m_id), std::move(obj), "PATCH", callback);
+    ratelimit.push(guild_id, fmt::format("/channels/{}", guild_id), std::move(obj), "PATCH", callback);
     return true;
 }
 
-inline bool channel::delete_channel(std::function<void(rest_reply)> callback)
+inline bool aegis_channel::delete_channel(std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canManageChannels())
+    if (!permission(_guild->base_permissions(_guild->self())).canManageChannels())
         return false;
 
-    m_ratelimit.push(m_id, fmt::format("/channels/{}", m_id), "", "DELETE", callback);
+    ratelimit.push(guild_id, fmt::format("/channels/{}", guild_id), "", "DELETE", callback);
     return true;
 }
 
-inline bool channel::create_reaction(snowflake message_id, std::string emoji, std::function<void(rest_reply)> callback)
+inline bool aegis_channel::create_reaction(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canAddReactions())
+    if (!permission(_guild->base_permissions(_guild->self())).canAddReactions())
         return false;
 
-    m_emoji.push(m_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", m_id, message_id, emoji), "", "PUT", callback);
+    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", guild_id, message_id, emoji_text), "", "PUT", callback);
     return true;
 }
 
-inline bool channel::delete_own_reaction(snowflake message_id, std::string emoji, std::function<void(rest_reply)> callback)
+inline bool aegis_channel::delete_own_reaction(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canAddReactions())
+    if (!permission(_guild->base_permissions(_guild->self())).canAddReactions())
         return false;
 
-    m_emoji.push(m_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", m_id, message_id, emoji), "", "DELETE", callback);
+    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", guild_id, message_id, emoji_text), "", "DELETE", callback);
     return true;
 }
 
-inline bool channel::delete_user_reaction(snowflake message_id, std::string emoji, snowflake user_id, std::function<void(rest_reply)> callback)
+inline bool aegis_channel::delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake user_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canManageMessages())
+    if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
         return false;
 
-    m_emoji.push(m_id, fmt::format("/channels/{}/messages/{}/reactions/{}/{}", m_id, message_id, emoji, user_id), "", "DELETE", callback);
+    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/{}", guild_id, message_id, emoji_text, user_id), "", "DELETE", callback);
     return true;
 }
 
-inline bool channel::get_reactions(snowflake message_id, std::string emoji, std::function<void(rest_reply)> callback)
+inline bool aegis_channel::get_reactions(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback)
 {
     //TODO: support query params?
     //before[snowflake], after[snowflake], limit[int]
-    m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/{}/reactions/{}", m_id, message_id, emoji), "", "GET", callback);
+    ratelimit.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}", guild_id, message_id, emoji_text), "", "GET", callback);
     return true;
 }
 
-inline bool channel::delete_all_reactions(snowflake message_id, std::function<void(rest_reply)> callback)
+inline bool aegis_channel::delete_all_reactions(snowflake message_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canManageMessages())
+    if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
         return false;
 
-    m_emoji.push(m_id, fmt::format("/channels/{}/messages/{}/reactions", m_id, message_id), "", "DELETE", callback);
+    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions", guild_id, message_id), "", "DELETE", callback);
     return true;
 }
 
-inline bool channel::edit_channel_permissions(snowflake overwrite_id, int64_t allow, int64_t deny, std::string type, std::function<void(rest_reply)> callback)
+inline bool aegis_channel::edit_channel_permissions(snowflake overwrite_id, int64_t allow, int64_t deny, std::string type, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canManageRoles())
+    if (!permission(_guild->base_permissions(_guild->self())).canManageRoles())
         return false;
 
     json obj;
     obj["allow"] = allow;
     obj["deny"] = deny;
     obj["type"] = type;
-    m_ratelimit.push(m_id, fmt::format("/channels/{}/permissions/{}", m_id, overwrite_id), obj.dump(), "PUT", callback);
+    ratelimit.push(guild_id, fmt::format("/channels/{}/permissions/{}", guild_id, overwrite_id), obj.dump(), "PUT", callback);
     return true;
 }
 
-inline bool channel::get_channel_invites(std::function<void(rest_reply)> callback)
+inline bool aegis_channel::get_channel_invites(std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canManageChannels())
+    if (!permission(_guild->base_permissions(_guild->self())).canManageChannels())
         return false;
 
-    m_ratelimit.push(m_id, fmt::format("/channels/{}/invites", m_id), "", "GET", callback);
+    ratelimit.push(guild_id, fmt::format("/channels/{}/invites", guild_id), "", "GET", callback);
     return true;
 }
 
-inline bool channel::create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique, std::function<void(rest_reply)> callback)
+inline bool aegis_channel::create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canInvite())
+    if (!permission(_guild->base_permissions(_guild->self())).canInvite())
         return false;
 
     json obj;
@@ -240,56 +240,56 @@ inline bool channel::create_channel_invite(std::optional<int> max_age, std::opti
         obj["temporary"] = temporary.value();
     if (unique.has_value())
         obj["unique"] = unique.value();
-    m_ratelimit.push(m_id, fmt::format("/channels/{}/invites", m_id), obj.dump(), "POST", callback);
+    ratelimit.push(guild_id, fmt::format("/channels/{}/invites", guild_id), obj.dump(), "POST", callback);
     return true;
 }
 
 
-inline bool channel::delete_channel_permission(snowflake overwrite_id, std::function<void(rest_reply)> callback)
+inline bool aegis_channel::delete_channel_permission(snowflake overwrite_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canManageRoles())
+    if (!permission(_guild->base_permissions(_guild->self())).canManageRoles())
         return false;
 
-    m_ratelimit.push(m_id, fmt::format("/channels/{}/permissions/{}", m_id, overwrite_id), "", "DELETE", callback);
+    ratelimit.push(guild_id, fmt::format("/channels/{}/permissions/{}", guild_id, overwrite_id), "", "DELETE", callback);
     return true;
 }
 
-inline bool channel::trigger_typing_indicator(std::function<void(rest_reply)> callback)
+inline bool aegis_channel::trigger_typing_indicator(std::function<void(rest_reply)> callback)
 {
-    m_ratelimit.push(m_id, fmt::format("/channels/{}/typing", m_id), "", "POST", callback);
+    ratelimit.push(guild_id, fmt::format("/channels/{}/typing", guild_id), "", "POST", callback);
     return true;
 }
 
-inline bool channel::get_pinned_messages(std::function<void(rest_reply)> callback)
+inline bool aegis_channel::get_pinned_messages(std::function<void(rest_reply)> callback)
 {
     //returns
     //TODO: 
     return true;
 }
 
-inline bool channel::add_pinned_channel_message(std::function<void(rest_reply)> callback)
+inline bool aegis_channel::add_pinned_channel_message(std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canManageMessages())
+    if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
         return false;
 
     return true;
 }
 
-inline bool channel::delete_pinned_channel_message(std::function<void(rest_reply)> callback)
+inline bool aegis_channel::delete_pinned_channel_message(std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->m_self)).canManageMessages())
+    if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
         return false;
 
     return true;
 }
 
-inline bool channel::group_dm_add_recipient(std::function<void(rest_reply)> callback)//will go in aegis::Aegis
+inline bool aegis_channel::group_dm_add_recipient(std::function<void(rest_reply)> callback)//will go in aegis::aegis_core
 {
     //TODO: 
     return true;
 }
 
-inline bool channel::group_dm_remove_recipient(std::function<void(rest_reply)> callback)//will go in aegis::Aegis
+inline bool aegis_channel::group_dm_remove_recipient(std::function<void(rest_reply)> callback)//will go in aegis::aegis_core
 {
     //TODO: 
     return true;

@@ -30,12 +30,12 @@
 namespace example_bot
 {
 
-inline bool example::typing_start(json & msg, client & shard, Aegis & bot)
+inline bool example::typing_start(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::message_create(json & msg, client & shard, Aegis & bot)
+inline bool example::message_create(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     if constexpr (check_setting<settings>::disable_cache::test())
         return extremely_simplified_message_handler(msg, shard, bot);
@@ -57,8 +57,8 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
     std::string avatar = author["avatar"].is_string() ? author["avatar"] : "";
     uint16_t discriminator = std::stoi(author["discriminator"].get<std::string>());
 
-    channel & _channel = bot.get_channel(channel_id);
-    guild & _guild = _channel.get_guild();
+    aegis_channel & _channel = bot.get_channel(channel_id);
+    aegis_guild & _guild = _channel.get_guild();
 
     auto toks = split(content, ' ');
     if (toks.size() == 0)
@@ -67,13 +67,13 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
     // basic stats of the example bot
     if (toks[0] == "?info")
     {
-        uint64_t guild_count = bot.m_guilds.size();
+        uint64_t guild_count = bot.guilds.size();
         uint64_t member_count = 0;
-        uint64_t member_count_unique = bot.m_members.size();
+        uint64_t member_count_unique = bot.members.size();
         uint64_t member_online_count = 0;
         uint64_t member_idle_count = 0;
         uint64_t member_dnd_count = 0;
-        uint64_t channel_count = bot.m_channels.size();
+        uint64_t channel_count = bot.channels.size();
         uint64_t channel_text_count = 0;
         uint64_t channel_voice_count = 0;
         uint64_t member_count_active = 0;
@@ -81,34 +81,28 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
         uint64_t eventsseen = 0;
 
         {
-            for (auto & bot_ptr : bot.m_clients)
-                eventsseen += bot_ptr->m_sequence;
+            for (auto & bot_ptr : bot.shards)
+                eventsseen += bot_ptr->sequence;
 
-            for (auto & m : bot.m_members)
+            for (auto &[k, v] : bot.members)
             {
-                auto & membr = m.second;
-                if (membr->m_status == aegis::member::member_status::ONLINE)
+                if (v->status == aegis::aegis_member::member_status::Online)
                     member_online_count++;
-                else if (membr->m_status == aegis::member::member_status::IDLE)
+                else if (v->status == aegis::aegis_member::member_status::Idle)
                     member_idle_count++;
-                else if (membr->m_status == aegis::member::member_status::DND)
+                else if (v->status == aegis::aegis_member::member_status::DoNotDisturb)
                     member_dnd_count++;
             }
 
-            for (auto & c : bot.m_channels)
+            for (auto & [k,v] : bot.channels)
             {
-                auto & chnl = c.second;
-                if (chnl->m_type == channel::ChannelType::TEXT)
+                if (v->m_type == aegis_channel::ChannelType::Text)
                     channel_text_count++;
                 else
                     channel_voice_count++;
             }
 
-            for (auto & g : bot.m_guilds)
-            {
-                auto & gld = g.second;
-                member_count += gld->m_members.size();
-            }
+            member_count = bot.get_member_count();
         }
 
         std::string members = fmt::format("{} seen\n{} unique\n{} online\n{} idle\n{} dnd", member_count, member_count_unique, member_online_count, member_idle_count, member_dnd_count);
@@ -120,7 +114,7 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
 #else
         std::string build_mode = "RELEASE";
 #endif
-        std::string misc = fmt::format("I am shard {} of {} running on `{}` in `{}` mode", shard.m_shardid + 1, bot.m_shardidmax, aegis::utility::platform::get_platform(), build_mode);
+        std::string misc = fmt::format("I am shard {} of {} running on `{}` in `{}` mode", shard.shardid + 1, bot.shard_max_count, aegis::utility::platform::get_platform(), build_mode);
 
         fmt::MemoryWriter w;
         w << "[Latest bot source](https://github.com/zeroxs/aegis.cpp)\n[Official Bot Server](https://discord.gg/w7Y3Bb8)\n\nMemory usage: "
@@ -169,8 +163,8 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
             { "content", "exiting..." }
         };
         bot.get_channel(channel_id).create_message(obj.dump());
-        bot.set_state(SHUTDOWN);
-        bot.websocket().close(shard.m_connection, 1001, "");
+        bot.set_state(Shutdown);
+        bot.get_websocket().close(shard.connection, 1001, "");
         bot.stop_work();
         return true;
     }
@@ -181,15 +175,15 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
     }
     else if (toks[0] == "?shard")
     {
-        _channel.create_message(fmt::format("I am shard#[{}]", shard.m_shardid));
+        _channel.create_message(fmt::format("I am shard#[{}]", shard.shardid));
         return true;
     }
     else if (toks[0] == "?shards")
     {
         std::string s = "```\n";
-        for (auto & shard : bot.m_clients)
+        for (auto & shard : bot.shards)
         {
-            s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages {:4} presence updates\n", shard->m_shardid, shard->counters.guilds, shard->counters.channels, shard->counters.members, shard->counters.messages, shard->counters.presence_changes);
+            s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages {:4} presence updates\n", shard->shardid, shard->counters.guilds, shard->counters.channels, shard->counters.members, shard->counters.messages, shard->counters.presence_changes);
         }
         s += "```";
         _channel.create_message(s);
@@ -214,10 +208,10 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
     else if (toks[0] == "?serverlist")
     {
         std::stringstream w;
-        for (auto & g : bot.m_guilds)
+        for (auto & g : bot.guilds)
         {
             auto & gld = g.second;
-            w << "*" << gld->m_name << "*  :  " << gld->m_id << "\n";
+            w << "*" << gld->get_name() << "*  :  " << gld->guild_id << "\n";
         }
 
 
@@ -228,44 +222,21 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
         };
         _channel.create_message_embed("", t);
     }
-    else if (toks[0] == "?roles")
-    {
-        std::stringstream w;
-        for (auto & r : _guild.m_roles)
-        {
-            w << "[" << r.second->id << "] : [A:" << r.second->_permission.getAllowPerms() << "] : [D:" << r.second->_permission.getDenyPerms() << "] : [" << r.second->name << "]\n";
-        }
-        _channel.create_message(w.str());
-    }
     else if (toks[0] == "?mroles")
     {
+        snowflake role_check;
         if (toks.size() == 1)
-        {
-            _channel.create_message("Not enough params (need user snowflake)");
-            return true;
-        }
+            role_check = member_id;
+        else
+            role_check = std::stoll(toks[1]);
+
         std::stringstream w;
-        auto & gld = _guild.m_members[std::stoll(toks[1])]->m_guilds[_guild.m_id];
-        for (auto & rl : gld.roles)
+        auto gld = _guild.get_member(role_check)->get_guild_info(_guild.guild_id);
+        for (auto & rl : gld->roles)
         {
             role & r = _guild.get_role(rl);
-            w << "[" << r.id << "] : [A:" << r._permission.getAllowPerms() << "] : [D:" << r._permission.getDenyPerms() << "] : [" << r.name << "]\n";
+            w << "[" << r.role_id << "] : [A:" << r._permission.getAllowPerms() << "] : [D:" << r._permission.getDenyPerms() << "] : [" << r.name << "]\n";
 
-        }
-        _channel.create_message(w.str());
-    }
-    else if (toks[0] == "?croles")
-    {
-        std::stringstream w;
-        for (auto & r : _channel.m_overrides)
-        {
-            auto & a = r.second;
-            std::string name;
-            if (a.type == perm_overwrite::ORType::USER)
-                name = _guild.m_members[a.id]->getFullName();
-            else
-                name = _guild.m_roles[a.id]->name;
-            w << "[" << ((a.type == perm_overwrite::ORType::USER) ? "user" : "role") << "] : [A:" << a.allow << "] : [D:" << a.deny << "] : [" << name << "]\n";
         }
         _channel.create_message(w.str());
     }
@@ -273,11 +244,11 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
     return true;
 }
 
-inline bool example::extremely_simplified_message_handler(json & msg, client & shard, Aegis & bot)
+inline bool example::extremely_simplified_message_handler(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     json author = msg["d"]["author"];
 
-    snowflake member_id = author["id"];
+    snowflake guild_id = author["id"];
     std::string username = author["username"];
 
     snowflake channel_id = msg["d"]["channel_id"];
@@ -297,8 +268,8 @@ inline bool example::extremely_simplified_message_handler(json & msg, client & s
         {
             uint64_t eventsseen = 0;
 
-            for (auto & bot_ptr : bot.m_clients)
-                eventsseen += bot_ptr->m_sequence;
+            for (auto & bot_ptr : bot.shards)
+                eventsseen += bot_ptr->sequence;
 
             std::string events = fmt::format("{}", eventsseen);
 #if defined(DEBUG) || defined(_DEBUG)
@@ -306,7 +277,7 @@ inline bool example::extremely_simplified_message_handler(json & msg, client & s
 #else
             std::string build_mode = "RELEASE";
 #endif
-            std::string misc = fmt::format("I am shard {} of {} running on `{}` in `{}` mode", shard.m_shardid + 1, bot.m_shardidmax, aegis::utility::platform::get_platform(), build_mode);
+            std::string misc = fmt::format("I am shard {} of {} running on `{}` in `{}` mode", shard.shardid + 1, bot.shard_max_count, aegis::utility::platform::get_platform(), build_mode);
 
             fmt::MemoryWriter w;
             w << "[Latest bot source](https://github.com/zeroxs/aegis.cpp)\n[Official Bot Server](https://discord.gg/w7Y3Bb8)\n\nMemory usage: "
@@ -341,7 +312,7 @@ inline bool example::extremely_simplified_message_handler(json & msg, client & s
 //             if (reply.has_value() && reply->reply_code == 200)
 //             {
 //                 //success
-//                 bot.m_log->info("?info responded in channel [{}] by user [{}]", channel_id, username);
+//                 bot.log->info("?info responded in channel [{}] by user [{}]", channel_id, username);
 //             }
 
             //ratelimit controlled call with callback response
@@ -350,7 +321,7 @@ inline bool example::extremely_simplified_message_handler(json & msg, client & s
                 if (reply.reply_code == 200)
                 {
                     //success
-                    bot.m_log->info("?info responded in channel [{}] by user [{}]", channel_id, username);
+                    bot.log->info("?info responded in channel [{}] by user [{}]", channel_id, username);
                 }
             });
 
@@ -360,137 +331,137 @@ inline bool example::extremely_simplified_message_handler(json & msg, client & s
     }
 }
 
-inline bool example::message_update(json & msg, client & shard, Aegis & bot)
+inline bool example::message_update(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::message_delete(json & msg, client & shard, Aegis & bot)
+inline bool example::message_delete(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::message_delete_bulk(json & msg, client & shard, Aegis & bot)
+inline bool example::message_delete_bulk(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::guild_create(json & msg, client & shard, Aegis & bot)
+inline bool example::guild_create(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::guild_update(json & msg, client & shard, Aegis & bot)
+inline bool example::guild_update(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::guild_delete(json & msg, client & shard, Aegis & bot)
+inline bool example::guild_delete(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::user_settings_update(json & msg, client & shard, Aegis & bot)
+inline bool example::user_settings_update(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::user_update(json & msg, client & shard, Aegis & bot)
+inline bool example::user_update(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::ready(json & msg, client & shard, Aegis & bot)
+inline bool example::ready(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::resumed(json & msg, client & shard, Aegis & bot)
+inline bool example::resumed(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::channel_create(json & msg, client & shard, Aegis & bot)
+inline bool example::channel_create(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::channel_update(json & msg, client & shard, Aegis & bot)
+inline bool example::channel_update(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::channel_delete(json & msg, client & shard, Aegis & bot)
+inline bool example::channel_delete(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::guild_ban_add(json & msg, client & shard, Aegis & bot)
+inline bool example::guild_ban_add(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::guild_ban_remove(json & msg, client & shard, Aegis & bot)
+inline bool example::guild_ban_remove(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::guild_emojis_update(json & msg, client & shard, Aegis & bot)
+inline bool example::guild_emojis_update(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::guild_integrations_update(json & msg, client & shard, Aegis & bot)
+inline bool example::guild_integrations_update(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::guild_member_add(json & msg, client & shard, Aegis & bot)
+inline bool example::guild_member_add(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::guild_member_remove(json & msg, client & shard, Aegis & bot)
+inline bool example::guild_member_remove(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::guild_member_update(json & msg, client & shard, Aegis & bot)
+inline bool example::guild_member_update(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::guild_member_chunk(json & msg, client & shard, Aegis & bot)
+inline bool example::guild_member_chunk(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::guild_role_create(json & msg, client & shard, Aegis & bot)
+inline bool example::guild_role_create(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::guild_role_update(json & msg, client & shard, Aegis & bot)
+inline bool example::guild_role_update(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::guild_role_delete(json & msg, client & shard, Aegis & bot)
+inline bool example::guild_role_delete(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::presence_update(json & msg, client & shard, Aegis & bot)
+inline bool example::presence_update(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::voice_state_update(json & msg, client & shard, Aegis & bot)
+inline bool example::voice_state_update(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }
 
-inline bool example::voice_server_update(json & msg, client & shard, Aegis & bot)
+inline bool example::voice_server_update(json & msg, aegis_shard & shard, aegis_core & bot)
 {
     return true;
 }

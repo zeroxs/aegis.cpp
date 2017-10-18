@@ -29,10 +29,10 @@ using namespace aegis;
 using json = nlohmann::json;
 int main(int argc, char * argv[])
 {
-    Aegis bot("TOKEN");
-    bot.i_message_create = [] (json & msg, client & shard, Aegis & bot) -> bool
+    aegis_core bot("TOKEN");
+    bot.i_message_create = [] (json & msg, aegis_shard & shard, aegis_core & bot) -> bool
     {
-        snowflake channel_id = std::stoll(msg["d"]["channel_id"].get<std::string>());
+        snowflake channel_id = msg["d"]["channel_id"];
         std::string author = msg["d"]["author"];
         if (msg["d"]["content"] == "Hi")
             bot.get_channel(channel_id).create_message("Hello back");

@@ -26,9 +26,8 @@
 
 #pragma once
 
-#include <inttypes.h>
-#include <type_traits>
-#include <spdlog/fmt/fmt.h>
+
+#include "aegis/config.hpp"
 
 
 namespace aegis
@@ -48,11 +47,6 @@ public:
     }
 
     operator int64_t() const
-    {
-        return m_snowflake;
-    }
-
-    constexpr int64_t get()
     {
         return m_snowflake;
     }
@@ -126,11 +120,14 @@ private:
     static constexpr int64_t _discordEpoch = 1420070400000;
 };
 
-void from_json(const json& j, snowflake& s)
+void from_json(const nlohmann::json& j, snowflake& s)
 {
     s = std::stoll(j.get<std::string>());
 }
-
+void to_json(nlohmann::json& j, const snowflake& s)
+{
+    j = json{ s };
+}
 
 }
 

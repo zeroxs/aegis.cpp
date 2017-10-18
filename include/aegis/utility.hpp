@@ -26,37 +26,31 @@
 
 #pragma once
 
-#include <asio.hpp>
-#include <asio/ssl.hpp>
-#include <spdlog/spdlog.h>
+
+
+#include "aegis/config.hpp"
 #include <websocketpp/common/random.hpp>
 #include <websocketpp/common/thread.hpp>
 #include <websocketpp/common/connection_hdl.hpp>
 #include <websocketpp/config/asio_client.hpp>
 #include <websocketpp/roles/client_endpoint.hpp>
 #include <websocketpp/client.hpp>
-#include <asio/steady_timer.hpp>
+
 
 #if defined(_WIN32)
 #include <windows.h>
 #include <psapi.h>
-
 #elif defined(__unix__) || defined(__unix) || defined(unix) || (defined(__APPLE__) && defined(__MACH__))
 #include <unistd.h>
 #include <sys/resource.h>
-
 #if defined(__APPLE__) && defined(__MACH__)
 #include <mach/mach.h>
-
 #elif (defined(_AIX) || defined(__TOS__AIX__)) || (defined(__sun__) || defined(__sun) || defined(sun) && (defined(__SVR4) || defined(__svr4__)))
 #include <fcntl.h>
 #include <procfs.h>
-
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
 #include <stdio.h>
-
 #endif
-
 #else
 #error "Cannot define getPeakRSS( ) or getCurrentRSS( ) for an unknown OS."
 #endif
@@ -95,69 +89,9 @@ struct check_setting
     OPTION(force_shard_count);
     OPTION(debugmode);
     OPTION(disable_cache);
-
-//     template <typename C> static std::true_type test_owner_id(checker<C, decltype(&C::owner_id)> *);
-//     template <typename C> static std::false_type test_owner_id(...);
-//     template <typename C> static constexpr bool getvalue_owner_id(checker<C, decltype(&C::owner_id)> *) { return C::owner_id; }
-//     template <typename C> static constexpr bool getvalue_owner_id(...) { return false; }
-// 
-//     template <typename C> static std::true_type test_selfbot(checker<C, decltype(&C::selfbot)> *);
-//     template <typename C> static std::false_type test_selfbot(...);
-//     template <typename C> static constexpr bool getvalue_selfbot(checker<C, decltype(&C::selfbot)> *) { return C::selfbot; }
-//     template <typename C> static constexpr bool getvalue_selfbot(...) { return false; }
-// 
-//     template <typename C> static std::true_type test_force_shard_count(checker<C, decltype(&C::force_shard_count)> *);
-//     template <typename C> static std::false_type test_force_shard_count(...);
-//     template <typename C> static constexpr bool getvalue_force_shard_count(checker<C, decltype(&C::force_shard_count)> *) { return C::force_shard_count; }
-//     template <typename C> static constexpr bool getvalue_force_shard_count(...) { return false; }
-// 
-//     template <typename C> static std::true_type test_debugmode(checker<C, decltype(&C::force_shard_count)> *);
-//     template <typename C> static std::false_type test_debugmode(...);
-//     template <typename C> static constexpr bool getvalue_debugmode(checker<C, decltype(&C::force_shard_count)> *) { return C::force_shard_count; }
-//     template <typename C> static constexpr bool getvalue_debugmode(...) { return false; }
-// 
-//     template <typename C> static std::true_type test_disable_cache(checker<C, decltype(&C::force_shard_count)> *);
-//     template <typename C> static std::false_type test_disable_cache(...);
-//     template <typename C> static constexpr bool getvalue_disable_cache(checker<C, decltype(&C::force_shard_count)> *) { return C::force_shard_count; }
-//     template <typename C> static constexpr bool getvalue_disable_cache(...) { return false; }
-// 
-//     template <typename C>
-//     static constexpr std::pair<const decltype(test_owner_id<C>(nullptr)), const bool> get_owner_id() { return { decltype(test_owner_id<T>(nullptr))(), getvalue_owner_id<T>(nullptr) }; }
-//     template <typename C>
-//     static constexpr std::pair<const decltype(test_selfbot<C>(nullptr)), const bool> get_selfbot() { return { decltype(test_selfbot<T>(nullptr))(), getvalue_selfbot<T>(nullptr) }; }
-//     template <typename C>
-//     static constexpr std::pair<const decltype(test_force_shard_count<C>(nullptr)), const bool> get_force_shard_count() { return { decltype(test_force_shard_count<T>(nullptr))(), getvalue_force_shard_count<T>(nullptr) }; }
-//     template <typename C>
-//     static constexpr std::pair<const decltype(test_debugmode<C>(nullptr)), const bool> get_debugmode() { return { decltype(test_debugmode<T>(nullptr))(), getvalue_debugmode<T>(nullptr) }; }
-//     template <typename C>
-//     static constexpr std::pair<const decltype(test_disable_cache<C>(nullptr)), const bool> get_disable_cache() { return { decltype(test_disable_cache<T>(nullptr))(), getvalue_disable_cache<T>(nullptr) }; }
-// 
-//     struct disable_cache
-//     {
-//         typedef decltype(test_disable_cache<T>(nullptr)) option_t;
-//         static constexpr bool test() { auto c = get_disable_cache<T>(); return (std::get<0>(c) && std::get<1>(c)); }
-//     };
-//     struct force_shard_count
-//     {
-//         typedef decltype(test_force_shard_count<T>(nullptr)) option_t;
-//         static constexpr bool test() { auto c = get_force_shard_count<T>(); return (std::get<0>(c) && std::get<1>(c)); }
-//     };
-//     struct owner_id
-//     {
-//         typedef decltype(test_owner_id<T>(nullptr)) option_t;
-//         static constexpr bool test() { auto c = get_owner_id<T>(); return (std::get<0>(c) && std::get<1>(c)); }
-//     };
-//     struct selfbot
-//     {
-//         typedef decltype(test_selfbot<T>(nullptr)) option_t;
-//         static constexpr bool test() { auto c = get_selfbot<T>(); return (std::get<0>(c) && std::get<1>(c)); }
-//     };
-//     struct debugmode
-//     {
-//         typedef decltype(test_debugmode<T>(nullptr)) option_t;
-//         static constexpr bool test() { auto c = get_debugmode<T>(); return (std::get<0>(c) && std::get<1>(c)); }
-//     };
 };
+
+
 
 namespace platform
 {
@@ -290,16 +224,6 @@ inline size_t getCurrentRSS()
 //////////////////////////////////////////////////////////////////////////
 
 } //utility
-
-
-namespace spd = spdlog;
-using namespace std::literals;
-using namespace std::chrono;
-using json = nlohmann::json;
-
-struct settings;
-
-using utility::check_setting;
 
 
 } //aegis
