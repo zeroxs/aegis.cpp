@@ -80,12 +80,19 @@ struct check_setting
     template <typename C> static constexpr bool getvalue_force_shard_count(checker<C, decltype(&C::force_shard_count)> *) { return C::force_shard_count; }
     template <typename C> static constexpr bool getvalue_force_shard_count(...) { return false; }
 
+    template <typename C> static std::true_type test_debugmode(checker<C, decltype(&C::force_shard_count)> *);
+    template <typename C> static std::false_type test_debugmode(...);
+    template <typename C> static constexpr bool getvalue_debugmode(checker<C, decltype(&C::force_shard_count)> *) { return C::force_shard_count; }
+    template <typename C> static constexpr bool getvalue_debugmode(...) { return false; }
+
     template <typename C>
     static constexpr std::pair<const decltype(test_owner_id<C>(nullptr)), const bool> get_owner_id() { return { decltype(test_owner_id<T>(nullptr))(), getvalue_owner_id<T>(nullptr) }; }
     template <typename C>
     static constexpr std::pair<const decltype(test_selfbot<C>(nullptr)), const bool> get_selfbot() { return { decltype(test_selfbot<T>(nullptr))(), getvalue_selfbot<T>(nullptr) }; }
     template <typename C>
     static constexpr std::pair<const decltype(test_force_shard_count<C>(nullptr)), const bool> get_force_shard_count() { return { decltype(test_force_shard_count<T>(nullptr))(), getvalue_force_shard_count<T>(nullptr) }; }
+    template <typename C>
+    static constexpr std::pair<const decltype(test_debugmode<C>(nullptr)), const bool> get_debugmode() { return { decltype(test_debugmode<T>(nullptr))(), getvalue_debugmode<T>(nullptr) }; }
 
     struct force_shard_count
     {
@@ -101,6 +108,11 @@ struct check_setting
     {
         typedef decltype(test_selfbot<T>(nullptr)) option_t;
         static constexpr bool test() { auto c = get_selfbot<T>(); return (std::get<0>(c) && std::get<1>(c)); }
+    };
+    struct debugmode
+    {
+        typedef decltype(test_debugmode<T>(nullptr)) option_t;
+        static constexpr bool test() { auto c = get_debugmode<T>(); return (std::get<0>(c) && std::get<1>(c)); }
     };
 };
 

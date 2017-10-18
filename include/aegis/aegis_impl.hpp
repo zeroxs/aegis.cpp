@@ -507,6 +507,24 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
         }
 
         result = json::parse(payload);
+        if (m_log->level() > spdlog::level::level_enum::trace && !result.is_null()
+            && (result["t"].is_null() || (result["t"] != "GUILD_CREATE" && result["t"] != "PRESENCE_UPDATE")))
+            m_log->trace("Shard#{}: {}", shard.m_shardid, payload);
+
+
+        //////////////////////////////////////////////////////////////////////////
+        if constexpr (check_setting<settings>::debugmode::test())
+        {
+            int64_t t_time = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+            shard.debug_messages[t_time] = payload;
+
+            ///check old messages and remove
+
+            for (auto &[k, v] : shard.debug_messages)
+                if (k < t_time - 10000)
+                    shard.debug_messages.erase(k);
+        }
+        //////////////////////////////////////////////////////////////////////////
 
         if (!result["s"].is_null())
             shard.m_sequence = result["s"].get<uint64_t>();

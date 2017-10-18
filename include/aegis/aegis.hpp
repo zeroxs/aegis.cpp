@@ -309,6 +309,29 @@ public:
         m_work.reset();
     }
 
+    void debug_trace(client & shard)
+    {
+        auto iter = shard.debug_messages.rend();
+        fmt::MemoryWriter w;
+
+        w << "==========<Start Error Trace>==========\n"
+            << "Shard: " << shard.m_shardid << '\n'
+            << "Seq: " << shard.m_sequence << '\n';
+        int i = 0;
+        for (auto iter = shard.debug_messages.rbegin(); (i < 5 && iter != shard.debug_messages.rend()) ; ++i, --iter )
+            w << (*iter).second << '\n';
+
+
+        for (auto & c : m_clients)
+        {
+            w << fmt::format("Shard#{} shard:{:p} m_connection:{:p}\n", shard.m_shardid, static_cast<void*>(c.get()), static_cast<void*>(c->m_connection.get()));
+        }
+
+        w << "==========<End Error Trace>==========";
+
+        m_log->critical(w.str());
+    }
+
     /// Performs a GET request on the path
     /**
      * @param path A string of the uri path to get
