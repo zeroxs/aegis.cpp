@@ -42,7 +42,7 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
         
     json author = msg["d"]["author"];
 
-    snowflake member_id = std::stoll(author["id"].get<std::string>());
+    snowflake member_id = author["id"];
     std::string username = author["username"];
 
     //test
@@ -211,26 +211,6 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
             }
         }
     }
-    else if (toks[0] == "?react")
-    {
-        //_channel.create_reaction(std::stoll(toks[1]), toks[2]);
-    }
-    else if (toks[0] == "?deletereact")
-    {
-        //_channel.delete_own_reaction(std::stoll(toks[1]), toks[2]);
-    }
-    else if (toks[0] == "?options")
-    {
-        //_channel.create_reaction(std::stoll(toks[1]), "e:289276304564420608");
-        //_channel.create_reaction(std::stoll(toks[1]), "e:367566538427072523");
-        //_channel.create_reaction(std::stoll(toks[1]), "e:288902947046424576");
-    }
-    else if (toks[0] == "?remoptions")
-    {
-        //_channel.delete_own_reaction(std::stoll(toks[1]), "e:289276304564420608");
-        //_channel.delete_own_reaction(std::stoll(toks[1]), "e:367566538427072523");
-        //_channel.delete_own_reaction(std::stoll(toks[1]), "e:288902947046424576");
-    }
     else if (toks[0] == "?serverlist")
     {
         std::stringstream w;
@@ -246,7 +226,7 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
             { "description", w.str() },
             { "color", 10599460 }
         };
-        //_channel.create_message_embed("", t);
+        _channel.create_message_embed("", t);
     }
     else if (toks[0] == "?roles")
     {
@@ -255,10 +235,15 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
         {
             w << "[" << r.second->id << "] : [A:" << r.second->_permission.getAllowPerms() << "] : [D:" << r.second->_permission.getDenyPerms() << "] : [" << r.second->name << "]\n";
         }
-        //_channel.create_message(w.str());
+        _channel.create_message(w.str());
     }
     else if (toks[0] == "?mroles")
     {
+        if (toks.size() == 1)
+        {
+            _channel.create_message("Not enough params (need user snowflake)");
+            return true;
+        }
         std::stringstream w;
         auto & gld = _guild.m_members[std::stoll(toks[1])]->m_guilds[_guild.m_id];
         for (auto & rl : gld.roles)
@@ -267,7 +252,7 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
             w << "[" << r.id << "] : [A:" << r._permission.getAllowPerms() << "] : [D:" << r._permission.getDenyPerms() << "] : [" << r.name << "]\n";
 
         }
-        //_channel.create_message(w.str());
+        _channel.create_message(w.str());
     }
     else if (toks[0] == "?croles")
     {
@@ -282,7 +267,7 @@ inline bool example::message_create(json & msg, client & shard, Aegis & bot)
                 name = _guild.m_roles[a.id]->name;
             w << "[" << ((a.type == perm_overwrite::ORType::USER) ? "user" : "role") << "] : [A:" << a.allow << "] : [D:" << a.deny << "] : [" << name << "]\n";
         }
-        //_channel.create_message(w.str());
+        _channel.create_message(w.str());
     }
 
     return true;
@@ -292,7 +277,7 @@ inline bool example::extremely_simplified_message_handler(json & msg, client & s
 {
     json author = msg["d"]["author"];
 
-    snowflake member_id = std::stoll(author["id"].get<std::string>());
+    snowflake member_id = author["id"];
     std::string username = author["username"];
 
     snowflake channel_id = msg["d"]["channel_id"];
@@ -360,7 +345,7 @@ inline bool example::extremely_simplified_message_handler(json & msg, client & s
 //             }
 
             //ratelimit controlled call with callback response
-            bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_id, fmt::format("/channels/{:d}/messages", channel_id), obj.dump(), "POST", [&bot, channel_id, username](aegis::rest_reply & reply)
+            bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_id, fmt::format("/channels/{:d}/messages", channel_id), obj.dump(), "POST", [&bot, channel_id, username](aegis::rest_reply reply)
             {
                 if (reply.reply_code == 200)
                 {

@@ -111,7 +111,7 @@ public:
 
     }
 
-    void push(uint64_t id, std::string path, std::string content, std::string method, std::function<void(rest_reply)> callback = {})
+    void push(int64_t id, std::string path, std::string content, std::string method, std::function<void(rest_reply)> callback = {})
     {
 
         try
@@ -126,7 +126,7 @@ public:
         }
     }
 
-    std::map<uint64_t, std::shared_ptr<bucket>> _buckets;
+    std::map<int64_t, std::shared_ptr<bucket>> _buckets;
     rest_call _call;
     std::atomic_int64_t * global_limit;
 };

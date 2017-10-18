@@ -65,7 +65,7 @@ public:
 
     guild * _guild;
 
-    uint64_t m_last_message_id = 0;
+    snowflake m_last_message_id = 0;
     std::string m_name;
     std::string m_topic;
     uint32_t m_position = 0;

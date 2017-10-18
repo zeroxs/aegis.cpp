@@ -67,12 +67,12 @@ public:
     std::string m_name;
     std::string m_icon;
     std::string m_splash;
-    uint64_t m_owner_id = 0;
+    snowflake m_owner_id = 0;
     std::string m_region;
-    uint64_t m_afk_channel_id = 0;
+    snowflake m_afk_channel_id = 0;
     uint32_t m_afk_timeout = 0;//in seconds
     bool m_embed_enabled = false;
-    uint64_t m_embed_channel_id = 0;
+    snowflake m_embed_channel_id = 0;
     uint32_t m_verification_level = 0;
     uint32_t m_default_message_notifications = 0;
     uint32_t m_mfa_level = 0;

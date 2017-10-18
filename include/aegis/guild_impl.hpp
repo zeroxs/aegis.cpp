@@ -116,7 +116,7 @@ inline role & guild::get_role(int64_t r) const
 
 inline void guild::remove_member(json & obj)
 {
-    snowflake member_id = std::stoll(obj["user"]["id"].get<std::string>());
+    snowflake member_id = obj["user"]["id"];
     for (auto & m : m_members)
     {
         if (m.second->m_id == member_id)
