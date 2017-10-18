@@ -25,58 +25,18 @@
 
 #pragma once
 
-#include "config.hpp"
-#include "error.hpp"
-#include "structs.hpp"
-#include "member.hpp"
-#include "channel.hpp"
-#include "guild.hpp"
-#include "client.hpp"
-#include "ratelimit.hpp"
-#include "utility.hpp"
-#include "snowflake.hpp"
 
-#include <cstdio>
-#include <iostream>
-#include <streambuf>
-#include <sstream>
-#include <functional>
-#include <memory>
-#include <optional>
-#include <set>
-
-#include <spdlog/spdlog.h>
-#include <asio.hpp>
-#include <websocketpp/common/random.hpp>
-#include <websocketpp/common/thread.hpp>
-#include <websocketpp/common/connection_hdl.hpp>
-#include <asio/steady_timer.hpp>
-
-#include <websocketpp/config/asio_client.hpp>
-#include <websocketpp/client.hpp>
-
-#include <json.hpp>
 
 namespace aegis
 {
 
-namespace spd = spdlog;
-using namespace std::literals;
-using namespace std::chrono;
-using namespace aegis::rest_limits;
-using json = nlohmann::json;
-using std::function;
-using std::bind;
-using std::ref;
-
-struct settings;
-
-using utility::check_setting;
 
 void to_json(json& j, const snowflake& s)
 {
     j = json{ s };
 }
+
+using namespace rest_limits;
 
 class Aegis
 {
@@ -110,6 +70,7 @@ public:
         , m_isuserset(false)
     {
         m_log = spd::stdout_color_mt("aegis");
+        m_log->set_level(spdlog::level::level_enum::trace);
         m_ratelimit.add(bucket_type::GUILD);
         m_ratelimit.add(bucket_type::CHANNEL);
         m_ratelimit.add(bucket_type::EMOJI);
@@ -432,7 +393,7 @@ public:
     std::map<int64_t, std::shared_ptr<channel>> m_channels;
     std::map<int64_t, std::unique_ptr<guild>> m_guilds;
 
-    minimember & get_member(int64_t id)
+    member & get_member(int64_t id)
     {
         if (!m_members.count(id))
             throw std::out_of_range("member");
@@ -453,13 +414,13 @@ public:
         return *m_guilds[id];
     }
 
-    minimember & get_member_create(int64_t id)
+    member & get_member_create(int64_t id)
     {
         if (!m_members.count(id))
         {
-            auto g = std::make_unique<minimember>(id);
+            auto g = std::make_shared<member>(id);
             auto ptr = g.get();
-            m_members.emplace(id, std::move(g));
+            m_members.emplace(id, g);
             ptr->m_id = id;
             return *ptr;
         }
@@ -511,14 +472,18 @@ public:
     //called by GUILD_CREATE
     void guild_create(guild & _guild, json & obj, client & shard);
 
-    //called by CHANNEL_CREATE
-    void channel_create(guild & _guild, json & obj, client & shard);
+    //called by CHANNEL_CREATE (guilds)
+    void channel_guild_create(guild & _guild, json & obj, client & shard);
+
+    //called by CHANNEL_CREATE (DM)
+    void channel_create(json & obj, client & shard);
 
     //called by GUILD_MEMBER_ADD
     //creating members from DMs will be handled elsewhere
     void member_create(guild & _guild, json & obj, client & shard);
     
     void load_presence(json & member, guild & _guild);
+    void load_role(json & role, guild & _guild);
 
 
     json self_presence;

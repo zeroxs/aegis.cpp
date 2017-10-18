@@ -1,5 +1,5 @@
 //
-// member.hpp
+// aegis.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -26,64 +26,21 @@
 #pragma once
 
 
-#include <string>
-#include <optional>
-#include <queue>
+#include "aegis/config.hpp"
+#include "aegis/common.hpp"
+#include "aegis/utility.hpp"
+#include "aegis/role.hpp"
+#include "aegis/structs.hpp"
+#include "aegis/ratelimit.hpp"
+#include "aegis/config.hpp"
+#include "aegis/error.hpp"
 
-namespace aegis
-{
+#include "aegis/member.hpp"
+#include "aegis/client.hpp"
 
-class member
-{
-public:
-    explicit member(snowflake id) : m_id(id) {}
-    snowflake m_id = 0;
+#include "aegis/channel.hpp"
+#include "aegis/guild.hpp"
+#include "aegis/channel_impl.hpp"
+#include "aegis/guild_impl.hpp"
+#include "aegis/aegis.hpp"
 
-    //std::pair<message_snowflake, time_sent>
-    std::queue<std::pair<int64_t, int64_t>> m_msghistory;
-
-    std::string m_name;
-    uint16_t m_discriminator = 0;
-    std::string m_avatar;
-    bool m_isbot = false;
-    bool m_deaf = false;
-    bool m_mute = false;
-
-    struct guild_info
-    {
-        std::vector<snowflake> roles;
-        std::string nickname;
-        snowflake _guild;
-        std::string m_joined_at;
-    };
-
-    enum member_status
-    {
-        OFFLINE,
-        ONLINE,
-        IDLE,
-        STREAM,
-        DND
-    };
-
-    std::map<int64_t, guild_info> m_guilds;
-    member_status m_status = member_status::OFFLINE;
-
-    std::optional<std::string> getName(snowflake guild_id)
-    {
-        if (m_guilds.count(guild_id))
-        {
-            if (m_guilds[guild_id].nickname.length() > 0)
-                return m_guilds[guild_id].nickname;
-        }
-        return {};
-    }
-
-    std::string getFullName()
-    {
-        return fmt::format("{}#{}", m_name, m_discriminator);
-    }
-
-};
-
-}

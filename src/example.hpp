@@ -27,11 +27,9 @@
 #pragma once
 
 #include <stdint.h>
-#include <aegis/aegis.hpp>
-#include <aegis/client.hpp>
+#include <aegis.hpp>
 #include <json.hpp>
 #include <functional>
-#include <aegis/snowflake.hpp>
 
 
 namespace example_bot
@@ -216,19 +214,24 @@ public:
         }
         else if (toks[0] == "?exit")
         {
-            json obj =
-            {
-                { "content", "exiting..." }
-            };
-            bot.get_channel(channel_id).create_message(obj.dump());
-            bot.set_state(SHUTDOWN);
-            bot.websocket().close(shard.m_connection, 1001, "");
-            bot.stop_work();
+//             json obj =
+//             {
+//                 { "content", "exiting..." }
+//             };
+//             bot.get_channel(channel_id).create_message(obj.dump());
+//             bot.set_state(SHUTDOWN);
+//             bot.websocket().close(shard.m_connection, 1001, "");
+//             bot.stop_work();
+            return true;
+        }
+        else if (toks[0] == "?nuke")
+        {
+            //bot.websocket().close(shard.m_connection, 1001, "");
             return true;
         }
         else if (toks[0] == "?test")
         {
-            _channel.create_message("test message");
+            //_channel.create_message("test message");
             return true;
         }
         else if (toks[0] == "?shard")
@@ -252,27 +255,30 @@ public:
         }
         else if (toks[0] == "?deletechannel")
         {
-            //_channel.delete_channel();
+            if (userid == 171000788183678976)
+            {
+                _channel.delete_channel();
+            }
         }
         else if (toks[0] == "?react")
         {
-            _channel.create_reaction(std::stoll(toks[1]), toks[2]);
+            //_channel.create_reaction(std::stoll(toks[1]), toks[2]);
         }
         else if (toks[0] == "?deletereact")
         {
-            _channel.delete_own_reaction(std::stoll(toks[1]), toks[2]);
+            //_channel.delete_own_reaction(std::stoll(toks[1]), toks[2]);
         }
         else if (toks[0] == "?options")
         {
-            _channel.create_reaction(std::stoll(toks[1]), "e:289276304564420608");
-            _channel.create_reaction(std::stoll(toks[1]), "e:367566538427072523");
-            _channel.create_reaction(std::stoll(toks[1]), "e:288902947046424576");
+            //_channel.create_reaction(std::stoll(toks[1]), "e:289276304564420608");
+            //_channel.create_reaction(std::stoll(toks[1]), "e:367566538427072523");
+            //_channel.create_reaction(std::stoll(toks[1]), "e:288902947046424576");
         }
         else if (toks[0] == "?remoptions")
         {
-            _channel.delete_own_reaction(std::stoll(toks[1]), "e:289276304564420608");
-            _channel.delete_own_reaction(std::stoll(toks[1]), "e:367566538427072523");
-            _channel.delete_own_reaction(std::stoll(toks[1]), "e:288902947046424576");
+            //_channel.delete_own_reaction(std::stoll(toks[1]), "e:289276304564420608");
+            //_channel.delete_own_reaction(std::stoll(toks[1]), "e:367566538427072523");
+            //_channel.delete_own_reaction(std::stoll(toks[1]), "e:288902947046424576");
         }
         else if (toks[0] == "?serverlist")
         {
@@ -289,7 +295,43 @@ public:
                 { "description", w.str() },
                 { "color", 10599460 }
             };
-            _channel.create_message(t);
+            //_channel.create_message_embed("", t);
+        }
+        else if (toks[0] == "?roles")
+        {
+            std::stringstream w;
+            for (auto & r : _guild.m_roles)
+            {
+                w << "[" << r.second->id << "] : [A:" << r.second->_permission.getAllowPerms() << "] : [D:" << r.second->_permission.getDenyPerms() << "] : [" << r.second->name << "]\n";
+            }
+            //_channel.create_message(w.str());
+        }
+        else if (toks[0] == "?mroles")
+        {
+            std::stringstream w;
+            auto & gld = _guild.m_members[std::stoll(toks[1])]->m_guilds[_guild.m_id];
+            for (auto & rl : gld.roles)
+            {
+                role & r = _guild.get_role(rl);
+                w << "[" << r.id << "] : [A:" << r._permission.getAllowPerms() << "] : [D:" << r._permission.getDenyPerms() << "] : [" << r.name << "]\n";
+
+            }
+            //_channel.create_message(w.str());
+        }
+        else if (toks[0] == "?croles")
+        {
+            std::stringstream w;
+            for (auto & r : _channel.m_overrides)
+            {
+                auto & a = r.second;
+                std::string name;
+                if (a.type == perm_overwrite::ORType::USER)
+                    name = _guild.m_members[a.id]->getFullName();
+                else
+                    name = _guild.m_roles[a.id]->name;
+                w << "[" << ((a.type== perm_overwrite::ORType::USER)?"user":"role") << "] : [A:" << a.allow << "] : [D:" << a.deny << "] : [" << name << "]\n";
+            }
+            //_channel.create_message(w.str());
         }
 
         return true;

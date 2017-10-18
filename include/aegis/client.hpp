@@ -29,11 +29,7 @@
 #include <string>
 #include <chrono>
 #include <sstream>
-#include "config.hpp"
 
-#include <websocketpp/config/asio_client.hpp>
-#include <websocketpp/client.hpp>
-#include <websocketpp/common/connection_hdl.hpp>
 
 namespace aegis
 {

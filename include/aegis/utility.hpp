@@ -248,4 +248,15 @@ inline size_t getCurrentRSS()
 
 } //utility
 
+
+namespace spd = spdlog;
+using namespace std::literals;
+using namespace std::chrono;
+using json = nlohmann::json;
+
+struct settings;
+
+using utility::check_setting;
+
+
 } //aegis

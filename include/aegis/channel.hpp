@@ -26,18 +26,12 @@
 #pragma once
 
 
-#include <string>
-#include "ratelimit.hpp"
-#include "snowflake.hpp"
-#include <json.hpp>
-
-
-
 namespace aegis
 {
 
 using json = nlohmann::json;
 using rest_limits::bucket_factory;
+
 class guild;
 
 class channel
@@ -69,6 +63,8 @@ public:
     bucket_factory & m_emoji;
     std::shared_ptr<spdlog::logger> m_log;
 
+    guild * _guild;
+
     uint64_t m_last_message_id = 0;
     std::string m_name;
     std::string m_topic;
@@ -78,276 +74,58 @@ public:
     uint16_t m_bitrate = 0;
     uint16_t m_user_limit = 0;
 
-    std::map<uint64_t, perm_overwrite> overrides;
+    std::map<int64_t, perm_overwrite> m_overrides;
     //std::map<uint64_t, Permission> permission_cache;
 
-    guild & get_guild()
-    {
-        return *_guild;
-    }
+    guild & get_guild();
 
-    guild * _guild;
+    bool create_message(std::string content, std::function<void(rest_reply)> callback = nullptr);
 
-    void update_permission_cache()
-    {
+    bool create_message_embed(std::string content, json embed, std::function<void(rest_reply)> callback = nullptr);
 
-    }
+    bool edit_message(snowflake message_id, std::string content, std::function<void(rest_reply)> callback = nullptr);
 
-    void create_message(std::string content)
-    {
-        json obj;
-        obj["content"] = content;
-        m_ratelimit.push(m_id, fmt::format("/channels/{}/messages", m_id), obj.dump(), "POST");
-    }
+    bool edit_message_embed(snowflake message_id, std::string content, json embed, std::function<void(rest_reply)> callback = nullptr);
 
-    void create_message_embed(std::string content, json embed)
-    {
-        json obj;
-        if (!content.empty())
-            obj["content"] = content;
-        obj["embed"] = embed;
+    bool delete_message(snowflake message_id, std::function<void(rest_reply)> callback = nullptr);
 
-        m_ratelimit.push(m_id, fmt::format("/channels/{:d}/messages", m_id), obj.dump(), "POST");
-    }
+    bool bulk_delete_message(snowflake message_id, std::vector<int64_t> messages, std::function<void(rest_reply)> callback = nullptr);
 
-    void edit_message(snowflake message_id, std::string content)
-    {
-        json obj;
-        obj["content"] = content;
-        m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/{}", m_id, message_id), obj.dump(), "PATCH");
-    }
-
-    void edit_message_embed(snowflake message_id, std::string content, json embed)
-    {
-        json obj;
-        if (!content.empty())
-            obj["content"] = content;
-        obj["embed"] = embed;
-        obj["content"] = content;
-        m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/{}", m_id, message_id), obj.dump(), "PATCH");
-    }
-
-    void delete_message(snowflake message_id)
-    {
-        m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/{}", m_id, message_id), "", "DELETE");
-    }
-
-    void bulk_delete_message(snowflake message_id, std::vector<int64_t> messages)
-    {
-        json obj = messages;
-        m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/bulk-delete", m_id), obj.dump(), "POST");
-    }
-
-    void modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
+    bool modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
                         std::optional<bool> nsfw, std::optional<int> bitrate, std::optional<int> user_limit,
-                        std::optional<std::vector<perm_overwrite>> permission_overwrites, std::optional<snowflake> parent_id) const
-    {
-        json obj;
-        if (name.has_value())
-            obj["name"] = name.value();
-        if (position.has_value())
-            obj["position"] = position.value();
-        if (topic.has_value())
-            obj["topic"] = topic.value();
-        if (nsfw.has_value())
-            obj["nsfw"] = nsfw.value();
-        if (bitrate.has_value())//voice only
-            obj["bitrate"] = bitrate.value();
-        if (user_limit.has_value())//voice only
-            obj["user_limit"] = user_limit.value();
-        if (permission_overwrites.has_value())//requires OWNER
-        {
-            obj["permission_overwrites"] = json::array();
-            for (auto & p_ow : permission_overwrites.value())
-            {
-                obj["permission_overwrites"].push_back(p_ow.make());
-            }
-        }
-        if (parent_id.has_value())//VIP only
-            obj["parent_id"] = parent_id.value();
+                        std::optional<std::vector<perm_overwrite>> permission_overwrites, std::optional<snowflake> parent_id, std::function<void(rest_reply)> callback = nullptr);
 
-        m_ratelimit.push(m_id, fmt::format("/channels/{}", m_id), std::move(obj), "PATCH", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("modify_channel success : {}", m_id);
-            else
-                m_log->debug("modify_channel fail response: " + reply.content);
-        });
-    }
+    bool delete_channel(std::function<void(rest_reply)> callback = nullptr);
 
-    void delete_channel() const
-    {
-        //requires MANAGE_CHANNELS
-        m_ratelimit.push(m_id, fmt::format("/channels/{}", m_id), "", "DELETE", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("delete_channel success : {}", m_id);
-            else
-                m_log->debug("delete_channel fail response: " + reply.content);
-        });
-    }
+    bool create_reaction(snowflake message_id, std::string emoji, std::function<void(rest_reply)> callback = nullptr);
 
-    void create_reaction(snowflake message_id, std::string emoji) const
-    {
-        //requires ADD_REACTIONS
-        m_emoji.push(m_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", m_id, message_id, emoji), "", "PUT", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("create_reaction success : {}", m_id);
-            else
-                m_log->debug("create_reaction fail response: " + reply.content);
-        });
-    }
+    bool delete_own_reaction(snowflake message_id, std::string emoji, std::function<void(rest_reply)> callback = nullptr);
 
-    void delete_own_reaction(snowflake message_id, std::string emoji) const
-    {
-        //requires ADD_REACTIONS
-        m_emoji.push(m_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", m_id, message_id, emoji), "", "DELETE", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("delete_own_reaction success : {}", m_id);
-            else
-                m_log->debug("delete_own_reaction fail response: " + reply.content);
-        });
-    }
+    bool delete_user_reaction(snowflake message_id, std::string emoji, snowflake user_id, std::function<void(rest_reply)> callback = nullptr);
 
-    void delete_user_reaction(snowflake message_id, std::string emoji, snowflake user_id) const
-    {
-        //requires ADD_REACTIONS
-        m_emoji.push(m_id, fmt::format("/channels/{}/messages/{}/reactions/{}/{}", m_id, message_id, emoji, user_id), "", "DELETE", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("delete_user_reaction success : {}", m_id);
-            else
-                m_log->debug("delete_user_reaction fail response: " + reply.content);
-        });
-    }
+    bool get_reactions(snowflake message_id, std::string emoji, std::function<void(rest_reply)> callback = nullptr);
 
-    void get_reactions(snowflake message_id, std::string emoji)
-    {
-        //TODO: support query params?
-        //before[snowflake], after[snowflake], limit[int]
-        m_ratelimit.push(m_id, fmt::format("/channels/{}/messages/{}/reactions/{}", m_id, message_id, emoji), "", "GET", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("get_reactions success : {}", m_id);
-            else
-                m_log->debug("get_reactions fail response: " + reply.content);
-        });
-    }
+    bool delete_all_reactions(snowflake message_id, std::function<void(rest_reply)> callback = nullptr);
 
-    void delete_all_reactions(snowflake message_id) const
-    {
-        //requires ADD_REACTIONS
-        m_emoji.push(m_id, fmt::format("/channels/{}/messages/{}/reactions", m_id, message_id), "", "DELETE", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("delete_all_reactions success : {}", m_id);
-            else
-                m_log->debug("delete_all_reactions fail response: " + reply.content);
-        });
-    }
+    bool edit_channel_permissions(snowflake overwrite_id, int64_t allow, int64_t deny, std::string type, std::function<void(rest_reply)> callback = nullptr);
 
-    void edit_channel_permissions(snowflake overwrite_id, int64_t allow, int64_t deny, std::string type) const
-    {
-        //requires MANAGE_ROLES
-        json obj;
-        obj["allow"] = allow;
-        obj["deny"] = deny;
-        obj["type"] = type;
-        m_ratelimit.push(m_id, fmt::format("/channels/{}/permissions/{}", m_id, overwrite_id), obj.dump(), "PUT", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("edit_channel_permissions success : {}", m_id);
-            else
-                m_log->debug("edit_channel_permissions fail response: " + reply.content);
-        });
-    }
+    bool get_channel_invites(std::function<void(rest_reply)> callback = nullptr);
 
-    void get_channel_invites()
-    {
-        //requires MANAGE_CHANNELS
-        //returns
-        m_ratelimit.push(m_id, fmt::format("/channels/{}/invites", m_id), "", "GET", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("get_channel_invites success : {}", m_id);
-            else
-                m_log->debug("get_channel_invites fail response: " + reply.content);
-        });
-    }
+    bool create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique, std::function<void(rest_reply)> callback = nullptr);
 
-    void create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique)
-    {
-        //requires CREATE_INSTANT_INVITE
-        //returns
-        json obj;
-        if (max_age.has_value())
-            obj["max_age"] = max_age.value();
-        if (max_uses.has_value())
-            obj["max_uses"] = max_uses.value();
-        if (temporary.has_value())
-            obj["temporary"] = temporary.value();
-        if (unique.has_value())
-            obj["unique"] = unique.value();
-        m_ratelimit.push(m_id, fmt::format("/channels/{}/invites", m_id), obj.dump(), "POST", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("create_channel_invite success : {}", m_id);
-            else
-                m_log->debug("create_channel_invite fail response: " + reply.content);
-        });
-    }
+    bool delete_channel_permission(snowflake overwrite_id, std::function<void(rest_reply)> callback = nullptr);
 
+    bool trigger_typing_indicator(std::function<void(rest_reply)> callback = nullptr);
 
-    void delete_channel_permission(snowflake overwrite_id) const
-    {
-        //requires MANAGE_ROLES
-        m_ratelimit.push(m_id, fmt::format("/channels/{}/permissions/{}", m_id, overwrite_id), "", "DELETE", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("edit_channel_permissions success : {}", m_id);
-            else
-                m_log->debug("edit_channel_permissions fail response: " + reply.content);
-        });
-    }
+    bool get_pinned_messages(std::function<void(rest_reply)> callback = nullptr);
 
-    void trigger_typing_indicator()
-    {
-        m_ratelimit.push(m_id, fmt::format("/channels/{}/typing", m_id), "", "POST", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("trigger_typing_indicator success : {}", m_id);
-            else
-                m_log->debug("trigger_typing_indicator fail response: " + reply.content);
-        });
-    }
+    bool add_pinned_channel_message(std::function<void(rest_reply)> callback = nullptr);
 
-    void get_pinned_messages()
-    {
-        //returns
-        //TODO: 
-    }
+    bool delete_pinned_channel_message(std::function<void(rest_reply)> callback = nullptr);
 
-    void add_pinned_channel_message()
-    {
-        //TODO: 
-    }
+    bool group_dm_add_recipient(std::function<void(rest_reply)> callback = nullptr);//will go in aegis::Aegis
 
-    void delete_pinned_channel_message()
-    {
-        //TODO: 
-    }
-
-    void group_dm_add_recipient()//will go in aegis::Aegis
-    {
-        //TODO: 
-    }
-
-    void group_dm_remove_recipient()//will go in aegis::Aegis
-    {
-        //TODO: 
-    }
+    bool group_dm_remove_recipient(std::function<void(rest_reply)> callback = nullptr);//will go in aegis::Aegis
 
 };
 

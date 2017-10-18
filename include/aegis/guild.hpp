@@ -26,38 +26,36 @@
 #pragma once
 
 
-#include <string>
-#include "client.hpp"
-#include "ratelimit.hpp"
-#include "channel.hpp"
-#include "member.hpp"
-#include <json.hpp>
-
 namespace aegis
 {
 
 using rest_limits::bucket_factory;
 using json = nlohmann::json;
 
+class channel;
+
 class guild
 {
 public:
-    explicit guild(client & shard, snowflake id, bucket_factory & ratelimit)
+    explicit guild(client & shard, member & self, snowflake id, bucket_factory & ratelimit)
         : m_shard(shard)
         , m_id(id)
         , m_ratelimit(ratelimit)
         , m_log(spdlog::get("aegis"))
+        , m_self(self)
     {
         m_unavailable = false;
     }
 
-    client m_shard;
+    client & m_shard;
     snowflake m_id;
     bucket_factory & m_ratelimit;
     std::shared_ptr<spdlog::logger> m_log;
+    member & m_self;
 
     std::map<int64_t, std::shared_ptr<channel>> m_channels;
-    std::map<int64_t, std::unique_ptr<member>> m_members;
+    std::map<int64_t, std::shared_ptr<member>> m_members;
+    std::map<int64_t, std::unique_ptr<role>> m_roles;
 
 
     std::string m_name;
@@ -82,294 +80,84 @@ public:
     bool m_silentperms = false;
     bool m_preventbotparse = false;
 
+    permission get_permissions(snowflake member_id, snowflake channel_id);
+
+    permission get_permissions(member & _member, channel & _channel);
+
+    int64_t base_permissions(member & _member) const;
+
+    //permission compute_overwrites
+    int64_t compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const;
+
+    role & get_role(int64_t r) const;
+
+    void remove_member(json & obj);
+
+    void remove_role(snowflake role_id);
+
     // move this to aegis::Aegis?
-    void create_guild() const
-    {
-        //TODO: 
-    }
+    bool create_guild(std::function<void(rest_reply)> callback = nullptr);
 
-    void get_guild() const
-    {
-        //TODO: 
-    }
+    bool get_guild(std::function<void(rest_reply)> callback = nullptr);
 
-    void modify_guild(std::optional<std::string> name, std::optional<std::string> voice_region, std::optional<int> verification_level,
+    bool modify_guild(std::optional<std::string> name, std::optional<std::string> voice_region, std::optional<int> verification_level,
                       std::optional<int> default_message_notifications, std::optional<snowflake> afk_channel_id, std::optional<int> afk_timeout,
-                      std::optional<std::string> icon, std::optional<snowflake> owner_id, std::optional<std::string> splash) const
-    {
-        json obj;
-        if (name.has_value())
-            obj["name"] = name.value();
-        if (voice_region.has_value())
-            obj["region"] = voice_region.value();
-        if (verification_level.has_value())
-            obj["verification_level"] = verification_level.value();
-        if (default_message_notifications.has_value())
-            obj["default_message_notifications"] = default_message_notifications.value();
-        if (afk_channel_id.has_value())
-            obj["afk_channel_id"] = afk_channel_id.value();
-        if (afk_timeout.has_value())
-            obj["afk_timeout"] = afk_timeout.value();
-        if (icon.has_value())
-            obj["icon"] = icon.value();
-        if (owner_id.has_value())//requires OWNER
-            obj["owner_id"] = owner_id.value();
-        if (splash.has_value())//VIP only
-            obj["splash"] = splash.value();
+                      std::optional<std::string> icon, std::optional<snowflake> owner_id, std::optional<std::string> splash, std::function<void(rest_reply)> callback = nullptr);
 
-        m_ratelimit.push(m_id, fmt::format("/guilds/{}", m_id), std::move(obj) , "PATCH", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("modify_guild success : {}", m_id);
-            else
-                m_log->debug("modify_guild fail response: " + reply.content);
-        });
-    }
+    bool delete_guild(std::function<void(rest_reply)> callback = nullptr);
 
-    void delete_guild() const
-    {
-        //requires OWNER
-        m_ratelimit.push(m_id, fmt::format("/guilds/{}", m_id), "", "DELETE", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("delete_guild success : {}", m_id);
-            else
-                m_log->debug("delete_guild fail response: " + reply.content);
-        });
-    }
+    bool create_text_channel(std::string name, int64_t parent_id, bool nsfw, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback = nullptr);
 
-    void create_text_channel(std::string name, int64_t parent_id, bool nsfw, std::vector<perm_overwrite> permission_overwrites) const
-    {
-        //requires MANAGE_CHANNELS
+    bool create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback = nullptr);
+    
+    bool create_category_channel(std::string name, int64_t parent_id, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback = nullptr);
 
-        json obj;
-        obj["name"] = name;
-        obj["type"] = 0;
-        obj["permission_overwrites"] = json::array();
-        for (auto & p_ow : permission_overwrites)
-        {
-            obj["permission_overwrites"].push_back(p_ow.make());
-        }
+    bool modify_channel_positions();
 
-        m_ratelimit.push(m_id, fmt::format("/guilds/{}/channels", m_id), obj.dump(), "POST", [&](rest_reply reply)
-        {
-        });
-    }
+    bool modify_guild_member(snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
+                             std::optional<bool> deaf, std::optional<std::vector<snowflake>> roles, std::optional<snowflake> channel_id, std::function<void(rest_reply)> callback = nullptr);
 
-    void create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<perm_overwrite> permission_overwrites) const
-    {
-        json obj;
-        obj["name"] = name;
-        obj["type"] = 2;
-        obj["permission_overwrites"] = json::array();
-        for (auto & p_ow : permission_overwrites)
-        {
-            obj["permission_overwrites"].push_back(p_ow.make());
-        }
+    bool modify_my_nick(std::string newname, std::function<void(rest_reply)> callback = nullptr);
 
-        m_ratelimit.push(m_id, fmt::format("/guilds/{}/channels", m_id), obj.dump(), "POST", [&](rest_reply reply)
-        {
-        });
-    }
+    bool add_guild_member_role(snowflake user_id, snowflake role_id, std::function<void(rest_reply)> callback = nullptr);
 
-    void create_category_channel(std::string name, int64_t parent_id, std::vector<perm_overwrite> permission_overwrites) const
-    {
-        json obj;
-        obj["name"] = name;
-        obj["type"] = 4;
-        obj["permission_overwrites"] = json::array();
-        for (auto & p_ow : permission_overwrites)
-        {
-            obj["permission_overwrites"].push_back(p_ow.make());
-        }
+    bool remove_guild_member_role(snowflake user_id, snowflake role_id, std::function<void(rest_reply)> callback = nullptr);
 
-        m_ratelimit.push(m_id, fmt::format("/guilds/{}/channels", m_id), obj.dump(), "POST", [&](rest_reply reply)
-        {
-        });
-    }
+    bool remove_guild_member(snowflake user_id, std::function<void(rest_reply)> callback = nullptr);
 
-    void modify_channel_positions()
-    {
-        //TODO:
-    }
+    bool create_guild_ban(snowflake user_id, int8_t delete_message_days, std::function<void(rest_reply)> callback = nullptr);
 
-    void modify_guild_member(snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
-                             std::optional<bool> deaf, std::optional<std::vector<snowflake>> roles, std::optional<snowflake> channel_id) const
-    {
-        json obj;
-        if (nick.has_value())
-            obj["nick"] = nick.value();//requires MANAGE_NICKNAMES
-        if (mute.has_value())
-            obj["mute"] = mute.value();//requires MUTE_MEMBERS
-        if (deaf.has_value())
-            obj["deaf"] = deaf.value();//requires DEAFEN_MEMBERS
-        if (roles.has_value())
-            obj["roles"] = roles.value();//requires MANAGE_ROLES
-        if (channel_id.has_value())
-            obj["channel_id"] = channel_id.value();//requires MOVE_MEMBERS
+    bool remove_guild_ban(snowflake user_id, std::function<void(rest_reply)> callback = nullptr);
 
-        m_ratelimit.push(m_id, fmt::format("/guilds/{}/members/{}", m_id, user_id), obj.dump(), "PATCH", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("modify_guild_member success : {}", m_id);
-            else
-                m_log->debug("modify_guild_member fail response: " + reply.content);
-        });
-    }
+    bool create_guild_role(std::function<void(rest_reply)> callback = nullptr);
 
-    void modify_my_nick(std::string newname) const
-    {
-        //requires CHANGE_NICKNAME
-        json obj = { "nick", newname };
-        m_ratelimit.push(m_id, fmt::format("/guilds/{}/members/@me/nick", m_id), obj.dump(), "PATCH", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 200)
-                m_log->debug("modify_my_nick success : {}", m_id);
-            else
-                m_log->debug("modify_my_nick fail response: " + reply.content);
-        });
-    }
+    bool modify_guild_role_positions(std::function<void(rest_reply)> callback = nullptr);
 
-    void add_guild_member_role(snowflake user_id, snowflake role_id) const
-    {
-        //requires MANAGE_ROLES
-        m_ratelimit.push(m_id, fmt::format("/guilds/{}/members/{}/roles/{}", m_id, user_id, role_id), "", "PUT", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("add_guild_member_role success : {}", m_id);
-            else
-                m_log->debug("add_guild_member_role fail response: " + reply.content);
-        });
-    }
+    bool modify_guild_role(snowflake role_id, std::function<void(rest_reply)> callback = nullptr);
 
-    void remove_guild_member_role(snowflake user_id, snowflake role_id) const
-    {
-        //requires MANAGE_ROLES
-        m_ratelimit.push(m_id, fmt::format("/guilds/{}/members/{}/roles/{}", m_id, user_id, role_id), "", "DELETE", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("remove_guild_member_role success : {}", m_id);
-            else
-                m_log->debug("remove_guild_member_role fail response: " + reply.content);
-        });
-    }
+    bool delete_guild_role(snowflake role_id, std::function<void(rest_reply)> callback = nullptr);
 
-    void remove_guild_member(snowflake user_id) const
-    {
-        //requires KICK_MEMBERS
-        m_ratelimit.push(m_id, fmt::format("/guilds/{}/members/{}", m_id, user_id), "", "DELETE", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("remove_guild_member success : {}", m_id);
-            else
-                m_log->debug("remove_guild_member fail response: " + reply.content);
-        });
-    }
+    bool get_guild_prune_count(int16_t days, std::function<void(rest_reply)> callback = nullptr);
 
-    void create_guild_ban(snowflake user_id, int8_t delete_message_days) const
-    {
-        //requires BAN_MEMBERS
-        json obj = { "delete-message-days", delete_message_days };
-        m_ratelimit.push(m_id, fmt::format("/guilds/{}/bans/{}", m_id, user_id), obj.dump(), "PUT", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("create_guild_ban success : {}", m_id);
-            else
-                m_log->debug("create_guild_ban fail response: " + reply.content);
-        });
-    }
+    bool begin_guild_prune(int16_t days, std::function<void(rest_reply)> callback = nullptr);
 
-    void remove_guild_ban(snowflake user_id) const
-    {
-        //requires BAN_MEMBERS
-        m_ratelimit.push(m_id, fmt::format("/guilds/{}/bans/{}", m_id, user_id), "", "DELETE", [&](rest_reply reply)
-        {
-            if (reply.reply_code == 204)
-                m_log->debug("remove_guild_ban success : {}", m_id);
-            else
-                m_log->debug("remove_guild_ban fail response: " + reply.content);
-        });
-    }
+    bool get_guild_invites(std::function<void(rest_reply)> callback = nullptr);
 
-    void create_guild_role() const
-    {
-        //TODO: 
-    }
+    bool get_guild_integrations(std::function<void(rest_reply)> callback = nullptr);
 
-    void modify_guild_role_positions() const
-    {
-        //TODO: 
-    }
+    bool create_guild_integration(std::function<void(rest_reply)> callback = nullptr);
 
-    void modify_guild_role(snowflake role_id) const
-    {
-        //TODO: 
-    }
+    bool modify_guild_integration(std::function<void(rest_reply)> callback = nullptr);
 
-    void delete_guild_role(snowflake role_id) const
-    {
-        //TODO: 
-    }
+    bool delete_guild_integration(std::function<void(rest_reply)> callback = nullptr);
 
-    void get_guild_prune_count(int16_t days) const
-    {
-        //TODO: 
-    }
+    bool sync_guild_integration(std::function<void(rest_reply)> callback = nullptr);
 
-    void begin_guild_prune(int16_t days) const
-    {
-        //TODO: 
-    }
+    bool get_guild_embed(std::function<void(rest_reply)> callback = nullptr);
 
-    void get_guild_invites() const
-    {
-        //TODO: 
-    }
+    bool modify_guild_embed(std::function<void(rest_reply)> callback = nullptr);
 
-    void get_guild_integrations() const
-    {
-        //TODO: 
-    }
-
-    void create_guild_integration() const
-    {
-        //TODO: 
-    }
-
-    void modify_guild_integration() const
-    {
-        //TODO: 
-    }
-
-    void delete_guild_integration() const
-    {
-        //TODO: 
-    }
-
-    void sync_guild_integration() const
-    {
-        //TODO: 
-    }
-
-    void get_guild_embed() const
-    {
-        //TODO: 
-    }
-
-    void modify_guild_embed() const
-    {
-        //TODO: 
-    }
-
-
-
-    void leave() const
-    {
-        m_ratelimit.push(m_id, fmt::format("/users/@me/guilds/{0}", m_id), "", "DELETE", [](rest_reply reply)
-        {
-            json response = json::parse(reply.content);
-        });
-    }
+    bool leave(std::function<void(rest_reply)> callback = nullptr);
 };
 
 }
