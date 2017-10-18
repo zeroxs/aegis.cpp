@@ -26,8 +26,16 @@
 
 #pragma once
 
-#include <string>
-#include <string_view>
+#include <asio.hpp>
+#include <asio/ssl.hpp>
+#include <spdlog/spdlog.h>
+#include <websocketpp/common/random.hpp>
+#include <websocketpp/common/thread.hpp>
+#include <websocketpp/common/connection_hdl.hpp>
+#include <websocketpp/config/asio_client.hpp>
+#include <websocketpp/roles/client_endpoint.hpp>
+#include <websocketpp/client.hpp>
+#include <asio/steady_timer.hpp>
 
 #if defined(_WIN32)
 #include <windows.h>

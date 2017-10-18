@@ -26,13 +26,12 @@
 #pragma once
 
 
-#include "aegis/config.hpp"
 #include "aegis/common.hpp"
+#include "aegis/config.hpp"
 #include "aegis/utility.hpp"
 #include "aegis/role.hpp"
 #include "aegis/structs.hpp"
 #include "aegis/ratelimit.hpp"
-#include "aegis/config.hpp"
 #include "aegis/error.hpp"
 
 #include "aegis/member.hpp"
@@ -42,5 +41,5 @@
 #include "aegis/guild.hpp"
 #include "aegis/channel_impl.hpp"
 #include "aegis/guild_impl.hpp"
-#include "aegis/aegis.hpp"
+#include "aegis/aegis_lib.hpp"
 

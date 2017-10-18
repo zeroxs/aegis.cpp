@@ -112,7 +112,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\aegis.hpp" />
-    <ClInclude Include="..\include\aegis\aegis.hpp" />
+    <ClInclude Include="..\include\aegis\aegis_lib.hpp" />
     <ClInclude Include="..\include\aegis\aegis_impl.hpp" />
     <ClInclude Include="..\include\aegis\channel.hpp" />
     <ClInclude Include="..\include\aegis\channel_impl.hpp" />

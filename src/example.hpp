@@ -26,10 +26,7 @@
 
 #pragma once
 
-#include <stdint.h>
 #include <aegis.hpp>
-#include <json.hpp>
-#include <functional>
 
 
 namespace example_bot

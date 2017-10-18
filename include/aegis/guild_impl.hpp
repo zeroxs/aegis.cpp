@@ -197,7 +197,7 @@ inline bool guild::create_text_channel(std::string name, int64_t parent_id, bool
 {
     //requires MANAGE_CHANNELS
     if (!permission(base_permissions(m_self)).canManageChannels())
-        return;//no perms
+        return false;//no perms
 
     json obj;
     obj["name"] = name;
