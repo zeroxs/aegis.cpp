@@ -255,9 +255,18 @@ public:
 
     void setup_callbacks(client & shard)
     {
-        shard.m_connection->set_message_handler(std::bind(&Aegis::onMessage, this, std::placeholders::_1, std::placeholders::_2, shard));
-        shard.m_connection->set_open_handler(std::bind(&Aegis::onConnect, this, std::placeholders::_1, shard));
-        shard.m_connection->set_close_handler(std::bind(&Aegis::onClose, this, std::placeholders::_1, shard));
+        shard.m_connection->set_message_handler([&shard, this](websocketpp::connection_hdl hdl, message_ptr msg)
+        {
+            this->onMessage(hdl, msg, shard);
+        });
+        shard.m_connection->set_open_handler([&shard, this](websocketpp::connection_hdl hdl)
+        {
+            this->onConnect(hdl, shard);
+        });
+        shard.m_connection->set_close_handler([&shard, this](websocketpp::connection_hdl hdl)
+        {
+            this->onClose(hdl, shard);
+        });
     }
 
     void start_work()

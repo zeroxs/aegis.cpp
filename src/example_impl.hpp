@@ -360,7 +360,7 @@ inline bool example::extremely_simplified_message_handler(json & msg, client & s
 //             }
 
             //ratelimit controlled call with callback response
-            bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_id, fmt::format("/channels/{:d}/messages", channel_id), obj.dump(), "POST", [&](aegis::rest_reply & reply)
+            bot.ratelimit().get(rest_limits::bucket_type::CHANNEL).push(channel_id, fmt::format("/channels/{:d}/messages", channel_id), obj.dump(), "POST", [&bot, channel_id, username](aegis::rest_reply & reply)
             {
                 if (reply.reply_code == 200)
                 {

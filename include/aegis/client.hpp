@@ -34,8 +34,6 @@
 namespace aegis
 {
 
-class Aegis;
-
 class client
 {
 public:
