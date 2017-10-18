@@ -85,6 +85,7 @@ public:
     struct
     {
         uint32_t guilds;
+        uint32_t guilds_outage;
         uint32_t members;
         uint32_t channels;
         uint32_t messages;

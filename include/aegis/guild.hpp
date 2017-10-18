@@ -47,6 +47,12 @@ public:
         m_unavailable = false;
     }
 
+    ~guild()
+    {
+        for (auto & m : m_members)
+            m.second->m_guilds.erase(m_id);
+    }
+
     client & m_shard;
     snowflake m_id;
     bucket_factory & m_ratelimit;
@@ -72,7 +78,7 @@ public:
     uint32_t m_mfa_level = 0;
     std::string m_joined_at;
     bool m_large = false;
-    bool m_unavailable = true;
+    bool m_unavailable = false;
     uint32_t m_member_count = 0;
     //std::string m_voice_states;//this is really an array
 

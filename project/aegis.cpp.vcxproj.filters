@@ -72,6 +72,9 @@
     <ClInclude Include="..\include\aegis\aegis_lib.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\example_impl.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\minimal.cpp">

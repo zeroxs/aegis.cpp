@@ -300,11 +300,12 @@ inline void Aegis::member_create(guild & _guild, json & obj, client & shard)
         if (!user["username"].is_null()) g_member->m_name = user["username"].get<std::string>();
         if (!user["avatar"].is_null()) g_member->m_avatar = user["avatar"].get<std::string>();
         if (!user["discriminator"].is_null()) g_member->m_discriminator = std::stoi(user["discriminator"].get<std::string>());
-        if (!obj["deaf"].is_null()) g_member->m_deaf = obj["deaf"];
-        if (!obj["mute"].is_null()) g_member->m_mute = obj["mute"];
         g_member->m_isbot = user["bot"].is_null() ? false : true;
 
         auto & g_info = _member.m_guilds[_guild.m_id];
+
+        if (!obj["deaf"].is_null()) g_info.m_deaf = obj["deaf"];
+        if (!obj["mute"].is_null()) g_info.m_mute = obj["mute"];
 
         if (!obj["joined_at"].is_null()) g_info.m_joined_at = obj["joined_at"].get<std::string>();
 
@@ -312,7 +313,7 @@ inline void Aegis::member_create(guild & _guild, json & obj, client & shard)
         {
             if (!_member.m_guilds.count(_guild.m_id))
             {
-                _member.m_guilds.try_emplace(_guild.m_id, member::guild_info());
+                _member.m_guilds.emplace(_guild.m_id, member::guild_info());
             }
             g_info.roles.clear();
             g_info._guild = _guild.m_id;
@@ -561,7 +562,14 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                 if (result["t"] == "PRESENCE_UPDATE")
                 {
                     shard.counters.presence_changes++;
-                    
+
+                    if (i_presence_update)
+                        if (!i_presence_update(result, shard, *this))
+                            return;
+
+                    if constexpr (check_setting<settings>::disable_cache::test())
+                        return;
+
                     json user = result["d"]["user"];
                     snowflake guild_id = std::stoll(result["d"]["guild_id"].get<std::string>());
                     snowflake member_id = std::stoll(user["id"].get<std::string>());
@@ -582,7 +590,6 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     member_create(_guild, result["d"], shard);
                     _member.m_status = status;
 
-
                     return;
                 }
 
@@ -593,6 +600,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     if (i_typing_start)
                         if (!i_typing_start(result, shard, *this))
                             return;
+                    if constexpr (check_setting<settings>::disable_cache::test())
+                        return;
                     return;
                 }
                 if (cmd == "MESSAGE_CREATE")
@@ -602,6 +611,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     if (i_message_create)
                         if (!i_message_create(result, shard, *this))
                             return;
+                    if constexpr (check_setting<settings>::disable_cache::test())
+                        return;
                     return;
                 }
                 if (cmd == "MESSAGE_UPDATE")
@@ -609,6 +620,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     if (i_message_update)
                         if (!i_message_update(result, shard, *this))
                             return;
+                    if constexpr (check_setting<settings>::disable_cache::test())
+                        return;
                     return;
                 }
                 else if (cmd == "GUILD_CREATE")
@@ -618,10 +631,18 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     if (i_guild_create)
                         if (!i_guild_create(result, shard, *this))
                             return;
-                    
+                    if constexpr (check_setting<settings>::disable_cache::test())
+                        return;
+
                     snowflake guild_id = std::stoll(result["d"]["id"].get<std::string>());
 
                     guild & _guild = get_guild_create(guild_id, shard);
+                    if (_guild.m_unavailable)
+                    {
+                        //outage
+                        shard.counters.guilds_outage--;
+                    }
+
                     guild_create(_guild, result["d"], shard);
 
                     return;
@@ -631,6 +652,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     if (i_guild_update)
                         if (!i_guild_update(result, shard, *this))
                             return;
+                    if constexpr (check_setting<settings>::disable_cache::test())
+                        return;
 
                     snowflake guild_id = std::stoll(result["d"]["id"].get<std::string>());
 
@@ -645,14 +668,19 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     if (i_guild_delete)
                         if (!i_guild_delete(result, shard, *this))
                             return;
+                    if constexpr (check_setting<settings>::disable_cache::test())
+                        return;
+
                     if (result["d"]["unavailable"] == true)
                     {
                         //outage
+                        shard.counters.guilds_outage++;
                     }
                     else
                     {
-                        uint64_t id = std::stoll(result["d"]["id"].get<std::string>());
-                        //kicked or left
+                        snowflake id = std::stoll(result["d"]["id"].get<std::string>());
+                        //kicked or left - remove from memory
+                        m_guilds.erase(id);
                     }
                     return;
                 }
@@ -661,6 +689,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     if (i_message_delete)
                         if (!i_message_delete(result, shard, *this))
                             return;
+                    if constexpr (check_setting<settings>::disable_cache::test())
+                        return;
                     return;
                 }
                 else if (cmd == "MESSAGE_DELETE_BULK")
@@ -668,6 +698,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     if (i_message_delete_bulk)
                         if (!i_message_delete_bulk(result, shard, *this))
                             return;
+                    if constexpr (check_setting<settings>::disable_cache::test())
+                        return;
                     return;
                 }
                 else if (cmd == "USER_SETTINGS_UPDATE")
@@ -675,6 +707,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     if (i_user_settings_update)
                         if (!i_user_settings_update(result, shard, *this))
                             return;
+                    if constexpr (check_setting<settings>::disable_cache::test())
+                        return;
                     return;
                 }
                 else if (cmd == "USER_UPDATE")
@@ -682,6 +716,23 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     if (i_user_update)
                         if (!i_user_update(result, shard, *this))
                             return;
+                    if constexpr (check_setting<settings>::disable_cache::test())
+                        return;
+
+                    snowflake member_id = std::stoll(result["d"]["user"]["id"].get<std::string>());
+
+                    member & _member = get_member_create(member_id);
+
+                    json & user = result["d"]["user"];
+                    if (!user["username"].is_null()) _member.m_name = user["username"].get<std::string>();
+                    if (!user["avatar"].is_null()) _member.m_avatar = user["avatar"].get<std::string>();
+                    if (!user["discriminator"].is_null()) _member.m_discriminator = std::stoi(user["discriminator"].get<std::string>());
+                    if (!user["mfa_enabled"].is_null()) _member.m_mfa_enabled = user["mfa_enabled"];
+                    if (!user["bot"].is_null()) _member.m_isbot = user["bot"];
+                    //if (!user["verified"].is_null()) _member.m_verified = user["verified"];
+                    //if (!user["email"].is_null()) _member.m_email = user["email"].get<std::string>();
+
+
                     return;
                 }
                 else if (cmd == "VOICE_STATE_UPDATE")
@@ -689,15 +740,19 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     if (i_voice_state_update)
                         if (!i_voice_state_update(result, shard, *this))
                             return;
+                    if constexpr (check_setting<settings>::disable_cache::test())
+                        return;
                     return;
                 }
                 else if (cmd == "READY")
                 {
-                    if (i_ready)
-                        i_ready(result, shard, *this);
                     processReady(result["d"], shard);
                     shard.m_state = ONLINE;
                     m_log->info("Shard#[{}] READY Processed", shard.m_shardid);
+
+                    if (i_ready)
+                        i_ready(result, shard, *this);
+
                     return;
                 }
                 else if (cmd == "CHANNEL_CREATE")
@@ -705,17 +760,19 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                     if (i_channel_create)
                         if (!i_channel_create(result, shard, *this))
                             return;
+                    if constexpr (check_setting<settings>::disable_cache::test())
+                        return;
 
                     snowflake channel_id = std::stoll(result["d"]["id"].get<std::string>());
 
                     if (!result["d"]["guild_id"].is_null())
                     {
-                        shard.counters.channels++;
                         //guild channel
                         snowflake guild_id = std::stoll(result["d"]["guild_id"].get<std::string>());
                         channel & _channel = get_guild_channel_create(channel_id, guild_id, shard);
                         guild & _guild = get_guild(guild_id);
                         channel_guild_create(_guild, result["d"], shard);
+                        shard.counters.channels++;
                     }
                     else
                     {
@@ -738,6 +795,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         if (i_channel_update)
                             if (!i_channel_update(result, shard, *this))
                                 return;
+                        if constexpr (check_setting<settings>::disable_cache::test())
+                            return;
 
                         snowflake channel_id = std::stoll(result["d"]["id"].get<std::string>());
 
@@ -764,6 +823,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         if (i_channel_delete)
                             if (!i_channel_delete(result, shard, *this))
                                 return;
+                        if constexpr (check_setting<settings>::disable_cache::test())
+                            return;
                         return;
                     }
                     else if (cmd == "GUILD_BAN_ADD")
@@ -771,6 +832,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         if (i_guild_ban_add)
                             if (!i_guild_ban_add(result, shard, *this))
                                 return;
+                        if constexpr (check_setting<settings>::disable_cache::test())
+                            return;
                         return;
                     }
                     else if (cmd == "GUILD_BAN_REMOVE")
@@ -778,6 +841,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         if (i_guild_ban_remove)
                             if (!i_guild_ban_remove(result, shard, *this))
                                 return;
+                        if constexpr (check_setting<settings>::disable_cache::test())
+                            return;
                         return;
                     }
                     else if (cmd == "GUILD_EMOJIS_UPDATE")
@@ -785,6 +850,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         if (i_guild_emojis_update)
                             if (!i_guild_emojis_update(result, shard, *this))
                                 return;
+                        if constexpr (check_setting<settings>::disable_cache::test())
+                            return;
                         return;
                     }
                     else if (cmd == "GUILD_INTEGRATIONS_UPDATE")
@@ -792,6 +859,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         if (i_guild_integrations_update)
                             if (!i_guild_integrations_update(result, shard, *this))
                                 return;
+                        if constexpr (check_setting<settings>::disable_cache::test())
+                            return;
                         return;
                     }
                     else if (cmd == "GUILD_MEMBER_ADD")
@@ -801,6 +870,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         if (i_guild_member_add)
                             if (!i_guild_member_add(result, shard, *this))
                                 return;
+                        if constexpr (check_setting<settings>::disable_cache::test())
+                            return;
 
                         snowflake member_id = std::stoll(result["d"]["user"]["id"].get<std::string>());
                         snowflake guild_id = std::stoll(result["d"]["guild_id"].get<std::string>());
@@ -819,6 +890,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         if (i_guild_member_remove)
                             if (!i_guild_member_remove(result, shard, *this))
                                 return;
+                        if constexpr (check_setting<settings>::disable_cache::test())
+                            return;
 
                         snowflake member_id = std::stoll(result["d"]["user"]["id"].get<std::string>());
                         snowflake guild_id = std::stoll(result["d"]["guild_id"].get<std::string>());
@@ -835,6 +908,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         if (i_guild_member_update)
                             if (!i_guild_member_update(result, shard, *this))
                                 return;
+                        if constexpr (check_setting<settings>::disable_cache::test())
+                            return;
 
                         snowflake member_id = std::stoll(result["d"]["user"]["id"].get<std::string>());
                         snowflake guild_id = std::stoll(result["d"]["guild_id"].get<std::string>());
@@ -851,6 +926,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         if (i_guild_member_chunk)
                             if (!i_guild_member_chunk(result, shard, *this))
                                 return;
+                        if constexpr (check_setting<settings>::disable_cache::test())
+                            return;
                         return;
                     }
                     else if (cmd == "GUILD_ROLE_CREATE")
@@ -858,6 +935,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         if (i_guild_role_create)
                             if (!i_guild_role_create(result, shard, *this))
                                 return;
+                        if constexpr (check_setting<settings>::disable_cache::test())
+                            return;
 
                         snowflake guild_id = std::stoll(result["d"]["guild_id"].get<std::string>());
                        
@@ -871,6 +950,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         if (i_guild_role_update)
                             if (!i_guild_role_update(result, shard, *this))
                                 return;
+                        if constexpr (check_setting<settings>::disable_cache::test())
+                            return;
 
                         snowflake guild_id = std::stoll(result["d"]["guild_id"].get<std::string>());
 
@@ -884,6 +965,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         if (i_guild_role_delete)
                             if (!i_guild_role_delete(result, shard, *this))
                                 return;
+                        if constexpr (check_setting<settings>::disable_cache::test())
+                            return;
 
                         snowflake guild_id = std::stoll(result["d"]["guild_id"].get<std::string>());
                         snowflake role_id = std::stoll(result["d"]["role_id"].get<std::string>());
@@ -898,6 +981,8 @@ inline void Aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, c
                         if (i_voice_server_update)
                             if (!i_voice_server_update(result, shard, *this))
                                 return;
+                        if constexpr (check_setting<settings>::disable_cache::test())
+                            return;
                         return;
                     }
                 }

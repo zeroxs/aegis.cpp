@@ -75,7 +75,6 @@ public:
     uint16_t m_user_limit = 0;
 
     std::map<int64_t, perm_overwrite> m_overrides;
-    //std::map<uint64_t, Permission> permission_cache;
 
     guild & get_guild();
 

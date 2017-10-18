@@ -68,60 +68,95 @@ using namespace std::string_view_literals;
 namespace utility
 {
 
+
+#define OPTION(x)\
+template <typename C> static std::true_type test_##x(checker<C, decltype(&C::owner_id)> *);\
+template <typename C> static std::false_type test_##x(...);\
+template <typename C> static constexpr bool getvalue_##x(checker<C, decltype(&C::owner_id)> *) { return C::owner_id; }\
+template <typename C> static constexpr bool getvalue_##x(...) { return false; }\
+\
+template <typename C>\
+static constexpr std::pair<const decltype(test_##x<C>(nullptr)), const bool> get_##x() { return { decltype(test_##x<T>(nullptr))(), getvalue_##x<T>(nullptr) }; }\
+\
+struct x\
+{\
+    typedef decltype(test_##x<T>(nullptr)) option_t;\
+    static constexpr bool test() { auto c = get_##x<T>(); return (std::get<0>(c) && std::get<1>(c)); }\
+};
+
+
 template <typename T>
 struct check_setting
 {
     template <class, class> class checker;
 
-    template <typename C> static std::true_type test_owner_id(checker<C, decltype(&C::owner_id)> *);
-    template <typename C> static std::false_type test_owner_id(...);
-    template <typename C> static constexpr bool getvalue_owner_id(checker<C, decltype(&C::owner_id)> *) { return C::owner_id; }
-    template <typename C> static constexpr bool getvalue_owner_id(...) { return false; }
+    OPTION(owner_id);
+    OPTION(selfbot);
+    OPTION(force_shard_count);
+    OPTION(debugmode);
+    OPTION(disable_cache);
 
-    template <typename C> static std::true_type test_selfbot(checker<C, decltype(&C::selfbot)> *);
-    template <typename C> static std::false_type test_selfbot(...);
-    template <typename C> static constexpr bool getvalue_selfbot(checker<C, decltype(&C::selfbot)> *) { return C::selfbot; }
-    template <typename C> static constexpr bool getvalue_selfbot(...) { return false; }
-
-    template <typename C> static std::true_type test_force_shard_count(checker<C, decltype(&C::force_shard_count)> *);
-    template <typename C> static std::false_type test_force_shard_count(...);
-    template <typename C> static constexpr bool getvalue_force_shard_count(checker<C, decltype(&C::force_shard_count)> *) { return C::force_shard_count; }
-    template <typename C> static constexpr bool getvalue_force_shard_count(...) { return false; }
-
-    template <typename C> static std::true_type test_debugmode(checker<C, decltype(&C::force_shard_count)> *);
-    template <typename C> static std::false_type test_debugmode(...);
-    template <typename C> static constexpr bool getvalue_debugmode(checker<C, decltype(&C::force_shard_count)> *) { return C::force_shard_count; }
-    template <typename C> static constexpr bool getvalue_debugmode(...) { return false; }
-
-    template <typename C>
-    static constexpr std::pair<const decltype(test_owner_id<C>(nullptr)), const bool> get_owner_id() { return { decltype(test_owner_id<T>(nullptr))(), getvalue_owner_id<T>(nullptr) }; }
-    template <typename C>
-    static constexpr std::pair<const decltype(test_selfbot<C>(nullptr)), const bool> get_selfbot() { return { decltype(test_selfbot<T>(nullptr))(), getvalue_selfbot<T>(nullptr) }; }
-    template <typename C>
-    static constexpr std::pair<const decltype(test_force_shard_count<C>(nullptr)), const bool> get_force_shard_count() { return { decltype(test_force_shard_count<T>(nullptr))(), getvalue_force_shard_count<T>(nullptr) }; }
-    template <typename C>
-    static constexpr std::pair<const decltype(test_debugmode<C>(nullptr)), const bool> get_debugmode() { return { decltype(test_debugmode<T>(nullptr))(), getvalue_debugmode<T>(nullptr) }; }
-
-    struct force_shard_count
-    {
-        typedef decltype(test_force_shard_count<T>(nullptr)) option_t;
-        static constexpr bool test() { auto c = get_force_shard_count<T>(); return (std::get<0>(c) && std::get<1>(c)); }
-    };
-    struct owner_id
-    {
-        typedef decltype(test_owner_id<T>(nullptr)) option_t;
-        static constexpr bool test() { auto c = get_owner_id<T>(); return (std::get<0>(c) && std::get<1>(c)); }
-    };
-    struct selfbot
-    {
-        typedef decltype(test_selfbot<T>(nullptr)) option_t;
-        static constexpr bool test() { auto c = get_selfbot<T>(); return (std::get<0>(c) && std::get<1>(c)); }
-    };
-    struct debugmode
-    {
-        typedef decltype(test_debugmode<T>(nullptr)) option_t;
-        static constexpr bool test() { auto c = get_debugmode<T>(); return (std::get<0>(c) && std::get<1>(c)); }
-    };
+//     template <typename C> static std::true_type test_owner_id(checker<C, decltype(&C::owner_id)> *);
+//     template <typename C> static std::false_type test_owner_id(...);
+//     template <typename C> static constexpr bool getvalue_owner_id(checker<C, decltype(&C::owner_id)> *) { return C::owner_id; }
+//     template <typename C> static constexpr bool getvalue_owner_id(...) { return false; }
+// 
+//     template <typename C> static std::true_type test_selfbot(checker<C, decltype(&C::selfbot)> *);
+//     template <typename C> static std::false_type test_selfbot(...);
+//     template <typename C> static constexpr bool getvalue_selfbot(checker<C, decltype(&C::selfbot)> *) { return C::selfbot; }
+//     template <typename C> static constexpr bool getvalue_selfbot(...) { return false; }
+// 
+//     template <typename C> static std::true_type test_force_shard_count(checker<C, decltype(&C::force_shard_count)> *);
+//     template <typename C> static std::false_type test_force_shard_count(...);
+//     template <typename C> static constexpr bool getvalue_force_shard_count(checker<C, decltype(&C::force_shard_count)> *) { return C::force_shard_count; }
+//     template <typename C> static constexpr bool getvalue_force_shard_count(...) { return false; }
+// 
+//     template <typename C> static std::true_type test_debugmode(checker<C, decltype(&C::force_shard_count)> *);
+//     template <typename C> static std::false_type test_debugmode(...);
+//     template <typename C> static constexpr bool getvalue_debugmode(checker<C, decltype(&C::force_shard_count)> *) { return C::force_shard_count; }
+//     template <typename C> static constexpr bool getvalue_debugmode(...) { return false; }
+// 
+//     template <typename C> static std::true_type test_disable_cache(checker<C, decltype(&C::force_shard_count)> *);
+//     template <typename C> static std::false_type test_disable_cache(...);
+//     template <typename C> static constexpr bool getvalue_disable_cache(checker<C, decltype(&C::force_shard_count)> *) { return C::force_shard_count; }
+//     template <typename C> static constexpr bool getvalue_disable_cache(...) { return false; }
+// 
+//     template <typename C>
+//     static constexpr std::pair<const decltype(test_owner_id<C>(nullptr)), const bool> get_owner_id() { return { decltype(test_owner_id<T>(nullptr))(), getvalue_owner_id<T>(nullptr) }; }
+//     template <typename C>
+//     static constexpr std::pair<const decltype(test_selfbot<C>(nullptr)), const bool> get_selfbot() { return { decltype(test_selfbot<T>(nullptr))(), getvalue_selfbot<T>(nullptr) }; }
+//     template <typename C>
+//     static constexpr std::pair<const decltype(test_force_shard_count<C>(nullptr)), const bool> get_force_shard_count() { return { decltype(test_force_shard_count<T>(nullptr))(), getvalue_force_shard_count<T>(nullptr) }; }
+//     template <typename C>
+//     static constexpr std::pair<const decltype(test_debugmode<C>(nullptr)), const bool> get_debugmode() { return { decltype(test_debugmode<T>(nullptr))(), getvalue_debugmode<T>(nullptr) }; }
+//     template <typename C>
+//     static constexpr std::pair<const decltype(test_disable_cache<C>(nullptr)), const bool> get_disable_cache() { return { decltype(test_disable_cache<T>(nullptr))(), getvalue_disable_cache<T>(nullptr) }; }
+// 
+//     struct disable_cache
+//     {
+//         typedef decltype(test_disable_cache<T>(nullptr)) option_t;
+//         static constexpr bool test() { auto c = get_disable_cache<T>(); return (std::get<0>(c) && std::get<1>(c)); }
+//     };
+//     struct force_shard_count
+//     {
+//         typedef decltype(test_force_shard_count<T>(nullptr)) option_t;
+//         static constexpr bool test() { auto c = get_force_shard_count<T>(); return (std::get<0>(c) && std::get<1>(c)); }
+//     };
+//     struct owner_id
+//     {
+//         typedef decltype(test_owner_id<T>(nullptr)) option_t;
+//         static constexpr bool test() { auto c = get_owner_id<T>(); return (std::get<0>(c) && std::get<1>(c)); }
+//     };
+//     struct selfbot
+//     {
+//         typedef decltype(test_selfbot<T>(nullptr)) option_t;
+//         static constexpr bool test() { auto c = get_selfbot<T>(); return (std::get<0>(c) && std::get<1>(c)); }
+//     };
+//     struct debugmode
+//     {
+//         typedef decltype(test_debugmode<T>(nullptr)) option_t;
+//         static constexpr bool test() { auto c = get_debugmode<T>(); return (std::get<0>(c) && std::get<1>(c)); }
+//     };
 };
 
 namespace platform

@@ -59,12 +59,12 @@ public:
 
     constexpr std::tuple<int64_t, int8_t, int8_t, int16_t> get_all()
     {
-        return { get_timestamp(), get_worker(), get_worker(), get_process() };
+        return { get_timestamp(), get_worker(), get_process(), get_count() };
     };
 
-    constexpr int16_t get_count(uint64_t snowflake)
+    constexpr int16_t get_count()
     {
-        return static_cast<int16_t>(snowflake & _countMask);
+        return static_cast<int16_t>(m_snowflake & _countMask);
     };
 
     constexpr int8_t get_process()
@@ -125,6 +125,11 @@ private:
     static constexpr int64_t _timestampMask = 0xFFFFFFFFFFC00000L;
     static constexpr int64_t _discordEpoch = 1420070400000;
 };
+
+void from_json(const json& j, snowflake& s)
+{
+    s = std::stoll(j.get<std::string>());
+}
 
 
 }

@@ -46,8 +46,7 @@ public:
     uint16_t m_discriminator = 0;
     std::string m_avatar;
     bool m_isbot = false;
-    bool m_deaf = false;
-    bool m_mute = false;
+    bool m_mfa_enabled = false;
 
     struct guild_info
     {
@@ -55,6 +54,8 @@ public:
         std::string nickname;
         snowflake _guild;
         std::string m_joined_at;
+        bool m_deaf;
+        bool m_mute;
     };
 
     enum member_status
