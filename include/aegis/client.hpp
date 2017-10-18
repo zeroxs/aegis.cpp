@@ -84,6 +84,17 @@ public:
 
     std::string m_sessionId;
 
+    std::map<int64_t, std::string> debug_messages;
+
+    struct
+    {
+        uint32_t guilds;
+        uint32_t members;
+        uint32_t channels;
+        uint32_t messages;
+        uint64_t presence_changes;
+    } counters = { 0,0,0,0 };
+
     std::chrono::steady_clock::time_point starttime;
     std::string uptime() const
     {

@@ -117,8 +117,8 @@ public:
 
     ~Aegis()
     {
-        for (auto c : m_clients)
-            delete c;
+        for (auto & c : m_clients)
+            c.reset();
         m_work.reset();
         m_websocket.reset();
     }
@@ -274,13 +274,12 @@ public:
 
         for (uint32_t k = 0; k < m_shardidmax; ++k)
         {
-            auto shard = new client();
+            auto shard = std::make_unique<client>();
             shard->m_connection = m_websocket.get_connection(m_gatewayurl, ec);
             shard->m_shardid = k;
 
             if (ec)
             {
-                delete shard;
                 m_log->error("Websocket connection failed: {0}", ec.message());
                 return;
             }
@@ -288,8 +287,8 @@ public:
             setup_callbacks(*shard);
 
             m_websocket.connect(shard->m_connection);
-            m_clients.push_back(shard);
-            std::this_thread::sleep_for(5200ms);
+            m_clients.push_back(std::move(shard));
+            std::this_thread::sleep_for(6000ms);
         }
     }
 
@@ -405,8 +404,8 @@ public:
 
     std::string m_getgateway;
 
-    std::vector<client*> m_clients;
-    std::map<int64_t, std::unique_ptr<minimember>> m_members;
+    std::vector<std::unique_ptr<client>> m_clients;
+    std::map<int64_t, std::shared_ptr<member>> m_members;
     std::map<int64_t, std::shared_ptr<channel>> m_channels;
     std::map<int64_t, std::unique_ptr<guild>> m_guilds;
 
