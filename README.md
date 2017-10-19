@@ -22,7 +22,6 @@ Libraries used:
 
 
 # TODO #
-- Finish guild/channel/member/command implementations
 - Voice data send/recv
 
 

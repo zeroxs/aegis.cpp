@@ -71,7 +71,7 @@ void from_json(const nlohmann::json& j, message& m)
     if (!j["content"].is_null())
         m.content = j["content"].get<std::string>();
     m.timestamp = j["timestamp"].get<std::string>();
-    if (!j["edited_timestamp"].is_null())
+    if (j.count("edited_timestamp") && !j["edited_timestamp"].is_null())
         m.edited_timestamp = j["edited_timestamp"].get<std::string>();
     m.tts = j["tts"];
     m.mention_everyone = j["mention_everyone"];

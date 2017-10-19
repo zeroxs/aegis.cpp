@@ -129,7 +129,7 @@ public:
         }
     }
 
-    std::map<int64_t, std::shared_ptr<bucket>> _buckets;
+    std::unordered_map<int64_t, std::shared_ptr<bucket>> _buckets;
     rest_call _call;
     std::atomic_int64_t * global_limit;
 };
@@ -194,11 +194,11 @@ public:
 
 
 private:
-    std::map<uint16_t, std::shared_ptr<bucket_factory>> _map;
+    std::unordered_map<uint16_t, std::shared_ptr<bucket_factory>> _map;
     rest_call _call;
 
 
-    //std::map<uint64_t, int> bucket;
+    //std::unordered_map<uint64_t, int> bucket;
 };
 
 }

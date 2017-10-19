@@ -50,12 +50,17 @@ struct emoji
 void from_json(const nlohmann::json& j, emoji& m)
 {
     m.emoji_id = j["id"];
-    m.name = j["name"].get<std::string>();
-    m.user = j["user"];
-    m.require_colons = j["require_colons"];
-    m.managed = j["managed"];
-    for (auto i : j["roles"])
-        m.roles.push_back(i);
+    if (j.count("name") && !j["name"].is_null())
+        m.name = j["name"].get<std::string>();
+    if (j.count("user") && !j["user"].is_null())
+        m.user = j["user"]["id"];
+    if (j.count("require_colons") && !j["require_colons"].is_null())
+        m.require_colons = j["require_colons"];
+    if (j.count("managed") && !j["managed"].is_null())
+        m.managed = j["managed"];
+    if (j.count("roles") && !j["roles"].is_null())
+        for (auto i : j["roles"])
+            m.roles.push_back(i);
 }
 void to_json(nlohmann::json& j, const emoji& m)
 {

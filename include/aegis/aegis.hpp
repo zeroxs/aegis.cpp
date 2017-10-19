@@ -396,9 +396,9 @@ public:
     std::string ws_gateway;
 
     std::vector<std::unique_ptr<aegis_shard>> shards;
-    std::map<int64_t, std::shared_ptr<aegis_member>> members;
-    std::map<int64_t, std::shared_ptr<aegis_channel>> channels;
-    std::map<int64_t, std::unique_ptr<aegis_guild>> guilds;
+    std::unordered_map<int64_t, std::shared_ptr<aegis_member>> members;
+    std::unordered_map<int64_t, std::shared_ptr<aegis_channel>> channels;
+    std::unordered_map<int64_t, std::unique_ptr<aegis_guild>> guilds;
 
     std::shared_ptr<aegis_member> get_member(snowflake id) const noexcept
     {
@@ -535,7 +535,7 @@ private:
     friend class aegis_channel;
     friend class aegis_shard;
 
-    //std::map<std::string, c_inject> m_cbmap;
+    //std::unordered_map<std::string, c_inject> m_cbmap;
 
     std::unique_ptr<std::thread> thd;
 

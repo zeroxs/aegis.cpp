@@ -185,9 +185,9 @@ private:
     friend class aegis_core;
     friend class aegis_channel;
     friend class aegis_member;
-    std::map<int64_t, std::shared_ptr<aegis_channel>> channels;
-    std::map<int64_t, std::shared_ptr<aegis_member>> members;
-    std::map<int64_t, std::unique_ptr<role>> roles;
+    std::unordered_map<int64_t, std::shared_ptr<aegis_channel>> channels;
+    std::unordered_map<int64_t, std::shared_ptr<aegis_member>> members;
+    std::unordered_map<int64_t, std::unique_ptr<role>> roles;
 
 
     std::string name;

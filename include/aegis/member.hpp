@@ -101,7 +101,7 @@ public:
         return fmt::format("{}#{}", name, discriminator);
     }
 
-    std::map<int64_t, std::unique_ptr<guild_info>> guilds;
+    std::unordered_map<int64_t, std::unique_ptr<guild_info>> guilds;
     //std::pair<message_snowflake, time_sent>
     std::queue<std::pair<snowflake, int64_t>> msghistory;
 

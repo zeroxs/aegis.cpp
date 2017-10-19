@@ -44,8 +44,10 @@ struct provider
 
 void from_json(const nlohmann::json& j, provider& m)
 {
-    m.name = j["name"].get<std::string>();
-    m.url = j["url"].get<std::string>();
+    if (j.count("name") && !j["name"].is_null())
+        m.name = j["name"].get<std::string>();
+    if (j.count("url") && !j["url"].is_null())
+        m.url = j["url"].get<std::string>();
 }
 void to_json(nlohmann::json& j, const provider& m)
 {

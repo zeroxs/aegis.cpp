@@ -115,7 +115,10 @@ private:
 
 void from_json(const nlohmann::json& j, snowflake& s)
 {
-    s = std::stoll(j.get<std::string>());
+    if (j.is_string())
+        s = std::stoll(j.get<std::string>());
+    else if (j.is_number())
+        s = j.get<int64_t>();
 }
 void to_json(nlohmann::json& j, const snowflake& s)
 {

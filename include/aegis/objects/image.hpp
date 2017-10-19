@@ -53,10 +53,14 @@ void from_json(const nlohmann::json& j, image& m)
 }
 void to_json(nlohmann::json& j, const image& m)
 {
-    j["url"] = m.url;
-    j["proxy_url"] = m.proxy_url;
-    j["height"] = m.height;
-    j["width"] = m.width;
+    if (j.count("url") && !j["url"].is_null())
+        j["url"] = m.url;
+    if (j.count("proxy_url") && !j["proxy_url"].is_null())
+        j["proxy_url"] = m.proxy_url;
+    if (j.count("height") && !j["height"].is_null())
+        j["height"] = m.height;
+    if (j.count("width") && !j["width"].is_null())
+        j["width"] = m.width;
 }
 
 }

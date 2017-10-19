@@ -78,7 +78,7 @@ public:
     uint16_t m_bitrate = 0;
     uint16_t m_user_limit = 0;
 
-    std::map<int64_t, perm_overwrite> m_overrides;
+    std::unordered_map<int64_t, perm_overwrite> m_overrides;
 
     aegis_guild & get_guild();
 
