@@ -29,19 +29,19 @@
 #include "aegis/config.hpp"
 
 
-namespace aegis
+namespace aegiscpp
 {
 
 using json = nlohmann::json;
 using rest_limits::bucket_factory;
 
-class aegis_guild;
-class aegis_shard;
+class guild;
+class shard;
 
-class aegis_channel
+class channel
 {
 public:
-    explicit aegis_channel(snowflake channel_id, snowflake guild_id, bucket_factory & ratelimit, bucket_factory & emoji)
+    explicit channel(snowflake channel_id, snowflake guild_id, bucket_factory & ratelimit, bucket_factory & emoji)
         : channel_id(channel_id)
         , guild_id(guild_id)
         , ratelimit(ratelimit)
@@ -67,7 +67,7 @@ public:
     bucket_factory & emoji;
     std::shared_ptr<spdlog::logger> log;
 
-    aegis_guild * _guild;
+    guild * _guild;
 
     snowflake m_last_message_id = 0;
     std::string name;
@@ -80,10 +80,10 @@ public:
 
     std::unordered_map<int64_t, perm_overwrite> m_overrides;
 
-    aegis_guild & get_guild();
+    guild & get_guild();
 
 
-    void load_with_guild(aegis_guild & _guild, json & obj, aegis_shard * shard);
+    void load_with_guild(guild & _guild, json & obj, shard * _shard);
 
     bool create_message(std::string content, std::function<void(rest_reply)> callback = nullptr);
 

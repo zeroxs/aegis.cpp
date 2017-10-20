@@ -39,7 +39,7 @@
 
 
 
-namespace aegis
+namespace aegiscpp
 {
 
 class embed

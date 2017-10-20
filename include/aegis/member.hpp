@@ -32,16 +32,16 @@
 #include <optional>
 #include <queue>
 
-namespace aegis
+namespace aegiscpp
 {
 
-class aegis_guild;
-class aegis_shard;
+class guild;
+class shard;
 
-class aegis_member
+class member
 {
 public:
-    explicit aegis_member(snowflake id) : member_id(id) {}
+    explicit member(snowflake id) : member_id(id) {}
     snowflake member_id = 0;
 
 
@@ -72,7 +72,7 @@ public:
 
     member_status status = member_status::Offline;
 
-    void load(aegis_guild & _guild, json & obj, aegis_shard * shard);
+    void load(guild & _guild, json & obj, shard * _shard);
 
     std::optional<std::string> getName(snowflake guild_id)
     {

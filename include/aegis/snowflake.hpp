@@ -30,7 +30,7 @@
 #include "aegis/config.hpp"
 
 
-namespace aegis
+namespace aegiscpp
 {
 
 class snowflake

@@ -33,7 +33,7 @@
 #include "snowflake.hpp"
 #include <json.hpp>
 
-namespace aegis
+namespace aegiscpp
 {
 
 

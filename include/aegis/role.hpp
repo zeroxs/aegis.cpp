@@ -31,7 +31,7 @@
 #include "permission.hpp"
 #include "snowflake.hpp"
 
-namespace aegis
+namespace aegiscpp
 {
 
 struct role

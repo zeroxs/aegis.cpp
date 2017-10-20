@@ -32,17 +32,17 @@
 #include <sstream>
 
 
-namespace aegis
+namespace aegiscpp
 {
 
-class aegis_shard
+class shard
 {
 public:
-    aegis_shard()
+    shard()
         : heartbeat_ack(0)
         , lastheartbeat(0)
         , sequence(0)
-        , connection_state(aegis::Uninitialized)
+        , connection_state(aegiscpp::Uninitialized)
     {
     }
 

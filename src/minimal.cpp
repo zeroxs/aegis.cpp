@@ -25,15 +25,15 @@
 
 
 #include <aegis.hpp>
-using namespace aegis;
+using namespace aegiscpp;
 using json = nlohmann::json;
 int main(int argc, char * argv[])
 {
-    aegis_core bot("TOKEN");
-    bot.i_message_create = [] (json & msg, aegis_shard & shard, aegis_core & bot) -> bool
+    aegis bot("TOKEN");
+    bot.i_message_create = [] (json & msg, shard & shard, aegis & bot) -> bool
     {
         snowflake channel_id = msg["d"]["channel_id"];
-        std::string author = msg["d"]["author"];
+        std::string _member = msg["d"]["author"];
         if (msg["d"]["content"] == "Hi")
             bot.get_channel(channel_id).create_message("Hello back");
         return true;

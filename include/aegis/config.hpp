@@ -37,7 +37,7 @@
 
 
 
-namespace aegis
+namespace aegiscpp
 {
 
 

@@ -38,11 +38,11 @@
 
 
 
-namespace aegis
+namespace aegiscpp
 {
 
-class aegis_member;
-class aegis_channel;
+class member;
+class channel;
 
 struct message
 {

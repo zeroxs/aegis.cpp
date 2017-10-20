@@ -37,11 +37,11 @@
 #include <websocketpp/common/connection_hdl.hpp>
 #include <websocketpp/client.hpp>
 
-namespace aegis
+namespace aegiscpp
 {
 
 
-inline void aegis_shard::do_reset()
+inline void shard::do_reset()
 {
     heartbeat_ack = 0;
     if (connection != nullptr)
@@ -53,7 +53,7 @@ inline void aegis_shard::do_reset()
     }
 }
 
-inline bool aegis_shard::conn_test(std::function<void()> func)
+inline bool shard::conn_test(std::function<void()> func)
 {
     if (connection == nullptr)
     {

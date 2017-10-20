@@ -29,7 +29,7 @@
 #include "aegis/config.hpp"
 #include <string>
 
-namespace aegis
+namespace aegiscpp
 {
 
 using rest_limits::bucket_factory;
@@ -37,18 +37,18 @@ using json = nlohmann::json;
 
 
 
-inline aegis_guild::~aegis_guild()
+inline guild::~guild()
 {
     for (auto &[k, v] : members)
         v->leave(guild_id);
 }
 
-inline void aegis_guild::load(json & obj, aegis_shard * shard) noexcept
+inline void guild::load(json & obj, shard * shard) noexcept
 {
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
     snowflake g_id = obj["id"];
 
-    aegis_core & bot = *state_o->core;
+    aegis & bot = *state_o->core;
     try
     {
         json voice_states;
@@ -155,12 +155,12 @@ inline void aegis_guild::load(json & obj, aegis_shard * shard) noexcept
     }
 }
 
-inline aegis_channel * aegis_guild::get_channel_create(snowflake id, aegis_shard * shard) noexcept
+inline channel * guild::get_channel_create(snowflake id, shard * shard) noexcept
 {
     auto _channel = get_channel(id);
     if (_channel == nullptr)
     {
-        auto g = std::make_shared<aegis_channel>(id, guild_id, state_o->core->ratelimit().get(rest_limits::bucket_type::CHANNEL), state_o->core->ratelimit().get(rest_limits::bucket_type::EMOJI));
+        auto g = std::make_shared<channel>(id, guild_id, state_o->core->ratelimit().get(rest_limits::bucket_type::CHANNEL), state_o->core->ratelimit().get(rest_limits::bucket_type::EMOJI));
         auto ptr = g.get();
         channels.emplace(id, g);
         state_o->core->channels.emplace(id, g);
@@ -171,19 +171,19 @@ inline aegis_channel * aegis_guild::get_channel_create(snowflake id, aegis_shard
     return _channel;
 }
 
-inline void aegis_guild::load_presence(json & obj) noexcept
+inline void guild::load_presence(json & obj) noexcept
 {
     json user = obj["user"];
 
-    aegis_member::member_status status;
+    member::member_status status;
     if (obj["status"] == "idle")
-        status = aegis_member::Idle;
+        status = member::Idle;
     else if (obj["status"] == "dnd")
-        status = aegis_member::DoNotDisturb;
+        status = member::DoNotDisturb;
     else if (obj["status"] == "online")
-        status = aegis_member::Online;
+        status = member::Online;
     else if (obj["status"] == "offline")
-        status = aegis_member::Offline;
+        status = member::Offline;
 
     auto _member = get_member(user["id"]);
     if (_member == nullptr)
@@ -195,7 +195,7 @@ inline void aegis_guild::load_presence(json & obj) noexcept
     return;
 }
 
-inline void aegis_guild::load_role(json & obj) noexcept
+inline void guild::load_role(json & obj) noexcept
 {
     snowflake role_id = obj["id"];
     if (!roles.count(role_id))
@@ -217,7 +217,7 @@ inline void aegis_guild::load_role(json & obj) noexcept
 }
 
 
-inline aegis_channel * aegis_guild::get_channel(snowflake id) const noexcept
+inline channel * guild::get_channel(snowflake id) const noexcept
 {
     auto it = channels.find(id);
     if (it == channels.end())
@@ -225,7 +225,7 @@ inline aegis_channel * aegis_guild::get_channel(snowflake id) const noexcept
     return it->second.get();
 }
 
-inline aegis_member * aegis_guild::get_member(snowflake member_id) const noexcept
+inline member * guild::get_member(snowflake member_id) const noexcept
 {
     auto m = members.find(member_id);
     if (m == members.end())
@@ -233,14 +233,14 @@ inline aegis_member * aegis_guild::get_member(snowflake member_id) const noexcep
     return m->second.get();
 }
 
-inline permission aegis_guild::get_permissions(snowflake member_id, snowflake channel_id) noexcept
+inline permission guild::get_permissions(snowflake member_id, snowflake channel_id) noexcept
 {
     if (!members.count(member_id) || !channels.count(channel_id))
         return 0;
     return get_permissions(*members[guild_id], *channels[channel_id]);
 }
 
-inline permission aegis_guild::get_permissions(aegis_member & _member, aegis_channel & _channel) noexcept
+inline permission guild::get_permissions(member & _member, channel & _channel) noexcept
 {
     int64_t _base_permissions = base_permissions(_member);
 
@@ -249,7 +249,7 @@ inline permission aegis_guild::get_permissions(aegis_member & _member, aegis_cha
     return _base_permissions | _compute_overwrites;
 }
 
-inline int64_t aegis_guild::base_permissions(aegis_member & _member) const noexcept
+inline int64_t guild::base_permissions(member & _member) const noexcept
 {
     if (m_owner_id == _member.member_id)
         return ~0;
@@ -266,7 +266,7 @@ inline int64_t aegis_guild::base_permissions(aegis_member & _member) const noexc
     return permissions;
 }
 
-inline int64_t aegis_guild::compute_overwrites(int64_t _base_permissions, aegis_member & _member, aegis_channel & _channel) const noexcept
+inline int64_t guild::compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const noexcept
 {
     if (_base_permissions & 0x8)//admin
         return ~0;
@@ -307,7 +307,7 @@ inline int64_t aegis_guild::compute_overwrites(int64_t _base_permissions, aegis_
     return permissions;
 }
 
-inline role & aegis_guild::get_role(int64_t r) const
+inline role & guild::get_role(int64_t r) const
 {
     for (auto & kv : roles)
         if (kv.second->role_id == r)
@@ -315,7 +315,7 @@ inline role & aegis_guild::get_role(int64_t r) const
     throw std::out_of_range(fmt::format("G: {} role:[{}] does not exist", guild_id, r));
 }
 
-inline void aegis_guild::remove_member(json & obj)
+inline void guild::remove_member(json & obj)
 {
     snowflake member_id = obj["user"]["id"];
     for (auto & kv : members)
@@ -329,7 +329,7 @@ inline void aegis_guild::remove_member(json & obj)
     members.erase(guild_id);
 }
 
-inline void aegis_guild::remove_role(snowflake role_id)
+inline void guild::remove_role(snowflake role_id)
 {
     for (auto & kv : members)
     {
@@ -346,25 +346,25 @@ inline void aegis_guild::remove_role(snowflake role_id)
     roles.erase(role_id);
 }
 
-inline int32_t aegis_guild::get_member_count() const noexcept
+inline int32_t guild::get_member_count() const noexcept
 {
     return static_cast<int32_t>(members.size());
 }
 
-// move this to aegis::aegis_core?
-inline bool aegis_guild::create_guild(std::function<void(rest_reply)> callback)
+// move this to aegis::aegis?
+inline bool guild::create_guild(std::function<void(rest_reply)> callback)
 {
     //TODO: 
     return true;
 }
 
-inline bool aegis_guild::get_guild(std::function<void(rest_reply)> callback)
+inline bool guild::get_guild(std::function<void(rest_reply)> callback)
 {
     //TODO: 
     return true;
 }
 
-inline bool aegis_guild::modify_guild(std::optional<std::string> name, std::optional<std::string> voice_region, std::optional<int> verification_level,
+inline bool guild::modify_guild(std::optional<std::string> name, std::optional<std::string> voice_region, std::optional<int> verification_level,
                     std::optional<int> default_message_notifications, std::optional<snowflake> afk_channel_id, std::optional<int> afk_timeout,
                     std::optional<std::string> icon, std::optional<snowflake> owner_id, std::optional<std::string> splash, std::function<void(rest_reply)> callback)
 {
@@ -397,7 +397,7 @@ inline bool aegis_guild::modify_guild(std::optional<std::string> name, std::opti
     return true;
 }
 
-inline bool aegis_guild::delete_guild(std::function<void(rest_reply)> callback)
+inline bool guild::delete_guild(std::function<void(rest_reply)> callback)
 {
     //requires OWNER
     if (m_owner_id != self()->member_id)
@@ -407,7 +407,7 @@ inline bool aegis_guild::delete_guild(std::function<void(rest_reply)> callback)
     return true;
 }
 
-inline bool aegis_guild::create_text_channel(std::string name, int64_t parent_id, bool nsfw, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
+inline bool guild::create_text_channel(std::string name, int64_t parent_id, bool nsfw, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
 {
     //requires MANAGE_CHANNELS
     if (!permission(base_permissions(self())).canManageChannels())
@@ -426,7 +426,7 @@ inline bool aegis_guild::create_text_channel(std::string name, int64_t parent_id
     return true;
 }
 
-inline bool aegis_guild::create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
+inline bool guild::create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageChannels())
         return false;
@@ -444,7 +444,7 @@ inline bool aegis_guild::create_voice_channel(std::string name, int32_t bitrate,
     return true;
 }
 
-inline bool aegis_guild::create_category_channel(std::string name, int64_t parent_id, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
+inline bool guild::create_category_channel(std::string name, int64_t parent_id, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageChannels())
         return false;
@@ -462,7 +462,7 @@ inline bool aegis_guild::create_category_channel(std::string name, int64_t paren
     return true;
 }
 
-inline bool aegis_guild::modify_channel_positions()
+inline bool guild::modify_channel_positions()
 {
     if (!permission(base_permissions(self())).canManageChannels())
         return false;
@@ -471,7 +471,7 @@ inline bool aegis_guild::modify_channel_positions()
     return true;
 }
 
-inline bool aegis_guild::modify_guild_member(snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
+inline bool guild::modify_guild_member(snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
                             std::optional<bool> deaf, std::optional<std::vector<snowflake>> roles, std::optional<snowflake> channel_id, std::function<void(rest_reply)> callback)
 {
     permission perm = permission(base_permissions(self()));
@@ -511,7 +511,7 @@ inline bool aegis_guild::modify_guild_member(snowflake user_id, std::optional<st
     return true;
 }
 
-inline bool aegis_guild::modify_my_nick(std::string newname, std::function<void(rest_reply)> callback)
+inline bool guild::modify_my_nick(std::string newname, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canChangeName())
         return false;
@@ -521,7 +521,7 @@ inline bool aegis_guild::modify_my_nick(std::string newname, std::function<void(
     return true;
 }
 
-inline bool aegis_guild::add_guild_member_role(snowflake user_id, snowflake role_id, std::function<void(rest_reply)> callback)
+inline bool guild::add_guild_member_role(snowflake user_id, snowflake role_id, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageRoles())
         return false;
@@ -530,7 +530,7 @@ inline bool aegis_guild::add_guild_member_role(snowflake user_id, snowflake role
     return true;
 }
 
-inline bool aegis_guild::remove_guild_member_role(snowflake user_id, snowflake role_id, std::function<void(rest_reply)> callback)
+inline bool guild::remove_guild_member_role(snowflake user_id, snowflake role_id, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageRoles())
         return false;
@@ -539,7 +539,7 @@ inline bool aegis_guild::remove_guild_member_role(snowflake user_id, snowflake r
     return true;
 }
 
-inline bool aegis_guild::remove_guild_member(snowflake user_id, std::function<void(rest_reply)> callback)
+inline bool guild::remove_guild_member(snowflake user_id, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canKick())
         return false;
@@ -548,7 +548,7 @@ inline bool aegis_guild::remove_guild_member(snowflake user_id, std::function<vo
     return true;
 }
 
-inline bool aegis_guild::create_guild_ban(snowflake user_id, int8_t delete_message_days, std::function<void(rest_reply)> callback)
+inline bool guild::create_guild_ban(snowflake user_id, int8_t delete_message_days, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canBan())
         return false;
@@ -558,7 +558,7 @@ inline bool aegis_guild::create_guild_ban(snowflake user_id, int8_t delete_messa
     return true;
 }
 
-inline bool aegis_guild::remove_guild_ban(snowflake user_id, std::function<void(rest_reply)> callback)
+inline bool guild::remove_guild_ban(snowflake user_id, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canBan())
         return false;
@@ -567,7 +567,7 @@ inline bool aegis_guild::remove_guild_ban(snowflake user_id, std::function<void(
     return true;
 }
 
-inline bool aegis_guild::create_guild_role(std::function<void(rest_reply)> callback)
+inline bool guild::create_guild_role(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageRoles())
         return false;
@@ -576,7 +576,7 @@ inline bool aegis_guild::create_guild_role(std::function<void(rest_reply)> callb
     return true;
 }
 
-inline bool aegis_guild::modify_guild_role_positions(std::function<void(rest_reply)> callback)
+inline bool guild::modify_guild_role_positions(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageRoles())
         return false;
@@ -585,7 +585,7 @@ inline bool aegis_guild::modify_guild_role_positions(std::function<void(rest_rep
     return true;
 }
 
-inline bool aegis_guild::modify_guild_role(snowflake role_id, std::function<void(rest_reply)> callback)
+inline bool guild::modify_guild_role(snowflake role_id, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageRoles())
         return false;
@@ -594,7 +594,7 @@ inline bool aegis_guild::modify_guild_role(snowflake role_id, std::function<void
     return true;
 }
 
-inline bool aegis_guild::delete_guild_role(snowflake role_id, std::function<void(rest_reply)> callback)
+inline bool guild::delete_guild_role(snowflake role_id, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageRoles())
         return false;
@@ -603,7 +603,7 @@ inline bool aegis_guild::delete_guild_role(snowflake role_id, std::function<void
     return true;
 }
 
-inline bool aegis_guild::get_guild_prune_count(int16_t days, std::function<void(rest_reply)> callback)
+inline bool guild::get_guild_prune_count(int16_t days, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canKick())
         return false;
@@ -612,7 +612,7 @@ inline bool aegis_guild::get_guild_prune_count(int16_t days, std::function<void(
     return true;
 }
 
-inline bool aegis_guild::begin_guild_prune(int16_t days, std::function<void(rest_reply)> callback)
+inline bool guild::begin_guild_prune(int16_t days, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canKick())
         return false;
@@ -621,7 +621,7 @@ inline bool aegis_guild::begin_guild_prune(int16_t days, std::function<void(rest
     return true;
 }
 
-inline bool aegis_guild::get_guild_invites(std::function<void(rest_reply)> callback)
+inline bool guild::get_guild_invites(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
@@ -630,7 +630,7 @@ inline bool aegis_guild::get_guild_invites(std::function<void(rest_reply)> callb
     return true;
 }
 
-inline bool aegis_guild::get_guild_integrations(std::function<void(rest_reply)> callback)
+inline bool guild::get_guild_integrations(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
@@ -639,7 +639,7 @@ inline bool aegis_guild::get_guild_integrations(std::function<void(rest_reply)> 
     return true;
 }
 
-inline bool aegis_guild::create_guild_integration(std::function<void(rest_reply)> callback)
+inline bool guild::create_guild_integration(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
@@ -648,7 +648,7 @@ inline bool aegis_guild::create_guild_integration(std::function<void(rest_reply)
     return true;
 }
 
-inline bool aegis_guild::modify_guild_integration(std::function<void(rest_reply)> callback)
+inline bool guild::modify_guild_integration(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
@@ -657,7 +657,7 @@ inline bool aegis_guild::modify_guild_integration(std::function<void(rest_reply)
     return true;
 }
 
-inline bool aegis_guild::delete_guild_integration(std::function<void(rest_reply)> callback)
+inline bool guild::delete_guild_integration(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
@@ -666,7 +666,7 @@ inline bool aegis_guild::delete_guild_integration(std::function<void(rest_reply)
     return true;
 }
 
-inline bool aegis_guild::sync_guild_integration(std::function<void(rest_reply)> callback)
+inline bool guild::sync_guild_integration(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
@@ -675,7 +675,7 @@ inline bool aegis_guild::sync_guild_integration(std::function<void(rest_reply)> 
     return true;
 }
 
-inline bool aegis_guild::get_guild_embed(std::function<void(rest_reply)> callback)
+inline bool guild::get_guild_embed(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
@@ -684,7 +684,7 @@ inline bool aegis_guild::get_guild_embed(std::function<void(rest_reply)> callbac
     return true;
 }
 
-inline bool aegis_guild::modify_guild_embed(std::function<void(rest_reply)> callback)
+inline bool guild::modify_guild_embed(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
@@ -693,7 +693,7 @@ inline bool aegis_guild::modify_guild_embed(std::function<void(rest_reply)> call
     return true;
 }
 
-inline bool aegis_guild::leave(std::function<void(rest_reply)> callback)
+inline bool guild::leave(std::function<void(rest_reply)> callback)
 {
     ratelimit.push(guild_id, fmt::format("/users/@me/guilds/{0}", guild_id), "", "DELETE", callback);
     return true;

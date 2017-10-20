@@ -34,13 +34,13 @@
 #include <queue>
 
 
-namespace aegis
+namespace aegiscpp
 {
 
 
 
 
-inline void aegis_member::load(aegis_guild & _guild, json & obj, aegis_shard * shard)
+inline void member::load(guild & _guild, json & obj, shard * _shard)
 {
     json & user = obj["user"];
     snowflake member_id = user["id"];
@@ -65,7 +65,7 @@ inline void aegis_member::load(aegis_guild & _guild, json & obj, aegis_shard * s
         {
             if (!guilds.count(_guild.guild_id))
             {
-                guilds.emplace(_guild.guild_id, std::make_unique<aegis_member::guild_info>());
+                guilds.emplace(_guild.guild_id, std::make_unique<member::guild_info>());
             }
             g_info->roles.clear();
             g_info->guild_id = _guild.guild_id;
@@ -81,7 +81,7 @@ inline void aegis_member::load(aegis_guild & _guild, json & obj, aegis_shard * s
     }
     catch (std::exception&e)
     {
-        _guild.state_o->core->log->error("Shard#{} : Error processing member[{}] of guild[{}] {}", shard->shardid, member_id, _guild.guild_id, e.what());
+        _guild.state_o->core->log->error("Shard#{} : Error processing member[{}] of guild[{}] {}", _shard->shardid, member_id, _guild.guild_id, e.what());
     }
 }
 

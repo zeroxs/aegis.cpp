@@ -31,7 +31,7 @@
 #include "emoji.hpp"
 
 
-namespace aegis
+namespace aegiscpp
 {
 
 

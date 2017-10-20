@@ -31,18 +31,18 @@
 #include "state_c.hpp"
 
 
-namespace aegis
+namespace aegiscpp
 {
 
 using rest_limits::bucket_factory;
 using json = nlohmann::json;
 
-class aegis_channel;
+class channel;
 
-class aegis_guild
+class guild
 {
 public:
-    explicit aegis_guild(int16_t shard_id, state_c * state, snowflake id, bucket_factory & ratelimit)
+    explicit guild(int16_t shard_id, state_c * state, snowflake id, bucket_factory & ratelimit)
         : shard_id(shard_id)
         , guild_id(id)
         , ratelimit(ratelimit)
@@ -52,11 +52,11 @@ public:
         unavailable = false;
     }
 
-    ~aegis_guild();
+    ~guild();
 
-    aegis_guild(const aegis_guild &) = delete;
-    aegis_guild(aegis_guild &&) = delete;
-    aegis_guild & operator=(const aegis_guild &) = delete;
+    guild(const guild &) = delete;
+    guild(guild &&) = delete;
+    guild & operator=(const guild &) = delete;
 
     int16_t shard_id;
     snowflake guild_id;
@@ -64,7 +64,7 @@ public:
     std::shared_ptr<spdlog::logger> log;
     state_c * state_o;
 
-    aegis_member * self() const
+    member * self() const
     {
         auto self_id = state_o->user.id;
         auto slf = get_member(self_id);
@@ -78,33 +78,33 @@ public:
         return name;
     }
 
-    aegis_channel * get_channel_create(snowflake id, aegis_shard * shard) noexcept;
+    channel * get_channel_create(snowflake id, shard * shard) noexcept;
 
-    void load(json & obj, aegis_shard * shard) noexcept;
+    void load(json & obj, shard * shard) noexcept;
     
     void load_presence(json & obj) noexcept;
     
     void load_role(json & obj) noexcept;
 
-    aegis_channel * get_channel(snowflake id) const noexcept;
+    channel * get_channel(snowflake id) const noexcept;
 
-    aegis_member * get_member(snowflake member_id) const noexcept;
+    member * get_member(snowflake member_id) const noexcept;
 
     int32_t get_member_count() const noexcept;
 
     permission get_permissions(snowflake guild_id, snowflake channel_id) noexcept;
 
-    permission get_permissions(aegis_member & _member, aegis_channel & _channel) noexcept;
+    permission get_permissions(member & _member, channel & _channel) noexcept;
 
-    int64_t base_permissions(aegis_member * _member) const noexcept
+    int64_t base_permissions(member * _member) const noexcept
     {
         return base_permissions(*_member);
     }
 
-    int64_t base_permissions(aegis_member & _member) const noexcept;
+    int64_t base_permissions(member & _member) const noexcept;
 
     //permission compute_overwrites
-    int64_t compute_overwrites(int64_t _base_permissions, aegis_member & _member, aegis_channel & _channel) const noexcept;
+    int64_t compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const noexcept;
 
     role & get_role(int64_t r) const;
 
@@ -116,7 +116,7 @@ public:
 
     /// REST CALLS
 
-    // move this to aegis::aegis_core?
+    // move this to aegis::aegis?
     bool create_guild(std::function<void(rest_reply)> callback = nullptr);
 
     bool get_guild(std::function<void(rest_reply)> callback = nullptr);
@@ -182,11 +182,11 @@ public:
 
 
 private:
-    friend class aegis_core;
-    friend class aegis_channel;
-    friend class aegis_member;
-    std::unordered_map<int64_t, std::shared_ptr<aegis_channel>> channels;
-    std::unordered_map<int64_t, std::shared_ptr<aegis_member>> members;
+    friend class aegis;
+    friend class channel;
+    friend class member;
+    std::unordered_map<int64_t, std::shared_ptr<channel>> channels;
+    std::unordered_map<int64_t, std::shared_ptr<member>> members;
     std::unordered_map<int64_t, std::unique_ptr<role>> roles;
 
 

@@ -34,21 +34,21 @@
 
 
 
-namespace aegis
+namespace aegiscpp
 {
 
-class aegis_member;
-class aegis_channel;
-class aegis_shard;
-class aegis_core;
+class member;
+class channel;
+class shard;
+class aegis;
 
 struct typing_start
 {
-    aegis_channel * channel;
-    aegis_member * member;
+    channel * _channel;
+    member * _member;
     int64_t timestamp;
-    aegis_shard * shard;
-    aegis_core * bot;
+    shard * _shard;
+    aegis * bot;
 };
 
 }

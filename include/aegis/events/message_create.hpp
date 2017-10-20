@@ -34,21 +34,21 @@
 
 
 
-namespace aegis
+namespace aegiscpp
 {
 
-class aegis_member;
-class aegis_channel;
+class member;
+class channel;
 
 
 
 struct message_create
 {
-    aegis_channel * channel;
-    aegis_member * author;
+    channel * _channel;
+    member * _member;
     message msg;
-    aegis_shard * shard;
-    aegis_core * bot;
+    shard * _shard;
+    aegis * bot;
 };
 
 }

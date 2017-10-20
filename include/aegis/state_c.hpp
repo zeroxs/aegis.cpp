@@ -29,10 +29,10 @@
 #include "snowflake.hpp"
 #include <string>
 
-namespace aegis
+namespace aegiscpp
 {
 
-class aegis_core;
+class aegis;
 
 struct state_c
 {
@@ -43,7 +43,7 @@ struct state_c
     };
 
     user_c user;
-    aegis_core * core;
+    aegis * core;
 
 };
 

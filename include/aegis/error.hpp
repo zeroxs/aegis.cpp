@@ -33,7 +33,7 @@
 #include <system_error>
 
 
-namespace aegis
+namespace aegiscpp
 {
 typedef std::pair<std::error_code, std::string> err_str_pair;
 
@@ -97,7 +97,7 @@ inline std::error_code make_error_code(error::value e)
 }
 }
 
-namespace aegis
+namespace aegiscpp
 {
 
 class exception : public std::exception

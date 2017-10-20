@@ -32,10 +32,10 @@
 namespace example_bot
 {
 
-using aegis::aegis_shard;
+using aegiscpp::shard;
 using json = nlohmann::json;
 using namespace std::placeholders;
-using namespace aegis;
+using namespace aegiscpp;
 
 class example
 {
@@ -63,10 +63,10 @@ public:
         return elems;
     }
 
-    using c_inject = std::function<bool(json & msg, aegis_shard & shard, aegis_core & bot)>;
+    using c_inject = std::function<bool(json & msg, shard & _shard, aegis & bot)>;
 
     // Messages you want to process
-    void inject(aegis::aegis_core & bot)
+    void inject(aegis & bot)
     {
         bot.i_typing_start = std::bind(&example::TypingStart, this, _1);
         bot.i_message_create = std::bind(&example::MessageCreate, this, _1);
@@ -80,63 +80,63 @@ public:
     // All the hooks into the websocket stream
     bool TypingStart(typing_start obj);
 
-    bool MessageCreate(aegis::message_create msg);
+    bool MessageCreate(message_create msg);
     
-    bool extremely_simplified_message_handler(json & msg, aegis_shard * shard, aegis_core & bot);
+    bool extremely_simplified_message_handler(json & msg, shard * shard, aegis & bot);
 
-    bool message_update(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool message_update(json & msg, shard & shard, aegis & bot);
 
-    bool message_delete(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool message_delete(json & msg, shard & shard, aegis & bot);
 
-    bool message_delete_bulk(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool message_delete_bulk(json & msg, shard & shard, aegis & bot);
 
-    bool guild_create(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool guild_create(json & msg, shard & shard, aegis & bot);
 
-    bool guild_update(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool guild_update(json & msg, shard & shard, aegis & bot);
 
-    bool guild_delete(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool guild_delete(json & msg, shard & shard, aegis & bot);
 
-    bool user_settings_update(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool user_settings_update(json & msg, shard & shard, aegis & bot);
 
-    bool user_update(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool user_update(json & msg, shard & shard, aegis & bot);
 
-    bool ready(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool ready(json & msg, shard & shard, aegis & bot);
 
-    bool resumed(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool resumed(json & msg, shard & shard, aegis & bot);
 
-    bool channel_create(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool channel_create(json & msg, shard & shard, aegis & bot);
 
-    bool channel_update(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool channel_update(json & msg, shard & shard, aegis & bot);
 
-    bool channel_delete(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool channel_delete(json & msg, shard & shard, aegis & bot);
 
-    bool guild_ban_add(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool guild_ban_add(json & msg, shard & shard, aegis & bot);
 
-    bool guild_ban_remove(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool guild_ban_remove(json & msg, shard & shard, aegis & bot);
 
-    bool guild_emojis_update(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool guild_emojis_update(json & msg, shard & shard, aegis & bot);
 
-    bool guild_integrations_update(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool guild_integrations_update(json & msg, shard & shard, aegis & bot);
 
-    bool guild_member_add(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool guild_member_add(json & msg, shard & shard, aegis & bot);
 
-    bool guild_member_remove(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool guild_member_remove(json & msg, shard & shard, aegis & bot);
 
-    bool guild_member_update(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool guild_member_update(json & msg, shard & shard, aegis & bot);
 
-    bool guild_member_chunk(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool guild_member_chunk(json & msg, shard & shard, aegis & bot);
 
-    bool guild_role_create(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool guild_role_create(json & msg, shard & shard, aegis & bot);
 
-    bool guild_role_update(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool guild_role_update(json & msg, shard & shard, aegis & bot);
 
-    bool guild_role_delete(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool guild_role_delete(json & msg, shard & shard, aegis & bot);
 
-    bool presence_update(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool presence_update(json & msg, shard & shard, aegis & bot);
 
-    bool voice_state_update(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool voice_state_update(json & msg, shard & shard, aegis & bot);
 
-    bool voice_server_update(json & msg, aegis_shard & shard, aegis_core & bot);
+    bool voice_server_update(json & msg, shard & shard, aegis & bot);
 };
 
 }

@@ -56,7 +56,7 @@
 #include <asio/ssl.hpp>
 #include <asio/steady_timer.hpp>
 
-namespace aegis
+namespace aegiscpp
 {
 using namespace std::chrono;
 namespace spd = spdlog;

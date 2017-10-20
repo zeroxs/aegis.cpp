@@ -55,7 +55,7 @@
 #error "Cannot define getPeakRSS( ) or getCurrentRSS( ) for an unknown OS."
 #endif
 
-namespace aegis
+namespace aegiscpp
 {
 using namespace std::string_view_literals;
 

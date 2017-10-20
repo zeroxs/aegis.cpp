@@ -36,7 +36,7 @@ struct settings
 #include "example.hpp"
 
 
-using aegis::aegis_core;
+using aegiscpp::aegis;
 using example_bot::example;
 
 int main(int argc, char * argv[])
@@ -47,7 +47,7 @@ int main(int argc, char * argv[])
     try
     {
         // Create bot with token
-        aegis_core bot("TOKEN");
+        aegis bot("TOKEN");
         
         // Bot will automatically set this presence when it connects
         bot.self_presence = "with my friends";

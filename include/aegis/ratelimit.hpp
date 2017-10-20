@@ -30,7 +30,7 @@
 #include "structs.hpp"
 
 
-namespace aegis
+namespace aegiscpp
 {
 
 namespace rest_limits
