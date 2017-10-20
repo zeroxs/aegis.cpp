@@ -24,10 +24,10 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+
 #pragma once
-
+#include <future>
 #include <aegis.hpp>
-
 
 namespace example_bot
 {
@@ -36,7 +36,6 @@ using aegis::aegis_shard;
 using json = nlohmann::json;
 using namespace std::placeholders;
 using namespace aegis;
-
 
 class example
 {

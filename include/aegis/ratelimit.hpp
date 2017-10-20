@@ -26,7 +26,8 @@
 #pragma once
 
 
-#include "aegis/config.hpp"
+#include "config.hpp"
+#include "structs.hpp"
 
 
 namespace aegis
@@ -47,9 +48,9 @@ public:
         , reset(0)
     {
     }
-    int32_t limit;
-    int32_t remaining;
-    int64_t reset;
+    std::atomic_int32_t limit;
+    std::atomic_int32_t remaining;
+    std::atomic_int64_t reset;
 
     bool can_work()
     {
@@ -63,6 +64,17 @@ public:
         return true;
     }
 
+    bool can_async()
+    {
+        int64_t time = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+        if (remaining > 0)
+            return true;
+        if (time < reset)
+            return false;
+        return true;
+    }
+
+    std::mutex m;
     std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_reply)>>> _queue;
 };
 
@@ -78,45 +90,84 @@ public:
 
     void run_one()
     {
-        for (auto &[k, v] : _buckets)
+        for (auto & kv : _buckets)
         {
-            if (!v->can_work())
+            auto & bkt = kv.second;
+            if (!bkt->can_work())
                 continue;
 
-            int64_t time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            auto & query = bkt->_queue.front();
 
-            spdlog::get("aegis")->info("chrono: {} reset: {}", time, v->reset);
+            do_action(bkt, query);
 
-            auto & query = v->_queue.front();
-
-            std::optional<rest_reply> reply(_call(std::get<0>(query), std::get<1>(query), std::get<2>(query)));
-            if (!reply.has_value())
-            {
-                //failed to call
-                return;
-            }
-            if (reply->global)
-            {
-                *global_limit = (time + reply->retry);
-                return;
-            }
-
-            v->limit = reply->limit;
-            v->remaining = reply->remaining;
-            v->reset = reply->reset;
-            if (std::get<3>(query) != nullptr)
-            {
-                std::get<3>(query)(std::move(reply.value()));
-            }
-
-            v->_queue.pop();
+            bkt->_queue.pop();
         }
 
     }
 
+    //////////////////////////////////////////////////////////////////////////
+
+    void do_action(std::unique_ptr<bucket>& bkt, std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_reply)>>>::reference query)
+    {
+        int64_t time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+        spdlog::get("aegis")->debug("chrono: {} reset: {}", time, bkt->reset);
+
+        std::optional<rest_reply> reply(_call(std::get<0>(query), std::get<1>(query), std::get<2>(query)));
+        if (!reply.has_value())
+        {
+            //failed to call
+            return;
+        }
+        if (reply->global)
+        {
+            *global_limit = (time + reply->retry);
+            return;
+        }
+
+        bkt->limit = reply->limit;
+        bkt->remaining = reply->remaining;
+        bkt->reset = reply->reset;
+        if (std::get<3>(query) != nullptr)
+        {
+            std::get<3>(query)(std::move(reply.value()));
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+
+//     pplx::task<rest_reply> do_async(int64_t id, std::string path, std::string content = "", std::string method = "POST")
+//     {
+//         bucket * use_bucket = nullptr;
+// 
+//         auto bkt = _buckets.find(id);
+//         if (bkt != _buckets.end())
+//             use_bucket = bkt->second.get();
+//         else
+//             use_bucket = _buckets.emplace(id, std::make_unique<bucket>()).first->second.get();
+// 
+//         return pplx::create_task([this, bkt = use_bucket, path, content, method]() {
+//             std::scoped_lock<std::mutex> lock(bkt->m);
+//             int64_t time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+//             spdlog::get("aegis")->debug("Checking if can work C:{} R:{}", time, bkt->reset);
+//             while (!bkt->can_async())
+//             {
+//                 time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+//                 spdlog::get("aegis")->debug("Can't work. Waiting {}s", bkt->reset - time);
+//                 std::this_thread::sleep_for(std::chrono::seconds((bkt->reset - time) + 1));
+//             }
+//             spdlog::get("aegis")->debug("Working");
+//             std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_reply)>>> query;
+//             std::optional<rest_reply> reply(_call(path, content, method));
+//             bkt->limit = reply->limit;
+//             bkt->remaining = reply->remaining;
+//             bkt->reset = reply->reset;
+//             return std::move(reply.value_or(rest_reply()));
+//         });
+//     }
+
     void push(int64_t id, std::string path, std::string content, std::string method, std::function<void(rest_reply)> callback = {})
     {
-
         try
         {
             auto & bkt = _buckets.at(id);
@@ -124,12 +175,12 @@ public:
         }
         catch (std::out_of_range &)
         {
-            auto & bkt = _buckets.emplace(id, std::make_shared<bucket>()).first->second;
+            auto & bkt = _buckets.emplace(id, std::make_unique<bucket>()).first->second;
             bkt->_queue.emplace(path, content, method, callback);
         }
     }
 
-    std::unordered_map<int64_t, std::shared_ptr<bucket>> _buckets;
+    std::unordered_map<int64_t, std::unique_ptr<bucket>> _buckets;
     rest_call _call;
     std::atomic_int64_t * global_limit;
 };
@@ -152,19 +203,16 @@ public:
 
     void add(const uint16_t buckettype)
     {
-        _map.emplace(std::pair<uint16_t, std::shared_ptr<bucket_factory>>(buckettype, std::make_shared<bucket_factory>(_call, &global_limit)));
+        _map.emplace(buckettype, std::make_unique<bucket_factory>(_call, &global_limit));
     }
 
     bucket_factory & get(uint16_t buckettype) noexcept
     {
-        try
-        {
-            return *_map.at(buckettype);
-        }
-        catch (std::out_of_range &)
-        {
-            return *_map.emplace(buckettype, std::make_shared<bucket_factory>(_call, &global_limit)).first->second;
-        }
+        auto bkt = _map.find(buckettype);
+        if (bkt != _map.end())
+            return *bkt->second.get();
+
+        return *_map.emplace(buckettype, std::make_unique<bucket_factory>(_call, &global_limit)).first->second.get();
     }
 
     void process_queue()
@@ -179,9 +227,9 @@ public:
         static std::mutex mtx;
         std::scoped_lock<std::mutex> lock(mtx);
 
-        for (auto & [k,v] : _map)
+        for (auto & kv : _map)
         {
-            v->run_one();
+            kv.second->run_one();
         }
     }
 
@@ -194,7 +242,7 @@ public:
 
 
 private:
-    std::unordered_map<uint16_t, std::shared_ptr<bucket_factory>> _map;
+    std::unordered_map<uint16_t, std::unique_ptr<bucket_factory>> _map;
     rest_call _call;
 
 

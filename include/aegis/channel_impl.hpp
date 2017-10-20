@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "config.hpp"
 
 namespace aegis
 {

@@ -35,6 +35,9 @@
 namespace aegis
 {
 
+class aegis_guild;
+class aegis_shard;
+
 class aegis_member
 {
 public:

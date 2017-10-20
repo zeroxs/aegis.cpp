@@ -27,11 +27,15 @@
 
 
 #include "config.hpp"
+#include "common.hpp"
 #include "aegis.hpp"
-#include <string>
-#include <chrono>
-#include <sstream>
+#include "shard.hpp"
+#include "utility.hpp"
 
+
+#include <websocketpp/config/asio_client.hpp>
+#include <websocketpp/common/connection_hdl.hpp>
+#include <websocketpp/client.hpp>
 
 namespace aegis
 {
@@ -55,7 +59,7 @@ inline bool aegis_shard::conn_test(std::function<void()> func)
     {
         connection_state = Reconnecting;
         do_reset();
-        reconnect_timer = state_o->core->websocket_o.set_timer(10000, [this](const asio::error_code & ec)
+        reconnect_timer = state_o->core->websocket_o.set_timer(6000, [this](const asio::error_code & ec)
         {
             if (ec == asio::error::operation_aborted)
                 return;

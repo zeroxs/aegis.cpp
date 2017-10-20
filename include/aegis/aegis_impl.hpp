@@ -239,7 +239,7 @@ inline std::optional<rest_reply> aegis_core::call(std::string_view path, std::st
         if (auto test = hresponse.get_header("Retry-After"); test.size() > 0)
             retry = std::stoul(test);
 
-        log->info("status: {} limit: {} remaining: {} reset: {}", hresponse.get_status_code(), limit, remaining, reset);
+        log->debug("status: {} limit: {} remaining: {} reset: {}", hresponse.get_status_code(), limit, remaining, reset);
 
         bool global = !(hresponse.get_header("X-RateLimit-Global").size() == 0);
 
@@ -774,7 +774,7 @@ inline void aegis_core::onMessage(websocketpp::connection_hdl hdl, message_ptr m
                         }
                     }
                 };
-                log->debug("Shard#{}: {}", shard->shardid, obj.dump());
+                log->trace("Shard#{}: {}", shard->shardid, obj.dump());
                 shard->conn_test([obj, shard]()
                 {
                     shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
@@ -863,7 +863,7 @@ inline void aegis_core::onConnect(websocketpp::connection_hdl hdl, aegis_shard *
                 }
             };
         }
-        log->debug("Shard#{}: {}", shard->shardid, obj.dump());
+        log->trace("Shard#{}: {}", shard->shardid, obj.dump());
         shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
     }
     else
@@ -887,7 +887,7 @@ inline void aegis_core::onConnect(websocketpp::connection_hdl hdl, aegis_shard *
                 }
             }
         };
-        log->debug("Shard#{}: {}", shard->shardid, obj.dump());
+        log->trace("Shard#{}: {}", shard->shardid, obj.dump());
         shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
     }
 }

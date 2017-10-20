@@ -148,6 +148,9 @@
     <ClInclude Include="..\src\example.hpp" />
     <ClInclude Include="..\src\example_impl.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\CMakeLists.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

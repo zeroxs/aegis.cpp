@@ -70,6 +70,7 @@ public:
         , mfa_enabled(false)
         , discriminator(0)
     {
+        spdlog::set_async_mode(32);
         log = spdlog::stdout_color_mt("aegis");
         log->set_level(spdlog::level::level_enum::trace);
         ratelimit_o.add(bucket_type::GUILD);

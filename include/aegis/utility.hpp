@@ -59,6 +59,13 @@ namespace aegis
 {
 using namespace std::string_view_literals;
 
+template <typename F, typename... Ts>
+inline auto async(F&& f, Ts&&... params)
+{
+    return std::async(std::launch::async, std::forward<F>(f),
+                      std::forward<Ts>(params)...);
+}
+
 namespace utility
 {
 

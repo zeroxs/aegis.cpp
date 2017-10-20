@@ -99,6 +99,7 @@ inline std::error_code make_error_code(error::value e)
 
 namespace aegis
 {
+
 class exception : public std::exception
 {
 public:
@@ -129,4 +130,36 @@ public:
     const std::string m_msg;
     std::error_code m_code;
 };
+
+class no_permission : public std::exception
+{
+public:
+    no_permission(std::string const & msg, std::error_code ec = make_error_code(error::general))
+        : m_msg(msg.empty() ? ec.message() : msg)
+        , m_code(ec)
+    {
+    }
+
+    explicit no_permission(std::error_code ec)
+        : m_msg(ec.message())
+        , m_code(ec)
+    {
+    }
+
+    ~no_permission() throw() {}
+
+    virtual char const * what() const throw()
+    {
+        return m_msg.c_str();
+    }
+
+    std::error_code code() const throw()
+    {
+        return m_code;
+    }
+
+    const std::string m_msg;
+    std::error_code m_code;
+};
+
 }
