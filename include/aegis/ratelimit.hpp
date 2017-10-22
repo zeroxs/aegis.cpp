@@ -168,15 +168,16 @@ public:
 
     void push(int64_t id, std::string path, std::string content, std::string method, std::function<void(rest_reply)> callback = {})
     {
-        try
-        {
-            auto & bkt = _buckets.at(id);
-            bkt->_queue.emplace(path, content, method, callback);
-        }
-        catch (std::out_of_range &)
+
+        auto bkt = _buckets.find(id);
+        if (bkt == _buckets.end())
         {
             auto & bkt = _buckets.emplace(id, std::make_unique<bucket>()).first->second;
             bkt->_queue.emplace(path, content, method, callback);
+        }
+        else
+        {
+            bkt->second->_queue.emplace(path, content, method, callback);
         }
     }
 
