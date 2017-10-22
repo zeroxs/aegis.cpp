@@ -76,6 +76,12 @@ public:
         ratelimit_o.add(bucket_type::GUILD);
         ratelimit_o.add(bucket_type::CHANNEL);
         ratelimit_o.add(bucket_type::EMOJI);
+
+        selfbot = false;
+        owner_id = 0;
+        control_channel = 0;
+        force_shard_count = 0;
+        debugmode = false;
     }
 
     ~aegis()
@@ -170,7 +176,7 @@ public:
 
         std::optional<rest_reply> res;
 
-        if constexpr (!check_setting<settings>::selfbot::test())
+        if (!selfbot)
             res = get("/gateway/bot");
         else
             res = get("/gateway");
@@ -192,11 +198,11 @@ public:
             }
         }
 
-        if constexpr (!check_setting<settings>::selfbot::test())
+        if (!selfbot)
         {
-            if constexpr (check_setting<settings>::force_shard_count::test())
+            if (force_shard_count)
             {
-                shard_max_count = settings::force_shard_count;
+                shard_max_count = force_shard_count;
                 log->info("Forcing Shard count by config: {}", shard_max_count);
             }
             else
@@ -481,6 +487,11 @@ public:
     int16_t discriminator;
     std::string m_mention;
     state_c state_o;
+    bool selfbot;
+    int64_t owner_id;
+    int64_t control_channel;
+    int16_t force_shard_count;
+    bool debugmode;
 
     member * self() const noexcept
     {

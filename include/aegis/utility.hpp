@@ -69,37 +69,6 @@ inline auto async(F&& f, Ts&&... params)
 namespace utility
 {
 
-
-#define OPTION(x)\
-template <typename C> static std::true_type test_##x(checker<C, decltype(&C::x)> *);\
-template <typename C> static std::false_type test_##x(...);\
-template <typename C> static constexpr bool getvalue_##x(checker<C, decltype(&C::x)> *) { return C::x; }\
-template <typename C> static constexpr bool getvalue_##x(...) { return false; }\
-\
-template <typename C>\
-static constexpr std::pair<const decltype(test_##x<C>(nullptr)), const bool> get_##x() { return { decltype(test_##x<T>(nullptr))(), getvalue_##x<T>(nullptr) }; }\
-\
-struct x\
-{\
-    typedef decltype(test_##x<T>(nullptr)) x##_t;\
-    static constexpr bool test() { auto c = get_##x<T>(); return (std::get<0>(c) && std::get<1>(c)); }\
-};
-
-
-template <typename T>
-struct check_setting
-{
-    template <class, class> class checker;
-
-    OPTION(owner_id);
-    OPTION(selfbot);
-    OPTION(force_shard_count);
-    OPTION(debugmode);
-    OPTION(disable_cache);
-};
-
-
-
 namespace platform
 {
 

@@ -24,14 +24,6 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-struct settings
-{
-    static constexpr bool selfbot = false;
-    static constexpr long long int owner_id = 171000788183678976;
-    static constexpr int force_shard_count = 0;
-    static constexpr bool debugmode = true;
-};
-
 #include "example.hpp"
 
 
@@ -47,6 +39,11 @@ int main(int argc, char * argv[])
     {
         // Create bot with token
         aegis bot("TOKEN");
+        bot.owner_id = 171000788183678976;
+        bot.control_channel = 288707540844412928;
+        bot.force_shard_count = 0;
+        bot.debugmode = false;
+        bot.selfbot = false;
         
         // Bot will automatically set this presence when it connects
         bot.self_presence = "with my friends";

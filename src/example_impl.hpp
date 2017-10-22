@@ -38,8 +38,11 @@ inline bool example::TypingStart(typing_start obj)
 
 inline bool example::MessageCreateDM(message_create obj)
 {
-
     std::string username;
+
+    if (obj._member && obj._member->member_id == obj.bot->self()->member_id)
+        return true;
+
     auto _member = obj._member;
     if (_member != nullptr)
         username = obj._member->name;
@@ -51,6 +54,13 @@ inline bool example::MessageCreateDM(message_create obj)
     auto toks = split(content, ' ');
     if (toks.size() == 0)
         return true;
+
+    if (obj.bot->control_channel)
+    {
+        auto ctrl_channel = obj.bot->get_channel(obj.bot->control_channel);
+        if (ctrl_channel)
+            ctrl_channel->create_message(fmt::format("User: {}\nMessage: {}", username, content));
+    }
 
     if (toks[0] == "help")
         _channel->create_message("This bot is in development. If you'd like more information on it, please join the discord server https://discord.gg/Kv7aP5K");
@@ -91,6 +101,19 @@ inline bool example::MessageCreate(message_create obj)
         return true;
 
     // basic stats of the example bot
+
+    if (toks[0] == obj.bot->m_mention)
+    {
+        //user is mentioning me
+        if (toks.size() < 1)
+            return true;
+        if (toks[1] == "help")
+        {
+            _channel->create_message("This bot is in development. If you'd like more information on it, please join the discord server https://discord.gg/Kv7aP5K");
+        }
+        return true;
+    }
+
     if (toks[0] == "?info")
     {
         _channel->create_message_embed({}, make_info_obj(obj._shard, obj.bot));
@@ -108,11 +131,12 @@ inline bool example::MessageCreate(message_create obj)
     }
     else if (toks[0] == "?exit")
     {
-        json t =
+        if (_member->member_id != obj.bot->owner_id)
         {
-            { "content", "exiting..." }
-        };
-        obj.bot->get_channel(channel_id)->create_message(t.dump());
+            _channel->create_message("No perms `exit`");
+            return true;
+        }
+        obj.bot->get_channel(channel_id)->create_message("exiting...");
         obj.bot->set_state(Shutdown);
         obj.bot->get_websocket().close(obj._shard->connection, 1001, "");
         obj.bot->stop_work();
@@ -142,21 +166,26 @@ inline bool example::MessageCreate(message_create obj)
     {
         if (!_guild.create_text_channel(toks[1], 0, false, {}))
         {
-            _channel->create_message("No perms CREATE_CHANNEL");
+            _channel->create_message("No perms `CREATE_CHANNEL`");
         }
     }
     else if (toks[0] == "?deletechannel")
     {
-        if (_member->member_id == settings::owner_id)
+        if (_member->member_id == obj.bot->owner_id)
         {
             if (!_channel->delete_channel())
             {
-                _channel->create_message("No perms DELETE_CHANNEL");
+                _channel->create_message("No perms `DELETE_CHANNEL`");
             }
         }
     }
     else if (toks[0] == "?serverlist")
     {
+        if (_member->member_id != obj.bot->owner_id)
+        {
+            _channel->create_message("No perms `serverlist`");
+            return true;
+        }
         std::stringstream w;
         for (auto & g : obj.bot->guilds)
         {
