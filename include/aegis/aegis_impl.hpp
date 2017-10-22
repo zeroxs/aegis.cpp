@@ -95,11 +95,9 @@ inline void aegis::channel_create(json & obj, shard * shard)
     {
         //log->debug("Shard#{} : Channel[{}] created for DirectMessage", _shard.m_shardid, channel_id);
         if (!obj["name"].is_null()) _channel->name = obj["name"].get<std::string>();
-        _channel->m_position = obj["position"];
         _channel->m_type = static_cast<channel::ChannelType>(obj["type"].get<int>());// 0 = text, 2 = voice
+        _channel->guild_id = 0;
 
-        //not a voice channel, so has a topic field and last message id
-        if (!obj["topic"].is_null()) _channel->m_topic = obj["topic"].get<std::string>();
         if (!obj["last_message_id"].is_null()) _channel->m_last_message_id = obj["last_message_id"];
 
         //owner_id DirectMessage creator group DirectMessage
@@ -108,7 +106,7 @@ inline void aegis::channel_create(json & obj, shard * shard)
     }
     catch (std::exception&e)
     {
-        log->error("Shard#{} : Error processing channel[{}] of guild[{}] {}", shard->shardid, channel_id, _channel->guild_id, e.what());
+        log->error("Shard#{} : Error processing DM channel[{}] {}", shard->shardid, channel_id, e.what());
     }
 }
 
@@ -138,14 +136,14 @@ inline void aegis::keepAlive(const asio::error_code & ec, const int ms, shard * 
                 return;
             }
 
-
-            json obj;
-            obj["d"] = shard->sequence;
-            obj["op"] = 1;
-
-            log->debug("Shard#{}: {}", shard->shardid, obj.dump());
             shard->conn_test([&]()
             {
+                json obj;
+                obj["d"] = shard->sequence;
+                obj["op"] = 1;
+
+                log->debug("Shard#{}: {}", shard->shardid, obj.dump());
+
                 shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
                 shard->lastheartbeat = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
                 shard->keepalivetimer = websocket_o.set_timer(ms, std::bind(&aegis::keepAlive, this, std::placeholders::_1, ms, shard));
@@ -366,9 +364,18 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                     obj.bot = this;
                     obj._shard = _shard;
 
-                    if (i_message_create)
-                        if (!i_message_create(obj))
-                            return;
+                    if (obj._channel->guild_id == 0)//DM
+                    {
+                        if (i_message_create_dm)
+                            if (!i_message_create_dm(obj))
+                                return;
+                    }
+                    else
+                    {
+                        if (i_message_create)
+                            if (!i_message_create(obj))
+                                return;
+                    }
                     if constexpr (check_setting<settings>::disable_cache::test())
                         return;
                     return;
@@ -894,6 +901,8 @@ inline void aegis::onConnect(websocketpp::connection_hdl hdl, shard * _shard)
 inline void aegis::onClose(websocketpp::connection_hdl hdl, shard * shard)
 {
     log->info("Connection closed");
+    if (bot_state == Shutdown)
+        return;
     shard->connection_state = Reconnecting;
     shard->do_reset();
     shard->reconnect_timer = websocket_o.set_timer(10000, [shard, this](const asio::error_code & ec)

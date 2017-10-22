@@ -29,7 +29,6 @@ struct settings
     static constexpr bool selfbot = false;
     static constexpr long long int owner_id = 171000788183678976;
     static constexpr int force_shard_count = 0;
-    static constexpr bool disable_cache = false;
     static constexpr bool debugmode = true;
 };
 

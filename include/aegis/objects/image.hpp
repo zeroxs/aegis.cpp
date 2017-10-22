@@ -46,21 +46,21 @@ struct image
 
 void from_json(const nlohmann::json& j, image& m)
 {
-    m.url = j["url"].get<std::string>();
-    m.proxy_url = j["proxy_url"].get<std::string>();
-    m.height = j["height"];
-    m.width = j["width"];
+    if (j.count("url") && !j["url"].is_null())
+        m.url = j["url"].get<std::string>();
+    if (j.count("proxy_url") && !j["proxy_url"].is_null())
+        m.proxy_url = j["proxy_url"].get<std::string>();
+    if (j.count("height") && !j["height"].is_null())
+        m.height = j["height"];
+    if (j.count("width") && !j["width"].is_null())
+        m.width = j["width"];
 }
 void to_json(nlohmann::json& j, const image& m)
 {
-    if (j.count("url") && !j["url"].is_null())
-        j["url"] = m.url;
-    if (j.count("proxy_url") && !j["proxy_url"].is_null())
-        j["proxy_url"] = m.proxy_url;
-    if (j.count("height") && !j["height"].is_null())
-        j["height"] = m.height;
-    if (j.count("width") && !j["width"].is_null())
-        j["width"] = m.width;
+    j["url"] = m.url;
+    j["proxy_url"] = m.proxy_url;
+    j["height"] = m.height;
+    j["width"] = m.width;
 }
 
 }

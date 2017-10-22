@@ -359,6 +359,7 @@ public:
     /// User callbacks
     cb_typing_start i_typing_start;
     cb_message_create i_message_create;
+    cb_message_create i_message_create_dm;
     c_inject i_message_update;
     c_inject i_message_delete;
     c_inject i_message_delete_bulk;

@@ -55,8 +55,10 @@ void from_json(const nlohmann::json& j, attachment& m)
     m.size = j["size"];
     m.url = j["url"].get<std::string>();
     m.proxy_url = j["proxy_url"].get<std::string>();
-    m.height = j["height"];
-    m.width = j["width"];
+    if (j.count("height") && !j["height"].is_null())
+        m.height = j["height"];
+    if (j.count("width") && !j["width"].is_null())
+        m.width = j["width"];
 }
 void to_json(nlohmann::json& j, const attachment& m)
 {

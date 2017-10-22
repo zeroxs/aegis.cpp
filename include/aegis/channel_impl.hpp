@@ -102,8 +102,9 @@ inline void channel::load_with_guild(guild & _guild, json & obj, shard * _shard)
 
 inline bool channel::create_message(std::string content, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canSendMessages())
-        return false;
+    if (_guild != nullptr)//probably a DM
+        if (!permission(_guild->base_permissions(_guild->self())).canSendMessages())
+            return false;
 
     json obj;
     obj["content"] = content;
@@ -113,8 +114,9 @@ inline bool channel::create_message(std::string content, std::function<void(rest
 
 inline bool channel::create_message_embed(std::string content, json embed, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canSendMessages())
-        return false;
+    if (_guild != nullptr)//probably a DM
+        if (!permission(_guild->base_permissions(_guild->self())).canSendMessages())
+            return false;
 
     json obj;
     if (!content.empty())
