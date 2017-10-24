@@ -48,7 +48,7 @@ inline void guild::load(json & obj, shard * shard) noexcept
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
     snowflake g_id = obj["id"];
 
-    aegis & bot = *state_o->core;
+    aegis & bot = *state->core;
     try
     {
         json voice_states;
@@ -146,12 +146,12 @@ inline void guild::load(json & obj, shard * shard) noexcept
         }*/
 
 
-        log->info("Shard#{} : Guild created: {} [{}]", shard->shardid, g_id, name);
+        log->info("Shard#{} : Guild created: {} [{}]", shard->get_id(), g_id, name);
 
     }
     catch (std::exception&e)
     {
-        log->error("Shard#{} : Error processing guild[{}] {}", shard->shardid, g_id, (std::string)e.what());
+        log->error("Shard#{} : Error processing guild[{}] {}", shard->get_id(), g_id, (std::string)e.what());
     }
 }
 
@@ -160,10 +160,10 @@ inline channel * guild::get_channel_create(snowflake id, shard * shard) noexcept
     auto _channel = get_channel(id);
     if (_channel == nullptr)
     {
-        auto g = std::make_shared<channel>(id, guild_id, state_o->core->ratelimit().get(rest_limits::bucket_type::CHANNEL), state_o->core->ratelimit().get(rest_limits::bucket_type::EMOJI));
+        auto g = std::make_shared<channel>(id, guild_id, state->core->ratelimit().get(rest_limits::bucket_type::CHANNEL), state->core->ratelimit().get(rest_limits::bucket_type::EMOJI));
         auto ptr = g.get();
         channels.emplace(id, g);
-        state_o->core->channels.emplace(id, g);
+        state->core->channels.emplace(id, g);
         g->_guild = this;
         ptr->channel_id = id;
         return ptr;
@@ -188,7 +188,7 @@ inline void guild::load_presence(json & obj) noexcept
     auto _member = get_member(user["id"]);
     if (_member == nullptr)
     {
-        //state_o->core->log->error("User doesn't exist {}", user["id"].get<std::string>());
+        //status->core->log->error("User doesn't exist {}", user["id"].get<std::string>());
         return;
     }
     _member->status = status;
@@ -272,14 +272,14 @@ inline int64_t guild::compute_overwrites(int64_t _base_permissions, member & _me
         return ~0;
 
     int64_t permissions = _base_permissions;
-    if (_channel.m_overrides.count(guild_id))
+    if (_channel.overrides.count(guild_id))
     {
-        auto & overwrite_everyone = _channel.m_overrides[guild_id];
+        auto & overwrite_everyone = _channel.overrides[guild_id];
         permissions &= ~overwrite_everyone.deny;
         permissions |= overwrite_everyone.allow;
     }
 
-    auto & overwrites = _channel.m_overrides;
+    auto & overwrites = _channel.overrides;
     int64_t allow = 0;
     int64_t deny = 0;
     auto g = _member.get_guild_info(guild_id);
@@ -407,7 +407,7 @@ inline bool guild::delete_guild(std::function<void(rest_reply)> callback)
     return true;
 }
 
-inline bool guild::create_text_channel(std::string name, int64_t parent_id, bool nsfw, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
+inline bool guild::create_text_channel(std::string name, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
 {
     //requires MANAGE_CHANNELS
     if (!permission(base_permissions(self())).canManageChannels())
@@ -419,14 +419,14 @@ inline bool guild::create_text_channel(std::string name, int64_t parent_id, bool
     obj["permission_overwrites"] = json::array();
     for (auto & p_ow : permission_overwrites)
     {
-        obj["permission_overwrites"].push_back(p_ow.make());
+        obj["permission_overwrites"].push_back(p_ow);
     }
 
     ratelimit.push(guild_id, fmt::format("/guilds/{}/channels", guild_id), obj.dump(), "POST", callback);
     return true;
 }
 
-inline bool guild::create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
+inline bool guild::create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageChannels())
         return false;
@@ -437,14 +437,14 @@ inline bool guild::create_voice_channel(std::string name, int32_t bitrate, int32
     obj["permission_overwrites"] = json::array();
     for (auto & p_ow : permission_overwrites)
     {
-        obj["permission_overwrites"].push_back(p_ow.make());
+        obj["permission_overwrites"].push_back(p_ow);
     }
 
     ratelimit.push(guild_id, fmt::format("/guilds/{}/channels", guild_id), obj.dump(), "POST", callback);
     return true;
 }
 
-inline bool guild::create_category_channel(std::string name, int64_t parent_id, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
+inline bool guild::create_category_channel(std::string name, int64_t parent_id, std::vector<permission_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageChannels())
         return false;
@@ -455,7 +455,7 @@ inline bool guild::create_category_channel(std::string name, int64_t parent_id, 
     obj["permission_overwrites"] = json::array();
     for (auto & p_ow : permission_overwrites)
     {
-        obj["permission_overwrites"].push_back(p_ow.make());
+        obj["permission_overwrites"].push_back(p_ow);
     }
 
     ratelimit.push(guild_id, fmt::format("/guilds/{}/channels", guild_id), obj.dump(), "POST", callback);

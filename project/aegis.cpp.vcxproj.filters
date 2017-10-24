@@ -30,9 +30,6 @@
     <ClInclude Include="..\include\aegis.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\example_impl.hpp">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\aegis\utility.hpp">
       <Filter>Header Files\aegis</Filter>
     </ClInclude>
@@ -131,6 +128,12 @@
     </ClInclude>
     <ClInclude Include="..\include\aegis\shard_impl.hpp">
       <Filter>Header Files\aegis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\example_impl.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\permission_overwrite.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

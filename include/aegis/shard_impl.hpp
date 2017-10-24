@@ -59,15 +59,15 @@ inline bool shard::conn_test(std::function<void()> func)
     {
         connection_state = Reconnecting;
         do_reset();
-        reconnect_timer = state_o->core->websocket_o.set_timer(6000, [this](const asio::error_code & ec)
+        reconnect_timer = state->core->websocket_o.set_timer(6000, [this](const asio::error_code & ec)
         {
             if (ec == asio::error::operation_aborted)
                 return;
             connection_state = Connecting;
             asio::error_code wsec;
-            connection = state_o->core->websocket_o.get_connection(state_o->core->gateway_url, wsec);
-            state_o->core->setup_callbacks(this);
-            state_o->core->websocket_o.connect(connection);
+            connection = state->core->websocket_o.get_connection(state->core->gateway_url, wsec);
+            state->core->setup_callbacks(this);
+            state->core->websocket_o.connect(connection);
         });
         return false;
     }

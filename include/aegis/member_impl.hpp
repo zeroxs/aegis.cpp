@@ -81,7 +81,7 @@ inline void member::load(guild & _guild, json & obj, shard * _shard)
     }
     catch (std::exception&e)
     {
-        _guild.state_o->core->log->error("Shard#{} : Error processing member[{}] of guild[{}] {}", _shard->shardid, member_id, _guild.guild_id, e.what());
+        _guild.state->core->log->error("Shard#{} : Error processing member[{}] of guild[{}] {}", _shard->get_id(), member_id, _guild.guild_id, e.what());
     }
 }
 

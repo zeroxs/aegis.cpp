@@ -52,11 +52,11 @@ inline void aegis::processReady(json & d, shard * shard)
         member_id = userdata["id"];
         username = userdata["username"].get<std::string>();
         mfa_enabled = userdata["mfa_enabled"];
-        if (m_mention.size() == 0)
+        if (mention.size() == 0)
         {
             std::stringstream ss;
             ss << "<@" << member_id << ">";
-            m_mention = ss.str();
+            mention = ss.str();
         }
 
         auto ptr = std::make_shared<member>(member_id);
@@ -66,8 +66,8 @@ inline void aegis::processReady(json & d, shard * shard)
         ptr->name = username;
         ptr->discriminator = discriminator;
         ptr->status = member::Online;
-        state_o.user.id = member_id;
-        state_o.user.name = username;
+        state.user.id = member_id;
+        state.user.name = username;
     }
 
     for (auto & guildobj : guilds)
@@ -95,10 +95,10 @@ inline void aegis::channel_create(json & obj, shard * shard)
     {
         //log->debug("Shard#{} : Channel[{}] created for DirectMessage", _shard.m_shardid, channel_id);
         if (!obj["name"].is_null()) _channel->name = obj["name"].get<std::string>();
-        _channel->m_type = static_cast<channel::ChannelType>(obj["type"].get<int>());// 0 = text, 2 = voice
+        _channel->type = static_cast<channel_type>(obj["type"].get<int>());// 0 = text, 2 = voice
         _channel->guild_id = 0;
 
-        if (!obj["last_message_id"].is_null()) _channel->m_last_message_id = obj["last_message_id"];
+        if (!obj["last_message_id"].is_null()) _channel->last_message_id = obj["last_message_id"];
 
         //owner_id DirectMessage creator group DirectMessage
         //application_id DirectMessage creator if bot group DirectMessage
@@ -110,43 +110,43 @@ inline void aegis::channel_create(json & obj, shard * shard)
     }
 }
 
-inline void aegis::keepAlive(const asio::error_code & ec, const int ms, shard * shard)
+inline void aegis::keepAlive(const asio::error_code & ec, const int ms, shard * _shard)
 {
     if (ec != asio::error::operation_aborted)
     {
         try
         {
-            if (shard->heartbeat_ack != 0 && shard->lastheartbeat > shard->heartbeat_ack)
+            if (_shard->heartbeat_ack != 0 && _shard->lastheartbeat > _shard->heartbeat_ack)
             {
                 log->error("Heartbeat ack not received. Reconnecting.");
-                websocket_o.close(shard->connection, 1001, "");
-                shard->connection_state = Reconnecting;
-                shard->do_reset();
-                shard->reconnect_timer = websocket_o.set_timer(10000, [&shard, this](const asio::error_code & ec)
+                websocket_o.close(_shard->connection, 1001, "");
+                _shard->connection_state = Reconnecting;
+                _shard->do_reset();
+                _shard->reconnect_timer = websocket_o.set_timer(10000, [_shard, this](const asio::error_code & ec)
                 {
                     if (ec == asio::error::operation_aborted)
                         return;
-                    shard->connection_state = Connecting;
+                    _shard->connection_state = Connecting;
                     asio::error_code wsec;
-                    shard->connection = websocket_o.get_connection(gateway_url, wsec);
-                    setup_callbacks(shard);
-                    websocket_o.connect(shard->connection);
+                    _shard->connection = websocket_o.get_connection(gateway_url, wsec);
+                    setup_callbacks(_shard);
+                    websocket_o.connect(_shard->connection);
                 });
 
                 return;
             }
 
-            shard->conn_test([&]()
+            _shard->conn_test([&]()
             {
                 json obj;
-                obj["d"] = shard->sequence;
+                obj["d"] = _shard->sequence;
                 obj["op"] = 1;
 
-                log->debug("Shard#{}: {}", shard->shardid, obj.dump());
+                log->debug("Shard#{}: {}", _shard->shardid, obj.dump());
 
-                shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
-                shard->lastheartbeat = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-                shard->keepalivetimer = websocket_o.set_timer(ms, std::bind(&aegis::keepAlive, this, std::placeholders::_1, ms, shard));
+                _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
+                _shard->lastheartbeat = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+                _shard->keepalivetimer = websocket_o.set_timer(ms, std::bind(&aegis::keepAlive, this, std::placeholders::_1, ms, _shard));
             });
         }
         catch (websocketpp::exception & e)
@@ -284,9 +284,9 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
 
         ///check old messages and remove
 
-        for (auto &[k, v] : _shard->debug_messages)
-            if (k < t_time - 10000)
-                _shard->debug_messages.erase(k);
+        for (auto iter = _shard->debug_messages.begin(); iter != _shard->debug_messages.end(); ++iter)
+            if (iter->first < t_time - 10)
+                _shard->debug_messages.erase(iter++);
         //////////////////////////////////////////////////////////////////////////
 
         if (!result["s"].is_null())
@@ -299,9 +299,6 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                 if (result["t"] == "PRESENCE_UPDATE")
                 {
                     _shard->counters.presence_changes++;
-
-                    if (i_presence_update)
-                        i_presence_update(result, _shard, *this);
 
                     json user = result["d"]["user"];
                     snowflake guild_id = result["d"]["guild_id"];
@@ -323,6 +320,9 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                     _member->load(*_guild, result["d"], _shard);
                     _member->status = status;
 
+
+                    if (i_presence_update)
+                        i_presence_update(result, _shard, *this);
                     return;
                 }
 
@@ -353,6 +353,10 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                     obj.msg = result["d"];
                     obj.bot = this;
                     obj._shard = _shard;
+
+                    if (obj._channel == nullptr)
+                        //catch this
+                        return;
 
                     if (obj._channel->guild_id == 0)//DM
                     {
@@ -812,22 +816,22 @@ inline void aegis::onConnect(websocketpp::connection_hdl hdl, shard * _shard)
     }
 }
 
-inline void aegis::onClose(websocketpp::connection_hdl hdl, shard * shard)
+inline void aegis::onClose(websocketpp::connection_hdl hdl, shard * _shard)
 {
     log->info("Connection closed");
-    if (bot_state == Shutdown)
+    if (status == Shutdown)
         return;
-    shard->connection_state = Reconnecting;
-    shard->do_reset();
-    shard->reconnect_timer = websocket_o.set_timer(10000, [shard, this](const asio::error_code & ec)
+    _shard->connection_state = Reconnecting;
+    _shard->do_reset();
+    _shard->reconnect_timer = websocket_o.set_timer(10000, [_shard, this](const asio::error_code & ec)
     {
         if (ec == asio::error::operation_aborted)
             return;
-        shard->connection_state = Connecting;
+        _shard->connection_state = Connecting;
         asio::error_code wsec;
-        shard->connection = websocket_o.get_connection(gateway_url, wsec);
-        setup_callbacks(shard);
-        websocket_o.connect(shard->connection);
+        _shard->connection = websocket_o.get_connection(gateway_url, wsec);
+        setup_callbacks(_shard);
+        websocket_o.connect(_shard->connection);
 
     });
 }
@@ -835,7 +839,7 @@ inline void aegis::onClose(websocketpp::connection_hdl hdl, shard * shard)
 inline void aegis::rest_thread()
 {
     using namespace std::chrono_literals;
-    while (bot_state != Shutdown)
+    while (status != Shutdown)
     {
         try
         {

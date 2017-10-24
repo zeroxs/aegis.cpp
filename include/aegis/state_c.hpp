@@ -34,7 +34,7 @@ namespace aegiscpp
 
 class aegis;
 
-struct state_c
+struct bot_state
 {
     struct user_c
     {

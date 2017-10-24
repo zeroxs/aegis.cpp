@@ -49,23 +49,29 @@ enum message_type
     GuildMemberJoin = 7
 };
 
-struct perm_overwrite
+enum channel_type
 {
-    enum OverwriteType
-    {
-        User,
-        Role
-    };
+    Text = 0,
+    DirectMessage = 1,
+    Voice = 2,
+    GroupDirectMessage = 3,
+    Category = 4
+};
 
-    snowflake id;
-    //either "role" or "member"
-    OverwriteType type;
-    int64_t allow;
-    int64_t deny;
-    nlohmann::json make()
-    {
-        return { { "id", id }, { "type", type }, { "allow", allow }, { "deny", deny } };
-    }
+enum shard_status
+{
+    Uninitialized = 0,
+    Ready = 1,
+    Connecting = 2,
+    Online = 3,
+    Reconnecting = 4,
+    Shutdown = 5
+};
+
+enum overwrite_type
+{
+    User,
+    Role
 };
 
 struct rest_reply

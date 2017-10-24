@@ -26,7 +26,8 @@
 #pragma once
 
 
-#include "aegis/config.hpp"
+#include "config.hpp"
+#include "objects/permission_overwrite.hpp"
 
 
 namespace aegiscpp
@@ -52,15 +53,6 @@ public:
 
     }
 
-    enum ChannelType
-    {
-        Text = 0,
-        DirectMessage = 1,
-        Voice = 2,
-        GroupDirectMessage = 3,
-        Category = 4
-    };
-
     snowflake channel_id;
     snowflake guild_id;
     bucket_factory & ratelimit;
@@ -69,16 +61,16 @@ public:
 
     guild * _guild;
 
-    snowflake m_last_message_id = 0;
+    snowflake last_message_id = 0;
     std::string name;
-    std::string m_topic;
-    uint32_t m_position = 0;
-    ChannelType m_type = ChannelType::Text;
+    std::string topic;
+    uint32_t position = 0;
+    channel_type type = channel_type::Text;
 
-    uint16_t m_bitrate = 0;
-    uint16_t m_user_limit = 0;
+    uint16_t bitrate = 0;
+    uint16_t user_limit = 0;
 
-    std::unordered_map<int64_t, perm_overwrite> m_overrides;
+    std::unordered_map<int64_t, permission_overwrite> overrides;
 
     guild & get_guild();
 
@@ -99,7 +91,7 @@ public:
 
     bool modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
                         std::optional<bool> nsfw, std::optional<int> bitrate, std::optional<int> user_limit,
-                        std::optional<std::vector<perm_overwrite>> permission_overwrites, std::optional<snowflake> parent_id, std::function<void(rest_reply)> callback = nullptr);
+                        std::optional<std::vector<permission_overwrite>> permission_overwrites, std::optional<snowflake> parent_id, std::function<void(rest_reply)> callback = nullptr);
 
     bool delete_channel(std::function<void(rest_reply)> callback = nullptr);
 

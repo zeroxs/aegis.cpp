@@ -64,6 +64,19 @@ inline bool example::MessageCreateDM(message_create obj)
 
     if (toks[0] == "help")
         _channel->create_message("This bot is in development. If you'd like more information on it, please join the discord server https://discord.gg/Kv7aP5K");
+
+    if (toks[0] == obj.bot->mention)
+    {
+        //user is mentioning me
+        if (toks.size() < 1)
+            return true;
+        if (toks[1] == "help")
+        {
+            _channel->create_message("This bot is in development. If you'd like more information on it, please join the discord server https://discord.gg/Kv7aP5K");
+        }
+        return true;
+    }
+
     return true;
 }
 
@@ -75,21 +88,6 @@ inline bool example::MessageCreate(message_create obj)
         username = obj._member->name;
 
     auto _channel = obj._channel;
-
-    if (_channel->guild_id == 0)
-    {
-        //DM
-        std::string content = obj.msg.content;
-
-        auto toks = split(content, ' ');
-        if (toks.size() == 0)
-            return true;
-
-        if (toks[0] == "help")
-            _channel->create_message("This bot is in development. If you'd like more information on it, please join the discord server https://discord.gg/Kv7aP5K");
-        return true;
-    }
-
     auto & _guild = _channel->get_guild();
 
     snowflake channel_id = _channel->channel_id;
@@ -102,7 +100,7 @@ inline bool example::MessageCreate(message_create obj)
 
     // basic stats of the example bot
 
-    if (toks[0] == obj.bot->m_mention)
+    if (toks[0] == obj.bot->mention)
     {
         //user is mentioning me
         if (toks.size() < 1)
@@ -137,9 +135,7 @@ inline bool example::MessageCreate(message_create obj)
             return true;
         }
         obj.bot->get_channel(channel_id)->create_message("exiting...");
-        obj.bot->set_state(Shutdown);
-        obj.bot->get_websocket().close(obj._shard->connection, 1001, "");
-        obj.bot->stop_work();
+        obj.bot->shutdown();
         return true;
     }
     else if (toks[0] == "?test")
@@ -149,7 +145,7 @@ inline bool example::MessageCreate(message_create obj)
     }
     else if (toks[0] == "?shard")
     {
-        _channel->create_message(fmt::format("I am shard#[{}]", obj._shard->shardid));
+        _channel->create_message(fmt::format("I am shard#[{}]", obj._shard->get_id()));
         return true;
     }
     else if (toks[0] == "?shards")
@@ -157,7 +153,7 @@ inline bool example::MessageCreate(message_create obj)
         std::string s = "```\n";
         for (auto & shard : obj.bot->shards)
         {
-            s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages {:4} presence updates\n", obj._shard->shardid, obj._shard->counters.guilds, obj._shard->counters.channels, obj._shard->counters.members, obj._shard->counters.messages, obj._shard->counters.presence_changes);
+            s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages {:4} presence updates\n", obj._shard->get_id(), obj._shard->counters.guilds, obj._shard->counters.channels, obj._shard->counters.members, obj._shard->counters.messages, obj._shard->counters.presence_changes);
         }
         s += "```";
         _channel->create_message(s);
@@ -375,7 +371,7 @@ inline json example::make_info_obj(shard * _shard, aegis * bot)
 
     {
         for (auto & bot_ptr : bot->shards)
-            eventsseen += bot_ptr->sequence;
+            eventsseen += bot_ptr->get_sequence();
 
         for (auto &[k, v] : bot->members)
         {
@@ -389,7 +385,7 @@ inline json example::make_info_obj(shard * _shard, aegis * bot)
 
         for (auto &[k, v] : bot->channels)
         {
-            if (v->m_type == channel::ChannelType::Text)
+            if (v->type == channel_type::Text)
                 channel_text_count++;
             else
                 channel_voice_count++;
@@ -407,7 +403,7 @@ inline json example::make_info_obj(shard * _shard, aegis * bot)
 #else
     std::string build_mode = "RELEASE";
 #endif
-    std::string misc = fmt::format("I am shard {} of {} running on `{}` in `{}` mode", _shard->shardid + 1, bot->shard_max_count, utility::platform::get_platform(), build_mode);
+    std::string misc = fmt::format("I am shard {} of {} running on `{}` in `{}` mode", _shard->get_id() + 1, bot->shard_max_count, utility::platform::get_platform(), build_mode);
 
     fmt::MemoryWriter w;
     w << "[Latest bot source](https://github.com/zeroxs/aegis.cpp)\n[Official Bot Server](https://discord.gg/Kv7aP5K)\n\nMemory usage: "

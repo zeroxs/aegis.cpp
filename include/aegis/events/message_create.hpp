@@ -39,8 +39,8 @@ namespace aegiscpp
 
 class member;
 class channel;
-
-
+class shard;
+class aegis;
 
 struct message_create
 {

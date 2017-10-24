@@ -33,15 +33,6 @@ namespace aegiscpp
 using json = nlohmann::json;
 using rest_limits::bucket_factory;
 
-enum ChannelType
-{
-    Text = 0,
-    DirectMessage = 1,
-    Voice = 2,
-    GroupDirectMessage = 3,
-    Category = 4
-};
-
 inline guild & channel::get_guild()
 {
     return *_guild;
@@ -58,20 +49,20 @@ inline void channel::load_with_guild(guild & _guild, json & obj, shard * _shard)
     {
         //log->debug("Shard#{} : Channel[{}] created for guild[{}]", shard.m_shardid, channel_id, _channel.m_guild_id);
         if (!obj["name"].is_null()) _channel->name = obj["name"].get<std::string>();
-        _channel->m_position = obj["position"];
-        _channel->m_type = static_cast<channel::ChannelType>(obj["type"].get<int>());// 0 = text, 2 = voice
+        _channel->position = obj["position"];
+        _channel->type = static_cast<channel_type>(obj["type"].get<int>());// 0 = text, 2 = voice
 
                                                                                            //voice channels
         if (!obj["bitrate"].is_null())
         {
-            _channel->m_bitrate = obj["bitrate"];
-            _channel->m_user_limit = obj["user_limit"];
+            _channel->bitrate = obj["bitrate"];
+            _channel->user_limit = obj["user_limit"];
         }
         else
         {
             //not a voice channel, so has a topic field and last message id
-            if (!obj["topic"].is_null()) _channel->m_topic = obj["topic"].get<std::string>();
-            if (!obj["last_message_id"].is_null()) _channel->m_last_message_id = obj["last_message_id"];
+            if (!obj["topic"].is_null()) _channel->topic = obj["topic"].get<std::string>();
+            if (!obj["last_message_id"].is_null()) _channel->last_message_id = obj["last_message_id"];
         }
 
 
@@ -83,20 +74,20 @@ inline void channel::load_with_guild(guild & _guild, json & obj, shard * _shard)
             snowflake p_id = permission["id"];
             std::string p_type = permission["type"];
 
-            _channel->m_overrides[p_id].allow = allow;
-            _channel->m_overrides[p_id].deny = deny;
-            _channel->m_overrides[p_id].id = p_id;
+            _channel->overrides[p_id].allow = allow;
+            _channel->overrides[p_id].deny = deny;
+            _channel->overrides[p_id].id = p_id;
             if (p_type == "role")
-                _channel->m_overrides[p_id].type = perm_overwrite::Role;
+                _channel->overrides[p_id].type = overwrite_type::Role;
             else
-                _channel->m_overrides[p_id].type = perm_overwrite::User;
+                _channel->overrides[p_id].type = overwrite_type::User;
         }
 
         //_channel.update_permission_cache();
     }
     catch (std::exception&e)
     {
-        log->error("Shard#{} : Error processing channel[{}] of guild[{}] {}", _shard->shardid, channel_id, _channel->guild_id, e.what());
+        log->error("Shard#{} : Error processing channel[{}] of guild[{}] {}", _shard->get_id(), channel_id, _channel->guild_id, e.what());
     }
 }
 
@@ -170,7 +161,7 @@ inline bool channel::bulk_delete_message(snowflake message_id, std::vector<int64
 
 inline bool channel::modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
                                     std::optional<bool> nsfw, std::optional<int> bitrate, std::optional<int> user_limit,
-                                    std::optional<std::vector<perm_overwrite>> permission_overwrites, std::optional<snowflake> parent_id, std::function<void(rest_reply)> callback)
+                                    std::optional<std::vector<permission_overwrite>> permission_overwrites, std::optional<snowflake> parent_id, std::function<void(rest_reply)> callback)
 {
     if (!permission(_guild->base_permissions(_guild->self())).canManageChannels())
         return false;
@@ -197,7 +188,7 @@ inline bool channel::modify_channel(std::optional<std::string> name, std::option
         obj["permission_overwrites"] = json::array();
         for (auto & p_ow : permission_overwrites.value())
         {
-            obj["permission_overwrites"].push_back(p_ow.make());
+            obj["permission_overwrites"].push_back(p_ow);
         }
     }
     if (parent_id.has_value())//VIP only

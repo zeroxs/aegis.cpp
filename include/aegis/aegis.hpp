@@ -38,6 +38,9 @@ namespace aegiscpp
 using namespace utility;
 using namespace rest_limits;
 
+struct typing_start;
+struct message_create;
+
 class aegis
 {
 public:
@@ -63,7 +66,7 @@ public:
 
     aegis(std::string token)
         : token(token)
-        , bot_state(Uninitialized)
+        , status(Uninitialized)
         , shard_max_count(0)
         , ratelimit_o(std::bind(&aegis::call, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
         , member_id(0)
@@ -99,7 +102,7 @@ public:
     void initialize(io_service_ptr ptr, std::error_code & ec)
     {
         log->info("Initializing");
-        if (bot_state != Uninitialized)
+        if (status != Uninitialized)
         {
             log->critical("aegis::initialize() called in the wrong state");
             using error::make_error_code;
@@ -111,7 +114,7 @@ public:
         websocket_o.init_asio(ptr, ec);
         if (ec)
             throw std::system_error(ec);
-        bot_state = Ready;
+        status = Ready;
         ec.clear();
     }
 
@@ -151,7 +154,7 @@ public:
         // Create our websocket connection
         websocketcreate(ec);
         if (ec) { log->error("Websocket fail: {}", ec.message()); stop_work();  return; }
-        state_o.core = this;
+        state.core = this;
         // Connect the websocket[s]
         starttime = std::chrono::steady_clock::now();
         std::thread make_connections([&]
@@ -161,13 +164,26 @@ public:
         });
         // Run the bot
         run();
-    } 
+
+        thd->join();
+    }
+
+    void shutdown()
+    {
+        set_state(Shutdown);
+        for (auto & _shard : shards)
+        {
+            _shard->connection_state = Shutdown;
+            get_websocket().close(_shard->connection, 1001, "");
+        }
+        stop_work();
+    }
 
     void websocketcreate(std::error_code & ec)
     {
         log->info("Creating websocket");
         using error::make_error_code;
-        if (bot_state != Ready)
+        if (status != Ready)
         {
             log->critical("aegis::websocketcreate() called in the wrong state");
             ec = make_error_code(error::invalid_state);
@@ -356,7 +372,7 @@ public:
     /// Yield execution
     void yield() const
     {
-        while (bot_state != Shutdown)
+        while (status != Shutdown)
         {
             std::this_thread::yield();
         }
@@ -396,8 +412,8 @@ public:
 
     ratelimiter & ratelimit() { return ratelimit_o; }
     websocket & get_websocket() { return websocket_o; }
-    state get_state() const { return bot_state; }
-    void set_state(state s) { bot_state = s; }
+    shard_status get_state() const { return status; }
+    void set_state(shard_status s) { status = s; }
 
     uint32_t shard_max_count;
 
@@ -407,6 +423,14 @@ public:
     std::unordered_map<int64_t, std::shared_ptr<member>> members;
     std::unordered_map<int64_t, std::shared_ptr<channel>> channels;
     std::unordered_map<int64_t, std::unique_ptr<guild>> guilds;
+
+    json self_presence;
+    int64_t owner_id;
+    int64_t control_channel;
+    int16_t force_shard_count;
+    bool selfbot;
+    bool debugmode;
+    std::string mention;
 
     std::shared_ptr<member> get_member(snowflake id) const noexcept
     {
@@ -467,7 +491,7 @@ public:
         auto _guild = get_guild(id);
         if (_guild == nullptr)
         {
-            auto g = std::make_unique<guild>(shard->shardid, &state_o, id, ratelimit().get(rest_limits::bucket_type::GUILD));
+            auto g = std::make_unique<guild>(shard->shardid, &state, id, ratelimit().get(rest_limits::bucket_type::GUILD));
             auto ptr = g.get();
             guilds.emplace(id, std::move(g));
             ptr->guild_id = id;
@@ -479,23 +503,9 @@ public:
     //called by CHANNEL_CREATE (DirectMessage)
     void channel_create(json & obj, shard * shard);
 
-    json self_presence;
-
-    snowflake member_id;
-    std::string username;
-    bool mfa_enabled;
-    int16_t discriminator;
-    std::string m_mention;
-    state_c state_o;
-    bool selfbot;
-    int64_t owner_id;
-    int64_t control_channel;
-    int16_t force_shard_count;
-    bool debugmode;
-
     member * self() const noexcept
     {
-        auto self_id = state_o.user.id;
+        auto self_id = state.user.id;
         auto it = members.find(self_id);
         if (it == members.end())
             return nullptr;
@@ -542,11 +552,18 @@ public:
         return ss.str();
     }
 
-
 private:
     friend class guild;
     friend class channel;
     friend class shard;
+
+
+
+    snowflake member_id;
+    std::string username;
+    bool mfa_enabled;
+    int16_t discriminator;
+
 
     //std::unordered_map<std::string, c_inject> m_cbmap;
 
@@ -558,16 +575,18 @@ private:
     // Websocket++ object
     websocket websocket_o;
 
+    bot_state state;
+
     // Bot's token
     std::string token;
 
-    state bot_state;
+    shard_status status;
 
     ratelimiter ratelimit_o;
 
-    void onMessage(websocketpp::connection_hdl hdl, message_ptr msg, shard * shard);
-    void onConnect(websocketpp::connection_hdl hdl, shard * shard);
-    void onClose(websocketpp::connection_hdl hdl, shard * shard);
+    void onMessage(websocketpp::connection_hdl hdl, message_ptr msg, shard * _shard);
+    void onConnect(websocketpp::connection_hdl hdl, shard * _shard);
+    void onClose(websocketpp::connection_hdl hdl, shard * _shard);
     void processReady(json & d, shard * shard);
     void keepAlive(const asio::error_code& error, const int ms, shard * shard);
 

@@ -46,23 +46,21 @@ class channel;
 
 struct message
 {
-    using json = nlohmann::json;
-
     snowflake message_id;
     std::string content;
     std::string timestamp;
     std::string edited_timestamp;
-    bool tts;
-    bool mention_everyone;
+    bool tts = false;
+    bool mention_everyone = false;
     std::vector<snowflake> mentions;
     std::vector<snowflake> mention_roles;
     std::vector<attachment> attachments;
     std::vector<embed> embeds;
-    bool pinned;
+    bool pinned = false;
     std::vector<reaction> reactions;
     snowflake nonce;
     std::string webhook_id;
-    message_type type;
+    message_type type = Default;
 };
 
 void from_json(const nlohmann::json& j, message& m)

@@ -31,9 +31,6 @@
 #include "aegis/utility.hpp"
 #include "aegis/state_c.hpp"
 
-#include "aegis/events/typing_start.hpp"
-#include "aegis/events/message_create.hpp"
-
 #include "aegis/snowflake.hpp"
 #include "aegis/role.hpp"
 #include "aegis/structs.hpp"
@@ -42,12 +39,18 @@
 
 #include "aegis/member.hpp"
 #include "aegis/shard.hpp"
-
 #include "aegis/channel.hpp"
 #include "aegis/guild.hpp"
 #include "aegis/aegis.hpp"
-#include "aegis/shard_impl.hpp"
+
+
+#include "aegis/events/typing_start.hpp"
+#include "aegis/events/message_create.hpp"
+
+
+
 #include "aegis/member_impl.hpp"
+#include "aegis/shard_impl.hpp"
 #include "aegis/channel_impl.hpp"
 #include "aegis/guild_impl.hpp"
 #include "aegis/aegis_impl.hpp"

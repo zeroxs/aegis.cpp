@@ -38,16 +38,17 @@ using rest_limits::bucket_factory;
 using json = nlohmann::json;
 
 class channel;
+class member;
 
 class guild
 {
 public:
-    explicit guild(int16_t shard_id, state_c * state, snowflake id, bucket_factory & ratelimit)
+    explicit guild(int16_t shard_id, bot_state * state, snowflake id, bucket_factory & ratelimit)
         : shard_id(shard_id)
         , guild_id(id)
         , ratelimit(ratelimit)
         , log(spdlog::get("aegis"))
-        , state_o(state)
+        , state(state)
     {
         unavailable = false;
     }
@@ -62,11 +63,11 @@ public:
     snowflake guild_id;
     bucket_factory & ratelimit;
     std::shared_ptr<spdlog::logger> log;
-    state_c * state_o;
+    bot_state * state;
 
     member * self() const
     {
-        auto self_id = state_o->user.id;
+        auto self_id = state->user.id;
         auto slf = get_member(self_id);
         if (slf == nullptr)
             throw std::runtime_error("guild::self() is nullptr");
@@ -127,11 +128,11 @@ public:
 
     bool delete_guild(std::function<void(rest_reply)> callback = nullptr);
 
-    bool create_text_channel(std::string name, int64_t parent_id, bool nsfw, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback = nullptr);
+    bool create_text_channel(std::string name, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites, std::function<void(rest_reply)> callback = nullptr);
 
-    bool create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback = nullptr);
+    bool create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites, std::function<void(rest_reply)> callback = nullptr);
     
-    bool create_category_channel(std::string name, int64_t parent_id, std::vector<perm_overwrite> permission_overwrites, std::function<void(rest_reply)> callback = nullptr);
+    bool create_category_channel(std::string name, int64_t parent_id, std::vector<permission_overwrite> permission_overwrites, std::function<void(rest_reply)> callback = nullptr);
 
     bool modify_channel_positions();
 

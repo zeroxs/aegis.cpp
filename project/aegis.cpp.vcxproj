@@ -126,6 +126,7 @@
     <ClInclude Include="..\include\aegis\objects\footer.hpp" />
     <ClInclude Include="..\include\aegis\objects\image.hpp" />
     <ClInclude Include="..\include\aegis\objects\message.hpp" />
+    <ClInclude Include="..\include\aegis\objects\permission_overwrite.hpp" />
     <ClInclude Include="..\include\aegis\objects\provider.hpp" />
     <ClInclude Include="..\include\aegis\objects\reaction.hpp" />
     <ClInclude Include="..\include\aegis\objects\thumbnail.hpp" />

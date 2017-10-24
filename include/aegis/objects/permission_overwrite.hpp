@@ -1,5 +1,5 @@
 //
-// config.hpp
+// permission_overwrite.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -26,24 +26,42 @@
 #pragma once
 
 
-#define AEGIS_VERSION_MAJOR     0
-#define AEGIS_VERSION_MINOR     1
-#define AEGIS_VERSION_REVISION  0
-
-#define ASIO_STANDALONE
-#define _WEBSOCKETPP_CPP11_STL_
-#define BOOST_DATE_TIME_NO_LIB
-#define BOOST_REGEX_NO_LIB
+#include "../config.hpp"
+#include "../snowflake.hpp"
+#include "../structs.hpp"
+#include <json.hpp>
+#include <string>
+#include <vector>
 
 
 
 namespace aegiscpp
 {
 
+class member;
+class channel;
 
-
-
-
+struct permission_overwrite
+{
+    snowflake id;
+    //either "role" or "member"
+    overwrite_type type;
+    int64_t allow;
+    int64_t deny;
+};
+void from_json(const nlohmann::json& j, permission_overwrite& m)
+{
+    m.id = j["id"];
+    m.type = (j["type"] == "type")?(overwrite_type::Role):(overwrite_type::User);
+    m.allow = j["allow"];
+    m.deny = j["deny"];
+}
+void to_json(nlohmann::json& j, const permission_overwrite& m)
+{
+    j["id"] = m.id;
+    j["type"] = m.type;
+    j["allow"] = m.allow;
+    j["deny"] = m.deny;
 }
 
-
+}

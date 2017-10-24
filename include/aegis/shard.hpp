@@ -42,7 +42,7 @@ public:
         : heartbeat_ack(0)
         , lastheartbeat(0)
         , sequence(0)
-        , connection_state(aegiscpp::Uninitialized)
+        , connection_state(shard_status::Uninitialized)
     {
     }
 
@@ -50,29 +50,16 @@ public:
 
     bool conn_test(std::function<void()> func);
 
-    // Websocket++ socket connection
-    websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr connection;
-    websocketpp::connection_hdl hdl;
-    
-    int64_t heartbeat_ack;
-    int64_t lastheartbeat;
-    
-    int16_t shardid;
-    
-    // Timer for heartbeats
-    std::shared_ptr<asio::steady_timer> keepalivetimer;
+    const uint64_t get_sequence() const
+    {
+        return sequence;
+    }
 
-    uint64_t sequence;
+    const uint64_t get_id() const
+    {
+        return shardid;
+    }
 
-    state_c * state_o;
-
-    state connection_state;
-
-    std::shared_ptr<asio::steady_timer> reconnect_timer;
-
-    std::string session_id;
-
-    std::map<int64_t, std::string> debug_messages;
 
     struct
     {
@@ -83,6 +70,23 @@ public:
         uint32_t messages;
         uint64_t presence_changes;
     } counters = { 0,0,0,0 };
+
+private:
+    friend aegis;
+
+    bot_state * state;
+    shard_status connection_state;
+    std::string session_id;
+    std::map<int64_t, std::string> debug_messages;
+    std::shared_ptr<asio::steady_timer> reconnect_timer;
+    std::shared_ptr<asio::steady_timer> keepalivetimer;
+    uint64_t sequence;
+    int16_t shardid;
+    int64_t heartbeat_ack;
+    int64_t lastheartbeat;
+    // Websocket++ socket connection
+    websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr connection;
+    websocketpp::connection_hdl hdl;
 };
 
 }
