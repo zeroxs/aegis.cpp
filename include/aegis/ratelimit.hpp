@@ -228,6 +228,8 @@ public:
         static std::mutex mtx;
         std::scoped_lock<std::mutex> lock(mtx);
 
+        if (!_map.size())
+            return;
         for (auto & kv : _map)
         {
             kv.second->run_one();

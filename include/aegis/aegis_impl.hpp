@@ -43,12 +43,11 @@ inline void aegis::processReady(json & d, shard * shard)
     shard->session_id = d["session_id"].get<std::string>();
 
     json guilds = d["guilds"];
-    size_t connectguilds = guilds.size();
 
     if (self() == nullptr)
     {
         json & userdata = d["user"];
-        discriminator = std::stoi(userdata["discriminator"].get<std::string>());
+        discriminator = static_cast<uint16_t>(std::stoi(userdata["discriminator"].get<std::string>()));
         member_id = userdata["id"];
         username = userdata["username"].get<std::string>();
         mfa_enabled = userdata["mfa_enabled"];

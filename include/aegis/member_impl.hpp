@@ -49,7 +49,7 @@ inline void member::load(guild & _guild, json & obj, shard * _shard)
     {
         if (!user["username"].is_null()) name = user["username"].get<std::string>();
         if (!user["avatar"].is_null()) avatar = user["avatar"].get<std::string>();
-        if (!user["discriminator"].is_null()) discriminator = std::stoi(user["discriminator"].get<std::string>());
+        if (!user["discriminator"].is_null()) discriminator = static_cast<uint16_t>(std::stoi(user["discriminator"].get<std::string>()));
         isbot = user["bot"].is_null() ? false : true;
 
         auto g_info = get_guild_info(_guild.guild_id);

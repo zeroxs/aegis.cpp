@@ -93,7 +93,9 @@ public:
             c.reset();
         stop_work();
         websocket_o.reset();
-    }
+		if (thd->joinable())
+			thd->join();
+	}
 
     aegis(const aegis &) = delete;
     aegis(aegis &&) = delete;
@@ -146,26 +148,24 @@ public:
         std::error_code ec;
         // Pass our io_service object to bot to initialize
         initialize(ec);
-        if (ec) { log->error("Initialize fail: {}", ec.message()); return; }
+        if (ec) { log->error("Initialize fail: {}", ec.message()); shutdown();  return; }
         // Start a work object so that asio won't exit prematurely
         start_work();
         // Start the REST outgoing thread
         thd = std::make_unique<std::thread>([&] { rest_thread(); });
         // Create our websocket connection
         websocketcreate(ec);
-        if (ec) { log->error("Websocket fail: {}", ec.message()); stop_work();  return; }
+        if (ec) { log->error("Websocket fail: {}", ec.message()); shutdown();  return; }
         state.core = this;
         // Connect the websocket[s]
         starttime = std::chrono::steady_clock::now();
         std::thread make_connections([&]
         {
             connect(ec);
-            if (ec) { log->error("Connect fail: {}", ec.message()); stop_work(); return; }
+            if (ec) { log->error("Connect fail: {}", ec.message()); shutdown(); return; }
         });
         // Run the bot
         run();
-
-        thd->join();
     }
 
     void shutdown()

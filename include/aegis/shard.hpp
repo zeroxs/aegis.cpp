@@ -75,15 +75,15 @@ private:
     friend aegis;
 
     bot_state * state;
-    shard_status connection_state;
     std::string session_id;
     std::map<int64_t, std::string> debug_messages;
     std::shared_ptr<asio::steady_timer> reconnect_timer;
     std::shared_ptr<asio::steady_timer> keepalivetimer;
-    uint64_t sequence;
-    int16_t shardid;
     int64_t heartbeat_ack;
     int64_t lastheartbeat;
+    uint64_t sequence;
+    int16_t shardid;
+    shard_status connection_state;
     // Websocket++ socket connection
     websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr connection;
     websocketpp::connection_hdl hdl;
