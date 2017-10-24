@@ -153,7 +153,7 @@ inline bool example::MessageCreate(message_create obj)
         std::string s = "```\n";
         for (auto & shard : obj.bot->shards)
         {
-            s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages {:4} presence updates\n", obj._shard->get_id(), obj._shard->counters.guilds, obj._shard->counters.channels, obj._shard->counters.members, obj._shard->counters.messages, obj._shard->counters.presence_changes);
+            s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages {:4} presence updates\n", shard->get_id(), shard->counters.guilds, shard->counters.channels, shard->counters.members, shard->counters.messages, shard->counters.presence_changes);
         }
         s += "```";
         _channel->create_message(s);
