@@ -38,18 +38,18 @@ namespace spd = spdlog;
 using json = nlohmann::json;
 using namespace std::literals;
 
-inline void aegis::processReady(json & d, shard * shard)
+inline void aegis::processReady(const json & d, shard * shard)
 {
-    shard->session_id = d["session_id"].get<std::string>();
+    shard->session_id = d["session_id"];
 
-    json guilds = d["guilds"];
+    const json & guilds = d["guilds"];
 
     if (self() == nullptr)
     {
-        json & userdata = d["user"];
+        const json & userdata = d["user"];
         discriminator = static_cast<uint16_t>(std::stoi(userdata["discriminator"].get<std::string>()));
         member_id = userdata["id"];
-        username = userdata["username"].get<std::string>();
+        username = userdata["username"];
         mfa_enabled = userdata["mfa_enabled"];
         if (mention.size() == 0)
         {
@@ -85,7 +85,7 @@ inline void aegis::processReady(json & d, shard * shard)
     }
 }
 
-inline void aegis::channel_create(json & obj, shard * shard)
+inline void aegis::channel_create(const json & obj, shard * shard)
 {
     snowflake channel_id = obj["id"];
     auto _channel = get_channel_create(channel_id);
@@ -93,7 +93,7 @@ inline void aegis::channel_create(json & obj, shard * shard)
     try
     {
         //log->debug("Shard#{} : Channel[{}] created for DirectMessage", _shard.m_shardid, channel_id);
-        if (!obj["name"].is_null()) _channel->name = obj["name"].get<std::string>();
+        if (!obj["name"].is_null()) _channel->name = obj["name"];
         _channel->type = static_cast<channel_type>(obj["type"].get<int>());// 0 = text, 2 = voice
         _channel->guild_id = 0;
 
@@ -253,7 +253,6 @@ inline std::optional<rest_reply> aegis::call(std::string_view path, std::string_
 
 inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, shard * _shard)
 {
-    json result;
     std::string payload = msg->get_payload();
 
     try
@@ -271,7 +270,7 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
             payload = ss.str();
         }
 
-        result = json::parse(payload);
+        const json result = json::parse(payload);
         if (log->level() > spdlog::level::level_enum::trace && !result.is_null()
             && (result["t"].is_null() || (result["t"] != "GUILD_CREATE" && result["t"] != "PRESENCE_UPDATE")))
             log->trace("Shard#{}: {}", _shard->shardid, payload);
@@ -319,13 +318,15 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                     _member->load(*_guild, result["d"], _shard);
                     _member->status = status;
 
+                    presence_update obj;
+                    //obj.
 
                     if (i_presence_update)
                         i_presence_update(result, _shard, *this);
                     return;
                 }
 
-                const std::string & cmd = result["t"].get<std::string>();
+                std::string_view cmd = result["t"].get<std::string>();
 
                 if (cmd == "TYPING_START")
                 {
@@ -456,14 +457,14 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
 
                     auto _member = get_member_create(member_id);
 
-                    json & user = result["d"]["user"];
-                    if (!user["username"].is_null()) _member->name = user["username"].get<std::string>();
-                    if (!user["avatar"].is_null()) _member->avatar = user["avatar"].get<std::string>();
-                    if (!user["discriminator"].is_null()) _member->discriminator = std::stoi(user["discriminator"].get<std::string>());
+                    const json & user = result["d"]["user"];
+                    if (!user["username"].is_null()) _member->name = user["username"];
+                    if (!user["avatar"].is_null()) _member->avatar = user["avatar"];
+                    if (!user["discriminator"].is_null()) _member->discriminator = static_cast<uint16_t>(std::stoi(user["discriminator"].get<std::string>()));
                     if (!user["mfa_enabled"].is_null()) _member->mfa_enabled = user["mfa_enabled"];
                     if (!user["bot"].is_null()) _member->isbot = user["bot"];
                     //if (!user["verified"].is_null()) _member.m_verified = user["verified"];
-                    //if (!user["email"].is_null()) _member.m_email = user["email"].get<std::string>();
+                    //if (!user["email"].is_null()) _member.m_email = user["email"];
 
 
                     return;

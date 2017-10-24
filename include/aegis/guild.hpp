@@ -81,11 +81,11 @@ public:
 
     channel * get_channel_create(snowflake id, shard * shard) noexcept;
 
-    void load(json & obj, shard * shard) noexcept;
+    void load(const json & obj, shard * shard) noexcept;
     
-    void load_presence(json & obj) noexcept;
+    void load_presence(const json & obj) noexcept;
     
-    void load_role(json & obj) noexcept;
+    void load_role(const json & obj) noexcept;
 
     channel * get_channel(snowflake id) const noexcept;
 
@@ -109,7 +109,7 @@ public:
 
     role & get_role(int64_t r) const;
 
-    void remove_member(json & obj);
+    void remove_member(const json & obj);
 
     void remove_role(snowflake role_id);
 

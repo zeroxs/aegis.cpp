@@ -39,7 +39,7 @@ inline guild & channel::get_guild()
 }
 
 
-inline void channel::load_with_guild(guild & _guild, json & obj, shard * _shard)
+inline void channel::load_with_guild(guild & _guild, const json & obj, shard * _shard)
 {
     snowflake channel_id = obj["id"];
     channel * _channel = _guild.get_channel_create(channel_id, _shard);
@@ -48,7 +48,7 @@ inline void channel::load_with_guild(guild & _guild, json & obj, shard * _shard)
     try
     {
         //log->debug("Shard#{} : Channel[{}] created for guild[{}]", shard.m_shardid, channel_id, _channel.m_guild_id);
-        if (!obj["name"].is_null()) _channel->name = obj["name"].get<std::string>();
+        if (!obj["name"].is_null()) _channel->name = obj["name"];
         _channel->position = obj["position"];
         _channel->type = static_cast<channel_type>(obj["type"].get<int>());// 0 = text, 2 = voice
 
@@ -61,7 +61,7 @@ inline void channel::load_with_guild(guild & _guild, json & obj, shard * _shard)
         else
         {
             //not a voice channel, so has a topic field and last message id
-            if (!obj["topic"].is_null()) _channel->topic = obj["topic"].get<std::string>();
+            if (!obj["topic"].is_null()) _channel->topic = obj["topic"];
             if (!obj["last_message_id"].is_null()) _channel->last_message_id = obj["last_message_id"];
         }
 
@@ -103,7 +103,7 @@ inline bool channel::create_message(std::string content, std::function<void(rest
     return true;
 }
 
-inline bool channel::create_message_embed(std::string content, json embed, std::function<void(rest_reply)> callback)
+inline bool channel::create_message_embed(std::string content, const json embed, std::function<void(rest_reply)> callback)
 {
     if (_guild != nullptr)//probably a DM
         if (!permission(_guild->base_permissions(_guild->self())).canSendMessages())

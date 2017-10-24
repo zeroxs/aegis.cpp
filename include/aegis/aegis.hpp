@@ -45,7 +45,7 @@ class aegis
 {
 public:
 
-    using c_inject = std::function<bool(json & msg, shard * _shard, aegis & bot)>;
+    using c_inject = std::function<bool(const json & msg, shard * _shard, aegis & bot)>;
     using cb_typing_start = std::function<bool(typing_start obj)>;
     using cb_message_create = std::function<bool(message_create obj)>;
 
@@ -230,7 +230,7 @@ public:
         else
             shard_max_count = 1;
 
-        ws_gateway = ret["url"].get<std::string>();
+        ws_gateway = ret["url"];
         gateway_url = ws_gateway + "/?encoding=json&v=6";
 
         websocket_o.clear_access_channels(websocketpp::log::alevel::all);
@@ -501,7 +501,7 @@ public:
     }
 
     //called by CHANNEL_CREATE (DirectMessage)
-    void channel_create(json & obj, shard * shard);
+    void channel_create(const json & obj, shard * shard);
 
     member * self() const noexcept
     {
@@ -587,7 +587,7 @@ private:
     void onMessage(websocketpp::connection_hdl hdl, message_ptr msg, shard * _shard);
     void onConnect(websocketpp::connection_hdl hdl, shard * _shard);
     void onClose(websocketpp::connection_hdl hdl, shard * _shard);
-    void processReady(json & d, shard * shard);
+    void processReady(const json & d, shard * shard);
     void keepAlive(const asio::error_code& error, const int ms, shard * shard);
 
     void rest_thread();

@@ -63,8 +63,6 @@ public:
         return elems;
     }
 
-    using c_inject = std::function<bool(json & msg, shard & _shard, aegis & bot)>;
-
     // Messages you want to process
     void inject(aegis & bot)
     {

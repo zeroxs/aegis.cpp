@@ -40,15 +40,15 @@ namespace aegiscpp
 
 
 
-inline void member::load(guild & _guild, json & obj, shard * _shard)
+inline void member::load(guild & _guild, const json & obj, shard * _shard)
 {
-    json & user = obj["user"];
+    const json & user = obj["user"];
     snowflake member_id = user["id"];
 
     try
     {
-        if (!user["username"].is_null()) name = user["username"].get<std::string>();
-        if (!user["avatar"].is_null()) avatar = user["avatar"].get<std::string>();
+        if (!user["username"].is_null()) name = user["username"];
+        if (!user["avatar"].is_null()) avatar = user["avatar"];
         if (!user["discriminator"].is_null()) discriminator = static_cast<uint16_t>(std::stoi(user["discriminator"].get<std::string>()));
         isbot = user["bot"].is_null() ? false : true;
 
@@ -59,7 +59,7 @@ inline void member::load(guild & _guild, json & obj, shard * _shard)
         if (!obj["deaf"].is_null()) g_info->deaf = obj["deaf"];
         if (!obj["mute"].is_null()) g_info->mute = obj["mute"];
 
-        if (!obj["joined_at"].is_null()) g_info->joined_at = obj["joined_at"].get<std::string>();
+        if (!obj["joined_at"].is_null()) g_info->joined_at = obj["joined_at"];
 
         if (!obj["roles"].is_null())
         {
@@ -77,7 +77,7 @@ inline void member::load(guild & _guild, json & obj, shard * _shard)
         }
 
         if (!obj["nick"].is_null())
-            g_info->nickname = obj["nick"].get<std::string>();
+            g_info->nickname = obj["nick"];
     }
     catch (std::exception&e)
     {

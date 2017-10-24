@@ -75,11 +75,11 @@ public:
     guild & get_guild();
 
 
-    void load_with_guild(guild & _guild, json & obj, shard * _shard);
+    void load_with_guild(guild & _guild, const json & obj, shard * _shard);
 
     bool create_message(std::string content, std::function<void(rest_reply)> callback = nullptr);
 
-    bool create_message_embed(std::string content, json embed, std::function<void(rest_reply)> callback = nullptr);
+    bool create_message_embed(std::string content, const json embed, std::function<void(rest_reply)> callback = nullptr);
 
     bool edit_message(snowflake message_id, std::string content, std::function<void(rest_reply)> callback = nullptr);
 

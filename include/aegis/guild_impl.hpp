@@ -43,7 +43,7 @@ inline guild::~guild()
         v->leave(guild_id);
 }
 
-inline void guild::load(json & obj, shard * shard) noexcept
+inline void guild::load(const json & obj, shard * shard) noexcept
 {
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
     snowflake g_id = obj["id"];
@@ -53,11 +53,11 @@ inline void guild::load(json & obj, shard * shard) noexcept
     {
         json voice_states;
 
-        if (!obj["name"].is_null()) name = obj["name"].get<std::string>();
-        if (!obj["icon"].is_null()) m_icon = obj["icon"].get<std::string>();
-        if (!obj["splash"].is_null()) m_splash = obj["splash"].get<std::string>();
+        if (!obj["name"].is_null()) name = obj["name"];
+        if (!obj["icon"].is_null()) m_icon = obj["icon"];
+        if (!obj["splash"].is_null()) m_splash = obj["splash"];
         m_owner_id = obj["owner_id"];
-        m_region = obj["region"].get<std::string>();
+        m_region = obj["region"];
         if (!obj["afk_channel_id"].is_null()) m_afk_channel_id = obj["afk_channel_id"];
         m_afk_timeout = obj["afk_timeout"];//in seconds
         if (!obj["embed_enabled"].is_null()) m_embed_enabled = obj["embed_enabled"].get<bool>();
@@ -65,7 +65,7 @@ inline void guild::load(json & obj, shard * shard) noexcept
         m_verification_level = obj["verification_level"];
         m_default_message_notifications = obj["default_message_notifications"];
         m_mfa_level = obj["mfa_level"];
-        if (!obj["joined_at"].is_null()) joined_at = obj["joined_at"].get<std::string>();
+        if (!obj["joined_at"].is_null()) joined_at = obj["joined_at"];
         if (!obj["large"].is_null()) m_large = obj["large"];
         if (!obj["unavailable"].is_null()) unavailable = obj["unavailable"].get<bool>();
         if (!obj["member_count"].is_null()) m_member_count = obj["member_count"];
@@ -171,7 +171,7 @@ inline channel * guild::get_channel_create(snowflake id, shard * shard) noexcept
     return _channel;
 }
 
-inline void guild::load_presence(json & obj) noexcept
+inline void guild::load_presence(const json & obj) noexcept
 {
     json user = obj["user"];
 
@@ -195,7 +195,7 @@ inline void guild::load_presence(json & obj) noexcept
     return;
 }
 
-inline void guild::load_role(json & obj) noexcept
+inline void guild::load_role(const json & obj) noexcept
 {
     snowflake role_id = obj["id"];
     if (!roles.count(role_id))
@@ -211,7 +211,7 @@ inline void guild::load_role(json & obj) noexcept
     _role.mentionable = obj["mentionable"];
     _role._permission = permission(obj["permissions"].get<uint64_t>());
     _role.position = obj["position"];
-    if (!obj["name"].is_null()) _role.name = obj["name"].get<std::string>();
+    if (!obj["name"].is_null()) _role.name = obj["name"];
     _role.color = obj["color"];
     return;
 }
@@ -315,7 +315,7 @@ inline role & guild::get_role(int64_t r) const
     throw std::out_of_range(fmt::format("G: {} role:[{}] does not exist", guild_id, r));
 }
 
-inline void guild::remove_member(json & obj)
+inline void guild::remove_member(const json & obj)
 {
     snowflake member_id = obj["user"]["id"];
     for (auto & kv : members)
