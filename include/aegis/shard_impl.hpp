@@ -55,6 +55,8 @@ inline void shard::do_reset()
 
 inline bool shard::conn_test(std::function<void()> func)
 {
+    if (connection_state == Shutdown)
+        return false;
     if (connection == nullptr)
     {
         connection_state = Reconnecting;

@@ -166,6 +166,7 @@ public:
         });
         // Run the bot
         run();
+        make_connections.join();
     }
 
     void shutdown()
@@ -174,7 +175,8 @@ public:
         for (auto & _shard : shards)
         {
             _shard->connection_state = Shutdown;
-            get_websocket().close(_shard->connection, 1001, "");
+            _shard->connection->close(1001, "");
+            _shard->do_reset();
         }
         stop_work();
     }
@@ -259,6 +261,7 @@ public:
             auto _shard = std::make_unique<shard>();
             _shard->connection = websocket_o.get_connection(gateway_url, ec);
             _shard->shardid = k;
+            _shard->state = &this->state;
 
             if (ec)
             {
