@@ -1,5 +1,5 @@
 //
-// thumbnail.hpp
+// guild.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -27,6 +27,12 @@
 
 
 #include "../config.hpp"
+#include "../snowflake.hpp"
+#include "../structs.hpp"
+#include "attachment.hpp"
+#include "embed.hpp"
+#include "reaction.hpp"
+#include <json.hpp>
 #include <string>
 #include <vector>
 
@@ -35,30 +41,51 @@
 namespace aegiscpp
 {
 
+class member;
+class channel;
 
-struct thumbnail
+struct guild_gw
 {
-    std::string url;
-    std::string proxy_url;
-    int32_t height = 0;
-    int32_t width = 0;
+    //TODO:
+    snowflake guild_id;
+    std::string name;
+    std::string icon;
+    std::string splash;
+    snowflake owner_id;
+    std::string region;
+    snowflake afk_channel_id;
+    int32_t afk_timeout = 0;
+    bool embed_enabled = false;
+    snowflake embed_channel_id;
+    int8_t verification_level = 0;
+    int8_t default_message_notifications = 0;
+    int8_t explicit_content_filter = 0;
+    std::vector<role> roles;
+    std::vector<emoji> emojis;
+    std::vector<std::string> features;
+    int8_t mfa_level = 0;
+    snowflake application_id;//?
+    bool widget_enabled = false;
+    snowflake widget_channel_id;
+    //createonly
+    std::string joined_at;
+    bool large = false;
+    bool unavailable = false;
+    int32_t member_count = 0;
+    //std::vector<voice_state> voice_states;
+    std::vector<guild_member> members;
+    std::vector<channel_gw> channels;
+    //std::vector<presence> presences;
 };
 
-void from_json(const nlohmann::json& j, thumbnail& m)
+
+void from_json(const nlohmann::json& j, guild_gw& m)
 {
-    m.url = j["url"];
-    m.proxy_url = j["proxy_url"];
-    if (j.count("height") && !j["height"].is_null())
-        m.height = j["height"];
-    if (j.count("width") && !j["width"].is_null())
-        m.width = j["width"];
+//TODO:
 }
-void to_json(nlohmann::json& j, const thumbnail& m)
+void to_json(nlohmann::json& j, const guild_gw& m)
 {
-    j["url"] = m.url;
-    j["proxy_url"] = m.proxy_url;
-    j["height"] = m.height;
-    j["width"] = m.width;
+
 }
 
 }

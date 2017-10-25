@@ -66,19 +66,24 @@ struct message
 void from_json(const nlohmann::json& j, message& m)
 {
     m.message_id = j["id"];
-    if (!j["content"].is_null())
-        m.content = j["content"].get<std::string>();
-    m.timestamp = j["timestamp"].get<std::string>();
+    if (j.count("content") && !j["content"].is_null())
+        m.content = j["content"];
+    if (j.count("timestamp") && !j["timestamp"].is_null())
+        m.timestamp = j["timestamp"];
     if (j.count("edited_timestamp") && !j["edited_timestamp"].is_null())
-        m.edited_timestamp = j["edited_timestamp"].get<std::string>();
-    m.tts = j["tts"];
-    m.mention_everyone = j["mention_everyone"];
-    m.pinned = j["pinned"];
-    m.type = j["type"];
+        m.edited_timestamp = j["edited_timestamp"];
+    if (j.count("tts") && !j["tts"].is_null())
+        m.tts = j["tts"];
+    if (j.count("mention_everyone") && !j["mention_everyone"].is_null())
+        m.mention_everyone = j["mention_everyone"];
+    if (j.count("pinned") && !j["pinned"].is_null())
+        m.pinned = j["pinned"];
+    if (j.count("type") && !j["type"].is_null())
+        m.type = j["type"];
     if (j.count("nonce") && !j["nonce"].is_null())
         m.nonce = j["nonce"];
     if (j.count("webhook_id") && !j["webhook_id"].is_null())
-        m.webhook_id = j["webhook_id"].get<std::string>();
+        m.webhook_id = j["webhook_id"];
     if (j.count("mentions") && !j["mentions"].is_null())
         for (auto i : j["mentions"])
             m.mentions.push_back(i["id"]);

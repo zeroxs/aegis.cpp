@@ -77,65 +77,63 @@ public:
 
 
     // All the hooks into the websocket stream
-    bool TypingStart(typing_start obj);
+    void TypingStart(typing_start obj);
 
-    bool MessageCreate(message_create msg);
+    void MessageCreate(message_create msg);
 
-    bool MessageCreateDM(message_create msg);
+    void MessageCreateDM(message_create msg);
     
-    bool message_update(json & msg, shard & _shard, aegis & bot);
+    void MessageUpdate(message_update obj);
 
-    bool message_delete(json & msg, shard & _shard, aegis & bot);
+    void MessageDelete(message_delete obj);
 
-    bool message_delete_bulk(json & msg, shard & _shard, aegis & bot);
+//     void MessageDeleteBulk(message_delete_bulk obj);
 
-    bool guild_create(json & msg, shard & _shard, aegis & bot);
+    void GuildCreate(guild_create);
 
-    bool guild_update(json & msg, shard & _shard, aegis & bot);
+    void GuildUpdate(guild_update obj);
 
-    bool guild_delete(json & msg, shard & _shard, aegis & bot);
+    void GuildDelete(guild_delete obj);
 
-    bool user_settings_update(json & msg, shard & _shard, aegis & bot);
+    void UserUpdate(user_update obj);
 
-    bool user_update(json & msg, shard & _shard, aegis & bot);
+    void Ready(ready obj);
 
-    bool ready(json & msg, shard & _shard, aegis & bot);
+    void Resumed(resumed obj);
 
-    bool resumed(json & msg, shard & _shard, aegis & bot);
+    void ChannelCreate(channel_create obj);
 
-    bool channel_create(json & msg, shard & _shard, aegis & bot);
+    void ChannelUpdate(channel_update obj);
 
-    bool channel_update(json & msg, shard & _shard, aegis & bot);
+    void ChannelDelete(channel_delete obj);
 
-    bool channel_delete(json & msg, shard & _shard, aegis & bot);
+    void GuildBanAdd(guild_ban_add obj);
 
-    bool guild_ban_add(json & msg, shard & _shard, aegis & bot);
+    void GuildBanRemove(guild_ban_remove obj);
 
-    bool guild_ban_remove(json & msg, shard & _shard, aegis & bot);
+//     void GuildEmojisUpdate(guild_emojis_update obj);
+// 
+//     void GuildIntegrationsUpdate(guild_integrations_update obj);
 
-    bool guild_emojis_update(json & msg, shard & _shard, aegis & bot);
+    void GuildMemberAdd(guild_member_add obj);
 
-    bool guild_integrations_update(json & msg, shard & _shard, aegis & bot);
+    void GuildMemberRemove(guild_member_remove obj);
 
-    bool guild_member_add(json & msg, shard & _shard, aegis & bot);
+    void GuildMemberUpdate(guild_member_update obj);
 
-    bool guild_member_remove(json & msg, shard & _shard, aegis & bot);
+    void GuildMemberChunk(guild_members_chunk obj);
+    
+//     void GuildRoleCreate(guild_role_create obj);
+// 
+//     void GuildRoleUpdate(guild_role_update obj);
+// 
+//     void GuildRoleDelete(guild_role_delete obj);
 
-    bool guild_member_update(json & msg, shard & _shard, aegis & bot);
+    void PresenceUpdate(presence_update obj);
 
-    bool guild_member_chunk(json & msg, shard & _shard, aegis & bot);
-
-    bool guild_role_create(json & msg, shard & _shard, aegis & bot);
-
-    bool guild_role_update(json & msg, shard & _shard, aegis & bot);
-
-    bool guild_role_delete(json & msg, shard & _shard, aegis & bot);
-
-    bool presence_update(json & msg, shard & _shard, aegis & bot);
-
-    bool voice_state_update(json & msg, shard & _shard, aegis & bot);
-
-    bool voice_server_update(json & msg, shard & _shard, aegis & bot);
+//     void VoiceStateUpdate(voice_state_update obj);
+// 
+//     void VoiceServerUpdate(voice_server_update obj);
 
     json make_info_obj(shard * _shard, aegis * bot);
 };

@@ -41,13 +41,13 @@ struct field
 {
     std::string name;
     std::string value;
-    bool isinline;
+    bool isinline = false;
 };
 
 void from_json(const nlohmann::json& j, field& m)
 {
-    m.name = j["name"].get<std::string>();
-    m.value = j["value"].get<std::string>();
+    m.name = j["name"];
+    m.value = j["value"];
     m.isinline = j["inline"];
 }
 void to_json(nlohmann::json& j, const field& m)

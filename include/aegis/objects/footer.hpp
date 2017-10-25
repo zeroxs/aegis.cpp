@@ -46,11 +46,11 @@ struct footer
 void from_json(const nlohmann::json& j, footer& m)
 {
     if (j.count("text") && !j["text"].is_null())
-        m.text = j["text"].get<std::string>();
+        m.text = j["text"];
     if (j.count("icon_url") && !j["icon_url"].is_null())
-        m.icon_url = j["icon_url"].get<std::string>();
+        m.icon_url = j["icon_url"];
     if (j.count("proxy_icon_url") && !j["proxy_icon_url"].is_null())
-        m.proxy_icon_url = j["proxy_icon_url"].get<std::string>();
+        m.proxy_icon_url = j["proxy_icon_url"];
 }
 void to_json(nlohmann::json& j, const footer& m)
 {

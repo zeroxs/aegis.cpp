@@ -132,7 +132,112 @@
     <ClInclude Include="..\src\example_impl.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\aegis\events\presence_update.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\user_update.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\voice_state_update.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\voice_server_update.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\webhooks_update.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\message_reaction_remove_all.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\message_reaction_remove.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\message_reaction_add.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\message_delete_bulk.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\message_delete.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\message_update.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\guild_role_delete.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\guild_role_create.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\guild_role_update.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\guild_members_chunk.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\guild_member_update.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\guild_member_remove.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\guild_member_add.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\guild_integrations_update.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\guild_emojis_update.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\guild_ban_remove.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\guild_ban_add.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\guild_delete.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\guild_update.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\guild_create.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\channel_pins_update.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\channel_delete.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\channel_update.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\channel_create.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\resumed.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\events\ready.hpp">
+      <Filter>Header Files\aegis\gateway events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\user.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\guild.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\channel.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\aegis\objects\permission_overwrite.hpp">
+      <Filter>Header Files\aegis\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\aegis\objects\guild_member.hpp">
       <Filter>Header Files\aegis\objects</Filter>
     </ClInclude>
   </ItemGroup>

@@ -37,8 +37,8 @@ namespace aegiscpp
 
 struct reaction
 {
-    int32_t count;
-    bool me;
+    int32_t count = 0;
+    bool me = false;
     emoji emoji_;
 };
 

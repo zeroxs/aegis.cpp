@@ -43,15 +43,15 @@ struct emoji
     std::string name;
     std::vector<snowflake> roles;
     snowflake user;
-    bool require_colons;
-    bool managed;
+    bool require_colons = false;
+    bool managed = false;
 };
 
 void from_json(const nlohmann::json& j, emoji& m)
 {
     m.emoji_id = j["id"];
     if (j.count("name") && !j["name"].is_null())
-        m.name = j["name"].get<std::string>();
+        m.name = j["name"];
     if (j.count("user") && !j["user"].is_null())
         m.user = j["user"]["id"];
     if (j.count("require_colons") && !j["require_colons"].is_null())

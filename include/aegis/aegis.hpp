@@ -40,14 +40,43 @@ using namespace rest_limits;
 
 struct typing_start;
 struct message_create;
+struct message_update;
+struct message_delete;
+struct ready;
+struct resumed;
+struct presence_update;
+struct channel_create;
+struct channel_delete;
+struct channel_pins_update;
+struct channel_update;
+struct guild_ban_add;
+struct guild_ban_remove;
+struct guild_create;
+struct guild_delete;
+struct guild_emojis_update;
+struct guild_integrations_update;
+struct guild_member_add;
+struct guild_member_remove;
+struct guild_member_update;
+struct guild_members_chunk;
+struct guild_role_create;
+struct guild_role_delete;
+struct guild_role_update;
+struct guild_update;
+struct message_delete_bulk;
+struct message_reaction_add;
+struct message_reaction_remove;
+struct message_reaction_remove_all;
+struct user_update;
+struct voice_server_update;
+struct voice_state_update;
+struct webhooks_update;
 
 class aegis
 {
 public:
 
-    using c_inject = std::function<bool(const json & msg, shard * _shard, aegis & bot)>;
-    using cb_typing_start = std::function<bool(typing_start obj)>;
-    using cb_message_create = std::function<bool(message_create obj)>;
+    using c_inject = std::function<void(const json & msg, shard * _shard, aegis & bot)>;
 
     /// Type of a pointer to the ASIO io_service
     typedef asio::io_service * io_service_ptr;
@@ -382,34 +411,33 @@ public:
     }
 
     /// User callbacks
-    cb_typing_start i_typing_start;
-    cb_message_create i_message_create;
-    cb_message_create i_message_create_dm;
-    c_inject i_message_update;
-    c_inject i_message_delete;
+    std::function<void(typing_start obj)> i_typing_start;
+    std::function<void(message_create obj)> i_message_create;
+    std::function<void(message_create obj)> i_message_create_dm;
+    std::function<void(message_update obj)> i_message_update;
+    std::function<void(message_delete obj)> i_message_delete;
     c_inject i_message_delete_bulk;
-    c_inject i_guild_create;
-    c_inject i_guild_update;
-    c_inject i_guild_delete;
-    c_inject i_user_settings_update;
-    c_inject i_user_update;
-    c_inject i_ready;
-    c_inject i_resumed;
+    std::function<void(guild_create obj)> i_guild_create;
+    std::function<void(guild_update obj)> i_guild_update;
+    std::function<void(guild_delete obj)> i_guild_delete;
+    std::function<void(user_update obj)> i_user_update;
+    std::function<void(ready obj)> i_ready;
+    std::function<void(resumed obj)> i_resumed;
     c_inject i_channel_create;
     c_inject i_channel_update;
     c_inject i_channel_delete;
-    c_inject i_guild_ban_add;
-    c_inject i_guild_ban_remove;
+    std::function<void(guild_ban_add obj)> i_guild_ban_add;
+    std::function<void(guild_ban_remove obj)> i_guild_ban_remove;
     c_inject i_guild_emojis_update;
     c_inject i_guild_integrations_update;
-    c_inject i_guild_member_add;
-    c_inject i_guild_member_remove;
-    c_inject i_guild_member_update;
-    c_inject i_guild_member_chunk;
+    std::function<void(guild_member_add obj)> i_guild_member_add;
+    std::function<void(guild_member_remove obj)> i_guild_member_remove;
+    std::function<void(guild_member_update obj)> i_guild_member_update;
+    std::function<void(guild_members_chunk obj)> i_guild_member_chunk;
     c_inject i_guild_role_create;
     c_inject i_guild_role_update;
     c_inject i_guild_role_delete;
-    c_inject i_presence_update;
+    std::function<void(presence_update obj)> i_presence_update;
     c_inject i_voice_state_update;
     c_inject i_voice_server_update;
 

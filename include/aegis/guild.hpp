@@ -181,15 +181,14 @@ public:
 
     bool leave(std::function<void(rest_reply)> callback = nullptr);
 
+    std::unordered_map<int64_t, std::shared_ptr<channel>> channels;
+    std::unordered_map<int64_t, std::shared_ptr<member>> members;
+    std::unordered_map<int64_t, std::unique_ptr<role>> roles;
 
 private:
     friend class aegis;
     friend class channel;
     friend class member;
-    std::unordered_map<int64_t, std::shared_ptr<channel>> channels;
-    std::unordered_map<int64_t, std::shared_ptr<member>> members;
-    std::unordered_map<int64_t, std::unique_ptr<role>> roles;
-
 
     std::string name;
     std::string m_icon;

@@ -77,6 +77,8 @@ public:
 
     void load_with_guild(guild & _guild, const json & obj, shard * _shard);
 
+    bool create_debug_message(std::string content, std::function<void(rest_reply)> callback = nullptr);
+
     bool create_message(std::string content, std::function<void(rest_reply)> callback = nullptr);
 
     bool create_message_embed(std::string content, const json embed, std::function<void(rest_reply)> callback = nullptr);

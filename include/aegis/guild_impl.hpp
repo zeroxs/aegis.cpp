@@ -60,16 +60,30 @@ inline void guild::load(const json & obj, shard * shard) noexcept
         m_region = obj["region"];
         if (!obj["afk_channel_id"].is_null()) m_afk_channel_id = obj["afk_channel_id"];
         m_afk_timeout = obj["afk_timeout"];//in seconds
-        if (!obj["embed_enabled"].is_null()) m_embed_enabled = obj["embed_enabled"].get<bool>();
+        if (obj.count("embed_enabled") && !obj["embed_enabled"].is_null()) m_embed_enabled = obj["embed_enabled"];
         //_guild.m_embed_channel_id = obj->get("embed_channel_id").convert<uint64_t>();
         m_verification_level = obj["verification_level"];
         m_default_message_notifications = obj["default_message_notifications"];
         m_mfa_level = obj["mfa_level"];
         if (!obj["joined_at"].is_null()) joined_at = obj["joined_at"];
         if (!obj["large"].is_null()) m_large = obj["large"];
-        if (!obj["unavailable"].is_null()) unavailable = obj["unavailable"].get<bool>();
+        if (obj.count("unavailable") && !obj["unavailable"].is_null())
+            unavailable = obj["unavailable"];
+        else
+            unavailable = false;
         if (!obj["member_count"].is_null()) m_member_count = obj["member_count"];
         if (!obj["voice_states"].is_null()) voice_states = obj["voice_states"];
+
+
+        if (obj.count("roles"))
+        {
+            json roles = obj["roles"];
+
+            for (auto & role : roles)
+            {
+                load_role(role);
+            }
+        }
 
         if (obj.count("members"))
         {
@@ -80,7 +94,7 @@ inline void guild::load(const json & obj, shard * shard) noexcept
                 snowflake member_id = member["user"]["id"];
                 auto _member = bot.get_member_create(member_id);
                 this->members.emplace(member_id, _member);
-                _member->load(*this, member, shard);
+                _member->load(this, member, shard);
                 ++shard->counters.members;
             }
         }
@@ -95,16 +109,6 @@ inline void guild::load(const json & obj, shard * shard) noexcept
                 auto _channel = get_channel_create(channel_id, shard);
                 _channel->load_with_guild(*this, channel, shard);
                 ++shard->counters.channels;
-            }
-        }
-
-        if (obj.count("roles"))
-        {
-            json roles = obj["roles"];
-
-            for (auto & role : roles)
-            {
-                load_role(role);
             }
         }
 
@@ -146,7 +150,7 @@ inline void guild::load(const json & obj, shard * shard) noexcept
         }*/
 
 
-        log->info("Shard#{} : Guild created: {} [{}]", shard->get_id(), g_id, name);
+        log->info("Shard#{} : Guild created: {} [T:{}] [{}]", shard->get_id(), g_id, state->core->guilds.size(), name);
 
     }
     catch (std::exception&e)

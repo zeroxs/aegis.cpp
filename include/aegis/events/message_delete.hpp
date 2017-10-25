@@ -1,5 +1,5 @@
 //
-// thumbnail.hpp
+// message_delete.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -27,6 +27,8 @@
 
 
 #include "../config.hpp"
+#include "../snowflake.hpp"
+#include "../objects/message.hpp"
 #include <string>
 #include <vector>
 
@@ -35,30 +37,25 @@
 namespace aegiscpp
 {
 
+class member;
+class channel;
+class shard;
+class aegis;
 
-struct thumbnail
+struct message_delete
 {
-    std::string url;
-    std::string proxy_url;
-    int32_t height = 0;
-    int32_t width = 0;
+    channel * _channel;
+    member * _member;
+    snowflake message_id;
+    snowflake channel_id;
+    shard * _shard;
+    aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, thumbnail& m)
+void from_json(const nlohmann::json& j, message_delete& m)
 {
-    m.url = j["url"];
-    m.proxy_url = j["proxy_url"];
-    if (j.count("height") && !j["height"].is_null())
-        m.height = j["height"];
-    if (j.count("width") && !j["width"].is_null())
-        m.width = j["width"];
-}
-void to_json(nlohmann::json& j, const thumbnail& m)
-{
-    j["url"] = m.url;
-    j["proxy_url"] = m.proxy_url;
-    j["height"] = m.height;
-    j["width"] = m.width;
+    m.message_id = j["id"];
+    m.channel_id = j["channel_id"];
 }
 
 }

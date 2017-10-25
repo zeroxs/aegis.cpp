@@ -50,7 +50,7 @@ public:
     std::string description;
     std::string url;
     std::string timestamp;
-    int32_t color;
+    int32_t color = 0;
     footer footer_;
     image image_;
     thumbnail thumbnail_;
@@ -62,14 +62,14 @@ public:
 void from_json(const nlohmann::json& j, embed& m)
 {
     if (j.count("title") && !j["title"].is_null())
-        m.title = j["title"].get<std::string>();
-    m.type = j["type"].get<std::string>();
+        m.title = j["title"];
+    m.type = j["type"];
     if (j.count("description") && !j["description"].is_null())
-        m.description = j["description"].get<std::string>();
+        m.description = j["description"];
     if (j.count("url") && !j["url"].is_null())
-        m.url = j["url"].get<std::string>();
+        m.url = j["url"];
     if (j.count("timestamp") && !j["timestamp"].is_null())
-        m.timestamp = j["timestamp"].get<std::string>();
+        m.timestamp = j["timestamp"];
     if (j.count("color") && !j["color"].is_null())
         m.color = j["color"];
     if (j.count("footer") && !j["footer"].is_null())

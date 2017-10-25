@@ -40,48 +40,55 @@ namespace aegiscpp
 
 
 
-inline void member::load(guild & _guild, const json & obj, shard * _shard)
+inline void member::load(guild * _guild, const json & obj, shard * _shard)
 {
     const json & user = obj["user"];
     snowflake member_id = user["id"];
 
     try
     {
-        if (!user["username"].is_null()) name = user["username"];
-        if (!user["avatar"].is_null()) avatar = user["avatar"];
-        if (!user["discriminator"].is_null()) discriminator = static_cast<uint16_t>(std::stoi(user["discriminator"].get<std::string>()));
-        isbot = user["bot"].is_null() ? false : true;
+        if (user.count("username") && !user["username"].is_null()) name = user["username"];
+        if (user.count("avatar") && !user["avatar"].is_null()) avatar = user["avatar"];
+        if (user.count("discriminator") && !user["discriminator"].is_null()) discriminator = static_cast<uint16_t>(std::stoi(user["discriminator"].get<std::string>()));
+        if (user.count("bot"))
+            isbot = user["bot"].is_null() ? false : true;
 
-        auto g_info = get_guild_info(_guild.guild_id);
+        if (_guild == nullptr)
+            return;
+
+        auto g_info = get_guild_info(_guild->guild_id);
         if (g_info == nullptr)
-            g_info = join(_guild.guild_id);
+            g_info = join(_guild->guild_id);
 
-        if (!obj["deaf"].is_null()) g_info->deaf = obj["deaf"];
-        if (!obj["mute"].is_null()) g_info->mute = obj["mute"];
+        if (obj.count("deaf") && !obj["deaf"].is_null()) g_info->deaf = obj["deaf"];
+        if (obj.count("mute") && !obj["mute"].is_null()) g_info->mute = obj["mute"];
 
-        if (!obj["joined_at"].is_null()) g_info->joined_at = obj["joined_at"];
+        if (obj.count("joined_at") && !obj["joined_at"].is_null()) g_info->joined_at = obj["joined_at"];
 
-        if (!obj["roles"].is_null())
+        if (obj.count("roles") && !obj["roles"].is_null())
         {
-            if (!guilds.count(_guild.guild_id))
+            if (!guilds.count(_guild->guild_id))
             {
-                guilds.emplace(_guild.guild_id, std::make_unique<member::guild_info>());
+                guilds.emplace(_guild->guild_id, std::make_unique<member::guild_info>());
             }
             g_info->roles.clear();
-            g_info->guild_id = _guild.guild_id;
-            g_info->roles.push_back(_guild.guild_id);//default everyone role
+            g_info->guild_id = _guild->guild_id;
+            g_info->roles.push_back(_guild->guild_id);//default everyone role
 
             json roles = obj["roles"];
             for (auto & r : roles)
                 g_info->roles.push_back(r);
         }
 
-        if (!obj["nick"].is_null())
+        if (obj.count("nick") && !obj["nick"].is_null())
             g_info->nickname = obj["nick"];
     }
     catch (std::exception&e)
     {
-        _guild.state->core->log->error("Shard#{} : Error processing member[{}] of guild[{}] {}", _shard->get_id(), member_id, _guild.guild_id, e.what());
+        if (_guild != nullptr)
+            _guild->state->core->log->error("Shard#{} : Error processing member[{}] of guild[{}] {}", _shard->get_id(), member_id, _guild->guild_id, e.what());
+        else
+            spdlog::get("aegis")->error("Shard#{} : Error processing member[{}] {}", _shard->get_id(), member_id, e.what());
     }
 }
 

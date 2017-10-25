@@ -41,20 +41,20 @@ struct attachment
 {
     snowflake id;
     std::string filename;
-    int32_t size;
+    int32_t size = 0;
     std::string url;
     std::string proxy_url;
-    int32_t height;
-    int32_t width;
+    int32_t height = 0;
+    int32_t width = 0;
 };
 
 void from_json(const nlohmann::json& j, attachment& m)
 {
     m.id = j["id"];
-    m.filename = j["filename"].get<std::string>();
+    m.filename = j["filename"];
     m.size = j["size"];
-    m.url = j["url"].get<std::string>();
-    m.proxy_url = j["proxy_url"].get<std::string>();
+    m.url = j["url"];
+    m.proxy_url = j["proxy_url"];
     if (j.count("height") && !j["height"].is_null())
         m.height = j["height"];
     if (j.count("width") && !j["width"].is_null())

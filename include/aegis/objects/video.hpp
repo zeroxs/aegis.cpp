@@ -39,13 +39,13 @@ namespace aegiscpp
 struct video
 {
     std::string url;
-    int32_t height;
-    int32_t width;
+    int32_t height = 0;
+    int32_t width = 0;
 };
 
 void from_json(const nlohmann::json& j, video& m)
 {
-    m.url = j["url"].get<std::string>();
+    m.url = j["url"];
     if (j.count("height") && !j["height"].is_null())
         m.height = j["height"];
     if (j.count("width") && !j["width"].is_null())

@@ -30,18 +30,18 @@
 namespace example_bot
 {
 
-inline bool example::TypingStart(typing_start obj)
+inline void example::TypingStart(typing_start obj)
 {
     //obj.bot->log->info("Typing start");
-    return true;
+    return;
 }
 
-inline bool example::MessageCreateDM(message_create obj)
+inline void example::MessageCreateDM(message_create obj)
 {
     std::string username;
 
     if (obj._member && obj._member->member_id == obj.bot->self()->member_id)
-        return true;
+        return;
 
     auto _member = obj._member;
     if (_member != nullptr)
@@ -53,7 +53,7 @@ inline bool example::MessageCreateDM(message_create obj)
 
     auto toks = split(content, ' ');
     if (toks.size() == 0)
-        return true;
+        return;
 
     if (obj.bot->control_channel)
     {
@@ -69,18 +69,19 @@ inline bool example::MessageCreateDM(message_create obj)
     {
         //user is mentioning me
         if (toks.size() < 1)
-            return true;
+            return;
         if (toks[1] == "help")
         {
             _channel->create_message("This bot is in development. If you'd like more information on it, please join the discord server https://discord.gg/Kv7aP5K");
+            return;
         }
-        return true;
+        return;
     }
 
-    return true;
+    return;
 }
 
-inline bool example::MessageCreate(message_create obj)
+inline void example::MessageCreate(message_create obj)
 {
     std::string username;
     auto _member = obj._member;
@@ -96,7 +97,7 @@ inline bool example::MessageCreate(message_create obj)
 
     auto toks = split(content, ' ');
     if (toks.size() == 0)
-        return true;
+        return;
 
     // basic stats of the example bot
 
@@ -104,18 +105,24 @@ inline bool example::MessageCreate(message_create obj)
     {
         //user is mentioning me
         if (toks.size() < 1)
-            return true;
+            return;
         if (toks[1] == "help")
         {
             _channel->create_message("This bot is in development. If you'd like more information on it, please join the discord server https://discord.gg/Kv7aP5K");
+            return;
         }
-        return true;
+        if (toks[1] == "info")
+        {
+            _channel->create_message_embed({}, make_info_obj(obj._shard, obj.bot));
+            return;
+        }
+        return;
     }
 
     if (toks[0] == "?info")
     {
         _channel->create_message_embed({}, make_info_obj(obj._shard, obj.bot));
-        return true;
+        return;
     }
     else if (toks[0] == "?source")
     {
@@ -132,21 +139,21 @@ inline bool example::MessageCreate(message_create obj)
         if (_member->member_id != obj.bot->owner_id)
         {
             _channel->create_message("No perms `exit`");
-            return true;
+            return;
         }
         obj.bot->get_channel(channel_id)->create_message("exiting...");
         obj.bot->shutdown();
-        return true;
+        return;
     }
     else if (toks[0] == "?test")
     {
         _channel->create_message("test reply");
-        return true;
+        return;
     }
     else if (toks[0] == "?shard")
     {
         _channel->create_message(fmt::format("I am shard#[{}]", obj._shard->get_id()));
-        return true;
+        return;
     }
     else if (toks[0] == "?shards")
     {
@@ -180,7 +187,7 @@ inline bool example::MessageCreate(message_create obj)
         if (_member->member_id != obj.bot->owner_id)
         {
             _channel->create_message("No perms `serverlist`");
-            return true;
+            return;
         }
         std::stringstream w;
         for (auto & g : obj.bot->guilds)
@@ -197,162 +204,183 @@ inline bool example::MessageCreate(message_create obj)
         };
         _channel->create_message_embed("", t);
     }
+    else if (toks[0] == "?roles")
+    {
+        std::stringstream w;
+        w << "Server Roles:\n";
+        for (auto & r : _guild.roles)
+        {
+            w << "[" << r.second->role_id << "] : [A:" << r.second->_permission.getAllowPerms() << "] : [D:" << r.second->_permission.getDenyPerms() << "] : [" << r.second->name << "]\n";
+        }
+        _channel->create_debug_message(w.str());
+    }
     else if (toks[0] == "?mroles")
     {
-        snowflake role_check;
         if (toks.size() == 1)
-            role_check = _member->member_id;
-        else
-            role_check = std::stoll(toks[1]);
-
+        {
+            _channel->create_message("Not enough params (need user snowflake)");
+            return;
+        }
         std::stringstream w;
-        auto gld = _guild.get_member(role_check)->get_guild_info(_guild.guild_id);
+        w << "Member Roles:\n";
+        auto & gld = _guild.members[std::stoll(toks[1])]->guilds[_guild.guild_id];
         for (auto & rl : gld->roles)
         {
             role & r = _guild.get_role(rl);
             w << "[" << r.role_id << "] : [A:" << r._permission.getAllowPerms() << "] : [D:" << r._permission.getDenyPerms() << "] : [" << r.name << "]\n";
 
         }
-        _channel->create_message(w.str());
+        _channel->create_debug_message(w.str());
+    }
+    else if (toks[0] == "?croles")
+    {
+        std::stringstream w;
+        w << "Channel Roles:\n";
+        for (auto & r : _channel->overrides)
+        {
+            auto & a = r.second;
+            std::string name;
+            if (a.type == overwrite_type::User)
+                name = _guild.members[a.id]->getFullName();
+            else
+                name = _guild.roles[a.id]->name;
+            w << "[" << ((a.type == overwrite_type::User) ? "user" : "role") << "] : [A:" << a.allow << "] : [D:" << a.deny << "] : [" << name << "]\n";
+        }
+        _channel->create_debug_message(w.str());
     }
 
-    return true;
+    return;
 }
 
-inline bool example::message_update(json & msg, shard & _shard, aegis & bot)
+inline void example::MessageUpdate(message_update obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::message_delete(json & msg, shard & _shard, aegis & bot)
+inline void example::MessageDelete(message_delete obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::message_delete_bulk(json & msg, shard & _shard, aegis & bot)
+// inline void example::MessageDeleteBulk(message_delete_bulk obj)
+// {
+//     return;
+// }
+
+inline void example::GuildCreate(guild_create)
 {
-    return true;
+    return;
 }
 
-inline bool example::guild_create(json & msg, shard & _shard, aegis & bot)
+inline void example::GuildUpdate(guild_update obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::guild_update(json & msg, shard & _shard, aegis & bot)
+inline void example::GuildDelete(guild_delete obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::guild_delete(json & msg, shard & _shard, aegis & bot)
+inline void example::UserUpdate(user_update obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::user_settings_update(json & msg, shard & _shard, aegis & bot)
+inline void example::Ready(ready obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::user_update(json & msg, shard & _shard, aegis & bot)
+inline void example::Resumed(resumed obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::ready(json & msg, shard & _shard, aegis & bot)
+inline void example::ChannelCreate(channel_create obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::resumed(json & msg, shard & _shard, aegis & bot)
+inline void example::ChannelUpdate(channel_update obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::channel_create(json & msg, shard & _shard, aegis & bot)
+inline void example::ChannelDelete(channel_delete obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::channel_update(json & msg, shard & _shard, aegis & bot)
+inline void example::GuildBanAdd(guild_ban_add obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::channel_delete(json & msg, shard & _shard, aegis & bot)
+inline void example::GuildBanRemove(guild_ban_remove obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::guild_ban_add(json & msg, shard & _shard, aegis & bot)
+// inline void example::GuildEmojisUpdate(guild_emojis_update obj)
+// {
+//     return;
+// }
+// 
+// inline void example::GuildIntegrationsUpdate(guild_integrations_update obj)
+// {
+//     return;
+// }
+
+inline void example::GuildMemberAdd(guild_member_add obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::guild_ban_remove(json & msg, shard & _shard, aegis & bot)
+inline void example::GuildMemberRemove(guild_member_remove obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::guild_emojis_update(json & msg, shard & _shard, aegis & bot)
+inline void example::GuildMemberUpdate(guild_member_update obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::guild_integrations_update(json & msg, shard & _shard, aegis & bot)
+inline void example::GuildMemberChunk(guild_members_chunk obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::guild_member_add(json & msg, shard & _shard, aegis & bot)
+// inline void example::GuildRoleCreate(guild_role_create obj)
+// {
+//     return;
+// }
+// 
+// inline void example::GuildRoleUpdate(guild_role_update obj)
+// {
+//     return;
+// }
+// 
+// inline void example::GuildRoleDelete(guild_role_delete obj)
+// {
+//     return;
+// }
+
+inline void example::PresenceUpdate(presence_update obj)
 {
-    return true;
+    return;
 }
 
-inline bool example::guild_member_remove(json & msg, shard & _shard, aegis & bot)
-{
-    return true;
-}
-
-inline bool example::guild_member_update(json & msg, shard & _shard, aegis & bot)
-{
-    return true;
-}
-
-inline bool example::guild_member_chunk(json & msg, shard & _shard, aegis & bot)
-{
-    return true;
-}
-
-inline bool example::guild_role_create(json & msg, shard & _shard, aegis & bot)
-{
-    return true;
-}
-
-inline bool example::guild_role_update(json & msg, shard & _shard, aegis & bot)
-{
-    return true;
-}
-
-inline bool example::guild_role_delete(json & msg, shard & _shard, aegis & bot)
-{
-    return true;
-}
-
-inline bool example::presence_update(json & msg, shard & _shard, aegis & bot)
-{
-    return true;
-}
-
-inline bool example::voice_state_update(json & msg, shard & _shard, aegis & bot)
-{
-    return true;
-}
-
-inline bool example::voice_server_update(json & msg, shard & _shard, aegis & bot)
-{
-    return true;
-}
+// inline void example::VoiceStateUpdate(voice_state_update obj)
+// {
+//     return;
+// }
+// 
+// inline void example::VoiceServerUpdate(voice_server_update obj)
+// {
+//     return;
+// }
 
 inline json example::make_info_obj(shard * _shard, aegis * bot)
 {

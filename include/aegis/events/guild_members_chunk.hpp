@@ -1,5 +1,5 @@
 //
-// thumbnail.hpp
+// guild_members_chunk.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -27,38 +27,32 @@
 
 
 #include "../config.hpp"
+#include "../snowflake.hpp"
+#include "../objects/user.hpp"
+#include "../objects/guild_member.hpp"
 #include <string>
 #include <vector>
+#include <json.hpp>
 
 
 
 namespace aegiscpp
 {
 
-
-struct thumbnail
+struct guild_members_chunk
 {
-    std::string url;
-    std::string proxy_url;
-    int32_t height = 0;
-    int32_t width = 0;
+    snowflake guild_id;
+    std::vector<guild_member> members;
+    shard * _shard;
+    aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, thumbnail& m)
+void from_json(const nlohmann::json& j, guild_members_chunk& m)
 {
-    m.url = j["url"];
-    m.proxy_url = j["proxy_url"];
-    if (j.count("height") && !j["height"].is_null())
-        m.height = j["height"];
-    if (j.count("width") && !j["width"].is_null())
-        m.width = j["width"];
-}
-void to_json(nlohmann::json& j, const thumbnail& m)
-{
-    j["url"] = m.url;
-    j["proxy_url"] = m.proxy_url;
-    j["height"] = m.height;
-    j["width"] = m.width;
+    m.guild_id = j["guild_id"];
+    if (j.count("members") && !j["members"].is_null())
+        for (auto i : j["members"])
+            m.members.push_back(i);
 }
 
 }

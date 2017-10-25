@@ -1,5 +1,5 @@
 //
-// thumbnail.hpp
+// resumed.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -27,6 +27,8 @@
 
 
 #include "../config.hpp"
+#include "../snowflake.hpp"
+#include "../objects/message.hpp"
 #include <string>
 #include <vector>
 
@@ -35,30 +37,27 @@
 namespace aegiscpp
 {
 
+class shard;
+class aegis;
 
-struct thumbnail
+struct resumed
 {
-    std::string url;
-    std::string proxy_url;
-    int32_t height = 0;
-    int32_t width = 0;
+    std::vector<std::string> _trace;
+    shard * _shard;
+    aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, thumbnail& m)
+void from_json(const nlohmann::json& j, resumed& m)
 {
-    m.url = j["url"];
-    m.proxy_url = j["proxy_url"];
-    if (j.count("height") && !j["height"].is_null())
-        m.height = j["height"];
-    if (j.count("width") && !j["width"].is_null())
-        m.width = j["width"];
+    if (j.count("_trace") && !j["_trace"].is_null())
+        for (auto i : j["_trace"])
+            m._trace.push_back(i);
 }
-void to_json(nlohmann::json& j, const thumbnail& m)
+void to_json(nlohmann::json& j, const resumed& m)
 {
-    j["url"] = m.url;
-    j["proxy_url"] = m.proxy_url;
-    j["height"] = m.height;
-    j["width"] = m.width;
+    if (m._trace.size() > 0)
+        for (auto i : m._trace)
+            j["_trace"].push_back(i);
 }
 
 }

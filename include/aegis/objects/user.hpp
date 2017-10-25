@@ -1,5 +1,5 @@
 //
-// permission_overwrite.hpp
+// user.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -29,6 +29,9 @@
 #include "../config.hpp"
 #include "../snowflake.hpp"
 #include "../structs.hpp"
+#include "attachment.hpp"
+#include "embed.hpp"
+#include "reaction.hpp"
 #include <json.hpp>
 #include <string>
 #include <vector>
@@ -41,27 +44,47 @@ namespace aegiscpp
 class member;
 class channel;
 
-struct permission_overwrite
+struct user
 {
-    snowflake id;
-    //either "role" or "member"
-    overwrite_type type;
-    int64_t allow = 0;
-    int64_t deny = 0;
+    snowflake user_id;
+    snowflake guild_id;
+    std::string username;
+    std::string discriminator;
+    std::string avatar;
+    bool isbot = false;
+    bool mfa_enabled = false;
+    bool verified = false;
+    std::string email;
 };
-void from_json(const nlohmann::json& j, permission_overwrite& m)
+
+void from_json(const nlohmann::json& j, user& m)
 {
-    m.id = j["id"];
-    m.type = (j["type"] == "type")?(overwrite_type::Role):(overwrite_type::User);
-    m.allow = j["allow"];
-    m.deny = j["deny"];
+    m.user_id = j["id"];
+    if (j.count("guild_id") && !j["guild_id"].is_null())
+        m.guild_id = j["guild_id"];
+    if (j.count("username") && !j["username"].is_null())
+        m.username = j["username"];
+    if (j.count("discriminator") && !j["discriminator"].is_null())
+        m.discriminator = j["discriminator"];
+    if (j.count("avatar") && !j["avatar"].is_null())
+        m.avatar = j["avatar"];
+    if (j.count("bot") &&  !j["bot"].is_null())
+        m.isbot = j["bot"];
+    if (j.count("mfa_enabled") && !j["mfa_enabled"].is_null())
+        m.mfa_enabled = j["mfa_enabled"];
+    if (j.count("verified") && !j["verified"].is_null())
+        m.verified = j["verified"];
 }
-void to_json(nlohmann::json& j, const permission_overwrite& m)
+void to_json(nlohmann::json& j, const user& m)
 {
-    j["id"] = m.id;
-    j["type"] = m.type;
-    j["allow"] = m.allow;
-    j["deny"] = m.deny;
+    j["id"] = m.user_id;
+    j["guild_id"] = m.guild_id;
+    j["username"] = m.username;
+    j["discriminator"] = m.discriminator;
+    j["bot"] = m.isbot;
+    j["mfa_enabled"] = m.mfa_enabled;
+    j["verified"] = m.verified;
 }
 
 }
+

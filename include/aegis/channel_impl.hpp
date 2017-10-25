@@ -53,7 +53,7 @@ inline void channel::load_with_guild(guild & _guild, const json & obj, shard * _
         _channel->type = static_cast<channel_type>(obj["type"].get<int>());// 0 = text, 2 = voice
 
                                                                                            //voice channels
-        if (!obj["bitrate"].is_null())
+        if (obj.count("bitrate") && !obj["bitrate"].is_null())
         {
             _channel->bitrate = obj["bitrate"];
             _channel->user_limit = obj["user_limit"];
@@ -61,26 +61,28 @@ inline void channel::load_with_guild(guild & _guild, const json & obj, shard * _
         else
         {
             //not a voice channel, so has a topic field and last message id
-            if (!obj["topic"].is_null()) _channel->topic = obj["topic"];
-            if (!obj["last_message_id"].is_null()) _channel->last_message_id = obj["last_message_id"];
+            if (obj.count("topic") && !obj["topic"].is_null()) _channel->topic = obj["topic"];
+            if (obj.count("last_message_id") && !obj["last_message_id"].is_null()) _channel->last_message_id = obj["last_message_id"];
         }
 
-
-        json permission_overwrites = obj["permission_overwrites"];
-        for (auto & permission : permission_overwrites)
+        if (obj.count("permission_overwrites") && !obj["permission_overwrites"].is_null())
         {
-            uint32_t allow = permission["allow"];
-            uint32_t deny = permission["deny"];
-            snowflake p_id = permission["id"];
-            std::string p_type = permission["type"];
+            json permission_overwrites = obj["permission_overwrites"];
+            for (auto & permission : permission_overwrites)
+            {
+                uint32_t allow = permission["allow"];
+                uint32_t deny = permission["deny"];
+                snowflake p_id = permission["id"];
+                std::string p_type = permission["type"];
 
-            _channel->overrides[p_id].allow = allow;
-            _channel->overrides[p_id].deny = deny;
-            _channel->overrides[p_id].id = p_id;
-            if (p_type == "role")
-                _channel->overrides[p_id].type = overwrite_type::Role;
-            else
-                _channel->overrides[p_id].type = overwrite_type::User;
+                _channel->overrides[p_id].allow = allow;
+                _channel->overrides[p_id].deny = deny;
+                _channel->overrides[p_id].id = p_id;
+                if (p_type == "role")
+                    _channel->overrides[p_id].type = overwrite_type::Role;
+                else
+                    _channel->overrides[p_id].type = overwrite_type::User;
+            }
         }
 
         //_channel.update_permission_cache();
@@ -91,10 +93,18 @@ inline void channel::load_with_guild(guild & _guild, const json & obj, shard * _
     }
 }
 
+inline bool channel::create_debug_message(std::string content, std::function<void(rest_reply)> callback)
+{
+    json obj;
+    obj["content"] = content;
+    ratelimit.push(channel_id, fmt::format("/channels/{}/messages", channel_id), obj.dump(), "POST", callback);
+    return true;
+}
+
 inline bool channel::create_message(std::string content, std::function<void(rest_reply)> callback)
 {
     if (_guild != nullptr)//probably a DM
-        if (!permission(_guild->base_permissions(_guild->self())).canSendMessages())
+        if (!permission(_guild->get_permissions(*_guild->self(), *this)).canSendMessages())
             return false;
 
     json obj;
@@ -106,7 +116,7 @@ inline bool channel::create_message(std::string content, std::function<void(rest
 inline bool channel::create_message_embed(std::string content, const json embed, std::function<void(rest_reply)> callback)
 {
     if (_guild != nullptr)//probably a DM
-        if (!permission(_guild->base_permissions(_guild->self())).canSendMessages())
+        if (!permission(_guild->get_permissions(*_guild->self(), *this)).canSendMessages())
             return false;
 
     json obj;

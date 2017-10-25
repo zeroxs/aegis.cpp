@@ -72,7 +72,7 @@ public:
 
     member_status status = member_status::Offline;
 
-    void load(guild & _guild, const json & obj, shard * _shard);
+    void load(guild * _guild, const json & obj, shard * _shard);
 
     std::optional<std::string> getName(snowflake guild_id)
     {
