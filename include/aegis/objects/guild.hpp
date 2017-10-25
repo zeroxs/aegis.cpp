@@ -29,9 +29,12 @@
 #include "../config.hpp"
 #include "../snowflake.hpp"
 #include "../structs.hpp"
-#include "attachment.hpp"
-#include "embed.hpp"
-#include "reaction.hpp"
+#include "guild_member.hpp"
+#include "channel.hpp"
+//#include "role.hpp"
+//#include "voice_state.hpp"
+//#include "presence.hpp"
+#include "emoji.hpp"
 #include <json.hpp>
 #include <string>
 #include <vector>
@@ -60,7 +63,7 @@ struct guild_gw
     int8_t verification_level = 0;
     int8_t default_message_notifications = 0;
     int8_t explicit_content_filter = 0;
-    std::vector<role> roles;
+    //std::vector<role> roles;
     std::vector<emoji> emojis;
     std::vector<std::string> features;
     int8_t mfa_level = 0;
