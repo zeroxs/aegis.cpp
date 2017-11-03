@@ -50,11 +50,16 @@ struct attachment
 
 void from_json(const nlohmann::json& j, attachment& m)
 {
-    m.id = j["id"];
-    m.filename = j["filename"];
-    m.size = j["size"];
-    m.url = j["url"];
-    m.proxy_url = j["proxy_url"];
+    if (j.count("id"))
+        m.id = j["id"];
+    if (j.count("filename"))
+        m.filename = j["filename"];
+    if (j.count("size"))
+        m.size = j["size"];
+    if (j.count("url"))
+        m.url = j["url"];
+    if (j.count("proxy_url"))
+        m.proxy_url = j["proxy_url"];
     if (j.count("height") && !j["height"].is_null())
         m.height = j["height"];
     if (j.count("width") && !j["width"].is_null())

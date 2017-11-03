@@ -46,9 +46,12 @@ struct field
 
 void from_json(const nlohmann::json& j, field& m)
 {
-    m.name = j["name"];
-    m.value = j["value"];
-    m.isinline = j["inline"];
+    if (j.count("name"))
+        m.name = j["name"];
+    if (j.count("value"))
+        m.value = j["value"];
+    if (j.count("inline"))
+        m.isinline = j["inline"];
 }
 void to_json(nlohmann::json& j, const field& m)
 {

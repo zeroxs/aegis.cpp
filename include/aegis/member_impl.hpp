@@ -56,32 +56,41 @@ inline void member::load(guild * _guild, const json & obj, shard * _shard)
         if (_guild == nullptr)
             return;
 
+        _guild->add_member(shared_from_this());
+
         auto g_info = get_guild_info(_guild->guild_id);
-        if (g_info == nullptr)
+        if (!g_info.has_value())
             g_info = join(_guild->guild_id);
 
-        if (obj.count("deaf") && !obj["deaf"].is_null()) g_info->deaf = obj["deaf"];
-        if (obj.count("mute") && !obj["mute"].is_null()) g_info->mute = obj["mute"];
+        if (obj.count("deaf") && !obj["deaf"].is_null()) g_info.value()->deaf = obj["deaf"];
+        if (obj.count("mute") && !obj["mute"].is_null()) g_info.value()->mute = obj["mute"];
 
-        if (obj.count("joined_at") && !obj["joined_at"].is_null()) g_info->joined_at = obj["joined_at"];
+        if (obj.count("joined_at") && !obj["joined_at"].is_null())// g_info.value()->joined_at = obj["joined_at"];
+        {
+            std::tm tm = {};
+            std::istringstream ss(obj["joined_at"].get<std::string>());
+            ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+            auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+
+            g_info.value()->joined_at = tp.time_since_epoch().count();
+        }
 
         if (obj.count("roles") && !obj["roles"].is_null())
         {
             if (!guilds.count(_guild->guild_id))
             {
-                guilds.emplace(_guild->guild_id, std::make_unique<member::guild_info>());
+                guilds.emplace(_guild->guild_id, member::guild_info());
             }
-            g_info->roles.clear();
-            g_info->guild_id = _guild->guild_id;
-            g_info->roles.push_back(_guild->guild_id);//default everyone role
+            g_info.value()->roles.clear();
+            g_info.value()->roles.push_back(_guild->role_snowflakes[_guild->guild_id]);//default everyone role
 
             json roles = obj["roles"];
             for (auto & r : roles)
-                g_info->roles.push_back(r);
+                g_info.value()->roles.push_back(_guild->role_snowflakes[std::stoll(r.get<std::string>())]);
         }
 
         if (obj.count("nick") && !obj["nick"].is_null())
-            g_info->nickname = obj["nick"];
+            g_info.value()->nickname = obj["nick"].get<std::string>();
     }
     catch (std::exception&e)
     {

@@ -216,14 +216,17 @@ inline void example::MessageCreate(message_create obj)
     }
     else if (toks[0] == "?mroles")
     {
+        snowflake mem_id;
         if (toks.size() == 1)
-        {
-            _channel->create_message("Not enough params (need user snowflake)");
-            return;
-        }
+            mem_id = obj._member->member_id;
+        else
+            mem_id = std::stoll(toks[1]);
         std::stringstream w;
         w << "Member Roles:\n";
-        auto & gld = _guild.members[std::stoll(toks[1])]->guilds[_guild.guild_id];
+        auto hasguildinfo = _guild.members[mem_id]->get_guild_info(_guild.guild_id);
+        if (!hasguildinfo.has_value())
+            return;
+        auto gld = hasguildinfo.value();//->guilds[_guild.guild_id];
         for (auto & rl : gld->roles)
         {
             role & r = _guild.get_role(rl);
@@ -384,18 +387,18 @@ inline void example::PresenceUpdate(presence_update obj)
 
 inline json example::make_info_obj(shard * _shard, aegis * bot)
 {
-    uint64_t guild_count = bot->guilds.size();
-    uint64_t member_count = 0;
-    uint64_t member_count_unique = bot->members.size();
-    uint64_t member_online_count = 0;
-    uint64_t member_idle_count = 0;
-    uint64_t member_dnd_count = 0;
-    uint64_t channel_count = bot->channels.size();
-    uint64_t channel_text_count = 0;
-    uint64_t channel_voice_count = 0;
-    uint64_t member_count_active = 0;
+    int64_t guild_count = bot->guilds.size();
+    int64_t member_count = 0;
+    int64_t member_count_unique = bot->members.size();
+    int64_t member_online_count = 0;
+    int64_t member_idle_count = 0;
+    int64_t member_dnd_count = 0;
+    int64_t channel_count = bot->channels.size();
+    int64_t channel_text_count = 0;
+    int64_t channel_voice_count = 0;
+    int64_t member_count_active = 0;
 
-    uint64_t eventsseen = 0;
+    int64_t eventsseen = 0;
 
     {
         for (auto & bot_ptr : bot->shards)

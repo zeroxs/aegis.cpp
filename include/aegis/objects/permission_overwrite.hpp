@@ -52,7 +52,8 @@ struct permission_overwrite
 void from_json(const nlohmann::json& j, permission_overwrite& m)
 {
     m.id = j["id"];
-    m.type = (j["type"] == "type")?(overwrite_type::Role):(overwrite_type::User);
+    if (j.count("type"))
+        m.type = (j["type"] == "role") ? (overwrite_type::Role) : (overwrite_type::User);
     m.allow = j["allow"];
     m.deny = j["deny"];
 }

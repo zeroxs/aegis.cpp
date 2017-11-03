@@ -63,7 +63,8 @@ void from_json(const nlohmann::json& j, embed& m)
 {
     if (j.count("title") && !j["title"].is_null())
         m.title = j["title"];
-    m.type = j["type"];
+    if (j.count("type"))
+        m.type = j["type"];
     if (j.count("description") && !j["description"].is_null())
         m.description = j["description"];
     if (j.count("url") && !j["url"].is_null())

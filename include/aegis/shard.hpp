@@ -39,7 +39,8 @@ class shard
 {
 public:
     shard()
-        : heartbeat_ack(0)
+        : heartbeattime(0)
+        , heartbeat_ack(0)
         , lastheartbeat(0)
         , sequence(0)
         , connection_state(shard_status::Uninitialized)
@@ -47,8 +48,6 @@ public:
     }
 
     void do_reset();
-
-    bool conn_test(std::function<void()> func);
 
     const uint64_t get_sequence() const
     {
@@ -71,6 +70,7 @@ public:
         uint64_t presence_changes;
     } counters = { 0,0,0,0 };
 
+    websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr connection;
 private:
     friend aegis;
 
@@ -79,13 +79,13 @@ private:
     std::map<int64_t, std::string> debug_messages;
     std::shared_ptr<asio::steady_timer> reconnect_timer;
     std::shared_ptr<asio::steady_timer> keepalivetimer;
+    long heartbeattime;
     int64_t heartbeat_ack;
     int64_t lastheartbeat;
     uint64_t sequence;
     int16_t shardid;
     shard_status connection_state;
     // Websocket++ socket connection
-    websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr connection;
     websocketpp::connection_hdl hdl;
 };
 

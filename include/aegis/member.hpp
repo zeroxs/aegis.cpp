@@ -31,6 +31,7 @@
 #include <string>
 #include <optional>
 #include <queue>
+#include <memory>
 
 namespace aegiscpp
 {
@@ -38,7 +39,7 @@ namespace aegiscpp
 class guild;
 class shard;
 
-class member
+class member : public std::enable_shared_from_this<member>
 {
 public:
     explicit member(snowflake id) : member_id(id) {}
@@ -48,17 +49,17 @@ public:
     std::string name;
     uint16_t discriminator = 0;
     std::string avatar;
-    bool isbot = false;
-    bool mfa_enabled = false;
+    bool isbot : 1;
+    bool mfa_enabled : 1;
 
     struct guild_info
     {
-        std::vector<snowflake> roles;
-        std::string nickname;
-        snowflake guild_id;
-        std::string joined_at;
-        bool deaf;
-        bool mute;
+        std::vector<int16_t> roles;
+        std::optional<std::string> nickname;
+        //std::string joined_at;
+        int64_t joined_at;
+        bool deaf : 1;
+        bool mute : 1;
     };
 
     enum member_status
@@ -77,26 +78,26 @@ public:
     std::optional<std::string> getName(snowflake guild_id)
     {
         auto g = get_guild_info(guild_id);
-        if (g == nullptr)
+        if (!g.has_value())
             return {};
-        return g->nickname;
+        return g.value()->nickname;
     }
 
-    guild_info * get_guild_info(snowflake guild_id)
+    std::optional<guild_info*> get_guild_info(snowflake guild_id)
     {
         auto g = guilds.find(guild_id);
         if (g == guilds.end())
-            return nullptr;
-        return g->second.get();
+            return {};
+        return &g->second;
     }
 
-    guild_info * join(snowflake guild_id)
+    std::optional<guild_info*> join(snowflake guild_id)
     {
         auto g = get_guild_info(guild_id);
-        if (g != nullptr)
+        if (g.has_value())
             return g;
-        auto g2 = guilds.emplace(guild_id, std::make_unique<guild_info>());
-        return g2.first->second.get();
+        auto g2 = guilds.emplace(guild_id, guild_info());
+        return &g2.first->second;
     }
 
     std::string getFullName()
@@ -104,9 +105,9 @@ public:
         return fmt::format("{}#{}", name, discriminator);
     }
 
-    std::unordered_map<int64_t, std::unique_ptr<guild_info>> guilds;
+    std::unordered_map<int64_t, guild_info> guilds;
     //std::pair<message_snowflake, time_sent>
-    std::queue<std::pair<snowflake, int64_t>> msghistory;
+    //std::queue<std::pair<snowflake, int64_t>> msghistory;
 
     void leave(snowflake guild_id)
     {

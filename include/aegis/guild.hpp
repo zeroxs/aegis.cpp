@@ -64,6 +64,7 @@ public:
     bucket_factory & ratelimit;
     std::shared_ptr<spdlog::logger> log;
     bot_state * state;
+    int role_offset = 1;
 
     member * self() const
     {
@@ -78,6 +79,10 @@ public:
     {
         return name;
     }
+
+    void add_member(std::shared_ptr<member> _member) noexcept;
+
+    void remove_member(snowflake member_id) noexcept;
 
     channel * get_channel_create(snowflake id, shard * shard) noexcept;
 
@@ -108,8 +113,8 @@ public:
     int64_t compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const noexcept;
 
     role & get_role(int64_t r) const;
-
-    void remove_member(const json & obj);
+    
+    role & get_role(int16_t r) const;
 
     void remove_role(snowflake role_id);
 
@@ -184,6 +189,15 @@ public:
     std::unordered_map<int64_t, std::shared_ptr<channel>> channels;
     std::unordered_map<int64_t, std::shared_ptr<member>> members;
     std::unordered_map<int64_t, std::unique_ptr<role>> roles;
+    std::unordered_map<int64_t, int16_t> role_snowflakes;
+
+    snowflake get_role_snowflake(int16_t _role) const noexcept
+    {
+        for (auto iter = role_snowflakes.begin(); iter != role_snowflakes.end(); ++iter)
+            if (iter->second == _role)
+                return iter->first;
+        return { 0 };
+    }
 
 private:
     friend class aegis;

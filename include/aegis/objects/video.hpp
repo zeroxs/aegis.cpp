@@ -45,7 +45,8 @@ struct video
 
 void from_json(const nlohmann::json& j, video& m)
 {
-    m.url = j["url"];
+    if (j.count("url"))
+        m.url = j["url"];
     if (j.count("height") && !j["height"].is_null())
         m.height = j["height"];
     if (j.count("width") && !j["width"].is_null())

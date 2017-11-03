@@ -37,13 +37,13 @@ namespace aegiscpp
 struct role
 {
     uint32_t color = 0;
-    bool hoist = false;
     snowflake role_id;
-    bool managed = false;
-    bool mentionable = false;
     std::string name;
     permission _permission;
     uint16_t position = 0;
+    bool hoist : 1;
+    bool managed : 1;
+    bool mentionable : 1;
 };
 
 }

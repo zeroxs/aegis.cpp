@@ -115,38 +115,34 @@ inline void aegis::keepAlive(const asio::error_code & ec, const int ms, shard * 
     {
         try
         {
+            if (_shard->connection_state == Shutdown || _shard->connection == nullptr)
+                return;
+
             if (_shard->heartbeat_ack != 0 && _shard->lastheartbeat > _shard->heartbeat_ack)
             {
-                log->error("Heartbeat ack not received. Reconnecting.");
+                log->error("Heartbeat ack not received. Reconnecting. {} {}", _shard->heartbeat_ack, _shard->lastheartbeat);
                 websocket_o.close(_shard->connection, 1001, "");
                 _shard->connection_state = Reconnecting;
                 _shard->do_reset();
-                _shard->reconnect_timer = websocket_o.set_timer(10000, [_shard, this](const asio::error_code & ec)
-                {
-                    if (ec == asio::error::operation_aborted)
-                        return;
-                    _shard->connection_state = Connecting;
-                    asio::error_code wsec;
-                    _shard->connection = websocket_o.get_connection(gateway_url, wsec);
-                    setup_callbacks(_shard);
-                    websocket_o.connect(_shard->connection);
-                });
+//                 _shard->reconnect_timer = websocket_o.set_timer(10000, [_shard, this](const asio::error_code & ec)
+//                 {
+//                     if (ec == asio::error::operation_aborted)
+//                         return;
+//                     _shard->connection_state = Connecting;
+//                     asio::error_code wsec;
+//                     _shard->connection = websocket_o.get_connection(gateway_url, wsec);
+//                     setup_callbacks(_shard);
+//                     websocket_o.connect(_shard->connection);
+//                 });
 
                 return;
             }
-
-            _shard->conn_test([this, _shard, ms]()
-            {
-                json obj;
-                obj["d"] = _shard->sequence;
-                obj["op"] = 1;
-
-                log->debug("Shard#{}: {}", _shard->shardid, obj.dump());
-
-                _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
-                _shard->lastheartbeat = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-                _shard->keepalivetimer = websocket_o.set_timer(ms, std::bind(&aegis::keepAlive, this, std::placeholders::_1, ms, _shard));
-            });
+            json obj;
+            obj["d"] = _shard->sequence;
+            obj["op"] = 1;
+            _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
+            _shard->lastheartbeat = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+            _shard->keepalivetimer = websocket_o.set_timer(ms, std::bind(&aegis::keepAlive, this, std::placeholders::_1, ms, _shard));
         }
         catch (websocketpp::exception & e)
         {
@@ -401,6 +397,14 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
 
                     _guild->load(result["d"], _shard);
 
+                    //TODO: abide by rate limits (120/60)
+                    json chunk;
+                    chunk["d"]["guild_id"] = std::to_string(guild_id);
+                    chunk["d"]["query"] = "";
+                    chunk["d"]["limit"] = 0;
+                    chunk["op"] = 8;
+                    _shard->connection->send(chunk.dump(), websocketpp::frame::opcode::text);
+
                     guild_create obj;
                     obj.bot = this;
                     obj._guild = result["d"];
@@ -507,6 +511,15 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                 {
                     if (i_voice_state_update)
                         i_voice_state_update(result, _shard, *this);
+                    return;
+                }
+                else if (cmd == "RESUMED")
+                {
+                    _shard->connection_state = Online;
+                    log->info("Shard#[{}] RESUMED Processed", _shard->shardid);
+                    if (_shard->keepalivetimer)
+                        _shard->keepalivetimer->cancel();
+                    _shard->keepalivetimer = websocket_o.set_timer(_shard->heartbeattime, std::bind(&aegis::keepAlive, this, std::placeholders::_1, _shard->heartbeattime, _shard));
                     return;
                 }
                 else if (cmd == "READY")
@@ -652,7 +665,7 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                         auto _member = get_member(member_id);
                         auto _guild = get_guild(guild_id);
                        
-                        _guild->remove_member(result["d"]);
+                        _guild->remove_member(member_id);
 
                         guild_member_remove obj;
                         obj.bot = this;
@@ -667,8 +680,27 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                         snowflake member_id = result["d"]["user"]["id"];
                         snowflake guild_id = result["d"]["guild_id"];
 
-                        auto _member = get_member(member_id);
+                        auto _member = get_member_create(member_id).get();
                         auto _guild = get_guild(guild_id);
+
+                        if (_member == nullptr)
+                        {
+#ifdef WIN32
+                            log->critical("Shard#{} : Error in [{}] _member == nullptr", _shard->shardid, __FUNCSIG__);
+#else
+                            log->critical("Shard#{} : Error in [{}] _member == nullptr", _shard->shardid, __PRETTY_FUNCTION__);
+#endif
+                            return;
+                        }
+                        if (_guild == nullptr)
+                        {
+#ifdef WIN32
+                            log->critical("Shard#{} : Error in [{}] _guild == nullptr", _shard->shardid, __FUNCSIG__);
+#else
+                            log->critical("Shard#{} : Error in [{}] _guild == nullptr", _shard->shardid, __PRETTY_FUNCTION__);
+#endif
+                            return;
+                        }
 
                         _member->load(_guild, result["d"], _shard);
                        
@@ -680,8 +712,28 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                             i_guild_member_update(obj);
                         return;
                     }
-                    else if (cmd == "GUILD_MEMBER_CHUNK")
+                    else if (cmd == "GUILD_MEMBERS_CHUNK")
                     {
+                        snowflake guild_id = result["d"]["guild_id"];
+                        auto _guild = get_guild(guild_id);
+                        if (_guild == nullptr)
+                            return;
+                        auto & members = result["d"]["members"];
+                        //log->info("GUILD_MEMBERS_CHUNK: {1} {0}", guild_id, members.size());
+                        if (members.size())
+                        {
+                            for (auto & _member : members)
+                            {
+                                snowflake member_id = _member["user"]["id"];
+
+                                auto _member_ptr = get_member_create(member_id);
+
+                                _member_ptr->load(_guild, _member, _shard);
+                            }
+                        }
+
+
+
                         guild_members_chunk obj;
                         obj = result["d"];
                         obj.bot = this;
@@ -757,10 +809,10 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                     }
                 };
                 log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
-                _shard->conn_test([obj, _shard]()
+                if (_shard->connection_state == Connecting && _shard->connection != nullptr)
                 {
                     _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
-                });
+                }
                 debug_trace(_shard);
             }
             if (result["op"] == 1)
@@ -776,6 +828,7 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
             {
                 int heartbeat = result["d"]["heartbeat_interval"];
                 _shard->keepalivetimer = websocket_o.set_timer(heartbeat, std::bind(&aegis::keepAlive, this, std::placeholders::_1, heartbeat, _shard));
+                _shard->heartbeattime = heartbeat;
             }
             if (result["op"] == 11)
             {
@@ -846,7 +899,8 @@ inline void aegis::onConnect(websocketpp::connection_hdl hdl, shard * _shard)
             };
         }
         log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
-        _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
+        if (_shard->connection)
+            _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
     }
     else
     {
@@ -870,7 +924,8 @@ inline void aegis::onConnect(websocketpp::connection_hdl hdl, shard * _shard)
             }
         };
         log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
-        _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
+        if (_shard->connection)
+            _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
     }
 }
 

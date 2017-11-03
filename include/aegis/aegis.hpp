@@ -543,9 +543,9 @@ public:
         return it->second.get();
     }
 
-    int32_t get_member_count() const noexcept
+    int64_t get_member_count() const noexcept
     {
-        int32_t count = 0;
+        int64_t count = 0;
         for (auto & kv : guilds)
             count += kv.second->get_member_count();
         return count;

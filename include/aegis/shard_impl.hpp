@@ -44,6 +44,7 @@ namespace aegiscpp
 inline void shard::do_reset()
 {
     heartbeat_ack = 0;
+    lastheartbeat = 0;
     if (connection != nullptr)
         connection.reset();
     if (keepalivetimer != nullptr)
@@ -52,30 +53,5 @@ inline void shard::do_reset()
         keepalivetimer.reset();
     }
 }
-
-inline bool shard::conn_test(std::function<void()> func)
-{
-    if (connection_state == Shutdown)
-        return false;
-    if (connection == nullptr)
-    {
-        connection_state = Reconnecting;
-        do_reset();
-        reconnect_timer = state->core->websocket_o.set_timer(6000, [this](const asio::error_code & ec)
-        {
-            if (ec == asio::error::operation_aborted)
-                return;
-            connection_state = Connecting;
-            asio::error_code wsec;
-            connection = state->core->websocket_o.get_connection(state->core->gateway_url, wsec);
-            state->core->setup_callbacks(this);
-            state->core->websocket_o.connect(connection);
-        });
-        return false;
-    }
-    func();
-    return true;
-}
-
 
 }

@@ -43,6 +43,23 @@ inline guild::~guild()
         v->leave(guild_id);
 }
 
+inline void guild::add_member(std::shared_ptr<member> _member) noexcept
+{
+    members.emplace(_member->member_id, _member);
+}
+
+inline void guild::remove_member(snowflake member_id) noexcept
+{
+    auto _member = members.find(member_id);
+    if (_member == members.end())
+    {
+        state->core->log->error("Unable to remove member [{}] to guild [{}]", member_id, guild_id);
+        return;
+    }
+    _member->second->guilds.erase(guild_id);
+    members.erase(_member);
+}
+
 inline void guild::load(const json & obj, shard * shard) noexcept
 {
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
@@ -65,8 +82,8 @@ inline void guild::load(const json & obj, shard * shard) noexcept
         m_verification_level = obj["verification_level"];
         m_default_message_notifications = obj["default_message_notifications"];
         m_mfa_level = obj["mfa_level"];
-        if (!obj["joined_at"].is_null()) joined_at = obj["joined_at"];
-        if (!obj["large"].is_null()) m_large = obj["large"];
+        if (obj.count("joined_at") && !obj["joined_at"].is_null()) joined_at = obj["joined_at"];
+        if (obj.count("large") && !obj["large"].is_null()) m_large = obj["large"];
         if (obj.count("unavailable") && !obj["unavailable"].is_null())
             unavailable = obj["unavailable"];
         else
@@ -207,6 +224,7 @@ inline void guild::load_role(const json & obj) noexcept
         auto r = std::make_unique<role>();
         auto & _role = *r.get();
         roles.emplace(role_id, std::move(r));
+        role_snowflakes.emplace(role_id, role_offset++);
     }
     auto & _role = *roles[role_id].get();
     _role.role_id = role_id;
@@ -261,7 +279,7 @@ inline int64_t guild::base_permissions(member & _member) const noexcept
     auto & role_everyone = get_role(guild_id);
     int64_t permissions = role_everyone._permission.getAllowPerms();
 
-    for (auto & rl : _member.get_guild_info(guild_id)->roles)
+    for (auto & rl : _member.get_guild_info(guild_id).value()->roles)
         permissions |= get_role(rl)._permission.getAllowPerms();
 
     if (permissions & 0x8)//admin
@@ -287,8 +305,8 @@ inline int64_t guild::compute_overwrites(int64_t _base_permissions, member & _me
     int64_t allow = 0;
     int64_t deny = 0;
     auto g = _member.get_guild_info(guild_id);
-    if (g == nullptr) return 0;
-    for (auto & rl : g->roles)
+    if (!g.has_value()) return 0;
+    for (auto & rl : g.value()->roles)
     {
         if (overwrites.count(rl))
         {
@@ -319,18 +337,13 @@ inline role & guild::get_role(int64_t r) const
     throw std::out_of_range(fmt::format("G: {} role:[{}] does not exist", guild_id, r));
 }
 
-inline void guild::remove_member(const json & obj)
+inline role & guild::get_role(int16_t r) const
 {
-    snowflake member_id = obj["user"]["id"];
-    for (auto & kv : members)
-    {
-        if (kv.second->member_id == member_id)
-        {
-            kv.second->guilds.erase(member_id);
-            break;
-        }
-    }
-    members.erase(guild_id);
+    int64_t realrole_id = get_role_snowflake(r);
+    for (auto & kv : roles)
+        if (kv.second->role_id == realrole_id)
+            return *kv.second.get();
+    throw std::out_of_range(fmt::format("G: {} role:[{}] shorthand:[{}] does not exist", guild_id, realrole_id, r));
 }
 
 inline void guild::remove_role(snowflake role_id)
@@ -338,12 +351,12 @@ inline void guild::remove_role(snowflake role_id)
     for (auto & kv : members)
     {
         auto g = kv.second->get_guild_info(guild_id);
-        if (g == nullptr) return;
-        for (auto & rl : g->roles)
+        if (!g.has_value()) return;
+        for (auto & rl : g.value()->roles)
         {
             if (rl == role_id)
             {
-                g->roles.erase(std::find(g->roles.begin(), g->roles.end(), role_id));
+                g.value()->roles.erase(std::find(g.value()->roles.begin(), g.value()->roles.end(), role_id));
             }
         }
     }
