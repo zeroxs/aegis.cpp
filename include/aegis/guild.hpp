@@ -80,6 +80,8 @@ public:
         return name;
     }
 
+    bool member_has_role(snowflake member_id, snowflake role_id);
+
     void add_member(std::shared_ptr<member> _member) noexcept;
 
     void remove_member(snowflake member_id) noexcept;

@@ -60,6 +60,19 @@ inline void guild::remove_member(snowflake member_id) noexcept
     members.erase(_member);
 }
 
+inline bool guild::member_has_role(snowflake member_id, snowflake role_id)
+{
+    auto _member = get_member(member_id);
+    if (_member == nullptr)
+        return false;
+    for (auto r : _member->guilds[guild_id].roles)
+    {
+        if (role_snowflakes[role_id] == r)
+            return true;
+    }
+    return false;
+}
+
 inline void guild::load(const json & obj, shard * _shard) noexcept
 {
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
