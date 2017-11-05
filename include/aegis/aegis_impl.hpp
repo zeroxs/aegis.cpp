@@ -286,7 +286,8 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
         //////////////////////////////////////////////////////////////////////////
 
         if (!result["s"].is_null())
-            _shard->sequence = result["s"].get<uint64_t>();
+            if (result["s"].get<int64_t>() > _shard->sequence)
+                _shard->sequence = result["s"];
 
         if (!result.is_null())
         {
@@ -396,6 +397,13 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                         //outage
                         _shard->counters.guilds_outage--;
                     }
+                    if (_guild->is_init)
+                    {
+                        std::string guild_msg = fmt::format("Shard#{} : CREATED Guild: {} [T:{}] [{}]", _shard->get_id(), _guild->guild_id, guilds.size(), _guild->name);
+                        log->info(guild_msg);
+                        if (control_channel)
+                            get_channel(control_channel)->create_message(guild_msg);
+                    }
 
                     _guild->load(result["d"], _shard);
 
@@ -421,6 +429,13 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                     snowflake guild_id = result["d"]["id"];
 
                     auto _guild = get_guild(guild_id);
+                    if (_guild == nullptr)
+                    {
+                        log->error("Guild Update: [{}] does not exist", guild_id);
+                        //this should never happen
+                        return;
+                    }
+
                     _guild->load(result["d"], _shard);
 
                     guild_update obj;
@@ -455,12 +470,25 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                     }
                     else
                     {
-                        snowflake id = result["d"]["id"];
-                        log->info("Shard#{} : Guild deleted: {} [T:{}] [{}]", _shard->get_id(), id, guilds.size()-1, guilds[id]->get_name());
+                        snowflake guild_id = result["d"]["id"];
+
+                        auto _guild = get_guild(guild_id);
+                        if (_guild == nullptr)
+                        {
+                            log->error("Guild Delete: [{}] does not exist", guild_id);
+                            //this should never happen
+                            return;
+                        }
+
+                        std::string guild_msg = fmt::format("Shard#{} : DELETED Guild: {} [T:{}] [{}]", _shard->get_id(), _guild->guild_id, guilds.size(), _guild->name);
+                        log->info(guild_msg);
+                        if (control_channel)
+                            get_channel(control_channel)->create_message(guild_msg);
+
                         //kicked or left
                         //websocket_o.set_timer(5000, [this, id, _shard](const asio::error_code & ec)
                         //{
-                            guilds.erase(id);
+                            guilds.erase(guild_id);
                         //});
                     }
                     return;
@@ -789,6 +817,7 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
             }
             if (result["op"] == 9)
             {
+                _shard->sequence = result["s"];
                 log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->shardid);
                 json obj = {
                     { "op", 2 },
