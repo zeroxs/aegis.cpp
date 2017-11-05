@@ -517,12 +517,12 @@ public:
         return it->second;
     }
 
-    guild * get_guild_create(snowflake id, shard * shard)
+    guild * get_guild_create(snowflake id, shard * _shard)
     {
         auto _guild = get_guild(id);
         if (_guild == nullptr)
         {
-            auto g = std::make_unique<guild>(shard->shardid, &state, id, ratelimit().get(rest_limits::bucket_type::GUILD));
+            auto g = std::make_unique<guild>(_shard->shardid, &state, id, ratelimit().get(rest_limits::bucket_type::GUILD));
             auto ptr = g.get();
             guilds.emplace(id, std::move(g));
             ptr->guild_id = id;
@@ -532,7 +532,7 @@ public:
     }
 
     //called by CHANNEL_CREATE (DirectMessage)
-    void channel_create(const json & obj, shard * shard);
+    void channel_create(const json & obj, shard * _shard);
 
     member * self() const noexcept
     {
@@ -618,8 +618,8 @@ private:
     void onMessage(websocketpp::connection_hdl hdl, message_ptr msg, shard * _shard);
     void onConnect(websocketpp::connection_hdl hdl, shard * _shard);
     void onClose(websocketpp::connection_hdl hdl, shard * _shard);
-    void processReady(const json & d, shard * shard);
-    void keepAlive(const asio::error_code& error, const int ms, shard * shard);
+    void processReady(const json & d, shard * _shard);
+    void keepAlive(const asio::error_code& error, const int ms, shard * _shard);
 
     void rest_thread();
 };

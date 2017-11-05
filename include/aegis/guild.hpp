@@ -84,9 +84,9 @@ public:
 
     void remove_member(snowflake member_id) noexcept;
 
-    channel * get_channel_create(snowflake id, shard * shard) noexcept;
+    channel * get_channel_create(snowflake id, shard * _shard) noexcept;
 
-    void load(const json & obj, shard * shard) noexcept;
+    void load(const json & obj, shard * _shard) noexcept;
     
     void load_presence(const json & obj) noexcept;
     
@@ -205,26 +205,22 @@ private:
     friend class member;
 
     std::string name;
-    std::string m_icon;
-    std::string m_splash;
-    snowflake m_owner_id = 0;
-    std::string m_region;
-    snowflake m_afk_channel_id = 0;
-    uint32_t m_afk_timeout = 0;//in seconds
-    bool m_embed_enabled = false;
-    snowflake m_embed_channel_id = 0;
-    uint32_t m_verification_level = 0;
-    uint32_t m_default_message_notifications = 0;
-    uint32_t m_mfa_level = 0;
+    std::string icon;
+    std::string splash;
+    snowflake owner_id = 0;
+    std::string region;
+    snowflake afk_channel_id = 0;
+    uint32_t afk_timeout = 0;//in seconds
+    bool embed_enabled = false;
+    snowflake embed_channel_id = 0;
+    uint32_t verification_level = 0;
+    uint32_t default_message_notifications = 0;
+    uint32_t mfa_level = 0;
     std::string joined_at;
-    bool m_large = false;
+    bool large = false;
     bool unavailable = false;
-    uint32_t m_member_count = 0;
+    uint32_t member_count = 0;
     //std::string m_voice_states;//this is really an array
-
-    bool m_silenterrors = false;
-    bool m_silentperms = false;
-    bool m_preventbotparse = false;
 };
 
 }

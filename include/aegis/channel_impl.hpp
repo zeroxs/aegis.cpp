@@ -191,7 +191,7 @@ inline bool channel::modify_channel(std::optional<std::string> name, std::option
         obj["user_limit"] = user_limit.value();
     if (permission_overwrites.has_value())//requires OWNER
     {
-        if (_guild->m_owner_id != _guild->self()->member_id)
+        if (_guild->owner_id != _guild->self()->member_id)
             return false;
 
 

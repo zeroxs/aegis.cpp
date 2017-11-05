@@ -49,12 +49,12 @@ public:
 
     void do_reset();
 
-    const uint64_t get_sequence() const
+    const int64_t get_sequence() const
     {
         return sequence;
     }
 
-    const uint64_t get_id() const
+    const int16_t get_id() const
     {
         return shardid;
     }
@@ -62,12 +62,12 @@ public:
 
     struct
     {
-        uint32_t guilds;
-        uint32_t guilds_outage;
-        uint32_t members;
-        uint32_t channels;
-        uint32_t messages;
-        uint64_t presence_changes;
+        int32_t guilds;
+        int32_t guilds_outage;
+        int32_t members;
+        int32_t channels;
+        int32_t messages;
+        int64_t presence_changes;
     } counters = { 0,0,0,0 };
 
     websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr connection;
@@ -82,7 +82,7 @@ private:
     long heartbeattime;
     int64_t heartbeat_ack;
     int64_t lastheartbeat;
-    uint64_t sequence;
+    int64_t sequence;
     int16_t shardid;
     shard_status connection_state;
     // Websocket++ socket connection

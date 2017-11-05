@@ -38,9 +38,9 @@ namespace spd = spdlog;
 using json = nlohmann::json;
 using namespace std::literals;
 
-inline void aegis::processReady(const json & d, shard * shard)
+inline void aegis::processReady(const json & d, shard * _shard)
 {
-    shard->session_id = d["session_id"];
+    _shard->session_id = d["session_id"];
 
     const json & guilds = d["guilds"];
 
@@ -77,15 +77,17 @@ inline void aegis::processReady(const json & d, shard * shard)
         if (guildobj.count("unavailable"))
             unavailable = guildobj["unavailable"];
 
-        guild * _guild = get_guild_create(id, shard);
+        guild * _guild = get_guild_create(id, _shard);
         _guild->unavailable = unavailable;
 
+        log->info("Shard#{} : CREATED Guild: {} [T:{}] [{}]", _shard->get_id(), _guild->guild_id, guilds.size(), _guild->name);
+
         if (!unavailable)
-            _guild->load(guildobj, shard);
+            _guild->load(guildobj, _shard);
     }
 }
 
-inline void aegis::channel_create(const json & obj, shard * shard)
+inline void aegis::channel_create(const json & obj, shard * _shard)
 {
     snowflake channel_id = obj["id"];
     auto _channel = get_channel_create(channel_id);
@@ -105,7 +107,7 @@ inline void aegis::channel_create(const json & obj, shard * shard)
     }
     catch (std::exception&e)
     {
-        log->error("Shard#{} : Error processing DM channel[{}] {}", shard->shardid, channel_id, e.what());
+        log->error("Shard#{} : Error processing DM channel[{}] {}", _shard->shardid, channel_id, e.what());
     }
 }
 

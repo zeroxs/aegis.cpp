@@ -60,10 +60,12 @@ inline void guild::remove_member(snowflake member_id) noexcept
     members.erase(_member);
 }
 
-inline void guild::load(const json & obj, shard * shard) noexcept
+inline void guild::load(const json & obj, shard * _shard) noexcept
 {
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
     snowflake g_id = obj["id"];
+
+    shard_id = _shard->get_id();
 
     aegis & bot = *state->core;
     try
@@ -71,25 +73,25 @@ inline void guild::load(const json & obj, shard * shard) noexcept
         json voice_states;
 
         if (!obj["name"].is_null()) name = obj["name"];
-        if (!obj["icon"].is_null()) m_icon = obj["icon"];
-        if (!obj["splash"].is_null()) m_splash = obj["splash"];
-        m_owner_id = obj["owner_id"];
-        m_region = obj["region"];
-        if (!obj["afk_channel_id"].is_null()) m_afk_channel_id = obj["afk_channel_id"];
-        m_afk_timeout = obj["afk_timeout"];//in seconds
-        if (obj.count("embed_enabled") && !obj["embed_enabled"].is_null()) m_embed_enabled = obj["embed_enabled"];
-        //_guild.m_embed_channel_id = obj->get("embed_channel_id").convert<uint64_t>();
-        m_verification_level = obj["verification_level"];
-        m_default_message_notifications = obj["default_message_notifications"];
-        m_mfa_level = obj["mfa_level"];
+        if (!obj["icon"].is_null()) icon = obj["icon"];
+        if (!obj["splash"].is_null()) splash = obj["splash"];
+        owner_id = obj["owner_id"];
+        region = obj["region"];
+        if (!obj["afk_channel_id"].is_null()) afk_channel_id = obj["afk_channel_id"];
+        afk_timeout = obj["afk_timeout"];//in seconds
+        if (obj.count("embed_enabled") && !obj["embed_enabled"].is_null()) embed_enabled = obj["embed_enabled"];
+        //_guild.embed_channel_id = obj->get("embed_channel_id").convert<uint64_t>();
+        verification_level = obj["verification_level"];
+        default_message_notifications = obj["default_message_notifications"];
+        mfa_level = obj["mfa_level"];
         if (obj.count("joined_at") && !obj["joined_at"].is_null()) joined_at = obj["joined_at"];
-        if (obj.count("large") && !obj["large"].is_null()) m_large = obj["large"];
+        if (obj.count("large") && !obj["large"].is_null()) large = obj["large"];
         if (obj.count("unavailable") && !obj["unavailable"].is_null())
             unavailable = obj["unavailable"];
         else
             unavailable = false;
-        if (!obj["member_count"].is_null()) m_member_count = obj["member_count"];
-        if (!obj["voice_states"].is_null()) voice_states = obj["voice_states"];
+        if (obj.count("member_count") && !obj["member_count"].is_null()) member_count = obj["member_count"];
+        if (obj.count("voice_states") && !obj["voice_states"].is_null()) voice_states = obj["voice_states"];
 
 
         if (obj.count("roles"))
@@ -111,8 +113,8 @@ inline void guild::load(const json & obj, shard * shard) noexcept
                 snowflake member_id = member["user"]["id"];
                 auto _member = bot.get_member_create(member_id);
                 this->members.emplace(member_id, _member);
-                _member->load(this, member, shard);
-                ++shard->counters.members;
+                _member->load(this, member, _shard);
+                ++_shard->counters.members;
             }
         }
 
@@ -123,9 +125,9 @@ inline void guild::load(const json & obj, shard * shard) noexcept
             for (auto & channel : channels)
             {
                 snowflake channel_id = channel["id"];
-                auto _channel = get_channel_create(channel_id, shard);
-                _channel->load_with_guild(*this, channel, shard);
-                ++shard->counters.channels;
+                auto _channel = get_channel_create(channel_id, _shard);
+                _channel->load_with_guild(*this, channel, _shard);
+                ++_shard->counters.channels;
             }
         }
 
@@ -167,16 +169,15 @@ inline void guild::load(const json & obj, shard * shard) noexcept
         }*/
 
 
-        log->info("Shard#{} : Guild created: {} [T:{}] [{}]", shard->get_id(), g_id, state->core->guilds.size(), name);
 
     }
     catch (std::exception&e)
     {
-        log->error("Shard#{} : Error processing guild[{}] {}", shard->get_id(), g_id, (std::string)e.what());
+        log->error("Shard#{} : Error processing guild[{}] {}", _shard->get_id(), g_id, (std::string)e.what());
     }
 }
 
-inline channel * guild::get_channel_create(snowflake id, shard * shard) noexcept
+inline channel * guild::get_channel_create(snowflake id, shard * _shard) noexcept
 {
     auto _channel = get_channel(id);
     if (_channel == nullptr)
@@ -273,7 +274,7 @@ inline permission guild::get_permissions(member & _member, channel & _channel) n
 
 inline int64_t guild::base_permissions(member & _member) const noexcept
 {
-    if (m_owner_id == _member.member_id)
+    if (owner_id == _member.member_id)
         return ~0;
 
     auto & role_everyone = get_role(guild_id);
@@ -387,7 +388,7 @@ inline bool guild::modify_guild(std::optional<std::string> name, std::optional<s
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
-    if (owner_id.has_value() && m_owner_id != self()->member_id)
+    if (owner_id.has_value() && owner_id != self()->member_id)
         return false;
 
     json obj;
@@ -417,7 +418,7 @@ inline bool guild::modify_guild(std::optional<std::string> name, std::optional<s
 inline bool guild::delete_guild(std::function<void(rest_reply)> callback)
 {
     //requires OWNER
-    if (m_owner_id != self()->member_id)
+    if (owner_id != self()->member_id)
         return false;
 
     ratelimit.push(guild_id, fmt::format("/guilds/{}", guild_id), "", "DELETE", callback);
