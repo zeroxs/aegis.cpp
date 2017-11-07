@@ -223,7 +223,7 @@ private:
     bool unavailable = false;
     uint32_t member_count = 0;
     //std::string m_voice_states;//this is really an array
-    bool is_init = false;
+    bool is_init = true;
 };
 
 }

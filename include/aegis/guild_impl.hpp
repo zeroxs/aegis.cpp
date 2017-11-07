@@ -79,6 +79,7 @@ inline void guild::load(const json & obj, shard * _shard) noexcept
     snowflake g_id = obj["id"];
 
     shard_id = _shard->get_id();
+    is_init = false;
 
     aegis & bot = *state->core;
     try
