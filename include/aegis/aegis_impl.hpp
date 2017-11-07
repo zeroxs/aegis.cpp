@@ -80,10 +80,12 @@ inline void aegis::processReady(const json & d, shard * _shard)
         guild * _guild = get_guild_create(id, _shard);
         _guild->unavailable = unavailable;
 
-        log->info("Shard#{} : CREATED Guild: {} [T:{}] [{}]", _shard->get_id(), _guild->guild_id, guilds.size(), _guild->name);
 
         if (!unavailable)
+        {
             _guild->load(guildobj, _shard);
+            log->info("Shard#{} : CREATED Guild: {} [T:{}] [{}]", _shard->get_id(), _guild->guild_id, guilds.size(), guildobj["name"].get<std::string>());
+        }
     }
 }
 
@@ -400,7 +402,7 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                     }
                     if (_guild->is_init)
                     {
-                        std::string guild_msg = fmt::format("Shard#{} : CREATED Guild: {} [T:{}] [{}]", _shard->get_id(), _guild->guild_id, guilds.size(), _guild->name);
+                        std::string guild_msg = fmt::format("Shard#{} : CREATED Guild: {} [T:{}] [{}]", _shard->get_id(), _guild->guild_id, guilds.size(), result["d"]["name"].get<std::string>());
                         log->info(guild_msg);
                         if (control_channel)
                             get_channel(control_channel)->create_message(guild_msg);
@@ -480,6 +482,8 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                             //this should never happen
                             return;
                         }
+
+                        _guild->unavailable = obj.unavailable;
 
                         std::string guild_msg = fmt::format("Shard#{} : DELETED Guild: {} [T:{}] [{}]", _shard->get_id(), _guild->guild_id, guilds.size(), _guild->name);
                         log->info(guild_msg);
