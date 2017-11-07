@@ -51,7 +51,7 @@ struct message_update
     aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, message_update& m)
+inline void from_json(const nlohmann::json& j, message_update& m)
 {
     m.msg = j;
 }

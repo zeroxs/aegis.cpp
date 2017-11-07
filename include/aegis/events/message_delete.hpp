@@ -52,7 +52,7 @@ struct message_delete
     aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, message_delete& m)
+inline void from_json(const nlohmann::json& j, message_delete& m)
 {
     m.message_id = j["id"];
     m.channel_id = j["channel_id"];

@@ -45,7 +45,7 @@ struct guild_member_add
     aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, guild_member_add& m)
+inline void from_json(const nlohmann::json& j, guild_member_add& m)
 {
     m._member = j;
 }

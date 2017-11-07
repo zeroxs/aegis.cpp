@@ -43,7 +43,7 @@ struct video
     int32_t width = 0;
 };
 
-void from_json(const nlohmann::json& j, video& m)
+inline void from_json(const nlohmann::json& j, video& m)
 {
     if (j.count("url"))
         m.url = j["url"];
@@ -52,7 +52,7 @@ void from_json(const nlohmann::json& j, video& m)
     if (j.count("width") && !j["width"].is_null())
         m.width = j["width"];
 }
-void to_json(nlohmann::json& j, const video& m)
+inline void to_json(nlohmann::json& j, const video& m)
 {
     j["url"] = m.url;
     j["height"] = m.height;

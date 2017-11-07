@@ -49,7 +49,7 @@ struct user_update
     aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, user_update& m)
+inline void from_json(const nlohmann::json& j, user_update& m)
 {
     m._user = j;
 }

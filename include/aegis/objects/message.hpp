@@ -63,7 +63,7 @@ struct message
     message_type type = Default;
 };
 
-void from_json(const nlohmann::json& j, message& m)
+inline void from_json(const nlohmann::json& j, message& m)
 {
     m.message_id = j["id"];
     if (j.count("content") && !j["content"].is_null())
@@ -100,7 +100,7 @@ void from_json(const nlohmann::json& j, message& m)
         for (auto i : j["reactions"])
             m.reactions.push_back(i);
 }
-void to_json(nlohmann::json& j, const message& m)
+inline void to_json(nlohmann::json& j, const message& m)
 {
     j["id"] = m.message_id;
     j["content"] = m.content;

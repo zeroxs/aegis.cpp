@@ -48,7 +48,7 @@ struct guild_delete
     aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, guild_delete& m)
+inline void from_json(const nlohmann::json& j, guild_delete& m)
 {
     m.guild_id = j["id"];
     m.unavailable = j["unavailable"];

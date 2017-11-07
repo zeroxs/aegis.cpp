@@ -61,7 +61,7 @@ struct channel_gw
     snowflake parent_id;//?
 };
 
-void from_json(const nlohmann::json& j, channel_gw& m)
+inline void from_json(const nlohmann::json& j, channel_gw& m)
 {
     m.channel_id = j["id"];
     m.type = j["type"];
@@ -96,7 +96,7 @@ void from_json(const nlohmann::json& j, channel_gw& m)
         for (auto i : j["recipients"])
             m.recipients.push_back(i);
 }
-void to_json(nlohmann::json& j, const channel_gw& m)
+inline void to_json(nlohmann::json& j, const channel_gw& m)
 {
     j["id"] = m.channel_id;
     j["type"] = m.type;

@@ -42,13 +42,13 @@ struct reaction
     emoji emoji_;
 };
 
-void from_json(const nlohmann::json& j, reaction& m)
+inline void from_json(const nlohmann::json& j, reaction& m)
 {
     m.count = j["count"];
     m.me = j["me"];
     m.emoji_ = j["emoji_"];
 }
-void to_json(nlohmann::json& j, const reaction& m)
+inline void to_json(nlohmann::json& j, const reaction& m)
 {
     j["count"] = m.count;
     j["me"] = m.me;

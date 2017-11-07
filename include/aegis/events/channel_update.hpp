@@ -48,7 +48,7 @@ struct channel_update
     aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, channel_update& m)
+inline void from_json(const nlohmann::json& j, channel_update& m)
 {
     m._channel = j;
 }

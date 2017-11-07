@@ -59,7 +59,7 @@ public:
     std::vector<field> fields;
 };
 
-void from_json(const nlohmann::json& j, embed& m)
+inline void from_json(const nlohmann::json& j, embed& m)
 {
     if (j.count("title") && !j["title"].is_null())
         m.title = j["title"];
@@ -87,7 +87,7 @@ void from_json(const nlohmann::json& j, embed& m)
         for (auto i : j["fields"])
             m.fields.push_back(i);
 }
-void to_json(nlohmann::json& j, const embed& m)
+inline void to_json(nlohmann::json& j, const embed& m)
 {
     j["title"] = m.title;
     j["type"] = m.type;

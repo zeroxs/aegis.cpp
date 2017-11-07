@@ -49,7 +49,7 @@ struct permission_overwrite
     int64_t allow = 0;
     int64_t deny = 0;
 };
-void from_json(const nlohmann::json& j, permission_overwrite& m)
+inline void from_json(const nlohmann::json& j, permission_overwrite& m)
 {
     m.id = j["id"];
     if (j.count("type"))
@@ -57,7 +57,7 @@ void from_json(const nlohmann::json& j, permission_overwrite& m)
     m.allow = j["allow"];
     m.deny = j["deny"];
 }
-void to_json(nlohmann::json& j, const permission_overwrite& m)
+inline void to_json(nlohmann::json& j, const permission_overwrite& m)
 {
     j["id"] = m.id;
     j["type"] = m.type;

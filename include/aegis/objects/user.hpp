@@ -57,7 +57,7 @@ struct user
     std::string email;
 };
 
-void from_json(const nlohmann::json& j, user& m)
+inline void from_json(const nlohmann::json& j, user& m)
 {
     m.user_id = j["id"];
     if (j.count("guild_id") && !j["guild_id"].is_null())
@@ -75,7 +75,7 @@ void from_json(const nlohmann::json& j, user& m)
     if (j.count("verified") && !j["verified"].is_null())
         m.verified = j["verified"];
 }
-void to_json(nlohmann::json& j, const user& m)
+inline void to_json(nlohmann::json& j, const user& m)
 {
     j["id"] = m.user_id;
     j["guild_id"] = m.guild_id;

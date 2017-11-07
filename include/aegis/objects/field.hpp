@@ -44,7 +44,7 @@ struct field
     bool isinline = false;
 };
 
-void from_json(const nlohmann::json& j, field& m)
+inline void from_json(const nlohmann::json& j, field& m)
 {
     if (j.count("name"))
         m.name = j["name"];
@@ -53,7 +53,7 @@ void from_json(const nlohmann::json& j, field& m)
     if (j.count("inline"))
         m.isinline = j["inline"];
 }
-void to_json(nlohmann::json& j, const field& m)
+inline void to_json(nlohmann::json& j, const field& m)
 {
     j["name"] = m.name;
     j["value"] = m.value;

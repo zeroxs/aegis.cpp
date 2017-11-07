@@ -52,7 +52,7 @@ struct ready
     aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, ready& m)
+inline void from_json(const nlohmann::json& j, ready& m)
 {
     m._user = j["user"];
     if (j.count("private_channels") && !j["private_channels"].is_null())
@@ -65,7 +65,7 @@ void from_json(const nlohmann::json& j, ready& m)
         for (auto i : j["_trace"])
             m._trace.push_back(i);
 }
-void to_json(nlohmann::json& j, const ready& m)
+inline void to_json(nlohmann::json& j, const ready& m)
 {
     j["user"] = m._user;
     if (m._trace.size() > 0)

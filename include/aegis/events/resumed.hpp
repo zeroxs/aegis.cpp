@@ -47,13 +47,13 @@ struct resumed
     aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, resumed& m)
+inline void from_json(const nlohmann::json& j, resumed& m)
 {
     if (j.count("_trace") && !j["_trace"].is_null())
         for (auto i : j["_trace"])
             m._trace.push_back(i);
 }
-void to_json(nlohmann::json& j, const resumed& m)
+inline void to_json(nlohmann::json& j, const resumed& m)
 {
     if (m._trace.size() > 0)
         for (auto i : m._trace)

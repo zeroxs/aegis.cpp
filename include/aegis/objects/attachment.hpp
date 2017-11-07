@@ -48,7 +48,7 @@ struct attachment
     int32_t width = 0;
 };
 
-void from_json(const nlohmann::json& j, attachment& m)
+inline void from_json(const nlohmann::json& j, attachment& m)
 {
     if (j.count("id"))
         m.id = j["id"];
@@ -65,7 +65,7 @@ void from_json(const nlohmann::json& j, attachment& m)
     if (j.count("width") && !j["width"].is_null())
         m.width = j["width"];
 }
-void to_json(nlohmann::json& j, const attachment& m)
+inline void to_json(nlohmann::json& j, const attachment& m)
 {
     j["id"] = m.id;
     j["filename"] = m.filename;

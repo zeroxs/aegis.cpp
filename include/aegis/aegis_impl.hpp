@@ -165,7 +165,7 @@ inline std::optional<rest_reply> aegis::get(std::string_view path, std::string_v
     return call(path, content, "GET");
 }
 
-std::optional<rest_reply> aegis::post(std::string_view path, std::string_view content)
+inline std::optional<rest_reply> aegis::post(std::string_view path, std::string_view content)
 {
     return call(path, content, "POST");
 }

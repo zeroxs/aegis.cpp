@@ -113,14 +113,14 @@ private:
     static constexpr int64_t _discordEpoch = 1420070400000;
 };
 
-void from_json(const nlohmann::json& j, snowflake& s)
+inline void from_json(const nlohmann::json& j, snowflake& s)
 {
     if (j.is_string())
         s = std::stoll(j.get<std::string>());
     else if (j.is_number())
         s = j.get<int64_t>();
 }
-void to_json(nlohmann::json& j, const snowflake& s)
+inline void to_json(nlohmann::json& j, const snowflake& s)
 {
     j = json{ static_cast<int64_t>(s) };
 }

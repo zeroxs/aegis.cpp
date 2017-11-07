@@ -47,7 +47,7 @@ struct guild_members_chunk
     aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, guild_members_chunk& m)
+inline void from_json(const nlohmann::json& j, guild_members_chunk& m)
 {
     m.guild_id = j["guild_id"];
     if (j.count("members") && !j["members"].is_null())

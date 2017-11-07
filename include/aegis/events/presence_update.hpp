@@ -47,7 +47,7 @@ struct presence_update
     aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, presence_update& m)
+inline void from_json(const nlohmann::json& j, presence_update& m)
 {
     m._user = j["user"];
 }

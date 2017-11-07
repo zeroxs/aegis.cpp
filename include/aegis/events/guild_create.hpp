@@ -48,7 +48,7 @@ struct guild_create
     aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, guild_create& m)
+inline void from_json(const nlohmann::json& j, guild_create& m)
 {
     m._guild = j;
 }

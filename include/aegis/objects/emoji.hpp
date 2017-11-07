@@ -47,7 +47,7 @@ struct emoji
     bool managed = false;
 };
 
-void from_json(const nlohmann::json& j, emoji& m)
+inline void from_json(const nlohmann::json& j, emoji& m)
 {
     m.emoji_id = j["id"];
     if (j.count("name") && !j["name"].is_null())
@@ -62,7 +62,7 @@ void from_json(const nlohmann::json& j, emoji& m)
         for (auto i : j["roles"])
             m.roles.push_back(i);
 }
-void to_json(nlohmann::json& j, const emoji& m)
+inline void to_json(nlohmann::json& j, const emoji& m)
 {
     j["id"] = m.emoji_id;
     j["name"] = m.name;

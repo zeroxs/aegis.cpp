@@ -82,11 +82,11 @@ struct guild_gw
 };
 
 
-void from_json(const nlohmann::json& j, guild_gw& m)
+inline void from_json(const nlohmann::json& j, guild_gw& m)
 {
 //TODO:
 }
-void to_json(nlohmann::json& j, const guild_gw& m)
+inline void to_json(nlohmann::json& j, const guild_gw& m)
 {
 
 }

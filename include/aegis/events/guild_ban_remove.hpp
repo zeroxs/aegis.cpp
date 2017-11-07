@@ -45,7 +45,7 @@ struct guild_ban_remove
     aegis * bot;
 };
 
-void from_json(const nlohmann::json& j, guild_ban_remove& m)
+inline void from_json(const nlohmann::json& j, guild_ban_remove& m)
 {
     m._user = j["user"];
 }
