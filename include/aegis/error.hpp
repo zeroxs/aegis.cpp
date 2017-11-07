@@ -77,6 +77,8 @@ public:
                 return "Token invalid";
             case error::invalid_state:
                 return "Invalid state";
+            case error::get_gateway:
+                return "Unable to retrieve Gateway data";
             default:
                 return "Unknown";
         }
