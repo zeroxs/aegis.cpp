@@ -120,7 +120,7 @@ inline void aegis::keepAlive(const asio::error_code & ec, const int ms, shard * 
             if (_shard->connection_state == Shutdown || _shard->connection == nullptr)
                 return;
 
-            if (_shard->heartbeat_ack != 0 && _shard->lastheartbeat > _shard->heartbeat_ack)
+            if (_shard->heartbeat_ack != 0 && _shard->lastheartbeat - _shard->heartbeat_ack > ms*2)
             {
                 log->error("Heartbeat ack not received. Reconnecting. {} {}", _shard->heartbeat_ack, _shard->lastheartbeat);
                 websocket_o.close(_shard->connection, 1001, "");
@@ -238,6 +238,7 @@ inline std::optional<rest_reply> aegis::call(std::string_view path, std::string_
 
         bool global = !(hresponse.get_header("X-RateLimit-Global").size() == 0);
 
+        //TODO: make this work with OpenSSL 1.1.0+
         if (error != asio::error::eof && ERR_GET_REASON(error.value()) != SSL_R_SHORT_READ)
             throw asio::system_error(error);
         return { { hresponse.get_status_code(), global, limit, remaining, reset, retry, hresponse.get_body().size() > 0 ? hresponse.get_body() : "" } };
@@ -817,7 +818,7 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
             }
             if (result["op"] == 9)
             {
-                _shard->sequence = result["s"];
+                _shard->sequence = 0;
                 log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->shardid);
                 json obj = {
                     { "op", 2 },

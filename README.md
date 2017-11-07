@@ -15,7 +15,7 @@ Libraries used:
 - [Websocketpp](https://github.com/zaphoyd/websocketpp)
 - [JSON for Modern C++](https://github.com/nlohmann/json)
 - [spdlog](https://github.com/gabime/spdlog)
-- [OpenSSL](https://www.openssl.org)
+- [OpenSSL 1.0.2](https://www.openssl.org)
 - [zlib](https://zlib.net)
 - [zstr](https://github.com/mateidavid/zstr)
 

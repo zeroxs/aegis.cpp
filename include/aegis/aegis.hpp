@@ -234,6 +234,12 @@ public:
             return;
         }
 
+        if (res->reply_code == 401)
+        {
+            ec = make_error_code(error::invalid_token);
+            return;
+        }
+
 
         json ret = json::parse(res->content);
         if (ret.count("message"))
