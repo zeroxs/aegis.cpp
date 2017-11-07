@@ -460,7 +460,7 @@ inline json example::make_info_obj(shard * _shard, aegis * bot)
     }
             )
         },
-        { "footer",{ { "icon_url", "https://cdn.discordapp.com/emojis/289276304564420608.png" },{ "text", "Made in c++ running aegis library" } } }
+        { "footer",{ { "icon_url", "https://cdn.discordapp.com/emojis/289276304564420608.png" },{ "text", fmt::format("Made in c++ running {}", AEGIS_VERSION_TEXT) } } }
     };
     return std::move(t);
 }

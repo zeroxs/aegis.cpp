@@ -200,7 +200,7 @@ inline std::optional<rest_reply> aegis::call(std::string_view path, std::string_
         else
             request_stream << "Authorization: " << token << "\r\n";
 
-        request_stream << "User-Agent: DiscordBot (https://github.com/zeroxs/aegis.cpp 0.1.0)\r\n";
+        request_stream << "User-Agent: DiscordBot (https://github.com/zeroxs/aegis.cpp " << AEGIS_VERSION_LONG << ")\r\n";
         request_stream << "Content-Length: " << content.size() << "\r\n";
         request_stream << "Content-Type: application/json\r\n";
         request_stream << "Connection: close\r\n\r\n";
