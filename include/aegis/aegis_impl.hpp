@@ -238,8 +238,8 @@ inline std::optional<rest_reply> aegis::call(std::string_view path, std::string_
 
         bool global = !(hresponse.get_header("X-RateLimit-Global").size() == 0);
 
-        //TODO: make this work with OpenSSL 1.1.0+
-        if (error != asio::error::eof && ERR_GET_REASON(error.value()) != SSL_R_SHORT_READ)
+        //TODO: check this with OpenSSL 1.1.0+ 
+        if (error != asio::error::eof && error != asio::ssl::error::stream_truncated)
             throw asio::system_error(error);
         return { { hresponse.get_status_code(), global, limit, remaining, reset, retry, hresponse.get_body().size() > 0 ? hresponse.get_body() : "" } };
     }
