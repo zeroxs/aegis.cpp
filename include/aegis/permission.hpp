@@ -32,6 +32,8 @@
 namespace aegiscpp
 {
 
+/**\todo Needs documentation
+*/
 class permission
 {
 public:

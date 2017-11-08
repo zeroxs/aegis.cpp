@@ -47,45 +47,60 @@ namespace aegiscpp
 class member;
 class channel;
 
+/**<\todo Remove and create proper struct */
+struct role_gw {};
+/**<\todo Remove and create proper struct */
+struct voice_state {};
+/**<\todo Remove and create proper struct */
+struct presence {};
+
+
+/**\todo Needs documentation
+*/
 struct guild_gw
 {
     //TODO:
-    snowflake guild_id;
-    std::string name;
-    std::string icon;
-    std::string splash;
-    snowflake owner_id;
-    std::string region;
-    snowflake afk_channel_id;
-    int32_t afk_timeout = 0;
-    bool embed_enabled = false;
-    snowflake embed_channel_id;
-    int8_t verification_level = 0;
-    int8_t default_message_notifications = 0;
-    int8_t explicit_content_filter = 0;
-    //std::vector<role> roles;
-    std::vector<emoji> emojis;
-    std::vector<std::string> features;
-    int8_t mfa_level = 0;
-    snowflake application_id;//?
-    bool widget_enabled = false;
-    snowflake widget_channel_id;
+    snowflake guild_id; /**<\todo Needs documentation */
+    std::string name; /**<\todo Needs documentation */
+    std::string icon; /**<\todo Needs documentation */
+    std::string splash; /**<\todo Needs documentation */
+    snowflake owner_id; /**<\todo Needs documentation */
+    std::string region; /**<\todo Needs documentation */
+    snowflake afk_channel_id; /**<\todo Needs documentation */
+    int32_t afk_timeout = 0; /**<\todo Needs documentation */
+    bool embed_enabled = false; /**<\todo Needs documentation */
+    snowflake embed_channel_id; /**<\todo Needs documentation */
+    int8_t verification_level = 0; /**<\todo Needs documentation */
+    int8_t default_message_notifications = 0; /**<\todo Needs documentation */
+    int8_t explicit_content_filter = 0; /**<\todo Needs documentation */
+    std::vector<role_gw> roles; /**<\todo Needs documentation */
+    std::vector<emoji> emojis; /**<\todo Needs documentation */
+    std::vector<std::string> features; /**<\todo Needs documentation */
+    int8_t mfa_level = 0; /**<\todo Needs documentation */
+    snowflake application_id;//? /**<\todo Needs documentation */
+    bool widget_enabled = false; /**<\todo Needs documentation */
+    snowflake widget_channel_id; /**<\todo Needs documentation */
     //createonly
-    std::string joined_at;
-    bool large = false;
-    bool unavailable = false;
-    int32_t member_count = 0;
-    //std::vector<voice_state> voice_states;
-    std::vector<guild_member> members;
-    std::vector<channel_gw> channels;
-    //std::vector<presence> presences;
+    std::string joined_at; /**<\todo Needs documentation */
+    bool large = false; /**<\todo Needs documentation */
+    bool unavailable = false; /**<\todo Needs documentation */
+    int32_t member_count = 0; /**<\todo Needs documentation */
+    std::vector<voice_state> voice_states; /**<\todo Needs documentation */
+    std::vector<guild_member> members; /**<\todo Needs documentation */
+    std::vector<channel_gw> channels; /**<\todo Needs documentation */
+    std::vector<presence> presences; /**<\todo Needs documentation */
 };
 
 
+/**\todo Incomplete. Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, guild_gw& m)
 {
 //TODO:
 }
+
+/**\todo Needs documentation
+*/
 inline void to_json(nlohmann::json& j, const guild_gw& m)
 {
 

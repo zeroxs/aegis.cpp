@@ -41,13 +41,17 @@ namespace aegiscpp
 class shard;
 class aegis;
 
+/**\todo Needs documentation
+*/
 struct channel_delete
 {
-    channel_gw _channel;
-    shard * _shard;
-    aegis * bot;
+    channel_gw _channel; /**<\todo Needs documentation */
+    shard * _shard; /**<\todo Needs documentation */
+    aegis * bot; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, channel_delete& m)
 {
     m._channel = j;

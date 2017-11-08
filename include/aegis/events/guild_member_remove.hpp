@@ -39,14 +39,18 @@
 namespace aegiscpp
 {
 
+/**\todo Needs documentation
+*/
 struct guild_member_remove
 {
-    user _user;
-    snowflake guild_id;
-    shard * _shard;
-    aegis * bot;
+    user _user; /**<\todo Needs documentation */
+    snowflake guild_id; /**<\todo Needs documentation */
+    shard * _shard; /**<\todo Needs documentation */
+    aegis * bot; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, guild_member_remove& m)
 {
     m._user = j["user"];

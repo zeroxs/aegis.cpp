@@ -39,9 +39,17 @@ namespace rest_limits
 using rest_call = std::function<std::optional<rest_reply>(std::string path, std::string content, std::string method)>;
 using namespace std::chrono;
 
+/**
+* Bucket class for tracking the ratelimits per snowflake per major parameter.
+* Each bucket tracks a single major parameter and a single snowflake
+* Current major parameters are GUILD, CHANNEL, and EMOJI
+*/
 class bucket
 {
 public:
+    /**
+    * Construct a bucket object for tracking ratelimits per major parameter of the REST API (guild/channel/emoji)
+    */
     bucket()
         : limit(0)
         , remaining(1)
@@ -52,6 +60,10 @@ public:
     std::atomic_int32_t remaining;
     std::atomic_int64_t reset;
 
+    /// Check if bucket can send a message without hitting the ratelimit
+    /**
+    * @returns true if bucket ratelimits permit a message to be sent
+    */
     bool can_work()
     {
         if (_queue.size() == 0)
@@ -64,23 +76,26 @@ public:
         return true;
     }
 
-    bool can_async()
-    {
-        int64_t time = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-        if (remaining > 0)
-            return true;
-        if (time < reset)
-            return false;
-        return true;
-    }
-
     std::mutex m;
     std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_reply)>>> _queue;
 };
 
+/**
+* Bucket factory class for mapping snowflakes to specific buckets.
+* Each bucket_factory belongs to one of the major REST API parameters
+* Current major parameters are GUILD, CHANNEL, and EMOJI
+*/
 class bucket_factory
 {
 public:
+    /// Construct a bucket_factory object which tracks individual bucket objects
+    /**
+    * @param call Function pointer to the REST API function
+    *
+    * @param global_limit Pointer to an atomic_int64 for tracking the global ratelimit
+    *
+    * @returns true on successful request, false for no permissions
+    */
     bucket_factory(rest_call call, std::atomic_int64_t * global_limit)
         : _call(call)
         , global_limit(global_limit)
@@ -88,6 +103,9 @@ public:
 
     }
 
+    /**
+    * Attempt to process one queued REST call per bucket
+    */
     void run_one()
     {
         for (auto & kv : _buckets)
@@ -102,39 +120,7 @@ public:
 
             bkt->_queue.pop();
         }
-
     }
-
-    //////////////////////////////////////////////////////////////////////////
-
-    void do_action(std::unique_ptr<bucket>& bkt, std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_reply)>>>::reference query)
-    {
-        int64_t time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-
-        spdlog::get("aegis")->debug("chrono: {} reset: {}", time, bkt->reset);
-
-        std::optional<rest_reply> reply(_call(std::get<0>(query), std::get<1>(query), std::get<2>(query)));
-        if (!reply.has_value())
-        {
-            //failed to call
-            return;
-        }
-        if (reply->global)
-        {
-            *global_limit = (time + reply->retry);
-            return;
-        }
-
-        bkt->limit = reply->limit;
-        bkt->remaining = reply->remaining;
-        bkt->reset = reply->reset;
-        if (std::get<3>(query) != nullptr)
-        {
-            std::get<3>(query)(std::move(reply.value()));
-        }
-    }
-
-    //////////////////////////////////////////////////////////////////////////
 
 //     pplx::task<rest_reply> do_async(int64_t id, std::string path, std::string content = "", std::string method = "POST")
 //     {
@@ -165,7 +151,20 @@ public:
 //             return std::move(reply.value_or(rest_reply()));
 //         });
 //     }
-
+        
+    /// Push a new REST request onto the queue
+    /**
+    * @param id Snowflake of object bucket tracks ratelimits for
+    *
+    * @param path String of URL request
+    *
+    * @param content String of HTTP body content
+    *
+    * @param method String of HTTP method (GET/POST/PUT/DELETE/PATCH)
+    *
+    * @param callback A callback to execute after REST execution
+    *
+    */
     void push(int64_t id, std::string path, std::string content, std::string method, std::function<void(rest_reply)> callback = {})
     {
 
@@ -181,11 +180,52 @@ public:
         }
     }
 
+private:
+    /// Perform a single queued REST call
+    /**
+    * @param bkt Reference of unique_ptr of a bucket
+    *
+    * @param query
+    *
+    * @returns true on successful request, false for no permissions
+    */
+    void do_action(std::unique_ptr<bucket>& bkt, std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_reply)>>>::reference query)
+    {
+        int64_t time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+        spdlog::get("aegis")->debug("chrono: {} reset: {}", time, bkt->reset);
+
+        std::optional<rest_reply> reply(_call(std::get<0>(query), std::get<1>(query), std::get<2>(query)));
+        if (!reply.has_value())
+        {
+            //failed to call
+            return;
+        }
+        if (reply->global)
+        {
+            *global_limit = (time + reply->retry);
+            return;
+        }
+
+        bkt->limit = reply->limit;
+        bkt->remaining = reply->remaining;
+        bkt->reset = reply->reset;
+        if (std::get<3>(query) != nullptr)
+        {
+            std::get<3>(query)(std::move(reply.value()));
+        }
+    }
+
     std::unordered_map<int64_t, std::unique_ptr<bucket>> _buckets;
     rest_call _call;
     std::atomic_int64_t * global_limit;
 };
 
+/**
+* Major parameter of REST API access
+* Emoji is a partial major parameter
+* Emojis are ratelimited per guild
+*/
 enum bucket_type
 {
     GUILD = 0,
@@ -193,20 +233,40 @@ enum bucket_type
     EMOJI = 2
 };
 
-
+/**
+* Bucket factory class for mapping snowflakes to specific buckets.
+* Each bucket_factory belongs to one of the major REST API parameters
+* Current major parameters are GUILD, CHANNEL, and EMOJI
+*/
 class ratelimiter
 {
 public:
+    /// Construct a ratelimiter object for managing the bucket factories
+    /**
+    * @param call Function pointer to the REST API function
+    */
     explicit ratelimiter(rest_call call)
         : _call(call)
     {
     };
 
+    /// Add a new bucket factory
+    /**
+    * @see bucket_type
+    * @param buckettype Enum value of bucket to add
+    */
     void add(const uint16_t buckettype)
     {
         _map.emplace(buckettype, std::make_unique<bucket_factory>(_call, &global_limit));
     }
 
+    /// Get a bucket factory object
+    /**
+    * @see bucket_type
+    * @param buckettype Enum value of bucket
+    *
+    * @returns Reference to a bucket_factory object
+    */
     bucket_factory & get(uint16_t buckettype) noexcept
     {
         auto bkt = _map.find(buckettype);
@@ -216,6 +276,17 @@ public:
         return *_map.emplace(buckettype, std::make_unique<bucket_factory>(_call, &global_limit)).first->second.get();
     }
 
+    /// Check if globally ratelimited
+    /**
+    * @returns true if globally ratelimited
+    */
+    bool is_global()
+    {
+        return global_limit > 0;
+    }
+
+private:
+    friend aegis;
     void process_queue()
     {
         if (global_limit > 0)
@@ -236,18 +307,12 @@ public:
         }
     }
 
-    bool is_global()
-    {
-        return global_limit > 0;
-    }
-
-    std::atomic_int64_t global_limit;
 
 
-private:
+    std::atomic_int64_t global_limit; /**< Timestamp in seconds when global ratelimit expires */
+
     std::unordered_map<uint16_t, std::unique_ptr<bucket_factory>> _map;
     rest_call _call;
-
 
     //std::unordered_map<uint64_t, int> bucket;
 };

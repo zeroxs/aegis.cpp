@@ -72,6 +72,8 @@ namespace utility
 namespace platform
 {
 
+/**\todo Needs documentation
+*/
 enum class OS
 {
     Linux,
@@ -111,6 +113,8 @@ constexpr OS m_os = OS::undefined;
 #endif
 
 
+/**\todo Needs documentation
+*/
 inline const std::string get_platform()
 {
     return std::string(m_platform);

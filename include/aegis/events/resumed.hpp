@@ -40,19 +40,26 @@ namespace aegiscpp
 class shard;
 class aegis;
 
+/**\todo Needs documentation
+*/
 struct resumed
 {
-    std::vector<std::string> _trace;
-    shard * _shard;
-    aegis * bot;
+    std::vector<std::string> _trace; /**<\todo Needs documentation */
+    shard * _shard; /**<\todo Needs documentation */
+    aegis * bot; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, resumed& m)
 {
     if (j.count("_trace") && !j["_trace"].is_null())
         for (auto i : j["_trace"])
             m._trace.push_back(i);
 }
+
+/**\todo Needs documentation
+*/
 inline void to_json(nlohmann::json& j, const resumed& m)
 {
     if (m._trace.size() > 0)

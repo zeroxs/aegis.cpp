@@ -41,13 +41,17 @@ namespace aegiscpp
 class shard;
 class aegis;
 
+/**\todo Needs documentation
+*/
 struct guild_create
 {
-    guild_gw _guild;
-    shard * _shard;
-    aegis * bot;
+    guild_gw _guild; /**<\todo Needs documentation */
+    shard * _shard; /**<\todo Needs documentation */
+    aegis * bot; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, guild_create& m)
 {
     m._guild = j;

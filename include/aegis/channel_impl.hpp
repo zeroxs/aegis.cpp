@@ -52,7 +52,7 @@ inline void channel::load_with_guild(guild & _guild, const json & obj, shard * _
         _channel->position = obj["position"];
         _channel->type = static_cast<channel_type>(obj["type"].get<int>());// 0 = text, 2 = voice
 
-                                                                                           //voice channels
+        //voice channels
         if (obj.count("bitrate") && !obj["bitrate"].is_null())
         {
             _channel->bitrate = obj["bitrate"];
@@ -147,7 +147,8 @@ inline bool channel::edit_message_embed(snowflake message_id, std::string conten
     return true;
 }
 
-//TODO: can delete your own messages freely - provide separate function or keep history of messages
+/**\todo can delete your own messages freely - provide separate function or keep history of messages
+*/
 inline bool channel::delete_message(snowflake message_id, std::function<void(rest_reply)> callback)
 {
     if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
@@ -222,7 +223,7 @@ inline bool channel::create_reaction(snowflake message_id, std::string emoji_tex
     if (!permission(_guild->base_permissions(_guild->self())).canAddReactions())
         return false;
 
-    emoji.push(channel_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "", "PUT", callback);
+    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "", "PUT", callback);
     return true;
 }
 
@@ -231,23 +232,24 @@ inline bool channel::delete_own_reaction(snowflake message_id, std::string emoji
     if (!permission(_guild->base_permissions(_guild->self())).canAddReactions())
         return false;
 
-    emoji.push(channel_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "", "DELETE", callback);
+    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "", "DELETE", callback);
     return true;
 }
 
-inline bool channel::delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake user_id, std::function<void(rest_reply)> callback)
+inline bool channel::delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake member_id, std::function<void(rest_reply)> callback)
 {
     if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
         return false;
 
-    emoji.push(channel_id, fmt::format("/channels/{}/messages/{}/reactions/{}/{}", channel_id, message_id, emoji_text, user_id), "", "DELETE", callback);
+    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/{}", channel_id, message_id, emoji_text, member_id), "", "DELETE", callback);
     return true;
 }
 
+/**\todo Support query parameters
+*  \todo before[snowflake], after[snowflake], limit[int]
+*/
 inline bool channel::get_reactions(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback)
 {
-    //TODO: support query params?
-    //before[snowflake], after[snowflake], limit[int]
     ratelimit.push(channel_id, fmt::format("/channels/{}/messages/{}/reactions/{}", channel_id, message_id, emoji_text), "", "GET", callback);
     return true;
 }
@@ -257,7 +259,7 @@ inline bool channel::delete_all_reactions(snowflake message_id, std::function<vo
     if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
         return false;
 
-    emoji.push(channel_id, fmt::format("/channels/{}/messages/{}/reactions", channel_id, message_id), "", "DELETE", callback);
+    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions", channel_id, message_id), "", "DELETE", callback);
     return true;
 }
 
@@ -301,7 +303,6 @@ inline bool channel::create_channel_invite(std::optional<int> max_age, std::opti
     return true;
 }
 
-
 inline bool channel::delete_channel_permission(snowflake overwrite_id, std::function<void(rest_reply)> callback)
 {
     if (!permission(_guild->base_permissions(_guild->self())).canManageRoles())
@@ -319,8 +320,6 @@ inline bool channel::trigger_typing_indicator(std::function<void(rest_reply)> ca
 
 inline bool channel::get_pinned_messages(std::function<void(rest_reply)> callback)
 {
-    //returns
-    //TODO: 
     return true;
 }
 
@@ -340,15 +339,17 @@ inline bool channel::delete_pinned_channel_message(std::function<void(rest_reply
     return true;
 }
 
+/**\todo Will likely move to aegis class
+*/
 inline bool channel::group_dm_add_recipient(std::function<void(rest_reply)> callback)//will go in aegis::aegis
 {
-    //TODO: 
     return true;
 }
 
+/**\todo Will likely move to aegis class
+*/
 inline bool channel::group_dm_remove_recipient(std::function<void(rest_reply)> callback)//will go in aegis::aegis
 {
-    //TODO: 
     return true;
 }
 

@@ -40,13 +40,17 @@ namespace aegiscpp
 class shard;
 class aegis;
 
+/**\todo Needs documentation
+*/
 struct presence_update
 {
-    user _user;
-    shard * _shard;
-    aegis * bot;
+    user _user; /**<\todo Needs documentation */
+    shard * _shard; /**<\todo Needs documentation */
+    aegis * bot; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, presence_update& m)
 {
     m._user = j["user"];

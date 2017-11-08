@@ -44,25 +44,29 @@ namespace aegiscpp
 class member;
 class channel;
 
+/**\todo Needs documentation
+*/
 struct message
 {
-    snowflake message_id;
-    std::string content;
-    std::string timestamp;
-    std::string edited_timestamp;
-    bool tts = false;
-    bool mention_everyone = false;
-    std::vector<snowflake> mentions;
-    std::vector<snowflake> mention_roles;
-    std::vector<attachment> attachments;
-    std::vector<embed> embeds;
-    bool pinned = false;
-    std::vector<reaction> reactions;
-    snowflake nonce;
-    std::string webhook_id;
-    message_type type = Default;
+    snowflake message_id; /**<\todo Needs documentation */
+    std::string content; /**<\todo Needs documentation */
+    std::string timestamp; /**<\todo Needs documentation */
+    std::string edited_timestamp; /**<\todo Needs documentation */
+    bool tts = false; /**<\todo Needs documentation */
+    bool mention_everyone = false; /**<\todo Needs documentation */
+    std::vector<snowflake> mentions; /**<\todo Needs documentation */
+    std::vector<snowflake> mention_roles; /**<\todo Needs documentation */
+    std::vector<attachment> attachments; /**<\todo Needs documentation */
+    std::vector<embed> embeds; /**<\todo Needs documentation */
+    bool pinned = false; /**<\todo Needs documentation */
+    std::vector<reaction> reactions; /**<\todo Needs documentation */
+    snowflake nonce; /**<\todo Needs documentation */
+    std::string webhook_id; /**<\todo Needs documentation */
+    message_type type = Default; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, message& m)
 {
     m.message_id = j["id"];
@@ -100,6 +104,9 @@ inline void from_json(const nlohmann::json& j, message& m)
         for (auto i : j["reactions"])
             m.reactions.push_back(i);
 }
+
+/**\todo Needs documentation
+*/
 inline void to_json(nlohmann::json& j, const message& m)
 {
     j["id"] = m.message_id;

@@ -42,13 +42,15 @@ class channel;
 class shard;
 class aegis;
 
+/**\todo Needs documentation
+*/
 struct message_create
 {
-    channel * _channel;
-    member * _member;
-    message msg;
-    shard * _shard;
-    aegis * bot;
+    channel * _channel; /**<\todo Needs documentation */
+    member * _member; /**<\todo Needs documentation */
+    message msg; /**<\todo Needs documentation */
+    shard * _shard; /**<\todo Needs documentation */
+    aegis * bot; /**<\todo Needs documentation */
 };
 
 }

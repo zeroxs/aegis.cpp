@@ -36,13 +36,17 @@ namespace aegiscpp
 {
 
 
+/**\todo Needs documentation
+*/
 struct footer
 {
-    std::string text;
-    std::string icon_url;
-    std::string proxy_icon_url;
+    std::string text; /**<\todo Needs documentation */
+    std::string icon_url; /**<\todo Needs documentation */
+    std::string proxy_icon_url; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, footer& m)
 {
     if (j.count("text") && !j["text"].is_null())
@@ -52,6 +56,9 @@ inline void from_json(const nlohmann::json& j, footer& m)
     if (j.count("proxy_icon_url") && !j["proxy_icon_url"].is_null())
         m.proxy_icon_url = j["proxy_icon_url"];
 }
+
+/**\todo Needs documentation
+*/
 inline void to_json(nlohmann::json& j, const footer& m)
 {
     j["text"] = m.text;

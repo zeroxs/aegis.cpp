@@ -37,16 +37,20 @@ namespace aegiscpp
 {
 
 
+/**\todo Needs documentation
+*/
 struct emoji
 {
-    snowflake emoji_id;
-    std::string name;
-    std::vector<snowflake> roles;
-    snowflake user;
-    bool require_colons = false;
-    bool managed = false;
+    snowflake emoji_id; /**<\todo Needs documentation */
+    std::string name; /**<\todo Needs documentation */
+    std::vector<snowflake> roles; /**<\todo Needs documentation */
+    snowflake user; /**<\todo Needs documentation */
+    bool require_colons = false; /**<\todo Needs documentation */
+    bool managed = false; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, emoji& m)
 {
     m.emoji_id = j["id"];
@@ -62,6 +66,9 @@ inline void from_json(const nlohmann::json& j, emoji& m)
         for (auto i : j["roles"])
             m.roles.push_back(i);
 }
+
+/**\todo Needs documentation
+*/
 inline void to_json(nlohmann::json& j, const emoji& m)
 {
     j["id"] = m.emoji_id;

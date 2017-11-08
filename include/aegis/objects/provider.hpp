@@ -36,12 +36,16 @@ namespace aegiscpp
 {
 
 
+/**\todo Needs documentation
+*/
 struct provider
 {
-    std::string name;
-    std::string url;
+    std::string name; /**<\todo Needs documentation */
+    std::string url; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, provider& m)
 {
     if (j.count("name") && !j["name"].is_null())
@@ -49,6 +53,9 @@ inline void from_json(const nlohmann::json& j, provider& m)
     if (j.count("url") && !j["url"].is_null())
         m.url = j["url"];
 }
+
+/**\todo Needs documentation
+*/
 inline void to_json(nlohmann::json& j, const provider& m)
 {
     j["name"] = m.name;

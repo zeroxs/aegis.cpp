@@ -40,14 +40,18 @@ namespace aegiscpp
 class shard;
 class aegis;
 
+/**\todo Needs documentation
+*/
 struct guild_delete
 {
-    snowflake guild_id;
-    bool unavailable;
-    shard * _shard;
-    aegis * bot;
+    snowflake guild_id; /**<\todo Needs documentation */
+    bool unavailable; /**<\todo Needs documentation */
+    shard * _shard; /**<\todo Needs documentation */
+    aegis * bot; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, guild_delete& m)
 {
     m.guild_id = j["id"];

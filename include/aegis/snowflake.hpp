@@ -33,6 +33,8 @@
 namespace aegiscpp
 {
 
+/**\todo Needs documentation
+*/
 class snowflake
 {
 public:
@@ -113,6 +115,8 @@ private:
     static constexpr int64_t _discordEpoch = 1420070400000;
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, snowflake& s)
 {
     if (j.is_string())
@@ -120,6 +124,9 @@ inline void from_json(const nlohmann::json& j, snowflake& s)
     else if (j.is_number())
         s = j.get<int64_t>();
 }
+
+/**\todo Needs documentation
+*/
 inline void to_json(nlohmann::json& j, const snowflake& s)
 {
     j = json{ static_cast<int64_t>(s) };

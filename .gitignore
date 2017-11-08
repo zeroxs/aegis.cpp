@@ -43,3 +43,7 @@ project/bin/
 *.vspx
 *.psess
 project/obj/
+
+latex/
+
+html/

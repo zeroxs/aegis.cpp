@@ -37,8 +37,12 @@ namespace aegiscpp
 {
 typedef std::pair<std::error_code, std::string> err_str_pair;
 
+/**\todo Needs documentation
+*/
 namespace error
 {
+/**\todo Needs documentation
+*/
 enum value
 {
     /// Catch-all library error
@@ -57,6 +61,8 @@ enum value
 
 };
 
+/**\todo Needs documentation
+*/
 class category : public std::error_category
 {
 public:
@@ -85,12 +91,16 @@ public:
     }
 };
 
+/**\todo Needs documentation
+*/
 inline const std::error_category & get_category()
 {
     static category instance;
     return instance;
 }
 
+/**\todo Needs documentation
+*/
 inline std::error_code make_error_code(error::value e)
 {
     return std::error_code(static_cast<int>(e), get_category());
@@ -102,6 +112,8 @@ inline std::error_code make_error_code(error::value e)
 namespace aegiscpp
 {
 
+/**\todo Needs documentation
+*/
 class exception : public std::exception
 {
 public:
@@ -133,6 +145,8 @@ public:
     std::error_code m_code;
 };
 
+/**\todo Needs documentation
+*/
 class no_permission : public std::exception
 {
 public:

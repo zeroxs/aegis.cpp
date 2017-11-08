@@ -72,13 +72,46 @@ struct voice_server_update;
 struct voice_state_update;
 struct webhooks_update;
 
+struct callbacks
+{
+    using c_inject = std::function<void(const nlohmann::json & msg, shard * _shard, aegis & bot)>;
+    /// User callbacks
+    std::function<void(typing_start obj)> i_typing_start;
+    std::function<void(message_create obj)> i_message_create;
+    std::function<void(message_create obj)> i_message_create_dm;
+    std::function<void(message_update obj)> i_message_update;
+    std::function<void(message_delete obj)> i_message_delete;
+    c_inject i_message_delete_bulk;
+    std::function<void(guild_create obj)> i_guild_create;
+    std::function<void(guild_update obj)> i_guild_update;
+    std::function<void(guild_delete obj)> i_guild_delete;
+    std::function<void(user_update obj)> i_user_update;
+    std::function<void(ready obj)> i_ready;
+    std::function<void(resumed obj)> i_resumed;
+    c_inject i_channel_create;
+    c_inject i_channel_update;
+    c_inject i_channel_delete;
+    std::function<void(guild_ban_add obj)> i_guild_ban_add;
+    std::function<void(guild_ban_remove obj)> i_guild_ban_remove;
+    c_inject i_guild_emojis_update;
+    c_inject i_guild_integrations_update;
+    std::function<void(guild_member_add obj)> i_guild_member_add;
+    std::function<void(guild_member_remove obj)> i_guild_member_remove;
+    std::function<void(guild_member_update obj)> i_guild_member_update;
+    std::function<void(guild_members_chunk obj)> i_guild_member_chunk;
+    c_inject i_guild_role_create;
+    c_inject i_guild_role_update;
+    c_inject i_guild_role_delete;
+    std::function<void(presence_update obj)> i_presence_update;
+    c_inject i_voice_state_update;
+    c_inject i_voice_server_update;
+};
+
+
 class aegis
 {
 public:
-
-    using c_inject = std::function<void(const json & msg, shard * _shard, aegis & bot)>;
-
-    /// Type of a pointer to the ASIO io_service
+    /// Type of a pointer to the asio io_service
     typedef asio::io_service * io_service_ptr;
 
     /// Type of a pointer to the Websocket++ client
@@ -93,6 +126,15 @@ public:
     /// Type of a shared pointer to an io_service work object
     typedef std::shared_ptr<asio::io_service::work> work_ptr;
 
+    /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
+    /**
+    * @see shard
+    * @see guild
+    * @see channel
+    * @see member
+    *
+    * @param token A string of the authentication token
+    */
     aegis(std::string token)
         : token(token)
         , status(Uninitialized)
@@ -116,6 +158,8 @@ public:
         debugmode = false;
     }
 
+    /// Destroys the shards, stops the asio::work object, destroys the websocket object, and attempts to join the rest_thread thread
+    ///
     ~aegis()
     {
         for (auto & c : shards)
@@ -130,6 +174,12 @@ public:
     aegis(aegis &&) = delete;
     aegis & operator=(const aegis &) = delete;
 
+    /// Perform basic initialization of the websocket object using the user-constructed asio::io_service
+    /**
+    * @param ptr A string of the uri path to get
+    *
+    * @param ec The error_code out value
+    */
     void initialize(io_service_ptr ptr, std::error_code & ec)
     {
         log->info("Initializing");
@@ -144,11 +194,17 @@ public:
         log->debug("aegis::initialize()");
         websocket_o.init_asio(ptr, ec);
         if (ec)
-            throw std::system_error(ec);
+            return;
         status = Ready;
         ec.clear();
     }
 
+    /// Perform basic initialization of the websocket object using the user-constructed asio::io_service
+    /**
+    * @see initialize(io_service_ptr, std::error_code&)
+    *
+    * @param ptr Pointer to a user-owned asio::io_service object pointer
+    */
     void initialize(io_service_ptr ptr)
     {
         std::error_code ec;
@@ -157,21 +213,41 @@ public:
             throw std::system_error(ec);
     }
 
-    //
+    /// Perform basic initialization of the asio::io_service and websocket objects
+    /**
+    * @param ec The error_code out value
+    */
     void initialize(std::error_code & ec)
     {
-        std::unique_ptr<asio::io_service> service(std::make_unique<asio::io_service>());
-        initialize(service.get(), ec);
-        if (!ec) service.release();
+        log->info("Initializing");
+        if (status != Uninitialized)
+        {
+            log->critical("aegis::initialize() called in the wrong state");
+            using error::make_error_code;
+            ec = make_error_code(error::invalid_state);
+            return;
+        }
+
+        log->debug("aegis::initialize()");
+        websocket_o.init_asio(ec);
+        if (ec)
+            return;
+        status = Ready;
+        ec.clear();
     }
 
+    /// Perform basic initialization of the asio::io_service and websocket objects
+    /**
+    * @see initialize(std::error_code&)
+    */
     void initialize()
     {
-        std::unique_ptr<asio::io_service> service(std::make_unique<asio::io_service>());
-        initialize(service.get());
-        service.release();
+        std::error_code ec;
+        initialize(ec);
     }
 
+    /// Performs a basic startup sequence for initializing and connecting the library
+    ///
     void easy_start()
     {
         std::error_code ec;
@@ -198,18 +274,24 @@ public:
         make_connections.join();
     }
 
+    /// Invokes a shutdown on the entire lib. Sets internal state to `Shutdown`, stops the asio::work object
+    /// and propogates the Shutdown state along with closing all websockets within the shard vector
     void shutdown()
     {
         set_state(Shutdown);
+        stop_work();
         for (auto & _shard : shards)
         {
             _shard->connection_state = Shutdown;
             _shard->connection->close(1001, "");
             _shard->do_reset();
         }
-        stop_work();
     }
 
+    /// Creates the parent websocket object
+    /**
+    * @param ec The error_code out value
+    */
     void websocketcreate(std::error_code & ec)
     {
         log->info("Creating websocket");
@@ -287,6 +369,9 @@ public:
     }
 
     /// Initiate websocket connection
+    /**
+    * @param ec The error_code out value
+    */
     void connect(std::error_code & ec)
     {
         log->info("Websocket[s] connecting");
@@ -312,6 +397,10 @@ public:
         }
     }
 
+    /// Assign the message, connect, and close callbacks to the websocket object
+    /**
+    * @param _shard The shard object this websocket belong to
+    */
     void setup_callbacks(shard * _shard)
     {
         _shard->connection->set_message_handler([_shard, this](websocketpp::connection_hdl hdl, message_ptr msg)
@@ -328,87 +417,80 @@ public:
         });
     }
 
+    /// Starts the asio::work object
+    ///
     void start_work()
     {
         websocket_o.start_perpetual();
     }
 
+    /// Stops the asio::work object
+    ///
     void stop_work()
     {
         websocket_o.stop_perpetual();
     }
 
-    void debug_trace(shard * _shard)
-    {
-        auto iter = _shard->debug_messages.rend();
-        fmt::MemoryWriter w;
-
-        w << "==========<Start Error Trace>==========\n"
-            << "Shard: " << _shard->shardid << '\n'
-            << "Seq: " << _shard->sequence << '\n';
-        int i = 0;
-        for (auto iter = _shard->debug_messages.rbegin(); (i < 5 && iter != _shard->debug_messages.rend()) ; ++i, ++iter )
-            w << (*iter).second << '\n';
-
-
-        for (auto & c : shards)
-        {
-            w << fmt::format("Shard#{} shard:{:p} m_connection:{:p}\n", _shard->shardid, static_cast<void*>(c.get()), static_cast<void*>(c->connection.get()));
-        }
-
-        w << "==========<End Error Trace>==========";
-
-        log->critical(w.str());
-    }
+    /// Outputs the last 5 messages received from the gateway
+    ///
+    void debug_trace(shard * _shard);
 
     /// Performs a GET request on the path
     /**
-     * @param path A string of the uri path to get
-     * 
-     * @returns std::optional<std::string>
-     */
+    * @see rest_reply
+    * @param path A string of the uri path to get
+    * 
+    * @returns Response object
+    */
     std::optional<rest_reply> get(std::string_view path);
 
     /// Performs a GET request on the path with content as the request body
     /**
+    * @see rest_reply
     * @param path A string of the uri path to get
     * 
     * @param content JSON formatted string to send as the body
     *
-    * @returns std::optional<std::string>
+    * @returns Response object
     */
     std::optional<rest_reply> get(std::string_view path, std::string_view content);
 
     /// Performs a GET request on the path with content as the request body
     /**
+    * @see rest_reply
     * @param path A string of the uri path to get
     *
     * @param content JSON formatted string to send as the body
     *
-    * @returns std::optional<std::string>
+    * @returns Response object
     */
     std::optional<rest_reply> post(std::string_view path, std::string_view content);
 
     /// Performs an HTTP request on the path with content as the request body using the method method
     /**
+    * @see rest_reply
     * @param path A string of the uri path to get
     *
     * @param content JSON formatted string to send as the body
     *
     * @param method The HTTP method of the request
     *
-    * @returns std::optional<std::string>
+    * @returns Response object
     */
     std::optional<rest_reply> call(std::string_view path, std::string_view content, std::string_view method);
 
-    /// wraps the run method of the internal io_service object
+    /**
+    * Wraps the run method of the internal io_service object
+    */
     std::size_t run()
     {
         return io_service().run();
     }
 
-    /// Yield execution
-    void yield() const
+    /**
+    * Yields operation of the current thread until library shutdown is detected
+    */
+    void yield() const noexcept
     {
         while (status != Shutdown)
         {
@@ -416,41 +498,11 @@ public:
         }
     }
 
-    /// User callbacks
-    std::function<void(typing_start obj)> i_typing_start;
-    std::function<void(message_create obj)> i_message_create;
-    std::function<void(message_create obj)> i_message_create_dm;
-    std::function<void(message_update obj)> i_message_update;
-    std::function<void(message_delete obj)> i_message_delete;
-    c_inject i_message_delete_bulk;
-    std::function<void(guild_create obj)> i_guild_create;
-    std::function<void(guild_update obj)> i_guild_update;
-    std::function<void(guild_delete obj)> i_guild_delete;
-    std::function<void(user_update obj)> i_user_update;
-    std::function<void(ready obj)> i_ready;
-    std::function<void(resumed obj)> i_resumed;
-    c_inject i_channel_create;
-    c_inject i_channel_update;
-    c_inject i_channel_delete;
-    std::function<void(guild_ban_add obj)> i_guild_ban_add;
-    std::function<void(guild_ban_remove obj)> i_guild_ban_remove;
-    c_inject i_guild_emojis_update;
-    c_inject i_guild_integrations_update;
-    std::function<void(guild_member_add obj)> i_guild_member_add;
-    std::function<void(guild_member_remove obj)> i_guild_member_remove;
-    std::function<void(guild_member_update obj)> i_guild_member_update;
-    std::function<void(guild_members_chunk obj)> i_guild_member_chunk;
-    c_inject i_guild_role_create;
-    c_inject i_guild_role_update;
-    c_inject i_guild_role_delete;
-    std::function<void(presence_update obj)> i_presence_update;
-    c_inject i_voice_state_update;
-    c_inject i_voice_server_update;
-
     ratelimiter & ratelimit() { return ratelimit_o; }
     websocket & get_websocket() { return websocket_o; }
     shard_status get_state() const { return status; }
     void set_state(shard_status s) { status = s; }
+    bot_state & get_bot_obj() { return state; }
 
     uint32_t shard_max_count;
 
@@ -468,6 +520,7 @@ public:
     bool selfbot;
     bool debugmode;
     std::string mention;
+    callbacks _callbacks;
 
     std::shared_ptr<member> get_member(snowflake id) const noexcept
     {

@@ -23,7 +23,12 @@ Libraries used:
 
 # TODO #
 - Voice data send/recv
+- Finish documentation
+- Finish live example of library in use
+- Finish remaining API endpoints
 
+# Documentation #
+You can access the [documentation here](https://docs.aegisbot.pw). It is a work in progress itself and has some missing parts, but most of the library is now documented.
 
 # Using this library #
 `#include "aegis/aegis.hpp"`

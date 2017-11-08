@@ -136,11 +136,11 @@ inline void guild::load(const json & obj, shard * _shard) noexcept
         {
             json channels = obj["channels"];
 
-            for (auto & channel : channels)
+            for (auto & channel_obj : channels)
             {
-                snowflake channel_id = channel["id"];
+                snowflake channel_id = channel_obj["id"];
                 auto _channel = get_channel_create(channel_id, _shard);
-                _channel->load_with_guild(*this, channel, _shard);
+                _channel->load_with_guild(*this, channel_obj, _shard);
                 ++_shard->counters.channels;
             }
         }
@@ -253,6 +253,10 @@ inline void guild::load_role(const json & obj) noexcept
     return;
 }
 
+inline snowflake guild::get_owner() const noexcept
+{
+    return owner_id;
+}
 
 inline channel * guild::get_channel(snowflake id) const noexcept
 {
@@ -383,13 +387,17 @@ inline int32_t guild::get_member_count() const noexcept
     return static_cast<int32_t>(members.size());
 }
 
-// move this to aegis::aegis?
+
+/**\todo Incomplete. Signature may change. Location may change.
+*/
 inline bool guild::create_guild(std::function<void(rest_reply)> callback)
 {
     //TODO: 
     return true;
 }
 
+/**\todo Incomplete. Signature may change. Location may change.
+*/
 inline bool guild::get_guild(std::function<void(rest_reply)> callback)
 {
     //TODO: 
@@ -494,12 +502,13 @@ inline bool guild::create_category_channel(std::string name, int64_t parent_id, 
     return true;
 }
 
-inline bool guild::modify_channel_positions()
+/**\todo Incomplete. Signature may change
+*/
+inline bool guild::modify_channel_positions(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageChannels())
         return false;
 
-    //TODO:
     return true;
 }
 
@@ -534,6 +543,7 @@ inline bool guild::modify_guild_member(snowflake user_id, std::optional<std::str
     }
     if (channel_id.has_value())
     {
+        //TODO: This needs to calculate whether or not the bot has access to the voice channel as well
         if (!perm.canVoiceMove())
             return false;
         obj["channel_id"] = channel_id.value();//requires MOVE_MEMBERS
@@ -599,129 +609,143 @@ inline bool guild::remove_guild_ban(snowflake user_id, std::function<void(rest_r
     return true;
 }
 
+/**\todo Incomplete. Signature may change
+*/
 inline bool guild::create_guild_role(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageRoles())
         return false;
 
-    //TODO: 
     return true;
 }
 
+/**\todo Incomplete. Signature may change
+*/
 inline bool guild::modify_guild_role_positions(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageRoles())
         return false;
 
-    //TODO: 
     return true;
 }
 
+/**\todo Incomplete. Signature may change
+*/
 inline bool guild::modify_guild_role(snowflake role_id, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageRoles())
         return false;
 
-    //TODO: 
     return true;
 }
 
+/**\todo Incomplete. Signature may change
+*/
 inline bool guild::delete_guild_role(snowflake role_id, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageRoles())
         return false;
 
-    //TODO: 
     return true;
 }
 
+/**\todo Incomplete. Signature may change
+*/
 inline bool guild::get_guild_prune_count(int16_t days, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canKick())
         return false;
 
-    //TODO: 
     return true;
 }
 
+/**\todo Incomplete. Signature may change
+*/
 inline bool guild::begin_guild_prune(int16_t days, std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canKick())
         return false;
 
-    //TODO: 
     return true;
 }
 
+/**\todo Incomplete. Signature may change
+*/
 inline bool guild::get_guild_invites(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
 
-    //TODO: 
     return true;
 }
 
+/**\todo Incomplete. Signature may change
+*/
 inline bool guild::get_guild_integrations(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
 
-    //TODO: 
     return true;
 }
 
+/**\todo Incomplete. Signature may change
+*/
 inline bool guild::create_guild_integration(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
 
-    //TODO: 
     return true;
 }
 
+/**\todo Incomplete. Signature may change
+*/
 inline bool guild::modify_guild_integration(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
 
-    //TODO: 
     return true;
 }
 
+/**\todo Incomplete. Signature may change
+*/
 inline bool guild::delete_guild_integration(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
 
-    //TODO: 
     return true;
 }
 
+/**\todo Incomplete. Signature may change
+*/
 inline bool guild::sync_guild_integration(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
 
-    //TODO: 
     return true;
 }
 
+/**\todo Incomplete. Signature may change
+*/
 inline bool guild::get_guild_embed(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
 
-    //TODO: 
     return true;
 }
 
+/**\todo Incomplete. Signature may change
+*/
 inline bool guild::modify_guild_embed(std::function<void(rest_reply)> callback)
 {
     if (!permission(base_permissions(self())).canManageGuild())
         return false;
 
-    //TODO: 
     return true;
 }
 

@@ -41,14 +41,19 @@ namespace aegiscpp
 class member;
 class channel;
 
+/**\todo Needs documentation
+*/
 struct permission_overwrite
 {
-    snowflake id;
+    snowflake id; /**<\todo Needs documentation */
     //either "role" or "member"
-    overwrite_type type;
-    int64_t allow = 0;
-    int64_t deny = 0;
+    overwrite_type type; /**<\todo Needs documentation */
+    int64_t allow = 0; /**<\todo Needs documentation */
+    int64_t deny = 0; /**<\todo Needs documentation */
 };
+
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, permission_overwrite& m)
 {
     m.id = j["id"];
@@ -57,6 +62,9 @@ inline void from_json(const nlohmann::json& j, permission_overwrite& m)
     m.allow = j["allow"];
     m.deny = j["deny"];
 }
+
+/**\todo Needs documentation
+*/
 inline void to_json(nlohmann::json& j, const permission_overwrite& m)
 {
     j["id"] = m.id;

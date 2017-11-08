@@ -42,16 +42,20 @@ class channel;
 class shard;
 class aegis;
 
+/**\todo Needs documentation
+*/
 struct message_delete
 {
-    channel * _channel;
-    member * _member;
-    snowflake message_id;
-    snowflake channel_id;
-    shard * _shard;
-    aegis * bot;
+    channel * _channel; /**<\todo Needs documentation */
+    member * _member; /**<\todo Needs documentation */
+    snowflake message_id; /**<\todo Needs documentation */
+    snowflake channel_id; /**<\todo Needs documentation */
+    shard * _shard; /**<\todo Needs documentation */
+    aegis * bot; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, message_delete& m)
 {
     m.message_id = j["id"];

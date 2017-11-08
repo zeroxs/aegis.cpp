@@ -39,14 +39,18 @@
 namespace aegiscpp
 {
 
+/**\todo Needs documentation
+*/
 struct guild_members_chunk
 {
-    snowflake guild_id;
-    std::vector<guild_member> members;
-    shard * _shard;
-    aegis * bot;
+    snowflake guild_id; /**<\todo Needs documentation */
+    std::vector<guild_member> members; /**<\todo Needs documentation */
+    shard * _shard; /**<\todo Needs documentation */
+    aegis * bot; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, guild_members_chunk& m)
 {
     m.guild_id = j["guild_id"];

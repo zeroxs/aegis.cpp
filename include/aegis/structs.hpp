@@ -37,6 +37,8 @@ namespace aegiscpp
 {
 
 
+/**\todo Needs documentation
+*/
 enum message_type
 {
     Default = 0,
@@ -49,6 +51,8 @@ enum message_type
     GuildMemberJoin = 7
 };
 
+/**\todo Needs documentation
+*/
 enum channel_type
 {
     Text = 0,
@@ -58,6 +62,8 @@ enum channel_type
     Category = 4
 };
 
+/**\todo Needs documentation
+*/
 enum shard_status
 {
     Uninitialized = 0,
@@ -68,21 +74,25 @@ enum shard_status
     Shutdown = 5
 };
 
+/**\todo Needs documentation
+*/
 enum overwrite_type
 {
     User,
     Role
 };
 
+/**\todo Needs documentation
+*/
 struct rest_reply
 {
-    websocketpp::http::status_code::value reply_code;
-    bool global = false;
-    int32_t limit = 0;
-    int32_t remaining = 0;
-    int64_t reset = 0;
-    int32_t retry = 0;
-    std::string content;
+    websocketpp::http::status_code::value reply_code; /**<\todo Needs documentation */
+    bool global = false; /**<\todo Needs documentation */
+    int32_t limit = 0; /**<\todo Needs documentation */
+    int32_t remaining = 0; /**<\todo Needs documentation */
+    int64_t reset = 0; /**<\todo Needs documentation */
+    int32_t retry = 0; /**<\todo Needs documentation */
+    std::string content; /**<\todo Needs documentation */
 };
 
 }

@@ -34,8 +34,12 @@ namespace aegiscpp
 
 class aegis;
 
+/**\todo Needs documentation
+*/
 struct bot_state
 {
+    /**\todo Needs documentation
+    */
     struct user_c
     {
         snowflake id;

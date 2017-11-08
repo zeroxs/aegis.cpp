@@ -35,19 +35,26 @@ namespace aegiscpp
 {
 
 
+/**\todo Needs documentation
+*/
 struct reaction
 {
-    int32_t count = 0;
-    bool me = false;
-    emoji emoji_;
+    int32_t count = 0; /**<\todo Needs documentation */
+    bool me = false; /**<\todo Needs documentation */
+    emoji emoji_; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, reaction& m)
 {
     m.count = j["count"];
     m.me = j["me"];
     m.emoji_ = j["emoji_"];
 }
+
+/**\todo Needs documentation
+*/
 inline void to_json(nlohmann::json& j, const reaction& m)
 {
     j["count"] = m.count;

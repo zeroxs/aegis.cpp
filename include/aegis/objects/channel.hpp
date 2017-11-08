@@ -41,26 +41,30 @@
 namespace aegiscpp
 {
 
+/**\todo Needs documentation
+*/
 struct channel_gw
 {
-    snowflake channel_id;
-    channel_type type;
-    snowflake guild_id = 0;//?
-    int position = 0;//?
-    std::vector<permission_overwrite> permission_overwrites;//?
-    std::string name;//?
-    std::string topic;//?
-    bool nsfw = false;//?
-    snowflake last_message_id = 0;//?
-    int bitrate = 0;//?
-    int userlimit = 0;//?
-    std::vector<user> recipients;//?
-    std::string icon;//?
-    snowflake owner_id;//?
-    snowflake application_id;//?
-    snowflake parent_id;//?
+    snowflake channel_id; /**<\todo Needs documentation */
+    channel_type type; /**<\todo Needs documentation */
+    snowflake guild_id = 0;//? /**<\todo Needs documentation */
+    int position = 0;//? /**<\todo Needs documentation */
+    std::vector<permission_overwrite> permission_overwrites;//? /**<\todo Needs documentation */
+    std::string name;//? /**<\todo Needs documentation */
+    std::string topic;//? /**<\todo Needs documentation */
+    bool nsfw = false;//? /**<\todo Needs documentation */
+    snowflake last_message_id = 0;//? /**<\todo Needs documentation */
+    int bitrate = 0;//? /**<\todo Needs documentation */
+    int userlimit = 0;//? /**<\todo Needs documentation */
+    std::vector<user> recipients;//? /**<\todo Needs documentation */
+    std::string icon;//? /**<\todo Needs documentation */
+    snowflake owner_id;//? /**<\todo Needs documentation */
+    snowflake application_id;//? /**<\todo Needs documentation */
+    snowflake parent_id;//? /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, channel_gw& m)
 {
     m.channel_id = j["id"];
@@ -96,6 +100,9 @@ inline void from_json(const nlohmann::json& j, channel_gw& m)
         for (auto i : j["recipients"])
             m.recipients.push_back(i);
 }
+
+/**\todo Needs documentation
+*/
 inline void to_json(nlohmann::json& j, const channel_gw& m)
 {
     j["id"] = m.channel_id;

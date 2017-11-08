@@ -42,23 +42,27 @@
 namespace aegiscpp
 {
 
+/**\todo Needs documentation
+*/
 class embed
 {
 public:
-    std::string title;
-    std::string type;
-    std::string description;
-    std::string url;
-    std::string timestamp;
-    int32_t color = 0;
-    footer footer_;
-    image image_;
-    thumbnail thumbnail_;
-    video video_;
-    provider provider_;
-    std::vector<field> fields;
+    std::string title; /**<\todo Needs documentation */
+    std::string type; /**<\todo Needs documentation */
+    std::string description; /**<\todo Needs documentation */
+    std::string url; /**<\todo Needs documentation */
+    std::string timestamp; /**<\todo Needs documentation */
+    int32_t color = 0; /**<\todo Needs documentation */
+    footer footer_; /**<\todo Needs documentation */
+    image image_; /**<\todo Needs documentation */
+    thumbnail thumbnail_; /**<\todo Needs documentation */
+    video video_; /**<\todo Needs documentation */
+    provider provider_; /**<\todo Needs documentation */
+    std::vector<field> fields; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, embed& m)
 {
     if (j.count("title") && !j["title"].is_null())
@@ -87,6 +91,9 @@ inline void from_json(const nlohmann::json& j, embed& m)
         for (auto i : j["fields"])
             m.fields.push_back(i);
 }
+
+/**\todo Needs documentation
+*/
 inline void to_json(nlohmann::json& j, const embed& m)
 {
     j["title"] = m.title;

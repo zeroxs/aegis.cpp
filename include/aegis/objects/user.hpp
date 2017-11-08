@@ -44,19 +44,23 @@ namespace aegiscpp
 class member;
 class channel;
 
+/**\todo Needs documentation
+*/
 struct user
 {
-    snowflake user_id;
-    snowflake guild_id;
-    std::string username;
-    std::string discriminator;
-    std::string avatar;
-    bool isbot = false;
-    bool mfa_enabled = false;
-    bool verified = false;
-    std::string email;
+    snowflake user_id; /**<\todo Needs documentation */
+    snowflake guild_id; /**<\todo Needs documentation */
+    std::string username; /**<\todo Needs documentation */
+    std::string discriminator; /**<\todo Needs documentation */
+    std::string avatar; /**<\todo Needs documentation */
+    bool isbot = false; /**<\todo Needs documentation */
+    bool mfa_enabled = false; /**<\todo Needs documentation */
+    bool verified = false; /**<\todo Needs documentation */
+    std::string email; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, user& m)
 {
     m.user_id = j["id"];
@@ -75,6 +79,9 @@ inline void from_json(const nlohmann::json& j, user& m)
     if (j.count("verified") && !j["verified"].is_null())
         m.verified = j["verified"];
 }
+
+/**\todo Needs documentation
+*/
 inline void to_json(nlohmann::json& j, const user& m)
 {
     j["id"] = m.user_id;

@@ -38,6 +38,8 @@ namespace aegiscpp
 class shard
 {
 public:
+    /// Constructs a shard object for connecting to the websocket gateway and tracking timers
+    /// 
     shard()
         : heartbeattime(0)
         , heartbeat_ack(0)
@@ -47,19 +49,36 @@ public:
     {
     }
 
+    /// Resets connection, heartbeat, and timer related objects to allow reconnection
+    /// 
     void do_reset();
 
+    /// Get this shard's websocket message sequence counter
+    /**
+    * @returns Sequence counter specific to this shard
+    */
     const int64_t get_sequence() const
     {
         return sequence;
     }
 
+    /// Gets the id of the shard in the master list
+    /**
+    * @see aegis::shards
+    *
+    * @returns Shard id
+    */
     const int16_t get_id() const
     {
         return shardid;
     }
 
-
+    /// Contains counters of valued objects and events
+    /**
+    * @see guild
+    * @see channel
+    * @see member
+    */
     struct
     {
         int32_t guilds;
@@ -68,7 +87,7 @@ public:
         int32_t channels;
         int32_t messages;
         int64_t presence_changes;
-    } counters = { 0,0,0,0 };
+    } counters = { 0,0,0,0,0,0 };
 
     websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr connection;
 private:

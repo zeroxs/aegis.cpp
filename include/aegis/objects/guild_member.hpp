@@ -38,19 +38,23 @@
 namespace aegiscpp
 {
 
+/**\todo Needs documentation
+*/
 struct guild_member
 {
-    user _user;
-    snowflake guild_id;
-    std::string nick;
-    std::vector<snowflake> roles;
-    std::string joined_at;
-    bool deaf = false;
-    bool mute = false;
-    shard * _shard;
-    aegis * bot;
+    user _user; /**<\todo Needs documentation */
+    snowflake guild_id; /**<\todo Needs documentation */
+    std::string nick; /**<\todo Needs documentation */
+    std::vector<snowflake> roles; /**<\todo Needs documentation */
+    std::string joined_at; /**<\todo Needs documentation */
+    bool deaf = false; /**<\todo Needs documentation */
+    bool mute = false; /**<\todo Needs documentation */
+    shard * _shard; /**<\todo Needs documentation */
+    aegis * bot; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, guild_member& m)
 {
     m._user = j["user"];

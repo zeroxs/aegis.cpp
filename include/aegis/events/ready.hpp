@@ -40,18 +40,22 @@
 namespace aegiscpp
 {
 
+/**\todo Needs documentation
+*/
 struct ready
 {
-    int8_t v;
-    user _user;
-    std::vector<channel_gw> private_channels;
-    std::vector<guild_gw> guilds;
-    std::string session_id;
-    std::vector<std::string> _trace;
-    shard * _shard;
-    aegis * bot;
+    int8_t v; /**<\todo Needs documentation */
+    user _user; /**<\todo Needs documentation */
+    std::vector<channel_gw> private_channels; /**<\todo Needs documentation */
+    std::vector<guild_gw> guilds; /**<\todo Needs documentation */
+    std::string session_id; /**<\todo Needs documentation */
+    std::vector<std::string> _trace; /**<\todo Needs documentation */
+    shard * _shard; /**<\todo Needs documentation */
+    aegis * bot; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, ready& m)
 {
     m._user = j["user"];
@@ -65,6 +69,9 @@ inline void from_json(const nlohmann::json& j, ready& m)
         for (auto i : j["_trace"])
             m._trace.push_back(i);
 }
+
+/**\todo Needs documentation
+*/
 inline void to_json(nlohmann::json& j, const ready& m)
 {
     j["user"] = m._user;

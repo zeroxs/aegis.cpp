@@ -34,6 +34,8 @@
 namespace aegiscpp
 {
 
+/**\todo Needs documentation
+*/
 struct role
 {
     uint32_t color = 0;

@@ -42,15 +42,19 @@ class channel;
 class shard;
 class aegis;
 
+/**\todo Needs documentation
+*/
 struct message_update
 {
-    channel * _channel;
-    member * _member;
-    message msg;
-    shard * _shard;
-    aegis * bot;
+    channel * _channel; /**<\todo Needs documentation */
+    member * _member; /**<\todo Needs documentation */
+    message msg; /**<\todo Needs documentation */
+    shard * _shard; /**<\todo Needs documentation */
+    aegis * bot; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, message_update& m)
 {
     m.msg = j;

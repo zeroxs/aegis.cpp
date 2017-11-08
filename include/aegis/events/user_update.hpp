@@ -41,14 +41,18 @@ class member;
 class shard;
 class aegis;
 
+/**\todo Needs documentation
+*/
 struct user_update
 {
-    member * _member;
-    user _user;
-    shard * _shard;
-    aegis * bot;
+    member * _member; /**<\todo Needs documentation */
+    user _user; /**<\todo Needs documentation */
+    shard * _shard; /**<\todo Needs documentation */
+    aegis * bot; /**<\todo Needs documentation */
 };
 
+/**\todo Needs documentation
+*/
 inline void from_json(const nlohmann::json& j, user_update& m)
 {
     m._user = j;

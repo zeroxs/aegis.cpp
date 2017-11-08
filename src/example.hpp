@@ -66,9 +66,11 @@ public:
     // Messages you want to process
     void inject(aegis & bot)
     {
-        bot.i_typing_start = std::bind(&example::TypingStart, this, _1);
-        bot.i_message_create = std::bind(&example::MessageCreate, this, _1);
-        bot.i_message_create_dm = std::bind(&example::MessageCreateDM, this, _1);
+        callbacks cbs;
+        cbs.i_typing_start = std::bind(&example::TypingStart, this, _1);
+        cbs.i_message_create = std::bind(&example::MessageCreate, this, _1);
+        cbs.i_message_create_dm = std::bind(&example::MessageCreateDM, this, _1);
+        bot._callbacks = cbs;
         //bot.i_guild_create = std::bind(&example::guild_create, this, _1, _2, _3);
         //bot.i_guild_delete = std::bind(&example::guild_delete, this, _1, _2, _3);
         //bot.i_ready = std::bind(&example::ready, this, _1, _2, _3);

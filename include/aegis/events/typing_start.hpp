@@ -42,13 +42,15 @@ class channel;
 class shard;
 class aegis;
 
+/**\todo Needs documentation
+*/
 struct typing_start
 {
-    channel * _channel;
-    member * _member;
-    int64_t timestamp;
-    shard * _shard;
-    aegis * bot;
+    channel * _channel; /**<\todo Needs documentation */
+    member * _member; /**<\todo Needs documentation */
+    int64_t timestamp; /**<\todo Needs documentation */
+    shard * _shard; /**<\todo Needs documentation */
+    aegis * bot; /**<\todo Needs documentation */
 };
 
 }
