@@ -701,8 +701,12 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                         
                         auto _member = get_member(member_id);
                         auto _guild = get_guild(guild_id);
-                       
-                        _guild->remove_member(member_id);
+
+                        if (_guild != nullptr)
+                        {
+                            //if user was self, guild may already be deleted
+                            _guild->remove_member(member_id);
+                        }
 
                         guild_member_remove obj;
                         obj.bot = this;
@@ -808,7 +812,12 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                         snowflake role_id = result["d"]["role_id"];
 
                         auto _guild = get_guild(guild_id);
-                        _guild->remove_role(role_id);
+
+                        if (_guild != nullptr)
+                        {
+                            //if role was own, we may have been kicked and guild may already be deleted
+                            _guild->remove_role(role_id);
+                        }
 
                         if (_callbacks.i_guild_role_delete)
                             _callbacks.i_guild_role_delete(result, _shard, *this);

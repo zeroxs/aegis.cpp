@@ -53,7 +53,7 @@ inline void guild::remove_member(snowflake member_id) noexcept
     auto _member = members.find(member_id);
     if (_member == members.end())
     {
-        state->core->log->error("Unable to remove member [{}] to guild [{}]", member_id, guild_id);
+        state->core->log->error("Unable to remove member [{}] from guild [{}] (does not exist)", member_id, guild_id);
         return;
     }
     _member->second->guilds.erase(guild_id);
