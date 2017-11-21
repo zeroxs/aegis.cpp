@@ -286,7 +286,7 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
         ///check old messages and remove
 
         for (auto iter = _shard->debug_messages.begin(); iter != _shard->debug_messages.end(); ++iter)
-            if (iter->first < t_time - 10)
+            if (iter->first < t_time - 210)//210 captures enough to include anything leading up to a 'fresh websocket' state reconnect fail
                 _shard->debug_messages.erase(iter++);
         //////////////////////////////////////////////////////////////////////////
 
@@ -936,7 +936,7 @@ inline void aegis::onConnect(websocketpp::connection_hdl hdl, shard * _shard)
                 }
             };
         }
-        log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
+        //log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
         if (_shard->connection)
             _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
     }
@@ -961,7 +961,7 @@ inline void aegis::onConnect(websocketpp::connection_hdl hdl, shard * _shard)
                 }
             }
         };
-        log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
+        //log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
         if (_shard->connection)
             _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
     }
@@ -1088,6 +1088,8 @@ inline void aegis::debug_trace(shard * _shard)
         << "Shard: " << _shard->shardid << '\n'
         << "Seq: " << _shard->sequence << '\n';
     int i = 0;
+    if (!_shard->debug_messages.size())//no messages even received yet
+        return;
     for (auto iter = _shard->debug_messages.rbegin(); (i < 5 && iter != _shard->debug_messages.rend()); ++i, ++iter)
         w << (*iter).second << '\n';
 
