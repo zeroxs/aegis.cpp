@@ -138,7 +138,7 @@ public:
     */
     std::string getFullName()
     {
-        return fmt::format("{}#{}", name, discriminator);
+        return fmt::format("{}#{:0=4}", name, discriminator);
     }
 
     std::unordered_map<int64_t, guild_info> guilds; /**< Map of snowflakes to member owned guild information */
