@@ -1113,4 +1113,22 @@ inline void aegis::debug_trace(shard * _shard)
     log->critical(w.str());
 }
 
+inline void aegis::rich_presence(const json & obj, shard * _shard)
+{
+    json rp = {
+        { "op", 3 },
+        {
+            "d",
+            {
+                { "game", obj },
+                { "status", "online" },
+                { "afk", false }
+            }
+        }
+    };
+    log->trace("Shard#{}: Rich Presence send: {}", _shard->shardid, obj.dump());
+    if (_shard->connection)
+        _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
+}
+
 }

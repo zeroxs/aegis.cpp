@@ -597,6 +597,7 @@ public:
 
     //called by CHANNEL_CREATE (DirectMessage)
     void channel_create(const json & obj, shard * _shard);
+    void rich_presence(const json & obj, shard * _shard);
     void rest_thread();
     void status_thread();
 
