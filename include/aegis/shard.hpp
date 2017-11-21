@@ -44,6 +44,8 @@ public:
         : heartbeattime(0)
         , heartbeat_ack(0)
         , lastheartbeat(0)
+        , lastwsevent(0)
+        , last_status_time(0)
         , sequence(0)
         , connection_state(shard_status::Uninitialized)
     {
@@ -101,6 +103,8 @@ private:
     long heartbeattime;
     int64_t heartbeat_ack;
     int64_t lastheartbeat;
+    int64_t lastwsevent;
+    int64_t last_status_time;
     int64_t sequence;
     int16_t shardid;
     shard_status connection_state;
