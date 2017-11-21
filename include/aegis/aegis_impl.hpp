@@ -833,32 +833,48 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
             }
             if (result["op"] == 9)
             {
-                _shard->sequence = 0;
-                log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->shardid);
-                json obj = {
-                    { "op", 2 },
-                    {
-                        "d",
-                        {
-                            { "token", token },
-                            { "properties",
-                            {
-                                { "$os", utility::platform::get_platform() },
-                                { "$browser", "aegis.cpp" },
-                                { "$device", "aegis.cpp" }
-                            }
-                            },
-                            { "shard", json::array({ _shard->shardid, shard_max_count }) },
-                            { "compress", true },
-                            { "large_threshhold", 250 },
-                            { "presence",{ { "game",{ { "name", self_presence },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
-                        }
-                    }
-                };
-                log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
-                if (_shard->connection_state == Connecting && _shard->connection != nullptr)
+                if (result["d"] == false)
                 {
-                    _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
+                    _shard->sequence = 0;
+                    log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->shardid);
+                    std::this_thread::sleep_for(std::chrono::seconds(2));
+                    json obj = {
+                        { "op", 2 },
+                        {
+                            "d",
+                            {
+                                { "token", token },
+                                { "properties",
+                                {
+                                    { "$os", utility::platform::get_platform() },
+                                    { "$browser", "aegis.cpp" },
+                                    { "$device", "aegis.cpp" }
+                                }
+                                },
+                                { "shard", json::array({ _shard->shardid, shard_max_count }) },
+                                { "compress", true },
+                                { "large_threshhold", 250 },
+                                { "presence",{ { "game",{ { "name", self_presence },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
+                            }
+                        }
+                    };
+                    //log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
+                    if (_shard->connection_state == Connecting && _shard->connection != nullptr)
+                    {
+                        _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
+                    }
+                    else
+                    {
+                        //debug?
+                        log->error("Shard#{} : Invalid session received with an invalid connection state state: {} connection exists: {}", _shard->shardid, static_cast<int32_t>(_shard->connection_state), _shard->connection!=nullptr);
+                        websocket_o.close(_shard->connection, 1001, "");
+                        _shard->connection_state = Reconnecting;
+                        _shard->do_reset();
+                    }
+                }
+                else
+                {
+
                 }
                 debug_trace(_shard);
             }
