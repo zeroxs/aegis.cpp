@@ -272,6 +272,8 @@ public:
             connect(ec);
             if (ec) { log->error("Connect fail: {}", ec.message()); shutdown(); return; }
         });
+        // Start the shard status thread
+        status_thread();
         // Run the bot
         run();
         make_connections.join();
@@ -596,6 +598,7 @@ public:
     //called by CHANNEL_CREATE (DirectMessage)
     void channel_create(const json & obj, shard * _shard);
     void rest_thread();
+    void status_thread();
 
     member * self() const noexcept
     {
@@ -662,6 +665,7 @@ private:
     //std::unordered_map<std::string, c_inject> m_cbmap;
 
     std::unique_ptr<std::thread> restthread;
+    std::unique_ptr<std::thread> statusthread;
 
     // Gateway URL for the Discord Websocket
     std::string gateway_url;

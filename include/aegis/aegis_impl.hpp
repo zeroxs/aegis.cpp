@@ -282,6 +282,7 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
         int64_t t_time = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
         _shard->debug_messages[t_time] = payload;
 
+        _shard->lastwsevent = t_time;
         ///check old messages and remove
 
         for (auto iter = _shard->debug_messages.begin(); iter != _shard->debug_messages.end(); ++iter)
@@ -1005,6 +1006,74 @@ inline void aegis::rest_thread()
             catch (...)
             {
                 log->error("rest_thread() error : unknown");
+            }
+        }
+    });
+}
+
+inline void aegis::status_thread()
+{
+    statusthread = std::make_unique<std::thread>([&]
+    {
+        using namespace std::chrono_literals;
+        int64_t checktime;
+        while (status != Shutdown)
+        {
+            try
+            {
+                //TODO: mutex this shit
+                checktime = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+                for (auto & _shard : shards)
+                {
+                    if (_shard && _shard->connection)
+                    {
+                        if (_shard->lastwsevent && _shard->lastwsevent < checktime - 90)
+                        {
+                            log->critical("Shard#{} : Websocket had no events in last 90s", _shard->shardid);
+                            debug_trace(_shard.get());
+                            if (_shard->connection->get_state() < websocketpp::session::state::closing)
+                                websocket_o.close(_shard->connection, 1001, "");
+                            _shard->connection_state = Reconnecting;
+                            _shard->do_reset();
+                        }
+                        else if (!_shard->lastwsevent && _shard->last_status_time < checktime - 180)
+                        {
+                            log->critical("Shard#{} : Fresh Websocket had no events in last 180s", _shard->shardid);
+                            debug_trace(_shard.get());
+                            if (_shard->connection->get_state() < websocketpp::session::state::closing)
+                                websocket_o.close(_shard->connection, 1001, "");
+                            _shard->connection_state = Reconnecting;
+                            _shard->do_reset();
+                        }
+                        _shard->last_status_time = checktime;
+                    }
+
+                    //find a prettier way to do this
+                    if (_shard && !_shard->connection && !_shard->reconnect_timer)
+                    {
+                        _shard->reconnect_timer = websocket_o.set_timer(10000, [_shard = _shard.get(), this](const asio::error_code & ec)
+                        {
+                            if (ec == asio::error::operation_aborted)
+                                return;
+                            _shard->connection_state = Connecting;
+                            asio::error_code wsec;
+                            _shard->connection = websocket_o.get_connection(gateway_url, wsec);
+                            setup_callbacks(_shard);
+                            websocket_o.connect(_shard->connection);
+
+                        });
+                    }
+                }
+
+                std::this_thread::sleep_for(5s);
+            }
+            catch (std::exception & e)
+            {
+                log->error("status_thread() error : {}", e.what());
+            }
+            catch (...)
+            {
+                log->error("status_thread() error : unknown");
             }
         }
     });
