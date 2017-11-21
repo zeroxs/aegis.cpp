@@ -145,77 +145,80 @@ inline void example::MessageCreate(message_create obj)
         obj.bot->shutdown();
         return;
     }
-    else if (toks[0] == "?test")
+    else if (toks[0] == "?kick")
     {
-        _channel->create_message("test reply");
-        return;
-    }
-    else if (toks[0] == "?shard")
-    {
-        _channel->create_message(fmt::format("I am shard#[{}]", obj._shard->get_id()));
-        return;
-    }
-    else if (toks[0] == "?shards")
-    {
-        std::string s = "```\n";
-        for (auto & shard : obj.bot->shards)
+        std::string target = content.substr(5);
+        std::string::size_type n = target.find_first_not_of(' ', 0);
+        if (n != std::string::npos)
+            target = target.substr(n);
+        try
         {
-            s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages {:4} presence updates\n", shard->get_id(), shard->counters.guilds, shard->counters.channels, shard->counters.members, shard->counters.messages, shard->counters.presence_changes);
-        }
-        s += "```";
-        _channel->create_message(s);
-    }
-    else if (toks[0] == "?createchannel")
-    {
-        if (!_guild.create_text_channel(toks[1], 0, false, {}))
-        {
-            _channel->create_message("No perms `CREATE_CHANNEL`");
-        }
-    }
-    else if (toks[0] == "?deletechannel")
-    {
-        if (_member->member_id == obj.bot->owner_id)
-        {
-            if (!_channel->delete_channel())
+            if (target[0] == '<')
             {
-                _channel->create_message("No perms `DELETE_CHANNEL`");
+                //mention param
+                std::string res;
+                if (target[2] == '!')//mobile mention. strip <@!
+                    res = target.substr(3).substr(0, toks[1].size() - 4);
+                else
+                    res = target.substr(2).substr(0, toks[1].size() - 3);
+
+                snowflake target_id = std::stoll(res);
+                obj._channel->create_message(fmt::format("test: {}", target_id));
+                
+                obj._channel->get_guild().remove_guild_member(target_id, [bot = obj.bot, _channel, target_id](rest_reply reply)
+                {
+                    if (reply.reply_code != 204)
+                        _channel->create_message(fmt::format("Unable to kick: {}", target_id));
+                    else
+                        _channel->create_message(fmt::format("Kicked: {}", bot->get_member(target_id)->getFullName()));
+                });
+                return;
+            }
+            else if (std::isdigit(target[0]))
+            {
+                //snowflake param
+                snowflake target_id = std::stoll(target);
+                obj._channel->create_message(fmt::format("test: {}", target_id));
+                obj._channel->get_guild().remove_guild_member(target_id, [bot = obj.bot, _channel, target_id](rest_reply reply)
+                {
+                    if (reply.reply_code != 204)
+                        _channel->create_message(fmt::format("Unable to kick: {}", target_id));
+                    else
+                        _channel->create_message(fmt::format("Kicked: {}", bot->get_member(target_id)->getFullName()));
+                });
+                return;
+            }
+            else
+            {
+                //most likely username#discriminator param
+                n = target.find('#');
+                if (n != std::string::npos)
+                {
+                    //found # separator
+                    for (auto & m : obj._channel->get_guild().members)
+                    {
+                        if (m.second->getFullName() == target)
+                        {
+                            obj._channel->create_message(fmt::format("Found user: {}", m.second->member_id));
+                            obj._channel->get_guild().remove_guild_member(m.second->member_id, [bot = obj.bot, _channel, target_id = m.second->member_id](rest_reply reply)
+                            {
+                                if (reply.reply_code != 204)
+                                    _channel->create_message(fmt::format("Unable to kick: {}", target_id));
+                                else
+                                    _channel->create_message(fmt::format("Kicked: {}", bot->get_member(target_id)->getFullName()));
+                            });
+                        }
+                    }
+                    return;
+                }
+                return;//# not found. unknown parameter. unicode may trigger this.
             }
         }
-    }
-    else if (toks[0] == "?serverlist")
-    {
-        if (_member->member_id != obj.bot->owner_id)
+        catch (std::invalid_argument & e)
         {
-            _channel->create_message("No perms `serverlist`");
+            obj._channel->create_message(fmt::format("Invalid parameter given: {}", toks[1]));
             return;
         }
-        std::stringstream w;
-        for (auto & g : obj.bot->guilds)
-        {
-            auto gld = g.second.get();
-            w << "*" << gld->get_name() << "*  :  " << gld->guild_id << "\n";
-        }
-
-
-        json t = {
-            { "title", "Server List" },
-            { "description", w.str() },
-            { "color", 10599460 }
-        };
-        _channel->create_message_embed("", t);
-    }
-    else if (toks[0] == "?roles")
-    {
-        std::stringstream w;
-        w << "Server Roles:\n";
-        for (auto & r : _guild.roles)
-        {
-            w << "[" << r.second->role_id << "] : [A:" << r.second->_permission.getAllowPerms() << "] : [D:" << r.second->_permission.getDenyPerms() << "] : [" << r.second->name << "]\n";
-        }
-        _channel->create_debug_message(w.str());
-    }
-    else if (toks[0] == "?mroles")
-    {
         snowflake mem_id;
         if (toks.size() == 1)
             mem_id = obj._member->member_id;
@@ -235,22 +238,148 @@ inline void example::MessageCreate(message_create obj)
         }
         _channel->create_debug_message(w.str());
     }
-    else if (toks[0] == "?croles")
+    else if (toks[0] == "?rp")
     {
-        std::stringstream w;
-        w << "Channel Roles:\n";
-        for (auto & r : _channel->overrides)
-        {
-            auto & a = r.second;
-            std::string name;
-            if (a.type == overwrite_type::User)
-                name = _guild.members[a.id]->getFullName();
-            else
-                name = _guild.roles[a.id]->name;
-            w << "[" << ((a.type == overwrite_type::User) ? "user" : "role") << "] : [A:" << a.allow << "] : [D:" << a.deny << "] : [" << name << "]\n";
-        }
-        _channel->create_debug_message(w.str());
+        json js;
+        //js["name"] = "AegisBot";
+        js["details"] = "Watching over servers";
+        js["type"] = 0;
+        js["state"] = "Moderating";
+        //js["application_id"] = 288063163729969152LL;
+        js["assets"]["largeImageKey"] = "cat";
+        js["assets"]["largeImageText"] = "cat picture";
+        js["assets"]["smallImageKey"] = "dog";
+        js["assets"]["smallImageText"] = "dog picture";
+        //js["timestamps"]["start"] = obj.bot->starttime.time_since_epoch().count();
+        js["instance"] = false;
+
+        //test
+        json testshit = json::parse(content.substr(4));
+        obj.bot->rich_presence(testshit, obj._shard);
     }
+//     else if (toks[0] == "?test")
+//     {
+//         _channel->create_message("test reply");
+//         return;
+//     }
+//     else if (toks[0] == "?nuke")
+//     {
+//         obj._shard->connection->close(1001, "");
+//         return;
+//     }
+    else if (toks[0] == "?shard")
+    {
+        _channel->create_message(fmt::format("I am shard#[{}]", obj._shard->get_id()));
+        return;
+    }
+    else if (toks[0] == "?shards")
+    {
+        std::string s = "```\n";
+        for (auto & shard : obj.bot->shards)
+        {
+            s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages {:4} presence updates\n", shard->get_id(), shard->counters.guilds, shard->counters.channels, shard->counters.members, shard->counters.messages, shard->counters.presence_changes);
+        }
+        s += "```";
+        _channel->create_message(s);
+    }
+//     else if (toks[0] == "?createchannel")
+//     {
+//         if (!_guild.create_text_channel(toks[1], 0, false, {}))
+//         {
+//             _channel->create_message("No perms `CREATE_CHANNEL`");
+//         }
+//     }
+//     else if (toks[0] == "?deletechannel")
+//     {
+//         if (_member->member_id == obj.bot->owner_id)
+//         {
+//             if (!_channel->delete_channel())
+//             {
+//                 _channel->create_message("No perms `DELETE_CHANNEL`");
+//             }
+//         }
+//     }
+//     else if (toks[0] == "?serverlist")
+//     {
+//         if (_member->member_id != obj.bot->owner_id)
+//         {
+//             _channel->create_message("No perms `serverlist`");
+//             return;
+//         }
+//         std::stringstream w;
+//         for (auto & g : obj.bot->guilds)
+//         {
+//             auto gld = g.second.get();
+//             w << "*" << gld->get_name() << "*  :  " << gld->guild_id << "\n";
+//         }
+// 
+// 
+//         json t = {
+//             { "title", "Server List" },
+//             { "description", w.str() },
+//             { "color", 10599460 }
+//         };
+//         _channel->create_message_embed("", t);
+//     }
+//     else if (toks[0] == "?roles")
+//     {
+//         std::stringstream w;
+//         w << "Server Roles:\n";
+//         for (auto & r : _guild.roles)
+//         {
+//             w << "[" << r.second->role_id << "] : [A:" << r.second->_permission.getAllowPerms() << "] : [D:" << r.second->_permission.getDenyPerms() << "] : [" << r.second->name << "]\n";
+//         }
+//         _channel->create_debug_message(w.str());
+//     }
+//     else if (toks[0] == "?mroles")
+//     {
+//         snowflake mem_id;
+//         if (toks.size() == 1)
+//             mem_id = obj._member->member_id;
+//         else
+//             mem_id = std::stoll(toks[1]);
+//         std::stringstream w;
+//         w << "Member Roles:\n";
+//         auto hasguildinfo = _guild.members[mem_id]->get_guild_info(_guild.guild_id);
+//         if (!hasguildinfo.has_value())
+//             return;
+//         auto gld = hasguildinfo.value();//->guilds[_guild.guild_id];
+//         for (auto & rl : gld->roles)
+//         {
+//             role & r = _guild.get_role(rl);
+//             w << "[" << r.role_id << "] : [A:" << r._permission.getAllowPerms() << "] : [D:" << r._permission.getDenyPerms() << "] : [" << r.name << "]\n";
+// 
+//         }
+//         _channel->create_debug_message(w.str());
+//     }
+//     else if (toks[0] == "?croles")
+//     {
+//         std::stringstream w;
+//         w << "Channel Roles:\n";
+//         for (auto & r : _channel->overrides)
+//         {
+//             auto & a = r.second;
+//             std::string name;
+//             if (a.type == overwrite_type::User)
+//                 name = _guild.members[a.id]->getFullName();
+//             else
+//                 name = _guild.roles[a.id]->name;
+//             w << "[" << ((a.type == overwrite_type::User) ? "user" : "role") << "] : [A:" << a.allow << "] : [D:" << a.deny << "] : [" << name << "]\n";
+//         }
+//         _channel->create_debug_message(w.str());
+//     }
+//     else if (toks[0] == "?memory")
+//     {
+//         size_t guildinfocount = 0;
+//         size_t guildinforolecount = 0;
+//         for (auto & mem : obj.bot->members)
+//         {
+//             guildinfocount += mem.second->guilds.size();
+//             for (auto & g : mem.second->guilds)
+//                 guildinforolecount += g.second.roles.size();
+//         }
+//         _channel->create_message(fmt::format("guild_info.size() : {} | guild_info.role.size() : {}", guildinfocount, guildinforolecount));
+//     }
 
     return;
 }
