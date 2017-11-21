@@ -31,9 +31,9 @@
 #include "../structs.hpp"
 #include "guild_member.hpp"
 #include "channel.hpp"
-//#include "role.hpp"
-//#include "voice_state.hpp"
-//#include "presence.hpp"
+#include "role.hpp"
+#include "voice_state.hpp"
+#include "presence.hpp"
 #include "emoji.hpp"
 #include <json.hpp>
 #include <string>
@@ -47,14 +47,6 @@ namespace aegiscpp
 class member;
 class channel;
 
-/**<\todo Remove and create proper struct */
-struct role_gw {};
-/**<\todo Remove and create proper struct */
-struct voice_state {};
-/**<\todo Remove and create proper struct */
-struct presence {};
-
-
 /**\todo Needs documentation
 */
 struct guild_gw
@@ -64,7 +56,7 @@ struct guild_gw
     std::string name; /**<\todo Needs documentation */
     std::string icon; /**<\todo Needs documentation */
     std::string splash; /**<\todo Needs documentation */
-    snowflake owner_id; /**<\todo Needs documentation */
+    snowflake owner_id = 0; /**<\todo Needs documentation */
     std::string region; /**<\todo Needs documentation */
     snowflake afk_channel_id; /**<\todo Needs documentation */
     int32_t afk_timeout = 0; /**<\todo Needs documentation */
@@ -92,11 +84,74 @@ struct guild_gw
 };
 
 
-/**\todo Incomplete. Needs documentation
+/**\todo Needs documentation
 */
 inline void from_json(const nlohmann::json& j, guild_gw& m)
 {
-//TODO:
+    if (j.count("id") && !j["id"].is_null())
+        m.guild_id = j["id"];
+    if (j.count("name") && !j["name"].is_null())
+        m.name = j["name"];
+    if (j.count("icon") && !j["icon"].is_null())
+        m.icon = j["icon"];
+    if (j.count("splash") && !j["splash"].is_null())
+        m.splash = j["splash"];
+    if (j.count("owner_id") && !j["owner_id"].is_null())
+        m.owner_id = j["owner_id"];
+    if (j.count("region") && !j["region"].is_null())
+        m.region = j["region"];
+    if (j.count("afk_channel_id") && !j["afk_channel_id"].is_null())
+        m.afk_channel_id = j["afk_channel_id"];
+    if (j.count("afk_timeout") && !j["afk_timeout"].is_null())
+        m.afk_timeout = j["afk_timeout"];
+    if (j.count("embed_enabled") && !j["embed_enabled"].is_null())
+        m.embed_enabled = j["embed_enabled"];
+    if (j.count("embed_channel_id") && !j["embed_channel_id"].is_null())
+        m.embed_channel_id = j["embed_channel_id"];
+    if (j.count("verification_level") && !j["verification_level"].is_null())
+        m.verification_level = j["verification_level"];
+    if (j.count("default_message_notifications") && !j["default_message_notifications"].is_null())
+        m.default_message_notifications = j["default_message_notifications"];
+    if (j.count("mfa_level") && !j["mfa_level"].is_null())
+        m.mfa_level = j["mfa_level"];
+    if (j.count("joined_at") && !j["joined_at"].is_null())
+        m.joined_at = j["joined_at"];
+    if (j.count("large") && !j["large"].is_null())
+        m.large = j["large"];
+    if (j.count("unavailable") && !j["unavailable"].is_null())
+        m.unavailable = j["unavailable"];
+    else
+        m.unavailable = false;
+    if (j.count("member_count") && !j["member_count"].is_null())
+        m.member_count = j["member_count"];
+
+    if (j.count("roles"))
+        for (auto & _role : j["roles"])
+            m.roles.push_back(_role);
+
+    if (j.count("members"))
+        for (auto & _member : j["members"])
+            m.members.push_back(_member);
+
+    if (j.count("channels"))
+        for (auto & _channel : j["channels"])
+            m.channels.push_back(_channel);
+
+    if (j.count("presences"))
+        for (auto & _presence : j["presences"])
+            m.presences.push_back(_presence);
+
+    if (j.count("emojis"))
+        for (auto & _emoji : j["emojis"])
+            m.emojis.push_back(_emoji);
+
+    if (j.count("voice_states"))
+        for (auto & _voicestate : j["voice_states"])
+            m.voice_states.push_back(_voicestate);
+
+    if (j.count("features"))
+        for (auto & _feature : j["features"])
+            m.features.push_back(_feature);
 }
 
 /**\todo Needs documentation
