@@ -167,9 +167,11 @@ public:
             c.reset();
         stop_work();
         websocket_o.reset();
-		if (thd->joinable())
-			thd->join();
-	}
+		if (restthread->joinable())
+			restthread->join();
+        if (statusthread->joinable())
+            statusthread->join();
+    }
 
     aegis(const aegis &) = delete;
     aegis(aegis &&) = delete;
@@ -258,7 +260,7 @@ public:
         // Start a work object so that asio won't exit prematurely
         start_work();
         // Start the REST outgoing thread
-        thd = std::make_unique<std::thread>([&] { rest_thread(); });
+        rest_thread();
         // Create our websocket connection
         websocketcreate(ec);
         if (ec) { log->error("Websocket fail: {}", ec.message()); shutdown();  return; }
@@ -593,6 +595,7 @@ public:
 
     //called by CHANNEL_CREATE (DirectMessage)
     void channel_create(const json & obj, shard * _shard);
+    void rest_thread();
 
     member * self() const noexcept
     {
@@ -658,7 +661,7 @@ private:
 
     //std::unordered_map<std::string, c_inject> m_cbmap;
 
-    std::unique_ptr<std::thread> thd;
+    std::unique_ptr<std::thread> restthread;
 
     // Gateway URL for the Discord Websocket
     std::string gateway_url;
@@ -680,8 +683,6 @@ private:
     void onClose(websocketpp::connection_hdl hdl, shard * _shard);
     void processReady(const json & d, shard * _shard);
     void keepAlive(const asio::error_code& error, const int ms, shard * _shard);
-
-    void rest_thread();
 };
 
 }

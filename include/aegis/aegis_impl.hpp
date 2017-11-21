@@ -988,24 +988,26 @@ inline void aegis::onClose(websocketpp::connection_hdl hdl, shard * _shard)
 
 inline void aegis::rest_thread()
 {
-    using namespace std::chrono_literals;
-    while (status != Shutdown)
-    {
-        try
+    restthread = std::make_unique<std::thread>([&] {
+        using namespace std::chrono_literals;
+        while (status != Shutdown)
         {
-            ratelimit_o.process_queue();
+            try
+            {
+                ratelimit_o.process_queue();
 
-            std::this_thread::sleep_for(5ms);
+                std::this_thread::sleep_for(5ms);
+            }
+            catch (std::exception & e)
+            {
+                log->error("rest_thread() error : {}", e.what());
+            }
+            catch (...)
+            {
+                log->error("rest_thread() error : unknown");
+            }
         }
-        catch (std::exception & e)
-        {
-            log->error("rest_thread() error : {}", e.what());
-        }
-        catch (...)
-        {
-            log->error("rest_thread() error : unknown");
-        }
-    }
+    });
 }
 
 inline void aegis::debug_trace(shard * _shard)
