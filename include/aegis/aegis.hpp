@@ -156,6 +156,7 @@ public:
         control_channel = 0;
         force_shard_count = 0;
         debugmode = false;
+        state.core = this;
     }
 
     /// Destroys the shards, stops the asio::work object, destroys the websocket object, and attempts to join the rest_thread thread

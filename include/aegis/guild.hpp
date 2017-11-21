@@ -73,7 +73,7 @@ public:
     snowflake guild_id;
     bucket_factory & ratelimit;
     std::shared_ptr<spdlog::logger> log;
-    bot_state * state;
+    const bot_state * state;
     int role_offset = 1;
 
     /// Get pointer to own member object
