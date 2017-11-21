@@ -98,6 +98,15 @@ public:
         return name;
     }
 
+    /// Get region of guild
+    /**
+    * @returns String of region guild is in
+    */
+    std::string get_region() const noexcept
+    {
+        return region;
+    }
+
     /// Check if member has role
     /**
     * @param member_id Snowflake of member
@@ -264,6 +273,8 @@ public:
     */
     bool get_guild(std::function<void(rest_reply)> callback = nullptr);
 
+    /**\todo Needs documentation
+    */
     bool modify_guild(std::optional<std::string> name, std::optional<std::string> voice_region, std::optional<int> verification_level,
                       std::optional<int> default_message_notifications, std::optional<snowflake> afk_channel_id, std::optional<int> afk_timeout,
                       std::optional<std::string> icon, std::optional<snowflake> owner_id, std::optional<std::string> splash, std::function<void(rest_reply)> callback = nullptr);
