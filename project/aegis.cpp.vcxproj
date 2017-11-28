@@ -61,7 +61,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;_HAS_AUTO_PTR_ETC=1;_WIN32_WINNT=0x0600;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;_HAS_AUTO_PTR_ETC=1;_WIN32_WINNT=0x0A00;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>..\lib\websocketpp;..\lib\json\src;..\lib\spdlog\include;..\lib\asio\asio\include;..\include;..\lib\zstr\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -89,7 +89,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
-      <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;_HAS_AUTO_PTR_ETC=1;_WIN32_WINNT=0x0600;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;_HAS_AUTO_PTR_ETC=1;_WIN32_WINNT=0x0A00;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>..\lib\websocketpp;..\lib\json\src;..\lib\spdlog\include;..\lib\asio\asio\include;..\include;..\lib\zstr\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -107,6 +107,7 @@
   <ItemGroup>
     <ClCompile Include="..\src\main.cpp" />
     <None Include="..\.travis.yml" />
+    <None Include="..\aegis.dox" />
     <None Include="..\README.md" />
     <None Include="..\src\minimal.cpp" />
   </ItemGroup>
@@ -161,11 +162,14 @@
     <ClInclude Include="..\include\aegis\objects\image.hpp" />
     <ClInclude Include="..\include\aegis\objects\message.hpp" />
     <ClInclude Include="..\include\aegis\objects\permission_overwrite.hpp" />
+    <ClInclude Include="..\include\aegis\objects\presence.hpp" />
     <ClInclude Include="..\include\aegis\objects\provider.hpp" />
     <ClInclude Include="..\include\aegis\objects\reaction.hpp" />
+    <ClInclude Include="..\include\aegis\objects\role.hpp" />
     <ClInclude Include="..\include\aegis\objects\thumbnail.hpp" />
     <ClInclude Include="..\include\aegis\objects\user.hpp" />
     <ClInclude Include="..\include\aegis\objects\video.hpp" />
+    <ClInclude Include="..\include\aegis\objects\voice_state.hpp" />
     <ClInclude Include="..\include\aegis\shard.hpp" />
     <ClInclude Include="..\include\aegis\common.hpp" />
     <ClInclude Include="..\include\aegis\config.hpp" />

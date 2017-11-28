@@ -999,17 +999,7 @@ inline void aegis::onClose(websocketpp::connection_hdl hdl, shard * _shard)
         return;
     _shard->connection_state = Reconnecting;
     _shard->do_reset();
-    _shard->reconnect_timer = websocket_o.set_timer(10000, [_shard, this](const asio::error_code & ec)
-    {
-        if (ec == asio::error::operation_aborted)
-            return;
-        _shard->connection_state = Connecting;
-        asio::error_code wsec;
-        _shard->connection = websocket_o.get_connection(gateway_url, wsec);
-        setup_callbacks(_shard);
-        websocket_o.connect(_shard->connection);
-
-    });
+    _shard->start_reconnect();
 }
 
 inline void aegis::rest_thread()
@@ -1058,6 +1048,8 @@ inline void aegis::status_thread()
                             debug_trace(_shard.get());
                             if (_shard->connection->get_state() < websocketpp::session::state::closing)
                                 websocket_o.close(_shard->connection, 1001, "");
+                            else
+                                _shard->start_reconnect();
                             _shard->connection_state = Reconnecting;
                             _shard->do_reset();
                         }
@@ -1067,6 +1059,8 @@ inline void aegis::status_thread()
                             debug_trace(_shard.get());
                             if (_shard->connection->get_state() < websocketpp::session::state::closing)
                                 websocket_o.close(_shard->connection, 1001, "");
+                            else
+                                _shard->start_reconnect();
                             _shard->connection_state = Reconnecting;
                             _shard->do_reset();
                         }
@@ -1076,17 +1070,7 @@ inline void aegis::status_thread()
                     //find a prettier way to do this
                     if (_shard && !_shard->connection && !_shard->reconnect_timer)
                     {
-                        _shard->reconnect_timer = websocket_o.set_timer(10000, [_shard = _shard.get(), this](const asio::error_code & ec)
-                        {
-                            if (ec == asio::error::operation_aborted)
-                                return;
-                            _shard->connection_state = Connecting;
-                            asio::error_code wsec;
-                            _shard->connection = websocket_o.get_connection(gateway_url, wsec);
-                            setup_callbacks(_shard);
-                            websocket_o.connect(_shard->connection);
-
-                        });
+                        _shard->start_reconnect();
                     }
                 }
 

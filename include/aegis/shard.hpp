@@ -55,6 +55,8 @@ public:
     /// 
     void do_reset();
 
+    void start_reconnect();
+
     /// Get this shard's websocket message sequence counter
     /**
     * @returns Sequence counter specific to this shard

@@ -54,4 +54,18 @@ inline void shard::do_reset()
     }
 }
 
+inline void shard::start_reconnect()
+{
+    reconnect_timer = state->core->websocket_o.set_timer(10000, [this](const asio::error_code & ec)
+    {
+        if (ec == asio::error::operation_aborted)
+            return;
+        connection_state = Connecting;
+        asio::error_code wsec;
+        connection = state->core->websocket_o.get_connection(state->core->gateway_url, wsec);
+        state->core->setup_callbacks(this);
+        state->core->websocket_o.connect(connection);
+    });
+}
+
 }
