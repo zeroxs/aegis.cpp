@@ -30,14 +30,26 @@ using json = nlohmann::json;
 int main(int argc, char * argv[])
 {
     aegis bot("TOKEN");
-    bot.i_message_create = [] (json & msg, shard & shard, aegis & bot) -> bool
+    callbacks cbs;
+    cbs.i_message_create = [&](message_create obj) -> bool
     {
-        snowflake channel_id = msg["d"]["channel_id"];
-        std::string _member = msg["d"]["author"];
-        if (msg["d"]["content"] == "Hi")
-            bot.get_channel(channel_id).create_message("Hello back");
+        std::string username;
+        auto _member = obj._member;
+        if (_member != nullptr)
+            username = obj._member->name;
+
+        auto _channel = obj._channel;
+        auto & _guild = _channel->get_guild();
+
+        snowflake channel_id = _channel->channel_id;
+        snowflake message_id = obj.msg.message_id;
+        std::string content = obj.msg.content;
+
+        if (content == "Hi")
+            bot.get_channel(channel_id)->create_message("Hello back");
         return true;
     };
+    bot._callbacks = cbs;
     bot.easy_start();
     return 0;
 }
