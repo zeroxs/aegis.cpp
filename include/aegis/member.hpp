@@ -49,8 +49,8 @@ public:
     std::string name; /**< Username of member */
     uint16_t discriminator = 0; /**< 4 digit discriminator (1-9999) */
     std::string avatar; /**< Hash of member avatar */
-    bool isbot : 1; /**< true if member is a bot */
-    bool mfa_enabled : 1; /**< true if member has Two-factor authentication enabled */
+    bool isbot = false; /**< true if member is a bot */
+    bool mfa_enabled = false; /**< true if member has Two-factor authentication enabled */
 
     /**
     * Member owned guild information
@@ -60,9 +60,9 @@ public:
         std::vector<int16_t> roles;
         std::optional<std::string> nickname;
         //std::string joined_at;
-        int64_t joined_at;
-        bool deaf : 1;
-        bool mute : 1;
+        int64_t joined_at = 0;
+        bool deaf = false;
+        bool mute = false;
     };
 
     /**
@@ -73,7 +73,6 @@ public:
         Offline,
         Online,
         Idle,
-        Streaming,
         DoNotDisturb
     };
 
@@ -95,7 +94,7 @@ public:
     *
     * @returns A string of the nickname or empty is no nickname is set
     */
-    std::optional<std::string> getName(snowflake guild_id)
+    std::optional<std::string> get_name(snowflake guild_id)
     {
         auto g = get_guild_info(guild_id);
         if (!g.has_value())
@@ -136,7 +135,7 @@ public:
     /**
     * @returns A string of the full username and discriminator
     */
-    std::string getFullName()
+    std::string get_full_name()
     {
         return fmt::format("{}#{:0=4}", name, discriminator);
     }

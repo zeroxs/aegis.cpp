@@ -296,10 +296,10 @@ inline int64_t guild::base_permissions(member & _member) const noexcept
         return ~0;
 
     auto & role_everyone = get_role(guild_id);
-    int64_t permissions = role_everyone._permission.getAllowPerms();
+    int64_t permissions = role_everyone._permission.get_allow_perms();
 
     for (auto & rl : _member.get_guild_info(guild_id).value()->roles)
-        permissions |= get_role(rl)._permission.getAllowPerms();
+        permissions |= get_role(rl)._permission.get_allow_perms();
 
     if (permissions & 0x8)//admin
         return ~0;
@@ -408,7 +408,7 @@ inline bool guild::modify_guild(std::optional<std::string> name, std::optional<s
                     std::optional<int> default_message_notifications, std::optional<snowflake> afk_channel_id, std::optional<int> afk_timeout,
                     std::optional<std::string> icon, std::optional<snowflake> owner_id, std::optional<std::string> splash, std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageGuild())
+    if (!permission(base_permissions(self())).can_manage_guild())
         return false;
     if (owner_id.has_value() && owner_id != self()->member_id)
         return false;
@@ -450,7 +450,7 @@ inline bool guild::delete_guild(std::function<void(rest_reply)> callback)
 inline bool guild::create_text_channel(std::string name, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
 {
     //requires MANAGE_CHANNELS
-    if (!permission(base_permissions(self())).canManageChannels())
+    if (!permission(base_permissions(self())).can_manage_channels())
         return false;
 
     json obj;
@@ -468,7 +468,7 @@ inline bool guild::create_text_channel(std::string name, int64_t parent_id, bool
 
 inline bool guild::create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageChannels())
+    if (!permission(base_permissions(self())).can_manage_channels())
         return false;
 
     json obj;
@@ -486,7 +486,7 @@ inline bool guild::create_voice_channel(std::string name, int32_t bitrate, int32
 
 inline bool guild::create_category_channel(std::string name, int64_t parent_id, std::vector<permission_overwrite> permission_overwrites, std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageChannels())
+    if (!permission(base_permissions(self())).can_manage_channels())
         return false;
 
     json obj;
@@ -506,7 +506,7 @@ inline bool guild::create_category_channel(std::string name, int64_t parent_id, 
 */
 inline bool guild::modify_channel_positions(std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageChannels())
+    if (!permission(base_permissions(self())).can_manage_channels())
         return false;
 
     return true;
@@ -519,32 +519,32 @@ inline bool guild::modify_guild_member(snowflake user_id, std::optional<std::str
     json obj;
     if (nick.has_value())
     {
-        if (!perm.canManageNames())
+        if (!perm.can_manage_names())
             return false;
         obj["nick"] = nick.value();//requires MANAGE_NICKNAMES
     }
     if (mute.has_value())
     {
-        if (!perm.canVoiceMute())
+        if (!perm.can_voice_mute())
             return false;
         obj["mute"] = mute.value();//requires MUTE_MEMBERS
     }
     if (deaf.has_value())
     {
-        if (!perm.canVoiceDeafen())
+        if (!perm.can_voice_deafen())
             return false;
         obj["deaf"] = deaf.value();//requires DEAFEN_MEMBERS
     }
     if (roles.has_value())
     {
-        if (!perm.canManageRoles())
+        if (!perm.can_manage_roles())
             return false;
         obj["roles"] = roles.value();//requires MANAGE_ROLES
     }
     if (channel_id.has_value())
     {
         //TODO: This needs to calculate whether or not the bot has access to the voice channel as well
-        if (!perm.canVoiceMove())
+        if (!perm.can_voice_move())
             return false;
         obj["channel_id"] = channel_id.value();//requires MOVE_MEMBERS
     }
@@ -555,7 +555,7 @@ inline bool guild::modify_guild_member(snowflake user_id, std::optional<std::str
 
 inline bool guild::modify_my_nick(std::string newname, std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canChangeName())
+    if (!permission(base_permissions(self())).can_change_name())
         return false;
 
     json obj = { "nick", newname };
@@ -565,7 +565,7 @@ inline bool guild::modify_my_nick(std::string newname, std::function<void(rest_r
 
 inline bool guild::add_guild_member_role(snowflake user_id, snowflake role_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageRoles())
+    if (!permission(base_permissions(self())).can_manage_roles())
         return false;
 
     ratelimit.push(guild_id, fmt::format("/guilds/{}/members/{}/roles/{}", guild_id, user_id, role_id), "", "PUT", callback);
@@ -574,7 +574,7 @@ inline bool guild::add_guild_member_role(snowflake user_id, snowflake role_id, s
 
 inline bool guild::remove_guild_member_role(snowflake user_id, snowflake role_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageRoles())
+    if (!permission(base_permissions(self())).can_manage_roles())
         return false;
 
     ratelimit.push(guild_id, fmt::format("/guilds/{}/members/{}/roles/{}", guild_id, user_id, role_id), "", "DELETE", callback);
@@ -583,7 +583,7 @@ inline bool guild::remove_guild_member_role(snowflake user_id, snowflake role_id
 
 inline bool guild::remove_guild_member(snowflake user_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canKick())
+    if (!permission(base_permissions(self())).can_kick())
         return false;
 
     ratelimit.push(guild_id, fmt::format("/guilds/{}/members/{}", guild_id, user_id), "", "DELETE", callback);
@@ -592,7 +592,7 @@ inline bool guild::remove_guild_member(snowflake user_id, std::function<void(res
 
 inline bool guild::create_guild_ban(snowflake user_id, int8_t delete_message_days, std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canBan())
+    if (!permission(base_permissions(self())).can_ban())
         return false;
 
     json obj = { "delete-message-days", delete_message_days };
@@ -602,7 +602,7 @@ inline bool guild::create_guild_ban(snowflake user_id, int8_t delete_message_day
 
 inline bool guild::remove_guild_ban(snowflake user_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canBan())
+    if (!permission(base_permissions(self())).can_ban())
         return false;
 
     ratelimit.push(guild_id, fmt::format("/guilds/{}/bans/{}", guild_id, user_id), "", "DELETE", callback);
@@ -613,7 +613,7 @@ inline bool guild::remove_guild_ban(snowflake user_id, std::function<void(rest_r
 */
 inline bool guild::create_guild_role(std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageRoles())
+    if (!permission(base_permissions(self())).can_manage_roles())
         return false;
 
     return true;
@@ -623,7 +623,7 @@ inline bool guild::create_guild_role(std::function<void(rest_reply)> callback)
 */
 inline bool guild::modify_guild_role_positions(std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageRoles())
+    if (!permission(base_permissions(self())).can_manage_roles())
         return false;
 
     return true;
@@ -633,7 +633,7 @@ inline bool guild::modify_guild_role_positions(std::function<void(rest_reply)> c
 */
 inline bool guild::modify_guild_role(snowflake role_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageRoles())
+    if (!permission(base_permissions(self())).can_manage_roles())
         return false;
 
     return true;
@@ -643,7 +643,7 @@ inline bool guild::modify_guild_role(snowflake role_id, std::function<void(rest_
 */
 inline bool guild::delete_guild_role(snowflake role_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageRoles())
+    if (!permission(base_permissions(self())).can_manage_roles())
         return false;
 
     return true;
@@ -653,7 +653,7 @@ inline bool guild::delete_guild_role(snowflake role_id, std::function<void(rest_
 */
 inline bool guild::get_guild_prune_count(int16_t days, std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canKick())
+    if (!permission(base_permissions(self())).can_kick())
         return false;
 
     return true;
@@ -663,7 +663,7 @@ inline bool guild::get_guild_prune_count(int16_t days, std::function<void(rest_r
 */
 inline bool guild::begin_guild_prune(int16_t days, std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canKick())
+    if (!permission(base_permissions(self())).can_kick())
         return false;
 
     return true;
@@ -673,7 +673,7 @@ inline bool guild::begin_guild_prune(int16_t days, std::function<void(rest_reply
 */
 inline bool guild::get_guild_invites(std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageGuild())
+    if (!permission(base_permissions(self())).can_manage_guild())
         return false;
 
     return true;
@@ -683,7 +683,7 @@ inline bool guild::get_guild_invites(std::function<void(rest_reply)> callback)
 */
 inline bool guild::get_guild_integrations(std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageGuild())
+    if (!permission(base_permissions(self())).can_manage_guild())
         return false;
 
     return true;
@@ -693,7 +693,7 @@ inline bool guild::get_guild_integrations(std::function<void(rest_reply)> callba
 */
 inline bool guild::create_guild_integration(std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageGuild())
+    if (!permission(base_permissions(self())).can_manage_guild())
         return false;
 
     return true;
@@ -703,7 +703,7 @@ inline bool guild::create_guild_integration(std::function<void(rest_reply)> call
 */
 inline bool guild::modify_guild_integration(std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageGuild())
+    if (!permission(base_permissions(self())).can_manage_guild())
         return false;
 
     return true;
@@ -713,7 +713,7 @@ inline bool guild::modify_guild_integration(std::function<void(rest_reply)> call
 */
 inline bool guild::delete_guild_integration(std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageGuild())
+    if (!permission(base_permissions(self())).can_manage_guild())
         return false;
 
     return true;
@@ -723,7 +723,7 @@ inline bool guild::delete_guild_integration(std::function<void(rest_reply)> call
 */
 inline bool guild::sync_guild_integration(std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageGuild())
+    if (!permission(base_permissions(self())).can_manage_guild())
         return false;
 
     return true;
@@ -733,7 +733,7 @@ inline bool guild::sync_guild_integration(std::function<void(rest_reply)> callba
 */
 inline bool guild::get_guild_embed(std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageGuild())
+    if (!permission(base_permissions(self())).can_manage_guild())
         return false;
 
     return true;
@@ -743,7 +743,7 @@ inline bool guild::get_guild_embed(std::function<void(rest_reply)> callback)
 */
 inline bool guild::modify_guild_embed(std::function<void(rest_reply)> callback)
 {
-    if (!permission(base_permissions(self())).canManageGuild())
+    if (!permission(base_permissions(self())).can_manage_guild())
         return false;
 
     return true;

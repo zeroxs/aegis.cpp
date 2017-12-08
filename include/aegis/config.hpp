@@ -26,17 +26,27 @@
 #pragma once
 
 
+#if !defined(AEGIS_VERSION_LONG)
 #define AEGIS_VERSION_LONG      0x00000100
 #define AEGIS_VERSION_TEXT      "aegis.cpp 0.1.1 2017/11/21"
 
 #define AEGIS_VERSION_MAJOR     ((AEGIS_VERSION_LONG & 0x00ff0000) >> 16)
 #define AEGIS_VERSION_MINOR     ((AEGIS_VERSION_LONG & 0x0000ff00) >> 8)
 #define AEGIS_VERSION_PATCH     (AEGIS_VERSION_LONG & 0x000000ff)
+#endif
 
+#if !defined(ASIO_STANDALONE)
 #define ASIO_STANDALONE
+#endif
+#if !defined(_WEBSOCKETPP_CPP11_STL_)
 #define _WEBSOCKETPP_CPP11_STL_
+#endif
+#if !defined(BOOST_DATE_TIME_NO_LIB)
 #define BOOST_DATE_TIME_NO_LIB
+#endif
+#if !defined(BOOST_REGEX_NO_LIB)
 #define BOOST_REGEX_NO_LIB
+#endif
 
 
 

@@ -262,7 +262,7 @@ public:
         // Start the REST outgoing thread
         rest_thread();
         // Create our websocket connection
-        websocketcreate(ec);
+        create_websocket(ec);
         if (ec) { log->error("Websocket fail: {}", ec.message()); shutdown();  return; }
         state.core = this;
         // Connect the websocket[s]
@@ -297,7 +297,7 @@ public:
     /**
     * @param ec The error_code out value
     */
-    void websocketcreate(std::error_code & ec)
+    void create_websocket(std::error_code & ec)
     {
         log->info("Creating websocket");
         using error::make_error_code;
@@ -410,15 +410,15 @@ public:
     {
         _shard->connection->set_message_handler([_shard, this](websocketpp::connection_hdl hdl, message_ptr msg)
         {
-            this->onMessage(hdl, msg, _shard);
+            this->on_message(hdl, msg, _shard);
         });
         _shard->connection->set_open_handler([_shard, this](websocketpp::connection_hdl hdl)
         {
-            this->onConnect(hdl, _shard);
+            this->on_connect(hdl, _shard);
         });
         _shard->connection->set_close_handler([_shard, this](websocketpp::connection_hdl hdl)
         {
-            this->onClose(hdl, _shard);
+            this->on_close(hdl, _shard);
         });
     }
 
@@ -683,11 +683,11 @@ private:
 
     ratelimiter ratelimit_o;
 
-    void onMessage(websocketpp::connection_hdl hdl, message_ptr msg, shard * _shard);
-    void onConnect(websocketpp::connection_hdl hdl, shard * _shard);
-    void onClose(websocketpp::connection_hdl hdl, shard * _shard);
-    void processReady(const json & d, shard * _shard);
-    void keepAlive(const asio::error_code& error, const int ms, shard * _shard);
+    void on_message(websocketpp::connection_hdl hdl, message_ptr msg, shard * _shard);
+    void on_connect(websocketpp::connection_hdl hdl, shard * _shard);
+    void on_close(websocketpp::connection_hdl hdl, shard * _shard);
+    void process_ready(const json & d, shard * _shard);
+    void keep_alive(const asio::error_code& error, const int ms, shard * _shard);
 };
 
 }

@@ -170,7 +170,7 @@ inline void example::MessageCreate(message_create obj)
                     if (reply.reply_code != 204)
                         _channel->create_message(fmt::format("Unable to kick: {}", target_id));
                     else
-                        _channel->create_message(fmt::format("Kicked: {}", bot->get_member(target_id)->getFullName()));
+                        _channel->create_message(fmt::format("Kicked: {}", bot->get_member(target_id)->get_full_name()));
                 });
                 return;
             }
@@ -184,7 +184,7 @@ inline void example::MessageCreate(message_create obj)
                     if (reply.reply_code != 204)
                         _channel->create_message(fmt::format("Unable to kick: {}", target_id));
                     else
-                        _channel->create_message(fmt::format("Kicked: {}", bot->get_member(target_id)->getFullName()));
+                        _channel->create_message(fmt::format("Kicked: {}", bot->get_member(target_id)->get_full_name()));
                 });
                 return;
             }
@@ -197,7 +197,7 @@ inline void example::MessageCreate(message_create obj)
                     //found # separator
                     for (auto & m : obj._channel->get_guild().members)
                     {
-                        if (m.second->getFullName() == target)
+                        if (m.second->get_full_name() == target)
                         {
                             obj._channel->create_message(fmt::format("Found user: {}", m.second->member_id));
                             obj._channel->get_guild().remove_guild_member(m.second->member_id, [bot = obj.bot, _channel, target_id = m.second->member_id](rest_reply reply)
@@ -205,7 +205,7 @@ inline void example::MessageCreate(message_create obj)
                                 if (reply.reply_code != 204)
                                     _channel->create_message(fmt::format("Unable to kick: {}", target_id));
                                 else
-                                    _channel->create_message(fmt::format("Kicked: {}", bot->get_member(target_id)->getFullName()));
+                                    _channel->create_message(fmt::format("Kicked: {}", bot->get_member(target_id)->get_full_name()));
                             });
                         }
                     }
@@ -233,7 +233,7 @@ inline void example::MessageCreate(message_create obj)
         for (auto & rl : gld->roles)
         {
             role & r = _guild.get_role(rl);
-            w << "[" << r.role_id << "] : [A:" << r._permission.getAllowPerms() << "] : [D:" << r._permission.getDenyPerms() << "] : [" << r.name << "]\n";
+            w << "[" << r.role_id << "] : [A:" << r._permission.get_allow_perms() << "] : [" << r.name << "]\n";
 
         }
         _channel->create_debug_message(w.str());
@@ -361,7 +361,7 @@ inline void example::MessageCreate(message_create obj)
 //             auto & a = r.second;
 //             std::string name;
 //             if (a.type == overwrite_type::User)
-//                 name = _guild.members[a.id]->getFullName();
+//                 name = _guild.members[a.id]->get_full_name();
 //             else
 //                 name = _guild.roles[a.id]->name;
 //             w << "[" << ((a.type == overwrite_type::User) ? "user" : "role") << "] : [A:" << a.allow << "] : [D:" << a.deny << "] : [" << name << "]\n";

@@ -38,7 +38,7 @@ namespace spd = spdlog;
 using json = nlohmann::json;
 using namespace std::literals;
 
-inline void aegis::processReady(const json & d, shard * _shard)
+inline void aegis::process_ready(const json & d, shard * _shard)
 {
     _shard->session_id = d["session_id"];
 
@@ -114,7 +114,7 @@ inline void aegis::channel_create(const json & obj, shard * _shard)
     }
 }
 
-inline void aegis::keepAlive(const asio::error_code & ec, const int ms, shard * _shard)
+inline void aegis::keep_alive(const asio::error_code & ec, const int ms, shard * _shard)
 {
     if (ec != asio::error::operation_aborted)
     {
@@ -147,7 +147,7 @@ inline void aegis::keepAlive(const asio::error_code & ec, const int ms, shard * 
             obj["op"] = 1;
             _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
             _shard->lastheartbeat = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-            _shard->keepalivetimer = websocket_o.set_timer(ms, std::bind(&aegis::keepAlive, this, std::placeholders::_1, ms, _shard));
+            _shard->keepalivetimer = websocket_o.set_timer(ms, std::bind(&aegis::keep_alive, this, std::placeholders::_1, ms, _shard));
         }
         catch (websocketpp::exception & e)
         {
@@ -253,7 +253,7 @@ inline std::optional<rest_reply> aegis::call(std::string_view path, std::string_
     return {};
 }
 
-inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, shard * _shard)
+inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, shard * _shard)
 {
     std::string payload = msg->get_payload();
 
@@ -556,12 +556,12 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
                     log->info("Shard#[{}] RESUMED Processed", _shard->shardid);
                     if (_shard->keepalivetimer)
                         _shard->keepalivetimer->cancel();
-                    _shard->keepalivetimer = websocket_o.set_timer(_shard->heartbeattime, std::bind(&aegis::keepAlive, this, std::placeholders::_1, _shard->heartbeattime, _shard));
+                    _shard->keepalivetimer = websocket_o.set_timer(_shard->heartbeattime, std::bind(&aegis::keep_alive, this, std::placeholders::_1, _shard->heartbeattime, _shard));
                     return;
                 }
                 else if (cmd == "READY")
                 {
-                    processReady(result["d"], _shard);
+                    process_ready(result["d"], _shard);
                     _shard->connection_state = Online;
                     log->info("Shard#[{}] READY Processed", _shard->shardid);
 
@@ -890,7 +890,7 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
             if (result["op"] == 10)
             {
                 int heartbeat = result["d"]["heartbeat_interval"];
-                _shard->keepalivetimer = websocket_o.set_timer(heartbeat, std::bind(&aegis::keepAlive, this, std::placeholders::_1, heartbeat, _shard));
+                _shard->keepalivetimer = websocket_o.set_timer(heartbeat, std::bind(&aegis::keep_alive, this, std::placeholders::_1, heartbeat, _shard));
                 _shard->heartbeattime = heartbeat;
             }
             if (result["op"] == 11)
@@ -915,7 +915,7 @@ inline void aegis::onMessage(websocketpp::connection_hdl hdl, message_ptr msg, s
 
 }
 
-inline void aegis::onConnect(websocketpp::connection_hdl hdl, shard * _shard)
+inline void aegis::on_connect(websocketpp::connection_hdl hdl, shard * _shard)
 {
     log->info("Connection established");
     _shard->connection_state = Connecting;
@@ -992,7 +992,7 @@ inline void aegis::onConnect(websocketpp::connection_hdl hdl, shard * _shard)
     }
 }
 
-inline void aegis::onClose(websocketpp::connection_hdl hdl, shard * _shard)
+inline void aegis::on_close(websocketpp::connection_hdl hdl, shard * _shard)
 {
     log->info("Connection closed");
     if (status == Shutdown)

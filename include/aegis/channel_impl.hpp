@@ -104,7 +104,7 @@ inline bool channel::create_debug_message(std::string content, std::function<voi
 inline bool channel::create_message(std::string content, std::function<void(rest_reply)> callback)
 {
     if (_guild != nullptr)//probably a DM
-        if (!permission(_guild->get_permissions(*_guild->self(), *this)).canSendMessages())
+        if (!permission(_guild->get_permissions(*_guild->self(), *this)).can_send_messages())
             return false;
 
     json obj;
@@ -116,7 +116,7 @@ inline bool channel::create_message(std::string content, std::function<void(rest
 inline bool channel::create_message_embed(std::string content, const json embed, std::function<void(rest_reply)> callback)
 {
     if (_guild != nullptr)//probably a DM
-        if (!permission(_guild->get_permissions(*_guild->self(), *this)).canSendMessages())
+        if (!permission(_guild->get_permissions(*_guild->self(), *this)).can_send_messages())
             return false;
 
     json obj;
@@ -151,7 +151,7 @@ inline bool channel::edit_message_embed(snowflake message_id, std::string conten
 */
 inline bool channel::delete_message(snowflake message_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
+    if (!permission(_guild->base_permissions(_guild->self())).can_manage_messages())
         return false;
 
     ratelimit.push(guild_id, fmt::format("/channels/{}/messages/{}", guild_id, message_id), "", "DELETE", callback);
@@ -160,7 +160,7 @@ inline bool channel::delete_message(snowflake message_id, std::function<void(res
 
 inline bool channel::bulk_delete_message(snowflake message_id, std::vector<int64_t> messages, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
+    if (!permission(_guild->base_permissions(_guild->self())).can_manage_messages())
         return false;
     if (messages.size() < 2 || messages.size() > 100)
         return false;
@@ -174,7 +174,7 @@ inline bool channel::modify_channel(std::optional<std::string> name, std::option
                                     std::optional<bool> nsfw, std::optional<int> bitrate, std::optional<int> user_limit,
                                     std::optional<std::vector<permission_overwrite>> permission_overwrites, std::optional<snowflake> parent_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canManageChannels())
+    if (!permission(_guild->base_permissions(_guild->self())).can_manage_channels())
         return false;
 
     json obj;
@@ -211,7 +211,7 @@ inline bool channel::modify_channel(std::optional<std::string> name, std::option
 
 inline bool channel::delete_channel(std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canManageChannels())
+    if (!permission(_guild->base_permissions(_guild->self())).can_manage_channels())
         return false;
 
     ratelimit.push(channel_id, fmt::format("/channels/{}", channel_id), "", "DELETE", callback);
@@ -220,7 +220,7 @@ inline bool channel::delete_channel(std::function<void(rest_reply)> callback)
 
 inline bool channel::create_reaction(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canAddReactions())
+    if (!permission(_guild->base_permissions(_guild->self())).can_add_reactions())
         return false;
 
     emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "", "PUT", callback);
@@ -229,7 +229,7 @@ inline bool channel::create_reaction(snowflake message_id, std::string emoji_tex
 
 inline bool channel::delete_own_reaction(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canAddReactions())
+    if (!permission(_guild->base_permissions(_guild->self())).can_add_reactions())
         return false;
 
     emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "", "DELETE", callback);
@@ -238,7 +238,7 @@ inline bool channel::delete_own_reaction(snowflake message_id, std::string emoji
 
 inline bool channel::delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake member_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
+    if (!permission(_guild->base_permissions(_guild->self())).can_manage_messages())
         return false;
 
     emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/{}", channel_id, message_id, emoji_text, member_id), "", "DELETE", callback);
@@ -256,7 +256,7 @@ inline bool channel::get_reactions(snowflake message_id, std::string emoji_text,
 
 inline bool channel::delete_all_reactions(snowflake message_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
+    if (!permission(_guild->base_permissions(_guild->self())).can_manage_messages())
         return false;
 
     emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions", channel_id, message_id), "", "DELETE", callback);
@@ -265,7 +265,7 @@ inline bool channel::delete_all_reactions(snowflake message_id, std::function<vo
 
 inline bool channel::edit_channel_permissions(snowflake overwrite_id, int64_t allow, int64_t deny, std::string type, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canManageRoles())
+    if (!permission(_guild->base_permissions(_guild->self())).can_manage_roles())
         return false;
 
     json obj;
@@ -278,7 +278,7 @@ inline bool channel::edit_channel_permissions(snowflake overwrite_id, int64_t al
 
 inline bool channel::get_channel_invites(std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canManageChannels())
+    if (!permission(_guild->base_permissions(_guild->self())).can_manage_channels())
         return false;
 
     ratelimit.push(channel_id, fmt::format("/channels/{}/invites", channel_id), "", "GET", callback);
@@ -287,7 +287,7 @@ inline bool channel::get_channel_invites(std::function<void(rest_reply)> callbac
 
 inline bool channel::create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canInvite())
+    if (!permission(_guild->base_permissions(_guild->self())).can_invite())
         return false;
 
     json obj;
@@ -305,7 +305,7 @@ inline bool channel::create_channel_invite(std::optional<int> max_age, std::opti
 
 inline bool channel::delete_channel_permission(snowflake overwrite_id, std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canManageRoles())
+    if (!permission(_guild->base_permissions(_guild->self())).can_manage_roles())
         return false;
 
     ratelimit.push(channel_id, fmt::format("/channels/{}/permissions/{}", channel_id, overwrite_id), "", "DELETE", callback);
@@ -325,7 +325,7 @@ inline bool channel::get_pinned_messages(std::function<void(rest_reply)> callbac
 
 inline bool channel::add_pinned_channel_message(std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
+    if (!permission(_guild->base_permissions(_guild->self())).can_manage_messages())
         return false;
 
     return true;
@@ -333,7 +333,7 @@ inline bool channel::add_pinned_channel_message(std::function<void(rest_reply)> 
 
 inline bool channel::delete_pinned_channel_message(std::function<void(rest_reply)> callback)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).canManageMessages())
+    if (!permission(_guild->base_permissions(_guild->self())).can_manage_messages())
         return false;
 
     return true;
