@@ -149,6 +149,20 @@ inline void example::MessageCreate(message_create obj)
     {
         std::string target = content.substr(5);
         std::string::size_type n = target.find_first_not_of(' ', 0);
+
+        auto kick_member = [&](snowflake member_id)
+        {
+            auto[ec, r1] = obj._channel->get_guild().remove_guild_member(member_id);
+            if (!ec)
+            {
+                auto reply = r1.get();
+                if (reply.reply_code != 204)
+                    _channel->create_message(fmt::format("Unable to kick: {}", member_id));
+                else
+                    _channel->create_message(fmt::format("Kicked: {}", obj.bot->get_member(member_id)->get_full_name()));
+            }
+        };
+
         if (n != std::string::npos)
             target = target.substr(n);
         try
@@ -164,14 +178,7 @@ inline void example::MessageCreate(message_create obj)
 
                 snowflake target_id = std::stoll(res);
                 obj._channel->create_message(fmt::format("test: {}", target_id));
-                
-                obj._channel->get_guild().remove_guild_member(target_id, [bot = obj.bot, _channel, target_id](rest_reply reply)
-                {
-                    if (reply.reply_code != 204)
-                        _channel->create_message(fmt::format("Unable to kick: {}", target_id));
-                    else
-                        _channel->create_message(fmt::format("Kicked: {}", bot->get_member(target_id)->get_full_name()));
-                });
+                kick_member(target_id);
                 return;
             }
             else if (std::isdigit(target[0]))
@@ -179,13 +186,7 @@ inline void example::MessageCreate(message_create obj)
                 //snowflake param
                 snowflake target_id = std::stoll(target);
                 obj._channel->create_message(fmt::format("test: {}", target_id));
-                obj._channel->get_guild().remove_guild_member(target_id, [bot = obj.bot, _channel, target_id](rest_reply reply)
-                {
-                    if (reply.reply_code != 204)
-                        _channel->create_message(fmt::format("Unable to kick: {}", target_id));
-                    else
-                        _channel->create_message(fmt::format("Kicked: {}", bot->get_member(target_id)->get_full_name()));
-                });
+                kick_member(target_id);
                 return;
             }
             else
@@ -200,13 +201,8 @@ inline void example::MessageCreate(message_create obj)
                         if (m.second->get_full_name() == target)
                         {
                             obj._channel->create_message(fmt::format("Found user: {}", m.second->member_id));
-                            obj._channel->get_guild().remove_guild_member(m.second->member_id, [bot = obj.bot, _channel, target_id = m.second->member_id](rest_reply reply)
-                            {
-                                if (reply.reply_code != 204)
-                                    _channel->create_message(fmt::format("Unable to kick: {}", target_id));
-                                else
-                                    _channel->create_message(fmt::format("Kicked: {}", bot->get_member(target_id)->get_full_name()));
-                            });
+                            kick_member(m.second->member_id);
+                            return;
                         }
                     }
                     return;
