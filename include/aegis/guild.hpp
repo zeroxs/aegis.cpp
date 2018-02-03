@@ -34,6 +34,8 @@
 namespace aegiscpp
 {
 
+using rest_api = std::tuple<std::error_code, std::shared_future<rest_reply>>;
+
 using rest_limits::bucket_factory;
 using json = nlohmann::json;
 
@@ -75,6 +77,14 @@ public:
     std::shared_ptr<spdlog::logger> log;
     const bot_state * state;
     int role_offset = 1;
+
+
+    std::shared_future<rest_reply> post_task(std::string path, std::string method = "POST", std::string obj = {});
+
+    permission perms()
+    {
+        return permission(base_permissions(self()));
+    }
 
     /// Get pointer to own member object
     /**
@@ -261,31 +271,31 @@ public:
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool create_guild(std::function<void(rest_reply)> callback = nullptr);
+    rest_api create_guild();
 
     /// Get guild information
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool get_guild(std::function<void(rest_reply)> callback = nullptr);
+    rest_api get_guild();
 
     /**\todo Needs documentation
     */
-    bool modify_guild(std::optional<std::string> name, std::optional<std::string> voice_region, std::optional<int> verification_level,
+    rest_api modify_guild(std::optional<std::string> name, std::optional<std::string> voice_region, std::optional<int> verification_level,
                       std::optional<int> default_message_notifications, std::optional<snowflake> afk_channel_id, std::optional<int> afk_timeout,
-                      std::optional<std::string> icon, std::optional<snowflake> owner_id, std::optional<std::string> splash, std::function<void(rest_reply)> callback = nullptr);
+                      std::optional<std::string> icon, std::optional<snowflake> owner_id, std::optional<std::string> splash);
 
     /// Delete a guild
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool delete_guild(std::function<void(rest_reply)> callback = nullptr);
+    rest_api delete_guild();
 
     /// Create a text channel
     /**
@@ -299,9 +309,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool create_text_channel(std::string name, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites, std::function<void(rest_reply)> callback = nullptr);
+    rest_api create_text_channel(std::string name, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites);
 
     /// Create a voice channel
     /**
@@ -319,9 +329,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites, std::function<void(rest_reply)> callback = nullptr);
+    rest_api create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites);
 
     /// Create a category
     /**
@@ -333,17 +343,17 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool create_category_channel(std::string name, int64_t parent_id, std::vector<permission_overwrite> permission_overwrites, std::function<void(rest_reply)> callback = nullptr);
+    rest_api create_category_channel(std::string name, int64_t parent_id, std::vector<permission_overwrite> permission_overwrites);
 
     /// Modify positions of channels
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool modify_channel_positions(std::function<void(rest_reply)> callback);
+    rest_api modify_channel_positions();
 
     /// Modify a member
     /// All fields are optional
@@ -362,10 +372,10 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool modify_guild_member(snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
-                             std::optional<bool> deaf, std::optional<std::vector<snowflake>> roles, std::optional<snowflake> channel_id, std::function<void(rest_reply)> callback = nullptr);
+    rest_api modify_guild_member(snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
+                             std::optional<bool> deaf, std::optional<std::vector<snowflake>> roles, std::optional<snowflake> channel_id);
 
     /// Modify own nickname
     /**
@@ -373,9 +383,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool modify_my_nick(std::string newname, std::function<void(rest_reply)> callback = nullptr);
+    rest_api modify_my_nick(std::string newname);
 
     /// Add a role to guild member
     /**
@@ -385,9 +395,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool add_guild_member_role(snowflake user_id, snowflake role_id, std::function<void(rest_reply)> callback = nullptr);
+    rest_api add_guild_member_role(snowflake user_id, snowflake role_id);
 
     /// Remove a role from guild member
     /**
@@ -397,9 +407,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool remove_guild_member_role(snowflake user_id, snowflake role_id, std::function<void(rest_reply)> callback = nullptr);
+    rest_api remove_guild_member_role(snowflake user_id, snowflake role_id);
 
     /// Remove guild member (kick)
     /**
@@ -407,9 +417,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool remove_guild_member(snowflake user_id, std::function<void(rest_reply)> callback = nullptr);
+    rest_api remove_guild_member(snowflake user_id);
 
     /// Create a new guild ban
     /**
@@ -419,9 +429,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool create_guild_ban(snowflake user_id, int8_t delete_message_days, std::function<void(rest_reply)> callback = nullptr);
+    rest_api create_guild_ban(snowflake user_id, int8_t delete_message_days);
 
     /// Remove a guild ban
     /**
@@ -429,25 +439,25 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool remove_guild_ban(snowflake user_id, std::function<void(rest_reply)> callback = nullptr);
+    rest_api remove_guild_ban(snowflake user_id);
 
     /// Create a guild role
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool create_guild_role(std::function<void(rest_reply)> callback = nullptr);
+    rest_api create_guild_role();
 
     /// Modify the guild role positions
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool modify_guild_role_positions(std::function<void(rest_reply)> callback = nullptr);
+    rest_api modify_guild_role_positions();
 
     /// Modify a guild role
     /**
@@ -455,9 +465,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool modify_guild_role(snowflake role_id, std::function<void(rest_reply)> callback = nullptr);
+    rest_api modify_guild_role(snowflake role_id);
 
     /// Delete a guild role
     /**
@@ -465,9 +475,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool delete_guild_role(snowflake role_id, std::function<void(rest_reply)> callback = nullptr);
+    rest_api delete_guild_role(snowflake role_id);
 
     /// Get a count of members that would be pruned
     /**
@@ -475,9 +485,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool get_guild_prune_count(int16_t days, std::function<void(rest_reply)> callback = nullptr);
+    rest_api get_guild_prune_count(int16_t days);
 
     /// Perform a guild prune
     /**
@@ -485,81 +495,81 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool begin_guild_prune(int16_t days, std::function<void(rest_reply)> callback = nullptr);
+    rest_api begin_guild_prune(int16_t days);
 
     /// Get active guild invites
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool get_guild_invites(std::function<void(rest_reply)> callback = nullptr);
+    rest_api get_guild_invites();
 
     /// Get guild integrations
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool get_guild_integrations(std::function<void(rest_reply)> callback = nullptr);
+    rest_api get_guild_integrations();
 
     /// Create a new guild integration
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool create_guild_integration(std::function<void(rest_reply)> callback = nullptr);
+    rest_api create_guild_integration();
 
     /// Modify a guild integration
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool modify_guild_integration(std::function<void(rest_reply)> callback = nullptr);
+    rest_api modify_guild_integration();
 
     /// Delete a guild integration
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool delete_guild_integration(std::function<void(rest_reply)> callback = nullptr);
+    rest_api delete_guild_integration();
 
     /// Get the guild integrations
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool sync_guild_integration(std::function<void(rest_reply)> callback = nullptr);
+    rest_api sync_guild_integration();
 
     /// Get the guild embed settings
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool get_guild_embed(std::function<void(rest_reply)> callback = nullptr);
+    rest_api get_guild_embed();
 
     /// Nodify the guild embed settings
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool modify_guild_embed(std::function<void(rest_reply)> callback = nullptr);
+    rest_api modify_guild_embed();
     
     /// Leave the guild this object is associated with
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool leave(std::function<void(rest_reply)> callback = nullptr);
+    rest_api leave();
 
     std::unordered_map<int64_t, std::shared_ptr<channel>> channels; /**< Map of snowflakes to channel objects */
     std::unordered_map<int64_t, std::shared_ptr<member>> members; /**< Map of snowflakes to member objects */

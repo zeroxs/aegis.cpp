@@ -166,6 +166,7 @@ public:
         for (auto & c : shards)
             c.reset();
         stop_work();
+        stop_rest_work();
         websocket_o.reset();
 		if (restthread->joinable())
 			restthread->join();
@@ -259,6 +260,7 @@ public:
         if (ec) { log->error("Initialize fail: {}", ec.message()); shutdown();  return; }
         // Start a work object so that asio won't exit prematurely
         start_work();
+        start_rest_work();
         // Start the REST outgoing thread
         rest_thread();
         // Create our websocket connection
@@ -285,6 +287,7 @@ public:
     {
         set_state(Shutdown);
         stop_work();
+        stop_rest_work();
         for (auto & _shard : shards)
         {
             _shard->connection_state = Shutdown;
@@ -373,6 +376,12 @@ public:
         return websocket_o.get_io_service();
     }
 
+    /// Get the internal (or external) io_service object
+    asio::io_service & rest_service()
+    {
+        return *rest_scheduler;
+    }
+
     /// Initiate websocket connection
     /**
     * @param ec The error_code out value
@@ -436,6 +445,22 @@ public:
         websocket_o.stop_perpetual();
     }
 
+    /// Starts the asio::work object
+    ///
+    void start_rest_work()
+    {
+        rest_scheduler = std::make_shared<asio::io_service>();
+        rest_work = std::make_shared<asio::io_service::work>(std::ref(*rest_scheduler));
+    }
+
+    /// Stops the asio::work object
+    ///
+    void stop_rest_work()
+    {
+        rest_work.reset();
+        rest_scheduler.reset();
+    }
+
     /// Outputs the last 5 messages received from the gateway
     ///
     void debug_trace(shard * _shard);
@@ -484,12 +509,45 @@ public:
     */
     std::optional<rest_reply> call(std::string_view path, std::string_view content, std::string_view method);
 
+    /// Spawns specified amount of threads and starts running the io_service
     /**
-    * Wraps the run method of the internal io_service object
+    * @param count Spawn `count` threads and run io_service object
     */
-    std::size_t run()
+    void run(std::size_t count)
     {
-        return io_service().run();
+        // Create a pool of threads to run all of the io_services.
+        std::vector<std::unique_ptr<std::thread>> threads;
+        for (std::size_t i = 0; i < count; ++i)
+        {
+            auto thread(std::make_unique<std::thread>([&]()
+            {
+                io_service().run();
+            }));
+            threads.push_back(std::move(thread));
+        }
+
+        // Create a pool of threads to run the rest scheduler.
+        std::vector<std::unique_ptr<std::thread>> rest_threads;
+        for (std::size_t i = 0; i < count; ++i)
+        {
+            auto thread(std::make_unique<std::thread>([&]()
+            {
+                io_service().run();
+            }));
+            rest_threads.push_back(std::move(thread));
+        }
+
+        for (std::size_t i = 0; i < threads.size(); ++i)
+            threads[i]->join();
+
+        for (std::size_t i = 0; i < rest_threads.size(); ++i)
+            rest_threads[i]->join();
+    }
+
+    /// Spawns the default (4) amount of threads and starts running the io_service
+    void run()
+    {
+        run(8);
     }
 
     /**
@@ -508,6 +566,9 @@ public:
     shard_status get_state() const { return status; }
     void set_state(shard_status s) { status = s; }
     bot_state & get_bot_obj() { return state; }
+
+    std::shared_ptr<asio::io_service> rest_scheduler;
+    work_ptr rest_work;
 
     uint32_t shard_max_count;
 
@@ -553,10 +614,6 @@ public:
 
     std::shared_ptr<member> get_member_create(snowflake id)
     {
-//         if (id == 362588408180375555)
-//         {
-//             log->critical("Trigger");
-//         }
         auto it = members.find(id);
         if (it == members.end())
         {
@@ -654,8 +711,6 @@ private:
     friend class guild;
     friend class channel;
     friend class shard;
-
-
 
     snowflake member_id;
     std::string username;

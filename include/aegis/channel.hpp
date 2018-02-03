@@ -33,6 +33,8 @@
 namespace aegiscpp
 {
 
+using rest_api = std::tuple<std::error_code, std::shared_future<rest_reply>>;
+
 using json = nlohmann::json;
 using rest_limits::bucket_factory;
 
@@ -53,13 +55,13 @@ public:
     *
     * @param ratelimit Reference to bucket factory that manages ratelimits for this channel
     *
-    * @param emoji Reference to bucket factory that manages ratelimits for emoiji messages
+    * @param emoji Reference to bucket factory that manages ratelimits for emoji messages
     */
-    explicit channel(snowflake channel_id, snowflake guild_id, bucket_factory & ratelimit, bucket_factory & emoji)
+    explicit channel(snowflake channel_id, snowflake guild_id, bucket_factory & ratelimit, bucket_factory & emojilimit)
         : channel_id(channel_id)
         , guild_id(guild_id)
         , ratelimit(ratelimit)
-        , emoji(emoji)
+        , emojilimit(emojilimit)
         , log(spdlog::get("aegis"))
         , _guild(nullptr)
     {
@@ -69,7 +71,7 @@ public:
     snowflake channel_id; /**< snowflake of this channel */
     snowflake guild_id; /**< snowflake of the guild this channel belongs to */
     bucket_factory & ratelimit; /**< Bucket factory for tracking the regular ratelimits */
-    bucket_factory & emoji; /**< Bucket factory for tracking emoji actions */
+    bucket_factory & emojilimit; /**< Bucket factory for tracking emoji actions */
     std::shared_ptr<spdlog::logger> log; /**< shared_ptr to global logger */
 
     guild * _guild; /**< Pointer to the guild this channel belongs to */
@@ -91,6 +93,12 @@ public:
     */
     guild & get_guild();
 
+    permission perms();
+
+    std::shared_future<rest_reply> post_task(std::string path, std::string method = "POST", std::string obj = {});
+
+    std::shared_future<rest_reply> post_emoji_task(std::string path, std::string method = "POST", std::string obj = {});
+
     /// Load this channel with guild data
     /**
     * @param _guild Reference of the guild this channel belongs to
@@ -101,31 +109,101 @@ public:
     */
     void load_with_guild(guild & _guild, const json & obj, shard * _shard);
 
-    bool create_debug_message(std::string content, std::function<void(rest_reply)> callback = nullptr);
+    /// Send debug message to this channel bypassing async and permission checks
+    /**
+    * @param content A string of the message to send
+    *
+    * @returns true on successful request
+    */
+    bool create_debug_message(std::string content);
 
-    bool create_message(std::string content, std::function<void(rest_reply)> callback = nullptr);
+    /// Send message to this channel
+    /**
+    * @param content A string of the message to send
+    *
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
+    */
+    rest_api create_message(std::string content);
 
-    bool create_message_embed(std::string content, const json embed, std::function<void(rest_reply)> callback = nullptr);
+    /// Send an embed message to this channel
+    /**
+    * @param content A string of the message to send
+    *
+    * @param embed A json object of the embed object itself
+    *
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
+    */
+    rest_api create_message_embed(std::string content, const json embed);
 
-    bool edit_message(snowflake message_id, std::string content, std::function<void(rest_reply)> callback = nullptr);
+    /// Edit a message in this channel
+    /**
+    * @param message_id Snowflake of the message to replace. Must be your own message
+    *
+    * @param content A string of the message to set
+    *
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
+    */
+    rest_api edit_message(snowflake message_id, std::string content);
 
-    bool edit_message_embed(snowflake message_id, std::string content, json embed, std::function<void(rest_reply)> callback = nullptr);
+    /// Edit an embed message in this channel
+    /**
+    * @param message_id Snowflake of the message to replace. Must be your own message
+    *
+    * @param content A string of the message to set
+    *
+    * @param embed A json object of the embed object itself
+    *
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
+    */
+    rest_api edit_message_embed(snowflake message_id, std::string content, json embed);
 
-    bool delete_message(snowflake message_id, std::function<void(rest_reply)> callback = nullptr);
+    /// Delete a message
+    /**
+    * @param message_id Snowflake of the message to delete
+    *
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
+    */
+    rest_api delete_message(snowflake message_id);
 
-    bool bulk_delete_message(snowflake message_id, std::vector<int64_t> messages, std::function<void(rest_reply)> callback = nullptr);
+    /// Delete up to 100 messages at once
+    /**
+    * @param message Vector of up to 100 message snowflakes to delete
+    *
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
+    */
+    rest_api bulk_delete_message(std::vector<int64_t> messages);
 
-    bool modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
+    /// Modify this channel (all parameters optional)
+    /**
+    * @param name String of channel name
+    *
+    * @param position Integer of position on channel list
+    *
+    * @param topic String of channel topic
+    *
+    * @param nsfw Boolean of whether channel is NSFW or not
+    *
+    * @param bitrate Integer of the channel bitrate (VOICE CHANNEL ONLY)
+    *
+    * @param user_limit Integer of the channel max user limit (VOICE CHANNEL ONLY)
+    *
+    * @param permission_overwrites Vector of permission_overwrite objects for overriding permissions
+    *
+    * @param parent_id Snowflake of category channel belongs in (empty parent puts channel in no category)
+    *
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
+    */
+    rest_api modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
                         std::optional<bool> nsfw, std::optional<int> bitrate, std::optional<int> user_limit,
-                        std::optional<std::vector<permission_overwrite>> permission_overwrites, std::optional<snowflake> parent_id, std::function<void(rest_reply)> callback = nullptr);
+                        std::optional<std::vector<permission_overwrite>> permission_overwrites, std::optional<snowflake> parent_id);
 
     /// Delete this channel
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool delete_channel(std::function<void(rest_reply)> callback = nullptr);
+    rest_api delete_channel();
 
     /// Add new reaction on message
     /**
@@ -135,9 +213,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool create_reaction(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback = nullptr);
+    rest_api create_reaction(snowflake message_id, std::string emoji_text);
 
     /// Delete own reaction on message
     /**
@@ -147,9 +225,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool delete_own_reaction(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback = nullptr);
+    rest_api delete_own_reaction(snowflake message_id, std::string emoji_text);
 
     /// Delete specified member reaction on message
     /**
@@ -161,9 +239,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake member_id, std::function<void(rest_reply)> callback = nullptr);
+    rest_api delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake member_id);
 
     /// Get all reactions for this message
     /**
@@ -173,9 +251,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool get_reactions(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback = nullptr);
+    rest_api get_reactions(snowflake message_id, std::string emoji_text);
 
     /// Delete all reactions by message
     /**
@@ -183,9 +261,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool delete_all_reactions(snowflake message_id, std::function<void(rest_reply)> callback = nullptr);
+    rest_api delete_all_reactions(snowflake message_id);
 
     /// Edit channel permission override
     /**
@@ -199,17 +277,17 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool edit_channel_permissions(snowflake overwrite_id, int64_t allow, int64_t deny, std::string type, std::function<void(rest_reply)> callback = nullptr);
+    rest_api edit_channel_permissions(snowflake overwrite_id, int64_t allow, int64_t deny, std::string type);
 
     /// Get active channel invites
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool get_channel_invites(std::function<void(rest_reply)> callback = nullptr);
+    rest_api get_channel_invites();
 
     /// Create a new channel invite
     /**
@@ -223,9 +301,9 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique, std::function<void(rest_reply)> callback = nullptr);
+    rest_api create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique);
 
     /// Delete channel permission override
     /**
@@ -233,57 +311,57 @@ public:
     *
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool delete_channel_permission(snowflake overwrite_id, std::function<void(rest_reply)> callback = nullptr);
+    rest_api delete_channel_permission(snowflake overwrite_id);
 
     /// Trigger typing indicator in channel (lasts 10 seconds)
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool trigger_typing_indicator(std::function<void(rest_reply)> callback = nullptr);
+    rest_api trigger_typing_indicator();
 
     /// Get pinned messages in channel
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool get_pinned_messages(std::function<void(rest_reply)> callback = nullptr);
+    rest_api get_pinned_messages();
 
     /// Add a pinned message in channel
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool add_pinned_channel_message(std::function<void(rest_reply)> callback = nullptr);
+    rest_api add_pinned_channel_message();
 
     /// Delete a pinned message in channel
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool delete_pinned_channel_message(std::function<void(rest_reply)> callback = nullptr);
+    rest_api delete_pinned_channel_message();
 
     /// Add member to a group direct message
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool group_dm_add_recipient(std::function<void(rest_reply)> callback = nullptr);
+    rest_api group_dm_add_recipient();
 
     /// Remove member from a group direct message
     /**
     * @param callback A callback to execute after REST execution
     *
-    * @returns true on successful request, false for no permissions
+    * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    bool group_dm_remove_recipient(std::function<void(rest_reply)> callback = nullptr);
+    rest_api group_dm_remove_recipient();
 
 };
 

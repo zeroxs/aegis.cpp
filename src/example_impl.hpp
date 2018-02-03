@@ -49,7 +49,7 @@ inline void example::MessageCreateDM(message_create obj)
 
     auto _channel = obj._channel;
 
-    std::string content = obj.msg.content;
+    std::string content(obj.msg.get_content());
 
     auto toks = split(content, ' ');
     if (toks.size() == 0)
@@ -92,8 +92,8 @@ inline void example::MessageCreate(message_create obj)
     auto & _guild = _channel->get_guild();
 
     snowflake channel_id = _channel->channel_id;
-    snowflake message_id = obj.msg.message_id;
-    std::string content = obj.msg.content;
+    snowflake message_id = obj.msg.get_id();
+    std::string content(obj.msg.get_content());
 
     auto toks = split(content, ' ');
     if (toks.size() == 0)

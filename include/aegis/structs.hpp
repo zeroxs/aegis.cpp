@@ -86,13 +86,27 @@ enum overwrite_type
 */
 struct rest_reply
 {
-    websocketpp::http::status_code::value reply_code; /**<\todo Needs documentation */
-    bool global = false; /**<\todo Needs documentation */
-    int32_t limit = 0; /**<\todo Needs documentation */
-    int32_t remaining = 0; /**<\todo Needs documentation */
-    int64_t reset = 0; /**<\todo Needs documentation */
-    int32_t retry = 0; /**<\todo Needs documentation */
-    std::string content; /**<\todo Needs documentation */
+    explicit rest_reply() {}
+    explicit rest_reply(bool p) { permissions = p; }
+    explicit rest_reply(bool p, std::string msg) { permissions = p; reason = msg; }
+    rest_reply(websocketpp::http::status_code::value reply_code, bool global, int32_t limit, int32_t remaining, int64_t reset, int32_t retry, std::string content)
+        : reply_code(reply_code)
+        , global(global)
+        , limit(limit)
+        , remaining(remaining)
+        , reset(reset)
+        , retry(retry)
+        , content(content)
+    { }
+    websocketpp::http::status_code::value reply_code; /**< REST HTTP reply code */
+    bool global = false; /**< Is global ratelimited */
+    int32_t limit = 0; /**< Rate limit current endpoint call limit */
+    int32_t remaining = 0; /**< Rate limit remaining time */
+    int64_t reset = 0; /**< Rate limit reset time */
+    int32_t retry = 0; /**< Rate limit retry time */
+    std::string content; /**< REST call's reply body */
+    bool permissions = true; /**< Whether the call had proper permissions */
+    std::string reason;
 };
 
 }

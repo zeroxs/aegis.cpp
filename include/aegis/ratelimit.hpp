@@ -76,6 +76,18 @@ public:
         return true;
     }
 
+    bool can_async()
+    {
+        if (time == 0)
+            return true;
+        int64_t time = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+        if (remaining > 0)
+            return true;
+        if (time < reset)
+            return false;
+        return true;
+    }
+
     std::mutex m;
     std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_reply)>>> _queue;
 };
@@ -122,35 +134,35 @@ public:
         }
     }
 
-//     pplx::task<rest_reply> do_async(int64_t id, std::string path, std::string content = "", std::string method = "POST")
-//     {
-//         bucket * use_bucket = nullptr;
-// 
-//         auto bkt = _buckets.find(id);
-//         if (bkt != _buckets.end())
-//             use_bucket = bkt->second.get();
-//         else
-//             use_bucket = _buckets.emplace(id, std::make_unique<bucket>()).first->second.get();
-// 
-//         return pplx::create_task([this, bkt = use_bucket, path, content, method]() {
-//             std::scoped_lock<std::mutex> lock(bkt->m);
-//             int64_t time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-//             spdlog::get("aegis")->debug("Checking if can work C:{} R:{}", time, bkt->reset);
-//             while (!bkt->can_async())
-//             {
-//                 time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-//                 spdlog::get("aegis")->debug("Can't work. Waiting {}s", bkt->reset - time);
-//                 std::this_thread::sleep_for(std::chrono::seconds((bkt->reset - time) + 1));
-//             }
-//             spdlog::get("aegis")->debug("Working");
-//             std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_reply)>>> query;
-//             std::optional<rest_reply> reply(_call(path, content, method));
-//             bkt->limit = reply->limit;
-//             bkt->remaining = reply->remaining;
-//             bkt->reset = reply->reset;
-//             return std::move(reply.value_or(rest_reply()));
-//         });
-//     }
+    rest_reply do_async(int64_t id, std::string path, std::string content, std::string method)
+    {
+        bucket * use_bucket = nullptr;
+
+        auto bkt = _buckets.find(id);
+        if (bkt != _buckets.end())
+            use_bucket = bkt->second.get();
+        else
+            use_bucket = _buckets.emplace(id, std::make_unique<bucket>()).first->second.get();
+
+        {
+            std::scoped_lock<std::mutex> lock(use_bucket->m);
+            int64_t time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            spdlog::get("aegis")->debug("Checking if can work C:{} R:{}", time, use_bucket->reset);
+            while (!use_bucket->can_async())
+            {
+                time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                spdlog::get("aegis")->debug("Can't work. Waiting {}s", use_bucket->reset - time);
+                std::this_thread::sleep_for(std::chrono::seconds((use_bucket->reset - time) + 1));
+            }
+            spdlog::get("aegis")->debug("Working");
+            std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_reply)>>> query;
+            std::optional<rest_reply> reply(_call(path, content, method));
+            use_bucket->limit = reply->limit;
+            use_bucket->remaining = reply->remaining;
+            use_bucket->reset = reply->reset;
+            return std::move(reply.value_or(rest_reply()));
+        }
+    }
         
     /// Push a new REST request onto the queue
     /**
@@ -247,6 +259,7 @@ public:
     */
     explicit ratelimiter(rest_call call)
         : _call(call)
+        , global_limit(0)
     {
     };
 

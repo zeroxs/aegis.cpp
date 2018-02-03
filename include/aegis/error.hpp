@@ -37,10 +37,13 @@ namespace aegiscpp
 {
 typedef std::pair<std::error_code, std::string> err_str_pair;
 
+typedef std::error_code error_code;
+
 /**\todo Needs documentation
 */
 namespace error
 {
+
 /**\todo Needs documentation
 */
 enum value
@@ -55,9 +58,15 @@ enum value
     invalid_state,
 
     /// REST did not return websocket gateway url
-    get_gateway
+    get_gateway,
 
+    /// Does not have permission to perform this action
+    no_permission,
 
+    /// Feature not yet implemented
+    not_implemented,
+
+    max_errors
 
 };
 
@@ -66,14 +75,14 @@ enum value
 class category : public std::error_category
 {
 public:
-    category() {}
+    category() = default;
 
-    char const * name() const noexcept
+    char const * name() const noexcept override
     {
         return "aegis";
     }
 
-    std::string message(int value) const
+    std::string message(int value) const override
     {
         switch (value)
         {
@@ -85,6 +94,10 @@ public:
                 return "Invalid state";
             case error::get_gateway:
                 return "Unable to retrieve Gateway data";
+            case error::no_permission:
+                return "No permission for this action";
+            case error::not_implemented:
+                return "Feature not yet implemented";
             default:
                 return "Unknown";
         }
@@ -118,64 +131,31 @@ class exception : public std::exception
 {
 public:
     exception(std::string const & msg, std::error_code ec = make_error_code(error::general))
-        : m_msg(msg.empty() ? ec.message() : msg)
-        , m_code(ec)
+        : _msg(msg.empty() ? ec.message() : msg)
+        , _code(ec)
     {
     }
 
     explicit exception(std::error_code ec)
-        : m_msg(ec.message())
-        , m_code(ec)
+        : _msg(ec.message())
+        , _code(ec)
     {
     }
 
-    ~exception() throw() {}
+    ~exception() = default;
 
-    virtual char const * what() const throw()
+    virtual char const * what() const noexcept override
     {
-        return m_msg.c_str();
+        return _msg.c_str();
     }
 
-    std::error_code code() const throw()
+    std::error_code code() const noexcept
     {
-        return m_code;
+        return _code;
     }
 
-    const std::string m_msg;
-    std::error_code m_code;
-};
-
-/**\todo Needs documentation
-*/
-class no_permission : public std::exception
-{
-public:
-    no_permission(std::string const & msg, std::error_code ec = make_error_code(error::general))
-        : m_msg(msg.empty() ? ec.message() : msg)
-        , m_code(ec)
-    {
-    }
-
-    explicit no_permission(std::error_code ec)
-        : m_msg(ec.message())
-        , m_code(ec)
-    {
-    }
-
-    ~no_permission() throw() {}
-
-    virtual char const * what() const throw()
-    {
-        return m_msg.c_str();
-    }
-
-    std::error_code code() const throw()
-    {
-        return m_code;
-    }
-
-    const std::string m_msg;
-    std::error_code m_code;
+    const std::string _msg;
+    std::error_code _code;
 };
 
 }

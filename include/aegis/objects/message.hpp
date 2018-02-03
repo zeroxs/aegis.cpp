@@ -46,10 +46,66 @@ class channel;
 
 /**\todo Needs documentation
 */
-struct message
+class message
 {
-    snowflake message_id; /**<\todo Needs documentation */
-    std::string content; /**<\todo Needs documentation */
+public:
+    /// Constructor for the channel object
+    /**
+    * @param channel_id Snowflake of this channel
+    *
+    * @param guild_id Snowflake of guild this channel belongs to
+    *
+    * @param ratelimit Reference to bucket factory that manages ratelimits for this channel
+    *
+    * @param emoji Reference to bucket factory that manages ratelimits for emoji messages
+    */
+    explicit message(shard * _shard, snowflake channel_id, std::string content)
+        : _shard(_shard)
+        , _content(content)
+        , _guild(nullptr)
+        , _channel(nullptr)
+        , _channel_id(channel_id)
+        , _initialized(true)
+    {
+        _channel = get_shard().state->core->get_channel(_channel_id).get();
+
+        if (_channel != nullptr)
+        {
+            _guild_id = _channel->guild_id;
+            if (_channel->_guild != nullptr)
+            {
+                _guild = get_shard().state->core->get_guild(_guild_id);
+                _initialized = true;
+                return;
+            }
+        }
+    }
+
+    explicit message()
+    {
+
+    }
+
+    void init(shard * _shard)
+    {
+        if (_shard == nullptr)
+            return;
+        this->_shard = _shard;
+
+        _channel = get_shard().state->core->get_channel(_channel_id).get();
+
+        if (_channel != nullptr)
+        {
+            _guild_id = _channel->guild_id;
+            if (_channel->_guild != nullptr)
+            {
+                _guild = get_shard().state->core->get_guild(_guild_id);
+                _initialized = true;
+                return;
+            }
+        }
+    }
+
     std::string timestamp; /**<\todo Needs documentation */
     std::string edited_timestamp; /**<\todo Needs documentation */
     bool tts = false; /**<\todo Needs documentation */
@@ -63,15 +119,82 @@ struct message
     snowflake nonce; /**<\todo Needs documentation */
     std::string webhook_id; /**<\todo Needs documentation */
     message_type type = Default; /**<\todo Needs documentation */
+
+    bool is_valid() const noexcept
+    {
+        return _initialized;
+    }
+
+    std::string_view get_content() const noexcept
+    {
+        return _content;
+    }
+
+    void set_content(std::string & content) noexcept
+    {
+        _content = content;
+    }
+
+    snowflake get_id() const noexcept
+    {
+        return _message_id;
+    }
+
+    shard & get_shard() const
+    {
+        if (_shard == nullptr) throw std::runtime_error("message::get_shard() nullptr");// This should -never- throw
+        return *_shard;
+    }
+
+    guild & get_guild() const
+    {
+        if (_guild == nullptr)
+        {
+            if (_guild_id == 0) throw std::runtime_error("message::get_guild() id = 0");// This should -never- throw
+            return *get_shard().state->core->get_guild_create(_guild_id, _shard);
+        }
+        return *_guild;
+    }
+
+    channel & get_channel() const
+    {
+        if (_channel == nullptr)
+        {
+            if (_channel_id == 0) throw std::runtime_error("message::get_channel() id = 0");// This should -never- throw
+            return *get_guild().get_channel_create(_channel_id, _shard);
+        }
+        return *_channel;
+    }
+
+    bool edit(const std::string & content) noexcept
+    {
+        if (!_initialized)
+            return false;
+        get_channel().edit_message(_message_id, content);
+        return true;
+    }
+
+private:
+    friend void from_json(const nlohmann::json& j, message& m);
+    friend void to_json(nlohmann::json& j, const message& m);
+    bool _initialized = false;
+    shard * _shard = nullptr;/**< Pointer to the shard that handled this message */
+    std::string _content;/**< String of the message contents */
+    guild * _guild = nullptr;/**< Pointer to the guild this message belongs to */
+    channel * _channel = nullptr;/**< Pointer to the channel this message belongs to */
+    snowflake _channel_id = 0; /**< snowflake of the channel this message belongs to */
+    snowflake _guild_id = 0; /**< snowflake of the guild this message belongs to */
+    snowflake _message_id = 0; /**< snowflake of the message */
 };
 
 /**\todo Needs documentation
 */
 inline void from_json(const nlohmann::json& j, message& m)
 {
-    m.message_id = j["id"];
+    m._message_id = j["id"];
+    m._channel_id = j["channel_id"];
     if (j.count("content") && !j["content"].is_null())
-        m.content = j["content"];
+        m._content = j["content"];
     if (j.count("timestamp") && !j["timestamp"].is_null())
         m.timestamp = j["timestamp"];
     if (j.count("edited_timestamp") && !j["edited_timestamp"].is_null())
@@ -109,8 +232,8 @@ inline void from_json(const nlohmann::json& j, message& m)
 */
 inline void to_json(nlohmann::json& j, const message& m)
 {
-    j["id"] = m.message_id;
-    j["content"] = m.content;
+    j["id"] = m._message_id;
+    j["content"] = m._content;
     j["timestamp"] = m.timestamp;
     j["edited_timestamp"] = m.edited_timestamp;
     j["tts"] = m.tts;

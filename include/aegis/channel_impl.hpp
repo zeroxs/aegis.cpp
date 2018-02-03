@@ -26,6 +26,7 @@
 #pragma once
 
 #include "config.hpp"
+#include "error.hpp"
 
 namespace aegiscpp
 {
@@ -38,6 +39,35 @@ inline guild & channel::get_guild()
     return *_guild;
 }
 
+inline permission channel::perms()
+{
+    return permission(_guild->get_permissions(*_guild->self(), *this));
+}
+
+
+inline std::shared_future<rest_reply> channel::post_task(std::string path, std::string method, std::string obj)
+{
+    auto task(std::make_shared<std::packaged_task<rest_reply()>>(
+        std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, channel_id, path, obj, method)));
+
+    auto fut = task->get_future().share();
+
+    get_guild().state->core->rest_scheduler->post([task]() { (*task)(); });
+
+    return fut;
+}
+
+inline std::shared_future<rest_reply> channel::post_emoji_task(std::string path, std::string method, std::string obj)
+{
+    auto task(std::make_shared<std::packaged_task<rest_reply()>>(
+        std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &emojilimit, channel_id, path, obj, method)));
+
+    auto fut = task->get_future().share();
+
+    get_guild().state->core->rest_scheduler->post([task]() { (*task)(); });
+
+    return fut;
+}
 
 inline void channel::load_with_guild(guild & _guild, const json & obj, shard * _shard)
 {
@@ -93,89 +123,144 @@ inline void channel::load_with_guild(guild & _guild, const json & obj, shard * _
     }
 }
 
-inline bool channel::create_debug_message(std::string content, std::function<void(rest_reply)> callback)
+inline bool channel::create_debug_message(std::string content)
 {
     json obj;
     obj["content"] = content;
-    ratelimit.push(channel_id, fmt::format("/channels/{}/messages", channel_id), obj.dump(), "POST", callback);
+    ratelimit.push(channel_id, fmt::format("/channels/{}/messages", channel_id), obj.dump(), "POST");
     return true;
 }
 
-inline bool channel::create_message(std::string content, std::function<void(rest_reply)> callback)
+inline rest_api channel::create_message(std::string content)
 {
+    std::error_code ec;
     if (_guild != nullptr)//probably a DM
-        if (!permission(_guild->get_permissions(*_guild->self(), *this)).can_send_messages())
-            return false;
+        if (!perms().can_send_messages())
+            return { make_error_code(error::no_permission), {} };
 
     json obj;
     obj["content"] = content;
-    ratelimit.push(channel_id, fmt::format("/channels/{}/messages", channel_id), obj.dump(), "POST", callback);
-    return true;
+
+    auto fut = post_task(fmt::format("/channels/{}/messages", channel_id), "POST", obj.dump());
+    return { ec, fut };
+
+//     auto task(std::make_shared<std::packaged_task<rest_reply()>>(
+//         std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, channel_id, fmt::format("/channels/{}/messages", channel_id), obj.dump(), "POST")));
+// 
+//     auto fut = task->get_future().share();
+// 
+//     get_guild().state->core->rest_scheduler->post([task]() { (*task)(); });
+// 
+//     return { ec, fut };
+
+
+
+
+//     std::promise<rest_reply> prom;
+//     auto fut = prom.get_future();
+//     prom.set_value(rest_reply());
+// 
+//     get_guild().state->core->rest_scheduler->post([prom = std::move(prom), channel_id = channel_id, msg = obj.dump(), ratelimit = &ratelimit, method = "POST"s]() mutable
+//     {
+//         //std::promise<rest_reply> prom2;
+//         prom.set_value(std::move(ratelimit->do_async(channel_id, fmt::format("/channels/{}/messages", channel_id), msg, method)));
+//     });
+/*
+//     if (_guild != nullptr)//probably a DM
+//         if (!permission(_guild->get_permissions(*_guild->self(), *this)).can_send_messages())
+//             return { false, "Cannot send messages" };
+//     std::future<rest_reply> ad;
+
+    //std::packaged_task<rest_reply(snowflake, std::string, std::string, std::string)> task(std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+
+    json obj;
+    obj["content"] = content;
+
+    auto task(std::make_shared<std::packaged_task<rest_reply(snowflake, std::string, std::string, std::string)>>(std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, channel_id, fmt::format("/channels/{}/messages", channel_id), obj.dump(), "POST")));
+//     std::packaged_task<rest_reply(snowflake, std::string, std::string, std::string)> task([&, msg = obj.dump()]()
+//     {
+//         return ratelimit.do_async(channel_id, fmt::format("/channels/{}/messages", channel_id), msg, "POST");
+//     });
+// 
+//     std::function<rest_reply(void)> f = std::bind(std::forward(task));
+
+    auto fut = task->get_future();
+    //get_guild().state->core->rest_scheduler->post(std::bind(std::move(task), channel_id, fmt::format("/channels/{}/messages", channel_id), obj.dump(), "POST"));
+    get_guild().state->core->rest_scheduler->post([task, channel_id = channel_id, msg = obj.dump()]()
+    {
+        return (*task.get())(channel_id, fmt::format("/channels/{}/messages", channel_id), msg, "POST");
+    });
+    return fut;*/
 }
 
-inline bool channel::create_message_embed(std::string content, const json embed, std::function<void(rest_reply)> callback)
+inline rest_api channel::create_message_embed(std::string content, const json embed)
 {
+    std::error_code ec;
     if (_guild != nullptr)//probably a DM
-        if (!permission(_guild->get_permissions(*_guild->self(), *this)).can_send_messages())
-            return false;
+        if (!perms().can_send_messages())
+            return { make_error_code(error::no_permission),{} };
 
     json obj;
     if (!content.empty())
         obj["content"] = content;
     obj["embed"] = embed;
 
-    ratelimit.push(channel_id, fmt::format("/channels/{:d}/messages", channel_id), obj.dump(), "POST", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}/messages", channel_id), "POST", obj.dump());
+    return { ec, fut };
 }
 
-inline bool channel::edit_message(snowflake message_id, std::string content, std::function<void(rest_reply)> callback)
+inline rest_api channel::edit_message(snowflake message_id, std::string content)
 {
     json obj;
     obj["content"] = content;
-    ratelimit.push(channel_id, fmt::format("/channels/{}/messages/{}", channel_id, message_id), obj.dump(), "PATCH", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}/messages/{}", channel_id, message_id), "PATCH", obj.dump());
+    return { std::error_code(), fut };
 }
 
-inline bool channel::edit_message_embed(snowflake message_id, std::string content, json embed, std::function<void(rest_reply)> callback)
+inline rest_api channel::edit_message_embed(snowflake message_id, std::string content, json embed)
 {
     json obj;
     if (!content.empty())
         obj["content"] = content;
     obj["embed"] = embed;
     obj["content"] = content;
-    ratelimit.push(channel_id, fmt::format("/channels/{}/messages/{}", channel_id, message_id), obj.dump(), "PATCH", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}/messages/{}", channel_id, message_id), "PATCH", obj.dump());
+    return { std::error_code(), fut };
 }
 
 /**\todo can delete your own messages freely - provide separate function or keep history of messages
 */
-inline bool channel::delete_message(snowflake message_id, std::function<void(rest_reply)> callback)
+inline rest_api channel::delete_message(snowflake message_id)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).can_manage_messages())
-        return false;
+    std::error_code ec;
+    if (!perms().can_manage_messages())
+        return { make_error_code(error::no_permission),{} };
 
-    ratelimit.push(guild_id, fmt::format("/channels/{}/messages/{}", guild_id, message_id), "", "DELETE", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}/messages/{}", guild_id, message_id), "DELETE");
+    return { ec, fut };
 }
 
-inline bool channel::bulk_delete_message(snowflake message_id, std::vector<int64_t> messages, std::function<void(rest_reply)> callback)
+inline rest_api channel::bulk_delete_message(std::vector<int64_t> messages)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).can_manage_messages())
-        return false;
+    std::error_code ec;
+    if (!perms().can_manage_messages())
+        return { make_error_code(error::no_permission),{} };
+
     if (messages.size() < 2 || messages.size() > 100)
-        return false;
+        return { make_error_code(error::no_permission),{} };
 
     json obj = messages;
-    ratelimit.push(channel_id, fmt::format("/channels/{}/messages/bulk-delete", channel_id), obj.dump(), "POST", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}/messages/bulk-delete", channel_id), "POST", obj.dump());
+    return { ec, fut };
 }
 
-inline bool channel::modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
+inline rest_api channel::modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
                                     std::optional<bool> nsfw, std::optional<int> bitrate, std::optional<int> user_limit,
-                                    std::optional<std::vector<permission_overwrite>> permission_overwrites, std::optional<snowflake> parent_id, std::function<void(rest_reply)> callback)
+                                    std::optional<std::vector<permission_overwrite>> permission_overwrites, std::optional<snowflake> parent_id)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).can_manage_channels())
-        return false;
+    std::error_code ec;
+    if (!perms().can_manage_channels())
+        return { make_error_code(error::no_permission),{} };
 
     json obj;
     if (name.has_value())
@@ -193,7 +278,10 @@ inline bool channel::modify_channel(std::optional<std::string> name, std::option
     if (permission_overwrites.has_value())//requires OWNER
     {
         if (_guild->owner_id != _guild->self()->member_id)
-            return false;
+        {
+            ec = make_error_code(error::no_permission);
+            return {};
+        }
 
 
         obj["permission_overwrites"] = json::array();
@@ -205,90 +293,99 @@ inline bool channel::modify_channel(std::optional<std::string> name, std::option
     if (parent_id.has_value())//VIP only
         obj["parent_id"] = parent_id.value();
 
-    ratelimit.push(channel_id, fmt::format("/channels/{}", channel_id), std::move(obj), "PATCH", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}", channel_id), "PATCH", obj.dump());
+    return { ec, fut };
 }
 
-inline bool channel::delete_channel(std::function<void(rest_reply)> callback)
+inline rest_api channel::delete_channel()
 {
-    if (!permission(_guild->base_permissions(_guild->self())).can_manage_channels())
-        return false;
+    std::error_code ec;
+    if (!perms().can_manage_channels())
+        return { make_error_code(error::no_permission),{} };
 
-    ratelimit.push(channel_id, fmt::format("/channels/{}", channel_id), "", "DELETE", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}", channel_id), "DELETE");
+    return { ec, fut };
 }
 
-inline bool channel::create_reaction(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback)
+inline rest_api channel::create_reaction(snowflake message_id, std::string emoji_text)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).can_add_reactions())
-        return false;
+    std::error_code ec;
+    if (!perms().can_add_reactions())
+        return { make_error_code(error::no_permission),{} };
 
-    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "", "PUT", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "PUT");
+    return { ec, fut };
 }
 
-inline bool channel::delete_own_reaction(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback)
+inline rest_api channel::delete_own_reaction(snowflake message_id, std::string emoji_text)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).can_add_reactions())
-        return false;
+    std::error_code ec;
+    if (!perms().can_add_reactions())
+        return { make_error_code(error::no_permission),{} };
 
-    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "", "DELETE", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "DELETE");
+    return { ec, fut };
 }
 
-inline bool channel::delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake member_id, std::function<void(rest_reply)> callback)
+inline rest_api channel::delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake member_id)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).can_manage_messages())
-        return false;
+    std::error_code ec;
+    if (!perms().can_manage_messages())
+        return { make_error_code(error::no_permission),{} };
 
-    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions/{}/{}", channel_id, message_id, emoji_text, member_id), "", "DELETE", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}/messages/{}/reactions/{}/{}", channel_id, message_id, emoji_text, member_id), "DELETE");
+    return { ec, fut };
 }
 
 /**\todo Support query parameters
 *  \todo before[snowflake], after[snowflake], limit[int]
 */
-inline bool channel::get_reactions(snowflake message_id, std::string emoji_text, std::function<void(rest_reply)> callback)
+inline rest_api channel::get_reactions(snowflake message_id, std::string emoji_text)
 {
-    ratelimit.push(channel_id, fmt::format("/channels/{}/messages/{}/reactions/{}", channel_id, message_id, emoji_text), "", "GET", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}/messages/{}/reactions/{}", channel_id, message_id, emoji_text), "GET");
+    return { std::error_code(), fut };
 }
 
-inline bool channel::delete_all_reactions(snowflake message_id, std::function<void(rest_reply)> callback)
+inline rest_api channel::delete_all_reactions(snowflake message_id)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).can_manage_messages())
-        return false;
+    std::error_code ec;
+    if (!perms().can_manage_messages())
+        return { make_error_code(error::no_permission),{} };
 
-    emoji.push(guild_id, fmt::format("/channels/{}/messages/{}/reactions", channel_id, message_id), "", "DELETE", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}/messages/{}/reactions", channel_id, message_id), "DELETE");
+    return { ec, fut };
 }
 
-inline bool channel::edit_channel_permissions(snowflake overwrite_id, int64_t allow, int64_t deny, std::string type, std::function<void(rest_reply)> callback)
+inline rest_api channel::edit_channel_permissions(snowflake overwrite_id, int64_t allow, int64_t deny, std::string type)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).can_manage_roles())
-        return false;
+    std::error_code ec;
+    if (!perms().can_manage_roles())
+        return { make_error_code(error::no_permission),{} };
 
     json obj;
     obj["allow"] = allow;
     obj["deny"] = deny;
     obj["type"] = type;
-    ratelimit.push(channel_id, fmt::format("/channels/{}/permissions/{}", channel_id, overwrite_id), obj.dump(), "PUT", callback);
-    return true;
+ 
+    auto fut = post_task(fmt::format("/channels/{}/permissions/{}", channel_id, overwrite_id), "PUT", obj.dump());
+    return { ec, fut };
 }
 
-inline bool channel::get_channel_invites(std::function<void(rest_reply)> callback)
+inline rest_api channel::get_channel_invites()
 {
-    if (!permission(_guild->base_permissions(_guild->self())).can_manage_channels())
-        return false;
+    std::error_code ec;
+    if (!perms().can_manage_channels())
+        return { make_error_code(error::no_permission),{} };
 
-    ratelimit.push(channel_id, fmt::format("/channels/{}/invites", channel_id), "", "GET", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}/invites", channel_id), "GET");
+    return { ec, fut };
 }
 
-inline bool channel::create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique, std::function<void(rest_reply)> callback)
+inline rest_api channel::create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).can_invite())
-        return false;
+    std::error_code ec;
+    if (!perms().can_invite())
+        return { make_error_code(error::no_permission),{} };
 
     json obj;
     if (max_age.has_value())
@@ -299,58 +396,62 @@ inline bool channel::create_channel_invite(std::optional<int> max_age, std::opti
         obj["temporary"] = temporary.value();
     if (unique.has_value())
         obj["unique"] = unique.value();
-    ratelimit.push(channel_id, fmt::format("/channels/{}/invites", channel_id), obj.dump(), "POST", callback);
-    return true;
+
+    auto fut = post_task(fmt::format("/channels/{}/invites", channel_id), "POST", obj.dump());
+    return { ec, fut };
 }
 
-inline bool channel::delete_channel_permission(snowflake overwrite_id, std::function<void(rest_reply)> callback)
+inline rest_api channel::delete_channel_permission(snowflake overwrite_id)
 {
-    if (!permission(_guild->base_permissions(_guild->self())).can_manage_roles())
-        return false;
+    std::error_code ec;
+    if (!perms().can_manage_roles())
+        return { make_error_code(error::no_permission),{} };
 
-    ratelimit.push(channel_id, fmt::format("/channels/{}/permissions/{}", channel_id, overwrite_id), "", "DELETE", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}/permissions/{}", channel_id, overwrite_id), "DELETE");
+    return { ec, fut };
 }
 
-inline bool channel::trigger_typing_indicator(std::function<void(rest_reply)> callback)
+inline rest_api channel::trigger_typing_indicator()
 {
-    ratelimit.push(channel_id, fmt::format("/channels/{}/typing", channel_id), "", "POST", callback);
-    return true;
+    auto fut = post_task(fmt::format("/channels/{}/typing", channel_id));
+    return { std::error_code(), fut };
 }
 
-inline bool channel::get_pinned_messages(std::function<void(rest_reply)> callback)
+inline rest_api channel::get_pinned_messages()
 {
-    return true;
+    return {};
 }
 
-inline bool channel::add_pinned_channel_message(std::function<void(rest_reply)> callback)
+inline rest_api channel::add_pinned_channel_message()
 {
-    if (!permission(_guild->base_permissions(_guild->self())).can_manage_messages())
-        return false;
+    std::error_code ec;
+    if (!perms().can_manage_messages())
+        return { make_error_code(error::no_permission),{} };
 
-    return true;
+    return {};
 }
 
-inline bool channel::delete_pinned_channel_message(std::function<void(rest_reply)> callback)
+inline rest_api channel::delete_pinned_channel_message()
 {
-    if (!permission(_guild->base_permissions(_guild->self())).can_manage_messages())
-        return false;
+    std::error_code ec;
+    if (!perms().can_manage_messages())
+        return { make_error_code(error::no_permission),{} };
 
-    return true;
-}
-
-/**\todo Will likely move to aegis class
-*/
-inline bool channel::group_dm_add_recipient(std::function<void(rest_reply)> callback)//will go in aegis::aegis
-{
-    return true;
+    return {};
 }
 
 /**\todo Will likely move to aegis class
 */
-inline bool channel::group_dm_remove_recipient(std::function<void(rest_reply)> callback)//will go in aegis::aegis
+inline rest_api channel::group_dm_add_recipient()//will go in aegis::aegis
 {
-    return true;
+    return {};
+}
+
+/**\todo Will likely move to aegis class
+*/
+inline rest_api channel::group_dm_remove_recipient()//will go in aegis::aegis
+{
+    return {};
 }
 
 }

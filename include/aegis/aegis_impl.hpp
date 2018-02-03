@@ -357,6 +357,7 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
                     obj._member = get_member(result["d"]["author"]["id"]).get();
                     obj._channel = get_channel(result["d"]["channel_id"]).get();
                     obj.msg = result["d"];
+                    obj.msg.init(_shard);
                     obj.bot = this;
                     obj._shard = _shard;
 

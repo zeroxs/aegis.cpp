@@ -94,10 +94,12 @@ public:
     } counters = { 0,0,0,0,0,0 };
 
     websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr connection;
+
+    bot_state * state;
+
 private:
     friend aegis;
 
-    bot_state * state;
     std::string session_id;
     std::map<int64_t, std::string> debug_messages;
     std::shared_ptr<asio::steady_timer> reconnect_timer;
