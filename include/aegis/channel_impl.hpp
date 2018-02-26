@@ -419,7 +419,7 @@ inline rest_api channel::trigger_typing_indicator()
 
 inline rest_api channel::get_pinned_messages()
 {
-    return {};
+    return { make_error_code(error::not_implemented),{} };
 }
 
 inline rest_api channel::add_pinned_channel_message()
@@ -428,7 +428,7 @@ inline rest_api channel::add_pinned_channel_message()
     if (!perms().can_manage_messages())
         return { make_error_code(error::no_permission),{} };
 
-    return {};
+    return { make_error_code(error::not_implemented),{} };
 }
 
 inline rest_api channel::delete_pinned_channel_message()
@@ -437,21 +437,21 @@ inline rest_api channel::delete_pinned_channel_message()
     if (!perms().can_manage_messages())
         return { make_error_code(error::no_permission),{} };
 
-    return {};
+    return { make_error_code(error::not_implemented),{} };
 }
 
 /**\todo Will likely move to aegis class
 */
 inline rest_api channel::group_dm_add_recipient()//will go in aegis::aegis
 {
-    return {};
+    return { make_error_code(error::not_implemented),{} };
 }
 
 /**\todo Will likely move to aegis class
 */
 inline rest_api channel::group_dm_remove_recipient()//will go in aegis::aegis
 {
-    return {};
+    return { make_error_code(error::not_implemented),{} };
 }
 
 }
