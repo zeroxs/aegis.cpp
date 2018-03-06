@@ -78,7 +78,7 @@ public:
 
     bool can_async()
     {
-        if (time == 0)
+        if (limit == 0)
             return true;
         int64_t time = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
         if (remaining > 0)
@@ -258,8 +258,8 @@ public:
     * @param call Function pointer to the REST API function
     */
     explicit ratelimiter(rest_call call)
-        : _call(call)
-        , global_limit(0)
+        : global_limit(0)
+        , _call(call)
     {
     };
 
@@ -300,27 +300,6 @@ public:
 
 private:
     friend aegis;
-    void process_queue()
-    {
-        if (global_limit > 0)
-        {
-            if (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() < global_limit)
-                return;
-            else
-                global_limit = 0;
-        }
-        static std::mutex mtx;
-        std::scoped_lock<std::mutex> lock(mtx);
-
-        if (!_map.size())
-            return;
-        for (auto & kv : _map)
-        {
-            kv.second->run_one();
-        }
-    }
-
-
 
     std::atomic_int64_t global_limit; /**< Timestamp in seconds when global ratelimit expires */
 
