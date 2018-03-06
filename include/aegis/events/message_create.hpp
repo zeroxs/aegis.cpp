@@ -46,6 +46,8 @@ class aegis;
 */
 struct message_create
 {
+    channel & get_channel() { if (_channel == nullptr) throw std::runtime_error("Channel not set"); return *_channel; }
+    member & get_member() { if (_member == nullptr) throw std::runtime_error("Member not set"); return *_member; }
     channel * _channel; /**<\todo Needs documentation */
     member * _member; /**<\todo Needs documentation */
     message msg; /**<\todo Needs documentation */
