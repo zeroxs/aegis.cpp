@@ -165,11 +165,7 @@ public:
     {
         for (auto & c : shards)
             c.reset();
-        stop_work();
-        stop_rest_work();
         websocket_o.reset();
-		if (restthread->joinable())
-			restthread->join();
         if (statusthread->joinable())
             statusthread->join();
     }
@@ -199,6 +195,7 @@ public:
         websocket_o.init_asio(ptr, ec);
         if (ec)
             return;
+        websocket_o.start_perpetual();
         status = Ready;
         ec.clear();
     }
@@ -236,6 +233,7 @@ public:
         websocket_o.init_asio(ec);
         if (ec)
             return;
+        websocket_o.start_perpetual();
         status = Ready;
         ec.clear();
     }
@@ -258,11 +256,6 @@ public:
         // Pass our io_service object to bot to initialize
         initialize(ec);
         if (ec) { log->error("Initialize fail: {}", ec.message()); shutdown();  return; }
-        // Start a work object so that asio won't exit prematurely
-        start_work();
-        start_rest_work();
-        // Start the REST outgoing thread
-        rest_thread();
         // Create our websocket connection
         create_websocket(ec);
         if (ec) { log->error("Websocket fail: {}", ec.message()); shutdown();  return; }
@@ -286,8 +279,8 @@ public:
     void shutdown()
     {
         set_state(Shutdown);
-        stop_work();
-        stop_rest_work();
+        websocket_o.stop_perpetual();
+        websocket_o.stop();
         for (auto & _shard : shards)
         {
             _shard->connection_state = Shutdown;
@@ -367,6 +360,8 @@ public:
             return websocketpp::lib::make_shared<asio::ssl::context>(asio::ssl::context::tlsv1);
         });
 
+        status_thread();
+
         ec = std::error_code();
     }
 
@@ -431,35 +426,6 @@ public:
         });
     }
 
-    /// Starts the asio::work object
-    ///
-    void start_work()
-    {
-        websocket_o.start_perpetual();
-    }
-
-    /// Stops the asio::work object
-    ///
-    void stop_work()
-    {
-        websocket_o.stop_perpetual();
-    }
-
-    /// Starts the asio::work object
-    ///
-    void start_rest_work()
-    {
-        rest_scheduler = std::make_shared<asio::io_service>();
-        rest_work = std::make_shared<asio::io_service::work>(std::ref(*rest_scheduler));
-    }
-
-    /// Stops the asio::work object
-    ///
-    void stop_rest_work()
-    {
-        rest_work.reset();
-        rest_scheduler.reset();
-    }
 
     /// Outputs the last 5 messages received from the gateway
     ///
@@ -568,7 +534,6 @@ public:
     bot_state & get_bot_obj() { return state; }
 
     std::shared_ptr<asio::io_service> rest_scheduler;
-    work_ptr rest_work;
 
     uint32_t shard_max_count;
 
@@ -655,7 +620,6 @@ public:
     //called by CHANNEL_CREATE (DirectMessage)
     void channel_create(const json & obj, shard * _shard);
     void rich_presence(const json & obj, shard * _shard);
-    void rest_thread();
     void status_thread();
 
     member * self() const noexcept
@@ -720,7 +684,6 @@ private:
 
     //std::unordered_map<std::string, c_inject> m_cbmap;
 
-    std::unique_ptr<std::thread> restthread;
     std::unique_ptr<std::thread> statusthread;
 
     // Gateway URL for the Discord Websocket
