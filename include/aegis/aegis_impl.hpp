@@ -314,7 +314,7 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
                         status = member::DoNotDisturb;
                     else if (result["d"]["status"] == "online")
                         status = member::Online;
-                    else if (result["d"]["status"] == "offline")
+                    else
                         status = member::Offline;
 
                     auto _member = get_member_create(member_id);
@@ -1005,69 +1005,65 @@ inline void aegis::on_close(websocketpp::connection_hdl hdl, shard * _shard)
 
 inline void aegis::status_thread()
 {
-    statusthread = std::make_unique<std::thread>([&]
+    using namespace std::chrono_literals;
+    int64_t checktime;
+    while (status != Shutdown)
     {
-        using namespace std::chrono_literals;
-        int64_t checktime;
-        while (status != Shutdown)
+        try
         {
-            try
+            //TODO: mutex this
+            checktime = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+            for (auto & _shard : shards)
             {
-                //TODO: mutex this shit
-                checktime = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-                for (auto & _shard : shards)
+                if (_shard && _shard->connection)
                 {
-                    if (_shard && _shard->connection)
+                    if (_shard->lastwsevent && _shard->lastwsevent < checktime - 90)
                     {
-                        if (_shard->lastwsevent && _shard->lastwsevent < checktime - 90)
-                        {
-                            log->critical("Shard#{} : Websocket had no events in last 90s", _shard->shardid);
-                            debug_trace(_shard.get());
-                            if (_shard->connection->get_state() < websocketpp::session::state::closing)
-                                websocket_o.close(_shard->connection, 1001, "");
-                            else
-                                _shard->start_reconnect();
-                            _shard->connection_state = Reconnecting;
-                            _shard->do_reset();
-                        }
-                        else if (!_shard->lastwsevent && _shard->last_status_time < checktime - 180)
-                        {
-                            log->critical("Shard#{} : Fresh Websocket had no events in last 180s", _shard->shardid);
-                            debug_trace(_shard.get());
-                            if (_shard->connection->get_state() < websocketpp::session::state::closing)
-                                websocket_o.close(_shard->connection, 1001, "");
-                            else
-                                _shard->start_reconnect();
-                            _shard->connection_state = Reconnecting;
-                            _shard->do_reset();
-                        }
-                        _shard->last_status_time = checktime;
+                        log->critical("Shard#{} : Websocket had no events in last 90s", _shard->shardid);
+                        debug_trace(_shard.get());
+                        if (_shard->connection->get_state() < websocketpp::session::state::closing)
+                            websocket_o.close(_shard->connection, 1001, "");
+                        else
+                            _shard->start_reconnect();
+                        _shard->connection_state = Reconnecting;
+                        _shard->do_reset();
                     }
-
-                    //find a prettier way to do this
-                    if (_shard && !_shard->connection && !_shard->reconnect_timer)
+                    else if (!_shard->lastwsevent && _shard->last_status_time < checktime - 180)
                     {
-                        _shard->start_reconnect();
+                        log->critical("Shard#{} : Fresh Websocket had no events in last 180s", _shard->shardid);
+                        debug_trace(_shard.get());
+                        if (_shard->connection->get_state() < websocketpp::session::state::closing)
+                            websocket_o.close(_shard->connection, 1001, "");
+                        else
+                            _shard->start_reconnect();
+                        _shard->connection_state = Reconnecting;
+                        _shard->do_reset();
                     }
+                    _shard->last_status_time = checktime;
                 }
 
-                std::this_thread::sleep_for(5s);
+                //find a prettier way to do this
+                if (_shard && !_shard->connection && !_shard->reconnect_timer)
+                {
+                    _shard->start_reconnect();
+                }
             }
-            catch (std::exception & e)
-            {
-                log->error("status_thread() error : {}", e.what());
-            }
-            catch (...)
-            {
-                log->error("status_thread() error : unknown");
-            }
+
+            std::this_thread::sleep_for(5s);
         }
-    });
+        catch (std::exception & e)
+        {
+            log->error("status_thread() error : {}", e.what());
+        }
+        catch (...)
+        {
+            log->error("status_thread() error : unknown");
+        }
+    }
 }
 
 inline void aegis::debug_trace(shard * _shard)
 {
-    auto iter = _shard->debug_messages.rend();
     fmt::MemoryWriter w;
 
     w << "\n==========<Start Error Trace>==========\n"

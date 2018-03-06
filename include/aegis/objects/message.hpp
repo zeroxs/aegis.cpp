@@ -60,12 +60,12 @@ public:
     * @param emoji Reference to bucket factory that manages ratelimits for emoji messages
     */
     explicit message(shard * _shard, snowflake channel_id, std::string content)
-        : _shard(_shard)
+        : _initialized(true)
+        , _shard(_shard)
         , _content(content)
         , _guild(nullptr)
         , _channel(nullptr)
         , _channel_id(channel_id)
-        , _initialized(true)
     {
         _channel = get_shard().state->core->get_channel(_channel_id).get();
 

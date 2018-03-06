@@ -81,30 +81,30 @@ struct callbacks
     std::function<void(message_create obj)> i_message_create_dm;
     std::function<void(message_update obj)> i_message_update;
     std::function<void(message_delete obj)> i_message_delete;
-    c_inject i_message_delete_bulk;
+    c_inject i_message_delete_bulk;//TODO
     std::function<void(guild_create obj)> i_guild_create;
     std::function<void(guild_update obj)> i_guild_update;
     std::function<void(guild_delete obj)> i_guild_delete;
     std::function<void(user_update obj)> i_user_update;
     std::function<void(ready obj)> i_ready;
     std::function<void(resumed obj)> i_resumed;
-    c_inject i_channel_create;
-    c_inject i_channel_update;
-    c_inject i_channel_delete;
+    c_inject i_channel_create;//TODO
+    c_inject i_channel_update;//TODO
+    c_inject i_channel_delete;//TODO
     std::function<void(guild_ban_add obj)> i_guild_ban_add;
     std::function<void(guild_ban_remove obj)> i_guild_ban_remove;
-    c_inject i_guild_emojis_update;
-    c_inject i_guild_integrations_update;
+    c_inject i_guild_emojis_update;//TODO
+    c_inject i_guild_integrations_update;//TODO
     std::function<void(guild_member_add obj)> i_guild_member_add;
     std::function<void(guild_member_remove obj)> i_guild_member_remove;
     std::function<void(guild_member_update obj)> i_guild_member_update;
     std::function<void(guild_members_chunk obj)> i_guild_member_chunk;
-    c_inject i_guild_role_create;
-    c_inject i_guild_role_update;
-    c_inject i_guild_role_delete;
+    c_inject i_guild_role_create;//TODO
+    c_inject i_guild_role_update;//TODO
+    c_inject i_guild_role_delete;//TODO
     std::function<void(presence_update obj)> i_presence_update;
-    c_inject i_voice_state_update;
-    c_inject i_voice_server_update;
+    c_inject i_voice_state_update;//TODO
+    c_inject i_voice_server_update;//TODO
 };
 
 
@@ -136,13 +136,19 @@ public:
     * @param token A string of the authentication token
     */
     aegis(std::string token)
-        : token(token)
-        , status(Uninitialized)
-        , shard_max_count(0)
-        , ratelimit_o(std::bind(&aegis::call, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
+        : shard_max_count(0)
+        , owner_id(0)
+        , control_channel(0)
+        , force_shard_count(0)
+        , selfbot(false)
+        , debugmode(false)
         , member_id(0)
         , mfa_enabled(false)
         , discriminator(0)
+        , state{ { 0,{} }, this }
+        , token(token)
+        , status(Uninitialized)
+        , ratelimit_o(std::bind(&aegis::call, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
     {
         spdlog::set_async_mode(32);
         log = spdlog::stdout_color_mt("aegis");
@@ -150,24 +156,12 @@ public:
         ratelimit_o.add(bucket_type::GUILD);
         ratelimit_o.add(bucket_type::CHANNEL);
         ratelimit_o.add(bucket_type::EMOJI);
-
-        selfbot = false;
-        owner_id = 0;
-        control_channel = 0;
-        force_shard_count = 0;
-        debugmode = false;
-        state.core = this;
     }
 
     /// Destroys the shards, stops the asio::work object, destroys the websocket object, and attempts to join the rest_thread thread
     ///
     ~aegis()
     {
-        for (auto & c : shards)
-            c.reset();
-        websocket_o.reset();
-        if (statusthread->joinable())
-            statusthread->join();
     }
 
     aegis(const aegis &) = delete;
@@ -412,20 +406,10 @@ public:
     */
     void setup_callbacks(shard * _shard)
     {
-        _shard->connection->set_message_handler([_shard, this](websocketpp::connection_hdl hdl, message_ptr msg)
-        {
-            this->on_message(hdl, msg, _shard);
-        });
-        _shard->connection->set_open_handler([_shard, this](websocketpp::connection_hdl hdl)
-        {
-            this->on_connect(hdl, _shard);
-        });
-        _shard->connection->set_close_handler([_shard, this](websocketpp::connection_hdl hdl)
-        {
-            this->on_close(hdl, _shard);
-        });
+        _shard->connection->set_message_handler(std::bind(&aegis::on_message, this, std::placeholders::_1, std::placeholders::_2, _shard));
+        _shard->connection->set_open_handler(std::bind(&aegis::on_connect, this, std::placeholders::_1, _shard));
+        _shard->connection->set_close_handler(std::bind(&aegis::on_close, this, std::placeholders::_1, _shard));
     }
-
 
     /// Outputs the last 5 messages received from the gateway
     ///
@@ -475,45 +459,34 @@ public:
     */
     std::optional<rest_reply> call(std::string_view path, std::string_view content, std::string_view method);
 
-    /// Spawns specified amount of threads and starts running the io_service
+    /// Spawns specified amount of threads and starts running the io_service or default hardware hinted contexts
     /**
     * @param count Spawn `count` threads and run io_service object
     */
-    void run(std::size_t count)
+    void run(std::size_t count = 0)
     {
+        if (count == 0)
+            count = std::thread::hardware_concurrency();
+
         // Create a pool of threads to run all of the io_services.
-        std::vector<std::unique_ptr<std::thread>> threads;
+        std::vector<std::thread> threads;
         for (std::size_t i = 0; i < count; ++i)
-        {
-            auto thread(std::make_unique<std::thread>([&]()
-            {
-                io_service().run();
-            }));
-            threads.push_back(std::move(thread));
-        }
+            threads.emplace_back(std::bind(static_cast<asio::io_service::count_type(asio::io_service::*)()>(&asio::io_service::run), &io_service()));
 
         // Create a pool of threads to run the rest scheduler.
-        std::vector<std::unique_ptr<std::thread>> rest_threads;
+        std::vector<std::thread> rest_threads;
         for (std::size_t i = 0; i < count; ++i)
-        {
-            auto thread(std::make_unique<std::thread>([&]()
-            {
-                io_service().run();
-            }));
-            rest_threads.push_back(std::move(thread));
-        }
+            rest_threads.emplace_back(std::bind(static_cast<asio::io_service::count_type(asio::io_service::*)()>(&asio::io_service::run), rest_scheduler));
 
-        for (std::size_t i = 0; i < threads.size(); ++i)
-            threads[i]->join();
+        std::thread statusthread(std::bind(&aegis::status_thread, this));
 
-        for (std::size_t i = 0; i < rest_threads.size(); ++i)
-            rest_threads[i]->join();
-    }
+        statusthread.join();
 
-    /// Spawns the default (4) amount of threads and starts running the io_service
-    void run()
-    {
-        run(8);
+        for (auto & thread : threads)
+            thread.join();
+
+        for (auto & rest_thread : rest_threads)
+            rest_thread.join();
     }
 
     /**
@@ -683,8 +656,6 @@ private:
 
 
     //std::unordered_map<std::string, c_inject> m_cbmap;
-
-    std::unique_ptr<std::thread> statusthread;
 
     // Gateway URL for the Discord Websocket
     std::string gateway_url;

@@ -159,10 +159,10 @@ inline void guild::load(const json & obj, shard * _shard) noexcept
         {
             json emojis = obj["emojis"];
 
-            for (auto & emoji : emojis)
+            /*for (auto & emoji : emojis)
             {
                 //loadEmoji(emoji, _guild);
-            }
+            }*/
         }
 
         if (obj.count("features"))
@@ -218,7 +218,7 @@ inline void guild::load_presence(const json & obj) noexcept
         status = member::DoNotDisturb;
     else if (obj["status"] == "online")
         status = member::Online;
-    else if (obj["status"] == "offline")
+    else
         status = member::Offline;
 
     auto _member = get_member(user["id"]);
@@ -237,7 +237,7 @@ inline void guild::load_role(const json & obj) noexcept
     if (!roles.count(role_id))
     {
         auto r = std::make_unique<role>();
-        auto & _role = *r.get();
+        //auto & _role = *r.get();
         roles.emplace(role_id, std::move(r));
         role_snowflakes.emplace(role_id, role_offset++);
     }
@@ -348,7 +348,7 @@ inline int64_t guild::compute_overwrites(int64_t _base_permissions, member & _me
     return permissions;
 }
 
-inline role & guild::get_role(int64_t r) const
+inline role & guild::get_role(uint64_t r) const
 {
     for (auto & kv : roles)
         if (kv.second->role_id == r)
@@ -356,7 +356,7 @@ inline role & guild::get_role(int64_t r) const
     throw std::out_of_range(fmt::format("G: {} role:[{}] does not exist", guild_id, r));
 }
 
-inline role & guild::get_role(int16_t r) const
+inline role & guild::get_role(uint16_t r) const
 {
     int64_t realrole_id = get_role_snowflake(r);
     for (auto & kv : roles)

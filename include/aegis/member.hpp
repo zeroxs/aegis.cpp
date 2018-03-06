@@ -57,10 +57,10 @@ public:
     */
     struct guild_info
     {
-        std::vector<int16_t> roles;
+        std::vector<uint16_t> roles;
         std::optional<std::string> nickname;
         //std::string joined_at;
-        int64_t joined_at = 0;
+        uint64_t joined_at = 0;
         bool deaf = false;
         bool mute = false;
     };

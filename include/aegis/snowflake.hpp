@@ -39,44 +39,44 @@ class snowflake
 {
 public:
     snowflake() : m_snowflake(0) {}
-    snowflake(int64_t snowflake) : m_snowflake(snowflake) {}
+    snowflake(uint64_t snowflake) : m_snowflake(snowflake) {}
 
-    operator int64_t() const
+    operator uint64_t() const
     {
         return m_snowflake;
     }
 
-    constexpr std::tuple<int64_t, int8_t, int8_t, int16_t> get_all()
+    constexpr std::tuple<uint64_t, uint8_t, uint8_t, uint16_t> get_all()
     {
         return { get_timestamp(), get_worker(), get_process(), get_count() };
     };
 
-    constexpr int16_t get_count()
+    constexpr uint16_t get_count()
     {
         return static_cast<int16_t>(m_snowflake & _countMask);
     };
 
-    constexpr int8_t get_process()
+    constexpr uint8_t get_process()
     {
         return static_cast<int8_t>(m_snowflake & _workerMask) >> 12;
     };
 
-    constexpr int8_t get_worker()
+    constexpr uint8_t get_worker()
     {
         return static_cast<int8_t>(m_snowflake & _workerMask) >> 17;
     };
 
-    constexpr int64_t get_timestamp()
+    constexpr uint64_t get_timestamp()
     {
         return (m_snowflake & _timestampMask) >> 22;
     };
 
-    static constexpr std::tuple<int64_t, int8_t, int8_t, int16_t> c_get_all(uint64_t snowflake)
+    static constexpr std::tuple<uint64_t, uint8_t, uint8_t, uint16_t> c_get_all(uint64_t snowflake)
     {
         return { c_get_timestamp(snowflake), c_get_worker(snowflake), c_get_process(snowflake), c_get_count(snowflake) };
     };
 
-    static constexpr int16_t c_get_count(uint64_t snowflake)
+    static constexpr uint16_t c_get_count(uint64_t snowflake)
     {
         return static_cast<int16_t>(snowflake & _countMask);
     };
@@ -86,33 +86,33 @@ public:
         return static_cast<int8_t>(snowflake & _workerMask) >> 12;
     };
 
-    static constexpr int8_t c_get_worker(uint64_t snowflake)
+    static constexpr uint8_t c_get_worker(uint64_t snowflake)
     {
         return static_cast<int8_t>(snowflake & _workerMask) >> 17;
     };
 
-    static constexpr int64_t c_get_timestamp(uint64_t snowflake)
+    static constexpr uint64_t c_get_timestamp(uint64_t snowflake)
     {
         return (snowflake & _timestampMask) >> 22;
     };
 
-    constexpr int64_t get_time()
+    constexpr uint64_t get_time()
     {
         return get_timestamp() + _discordEpoch;
     };
 
-    static constexpr int64_t c_get_time(uint64_t snowflake)
+    static constexpr uint64_t c_get_time(uint64_t snowflake)
     {
         return c_get_timestamp(snowflake) + _discordEpoch;
     };
 
 private:
-    int64_t m_snowflake;
-    static constexpr int64_t _countMask = 0x0000000000000FFFL;
-    static constexpr int64_t _processMask = 0x000000000001F000L;
-    static constexpr int64_t _workerMask = 0x00000000003E0000L;
-    static constexpr int64_t _timestampMask = 0xFFFFFFFFFFC00000L;
-    static constexpr int64_t _discordEpoch = 1420070400000;
+    uint64_t m_snowflake;
+    static constexpr uint64_t _countMask = 0x0000000000000FFFL;
+    static constexpr uint64_t _processMask = 0x000000000001F000L;
+    static constexpr uint64_t _workerMask = 0x00000000003E0000L;
+    static constexpr uint64_t _timestampMask = 0xFFFFFFFFFFC00000L;
+    static constexpr uint64_t _discordEpoch = 1420070400000;
 };
 
 /**\todo Needs documentation

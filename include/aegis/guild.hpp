@@ -244,7 +244,7 @@ public:
     *
     * @returns Reference to role object
     */
-    role & get_role(int64_t r) const;
+    role & get_role(uint64_t r) const;
     
     /// Get role
     /**
@@ -252,7 +252,7 @@ public:
     *
     * @returns Reference to role object
     */
-    role & get_role(int16_t r) const;
+    role & get_role(uint16_t r) const;
 
     /// Remove role from guild
     /**
