@@ -33,7 +33,7 @@
 namespace aegiscpp
 {
 
-using rest_api = std::tuple<std::error_code, std::shared_future<rest_reply>>;
+using rest_api = std::tuple<std::error_code, std::optional<std::future<rest_reply>>>;
 
 using json = nlohmann::json;
 using rest_limits::bucket_factory;
@@ -95,9 +95,9 @@ public:
 
     permission perms();
 
-    std::shared_future<rest_reply> post_task(std::string path, std::string method = "POST", std::string obj = {});
+    std::future<rest_reply> post_task(std::string path, std::string method = "POST", std::string obj = {});
 
-    std::shared_future<rest_reply> post_emoji_task(std::string path, std::string method = "POST", std::string obj = {});
+    std::future<rest_reply> post_emoji_task(std::string path, std::string method = "POST", std::string obj = {});
 
     /// Load this channel with guild data
     /**

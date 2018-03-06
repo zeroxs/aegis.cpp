@@ -160,7 +160,7 @@ public:
             use_bucket->limit = reply->limit;
             use_bucket->remaining = reply->remaining;
             use_bucket->reset = reply->reset;
-            return std::move(reply.value_or(rest_reply()));
+            return reply.value_or(rest_reply());
         }
     }
         

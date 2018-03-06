@@ -34,7 +34,7 @@
 namespace aegiscpp
 {
 
-using rest_api = std::tuple<std::error_code, std::shared_future<rest_reply>>;
+using rest_api = std::tuple<std::error_code, std::optional<std::future<rest_reply>>>;
 
 using rest_limits::bucket_factory;
 using json = nlohmann::json;
@@ -79,7 +79,7 @@ public:
     int role_offset = 1;
 
 
-    std::shared_future<rest_reply> post_task(std::string path, std::string method = "POST", std::string obj = {});
+    std::future<rest_reply> post_task(std::string path, std::string method = "POST", std::string obj = {});
 
     permission perms()
     {

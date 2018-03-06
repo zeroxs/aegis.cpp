@@ -388,12 +388,12 @@ inline int32_t guild::get_member_count() const noexcept
 }
 
 
-inline std::shared_future<rest_reply> guild::post_task(std::string path, std::string method, std::string obj)
+inline std::future<rest_reply> guild::post_task(std::string path, std::string method, std::string obj)
 {
     auto task(std::make_shared<std::packaged_task<rest_reply()>>(
         std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, guild_id, path, obj, method)));
 
-    auto fut = task->get_future().share();
+    auto fut = task->get_future();
 
     state->core->rest_scheduler->post([task]() { (*task)(); });
 
@@ -405,7 +405,7 @@ inline std::shared_future<rest_reply> guild::post_task(std::string path, std::st
 inline rest_api guild::create_guild()
 {
     //TODO: 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented),std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change. Location may change.
@@ -413,7 +413,7 @@ inline rest_api guild::create_guild()
 inline rest_api guild::get_guild()
 {
     //TODO: 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented),std::make_optional<std::future<rest_reply>>() };
 }
 
 inline rest_api guild::modify_guild(std::optional<std::string> name, std::optional<std::string> voice_region, std::optional<int> verification_level,
@@ -421,9 +421,9 @@ inline rest_api guild::modify_guild(std::optional<std::string> name, std::option
                     std::optional<std::string> icon, std::optional<snowflake> owner_id, std::optional<std::string> splash)
 {
     if (!perms().can_manage_guild())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission),std::make_optional<std::future<rest_reply>>() };
     if (owner_id.has_value() && owner_id != self()->member_id)
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission),std::make_optional<std::future<rest_reply>>() };
 
     json obj;
     if (name.has_value())
@@ -447,24 +447,24 @@ inline rest_api guild::modify_guild(std::optional<std::string> name, std::option
 
 
     auto fut = post_task(fmt::format("/guilds/{}", guild_id), "PATCH", obj.dump());
-    return { std::error_code(), fut };
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
 inline rest_api guild::delete_guild()
 {
     //requires OWNER
     if (owner_id != self()->member_id)
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission),std::make_optional<std::future<rest_reply>>() };
 
     auto fut = post_task(fmt::format("/guilds/{}", guild_id), "DELETE");
-    return { std::error_code(), fut };
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
 inline rest_api guild::create_text_channel(std::string name, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites)
 {
     //requires MANAGE_CHANNELS
     if (!perms().can_manage_channels())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj;
     obj["name"] = name;
@@ -476,13 +476,13 @@ inline rest_api guild::create_text_channel(std::string name, int64_t parent_id, 
     }
 
     auto fut = post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj.dump());
-    return { std::error_code(), fut };
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
 inline rest_api guild::create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites)
 {
     if (!perms().can_manage_channels())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj;
     obj["name"] = name;
@@ -494,13 +494,13 @@ inline rest_api guild::create_voice_channel(std::string name, int32_t bitrate, i
     }
 
     auto fut = post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj.dump());
-    return { std::error_code(), fut };
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
 inline rest_api guild::create_category_channel(std::string name, int64_t parent_id, std::vector<permission_overwrite> permission_overwrites)
 {
     if (!perms().can_manage_channels())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj;
     obj["name"] = name;
@@ -512,7 +512,7 @@ inline rest_api guild::create_category_channel(std::string name, int64_t parent_
     }
 
     auto fut = post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj.dump());
-    return { std::error_code(), fut };
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
 /**\todo Incomplete. Signature may change
@@ -520,9 +520,9 @@ inline rest_api guild::create_category_channel(std::string name, int64_t parent_
 inline rest_api guild::modify_channel_positions()
 {
     if (!perms().can_manage_channels())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 inline rest_api guild::modify_guild_member(snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
@@ -533,93 +533,93 @@ inline rest_api guild::modify_guild_member(snowflake user_id, std::optional<std:
     if (nick.has_value())
     {
         if (!perm.can_manage_names())
-            return { make_error_code(error::no_permission),{} };
+            return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
         obj["nick"] = nick.value();//requires MANAGE_NICKNAMES
     }
     if (mute.has_value())
     {
         if (!perm.can_voice_mute())
-            return { make_error_code(error::no_permission),{} };
+            return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
         obj["mute"] = mute.value();//requires MUTE_MEMBERS
     }
     if (deaf.has_value())
     {
         if (!perm.can_voice_deafen())
-            return { make_error_code(error::no_permission),{} };
+            return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
         obj["deaf"] = deaf.value();//requires DEAFEN_MEMBERS
     }
     if (roles.has_value())
     {
         if (!perm.can_manage_roles())
-            return { make_error_code(error::no_permission),{} };
+            return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
         obj["roles"] = roles.value();//requires MANAGE_ROLES
     }
     if (channel_id.has_value())
     {
         //TODO: This needs to calculate whether or not the bot has access to the voice channel as well
         if (!perm.can_voice_move())
-            return { make_error_code(error::no_permission),{} };
+            return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
         obj["channel_id"] = channel_id.value();//requires MOVE_MEMBERS
     }
 
     auto fut = post_task(fmt::format("/guilds/{}/members/{}", guild_id, user_id), "PATCH", obj.dump());
-    return { std::error_code(), fut };
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
 inline rest_api guild::modify_my_nick(std::string newname)
 {
     if (!perms().can_change_name())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj = { "nick", newname };
     auto fut = post_task(fmt::format("/guilds/{}/members/@me/nick", guild_id), "PATCH", obj.dump());
-    return { std::error_code(), fut };
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
 inline rest_api guild::add_guild_member_role(snowflake user_id, snowflake role_id)
 {
     if (!perms().can_manage_roles())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     auto fut = post_task(fmt::format("/guilds/{}/members/{}/roles/{}", guild_id, user_id, role_id), "PUT");
-    return { std::error_code(), fut };
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
 inline rest_api guild::remove_guild_member_role(snowflake user_id, snowflake role_id)
 {
     if (!perms().can_manage_roles())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     auto fut = post_task(fmt::format("/guilds/{}/members/{}/roles/{}", guild_id, user_id, role_id), "DELETE");
-    return { std::error_code(), fut };
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
 inline rest_api guild::remove_guild_member(snowflake user_id)
 {
     if (!perms().can_kick())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     auto fut = post_task(fmt::format("/guilds/{}/members/{}", guild_id, user_id), "DELETE");
-    return { std::error_code(), fut };
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
 inline rest_api guild::create_guild_ban(snowflake user_id, int8_t delete_message_days)
 {
     if (!perms().can_ban())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj = { "delete-message-days", delete_message_days };
     auto fut = post_task(fmt::format("/guilds/{}/bans/{}", guild_id, user_id), "PUT");
-    return { std::error_code(), fut };
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
 inline rest_api guild::remove_guild_ban(snowflake user_id)
 {
     if (!perms().can_ban())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     auto fut = post_task(fmt::format("/guilds/{}/bans/{}", guild_id, user_id), "DELETE");
-    return { std::error_code(), fut };
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
 /**\todo Incomplete. Signature may change
@@ -627,9 +627,9 @@ inline rest_api guild::remove_guild_ban(snowflake user_id)
 inline rest_api guild::create_guild_role()
 {
     if (!perms().can_manage_roles())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change
@@ -637,9 +637,9 @@ inline rest_api guild::create_guild_role()
 inline rest_api guild::modify_guild_role_positions()
 {
     if (!perms().can_manage_roles())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change
@@ -647,9 +647,9 @@ inline rest_api guild::modify_guild_role_positions()
 inline rest_api guild::modify_guild_role(snowflake role_id)
 {
     if (!perms().can_manage_roles())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change
@@ -657,9 +657,9 @@ inline rest_api guild::modify_guild_role(snowflake role_id)
 inline rest_api guild::delete_guild_role(snowflake role_id)
 {
     if (!perms().can_manage_roles())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change
@@ -667,9 +667,9 @@ inline rest_api guild::delete_guild_role(snowflake role_id)
 inline rest_api guild::get_guild_prune_count(int16_t days)
 {
     if (!perms().can_kick())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change
@@ -677,9 +677,9 @@ inline rest_api guild::get_guild_prune_count(int16_t days)
 inline rest_api guild::begin_guild_prune(int16_t days)
 {
     if (!perms().can_kick())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change
@@ -687,9 +687,9 @@ inline rest_api guild::begin_guild_prune(int16_t days)
 inline rest_api guild::get_guild_invites()
 {
     if (!perms().can_manage_guild())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change
@@ -697,9 +697,9 @@ inline rest_api guild::get_guild_invites()
 inline rest_api guild::get_guild_integrations()
 {
     if (!perms().can_manage_guild())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change
@@ -707,9 +707,9 @@ inline rest_api guild::get_guild_integrations()
 inline rest_api guild::create_guild_integration()
 {
     if (!perms().can_manage_guild())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change
@@ -717,9 +717,9 @@ inline rest_api guild::create_guild_integration()
 inline rest_api guild::modify_guild_integration()
 {
     if (!perms().can_manage_guild())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change
@@ -727,9 +727,9 @@ inline rest_api guild::modify_guild_integration()
 inline rest_api guild::delete_guild_integration()
 {
     if (!perms().can_manage_guild())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change
@@ -737,9 +737,9 @@ inline rest_api guild::delete_guild_integration()
 inline rest_api guild::sync_guild_integration()
 {
     if (!perms().can_manage_guild())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change
@@ -747,9 +747,9 @@ inline rest_api guild::sync_guild_integration()
 inline rest_api guild::get_guild_embed()
 {
     if (!perms().can_manage_guild())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented),{} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change
@@ -757,15 +757,15 @@ inline rest_api guild::get_guild_embed()
 inline rest_api guild::modify_guild_embed()
 {
     if (!perms().can_manage_guild())
-        return { make_error_code(error::no_permission),{} };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented), {} };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 inline rest_api guild::leave()
 {
     auto fut = post_task(fmt::format("/users/@me/guilds/{0}", guild_id), "DELETE");
-    return { std::error_code(), fut };
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
 }
