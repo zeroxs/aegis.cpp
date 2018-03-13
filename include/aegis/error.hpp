@@ -1,5 +1,5 @@
 //
-// aegis_impl.hpp
+// error.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -35,9 +35,9 @@
 
 namespace aegiscpp
 {
-typedef std::pair<std::error_code, std::string> err_str_pair;
+using err_str_pair = std::pair<std::error_code, std::string>;
 
-typedef std::error_code error_code;
+using error_code = std::error_code;
 
 /**\todo Needs documentation
 */
@@ -65,6 +65,21 @@ enum value
 
     /// Feature not yet implemented
     not_implemented,
+
+    /// Member not found
+    member_not_found,
+
+    /// Channel not found
+    channel_not_found,
+
+    /// Guild not found
+    guild_not_found,
+
+    /// Rate Limited
+    rate_limited,
+
+    /// Globally Rate Limited
+    global_rate_limited,
 
     max_errors
 
@@ -98,6 +113,16 @@ public:
                 return "No permission for this action";
             case error::not_implemented:
                 return "Feature not yet implemented";
+            case error::member_not_found:
+                return "Member not found";
+            case error::channel_not_found:
+                return "Channel not found";
+            case error::guild_not_found:
+                return "Guild not found";
+            case error::rate_limited:
+                return "Rate Limited";
+            case error::global_rate_limited:
+                return "Globally Rate Limited";
             default:
                 return "Unknown";
         }
