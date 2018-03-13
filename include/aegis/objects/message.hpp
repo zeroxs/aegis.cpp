@@ -32,7 +32,7 @@
 #include "attachment.hpp"
 #include "embed.hpp"
 #include "reaction.hpp"
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 

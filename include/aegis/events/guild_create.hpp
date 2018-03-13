@@ -29,7 +29,7 @@
 #include "../config.hpp"
 #include "../snowflake.hpp"
 #include "../objects/guild.hpp"
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 

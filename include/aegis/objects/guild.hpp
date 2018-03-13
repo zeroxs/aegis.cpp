@@ -35,7 +35,7 @@
 #include "voice_state.hpp"
 #include "presence.hpp"
 #include "emoji.hpp"
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 
