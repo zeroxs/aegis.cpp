@@ -119,6 +119,7 @@ public:
     snowflake nonce; /**<\todo Needs documentation */
     std::string webhook_id; /**<\todo Needs documentation */
     message_type type = Default; /**<\todo Needs documentation */
+    user author; /**< author object for this message */
 
     bool is_valid() const noexcept
     {
@@ -174,6 +175,16 @@ public:
         return true;
     }
 
+    /// Obtain the relevant snowflakes related to this message
+    /**
+     * Returns { _channel_id, _guild_id, _message_id }
+     * @returns std::tuple<snowflake, snowflake, snowflake>
+     */ 
+    std::tuple<snowflake, snowflake, snowflake, snowflake> get_related_ids()
+    {
+        return { _channel_id, _guild_id, _message_id, _author_id };
+    };
+
 private:
     friend void from_json(const nlohmann::json& j, message& m);
     friend void to_json(nlohmann::json& j, const message& m);
@@ -185,6 +196,7 @@ private:
     snowflake _channel_id = 0; /**< snowflake of the channel this message belongs to */
     snowflake _guild_id = 0; /**< snowflake of the guild this message belongs to */
     snowflake _message_id = 0; /**< snowflake of the message */
+    snowflake _author_id = 0; /**< snowflake of the author of this message */
 };
 
 /**\todo Needs documentation
@@ -193,6 +205,11 @@ inline void from_json(const nlohmann::json& j, message& m)
 {
     m._message_id = j["id"];
     m._channel_id = j["channel_id"];
+    if (j.count("author") && !j["author"].is_null())
+    {
+        m._author_id = j["author"]["id"];
+        m.author = j["author"];
+    }
     if (j.count("content") && !j["content"].is_null())
         m._content = j["content"];
     if (j.count("timestamp") && !j["timestamp"].is_null())
