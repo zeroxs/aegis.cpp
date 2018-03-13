@@ -31,7 +31,6 @@
 #include <functional>
 #include <websocketpp/http/constants.hpp>
 #include "snowflake.hpp"
-#include <json.hpp>
 
 namespace aegiscpp
 {
