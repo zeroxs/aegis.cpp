@@ -403,13 +403,6 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
                         //outage
                         _shard->counters.guilds_outage--;
                     }
-                    if (_guild->is_init)
-                    {
-                        std::string guild_msg = fmt::format("Shard#{} : CREATED Guild: {} [T:{}] [{}]", _shard->get_id(), _guild->guild_id, guilds.size(), result["d"]["name"].get<std::string>());
-                        log->info(guild_msg);
-                        if (control_channel)
-                            get_channel(control_channel)->create_message(guild_msg);
-                    }
 
                     _guild->load(result["d"], _shard);
 
@@ -487,11 +480,6 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
                         }
 
                         _guild->unavailable = obj.unavailable;
-
-                        std::string guild_msg = fmt::format("Shard#{} : DELETED Guild: {} [T:{}] [{}]", _shard->get_id(), _guild->guild_id, guilds.size(), _guild->name);
-                        log->info(guild_msg);
-                        if (control_channel)
-                            get_channel(control_channel)->create_message(guild_msg);
 
                         //kicked or left
                         //websocket_o.set_timer(5000, [this, id, _shard](const asio::error_code & ec)

@@ -39,8 +39,6 @@ int main(int argc, char * argv[])
     {
         // Create bot with token
         aegis bot("TOKEN");
-        bot.owner_id = 171000788183678976;
-        bot.control_channel = 288707540844412928;
         bot.force_shard_count = 0;
         bot.debugmode = false;
         bot.selfbot = false;

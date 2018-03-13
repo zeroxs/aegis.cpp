@@ -137,8 +137,6 @@ public:
     */
     aegis(std::string token)
         : shard_max_count(0)
-        , owner_id(0)
-        , control_channel(0)
         , force_shard_count(0)
         , selfbot(false)
         , debugmode(false)
@@ -518,8 +516,6 @@ public:
     std::unordered_map<int64_t, std::unique_ptr<guild>> guilds;
 
     json self_presence;
-    int64_t owner_id;
-    int64_t control_channel;
     int16_t force_shard_count;
     bool selfbot;
     bool debugmode;
