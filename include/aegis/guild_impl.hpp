@@ -395,7 +395,7 @@ inline std::future<rest_reply> guild::post_task(std::string path, std::string me
 
     auto fut = task->get_future();
 
-    state->core->rest_scheduler->post([task]() { (*task)(); });
+    state->core->rest_service().post([task]() { (*task)(); });
 
     return fut;
 }

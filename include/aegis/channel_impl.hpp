@@ -52,7 +52,7 @@ inline std::future<rest_reply> channel::post_task(std::string path, std::string 
 
     auto fut = task->get_future();
 
-    get_guild().state->core->rest_scheduler->post([task]() { (*task)(); });
+    get_guild().state->core->rest_service().post([task]() { (*task)(); });
 
     return fut;
 }
@@ -64,7 +64,7 @@ inline std::future<rest_reply> channel::post_emoji_task(std::string path, std::s
 
     auto fut = task->get_future();
 
-    get_guild().state->core->rest_scheduler->post([task]() { (*task)(); });
+    get_guild().state->core->rest_service().post([task]() { (*task)(); });
 
     return fut;
 }

@@ -259,8 +259,6 @@ public:
             connect(ec);
             if (ec) { log->error("Connect fail: {}", ec.message()); shutdown(); return; }
         });
-        // Start the shard status thread
-        status_thread();
         // Run the bot
         run();
         make_connections.join();
@@ -271,6 +269,7 @@ public:
     void shutdown()
     {
         set_state(Shutdown);
+        rest_work.reset();
         websocket_o.stop_perpetual();
         websocket_o.stop();
         for (auto & _shard : shards)
@@ -352,8 +351,6 @@ public:
             return websocketpp::lib::make_shared<asio::ssl::context>(asio::ssl::context::tlsv1);
         });
 
-        status_thread();
-
         ec = std::error_code();
     }
 
@@ -366,7 +363,7 @@ public:
     /// Get the internal (or external) io_service object
     asio::io_service & rest_service()
     {
-        return *rest_scheduler;
+        return rest_scheduler;
     }
 
     /// Initiate websocket connection
@@ -466,6 +463,9 @@ public:
         if (count == 0)
             count = std::thread::hardware_concurrency();
 
+        // Create rest_scheduler work object so threads do not exit immediately
+        rest_work = std::make_shared<asio::io_service::work>(std::ref(rest_scheduler));
+     
         // Create a pool of threads to run all of the io_services.
         std::vector<std::thread> threads;
         for (std::size_t i = 0; i < count; ++i)
@@ -474,11 +474,7 @@ public:
         // Create a pool of threads to run the rest scheduler.
         std::vector<std::thread> rest_threads;
         for (std::size_t i = 0; i < count; ++i)
-            rest_threads.emplace_back(std::bind(static_cast<asio::io_service::count_type(asio::io_service::*)()>(&asio::io_service::run), rest_scheduler));
-
-        std::thread statusthread(std::bind(&aegis::status_thread, this));
-
-        statusthread.join();
+            rest_threads.emplace_back(std::bind(static_cast<asio::io_service::count_type(asio::io_service::*)()>(&asio::io_service::run), &rest_service()));
 
         for (auto & thread : threads)
             thread.join();
@@ -504,7 +500,7 @@ public:
     void set_state(shard_status s) noexcept { status = s; }
     bot_state & get_bot_obj() noexcept { return state; }
 
-    std::shared_ptr<asio::io_service> rest_scheduler;
+    asio::io_service rest_scheduler;
 
     uint32_t shard_max_count;
 
@@ -658,6 +654,8 @@ private:
 
     // Websocket++ object
     websocket websocket_o;
+
+    work_ptr rest_work;
 
     bot_state state;
 
