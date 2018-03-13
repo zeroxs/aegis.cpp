@@ -45,7 +45,7 @@
 #include <mutex>
 #include <atomic>
 
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 #include <zstr.hpp>
 #include <inttypes.h>
 #include <type_traits>

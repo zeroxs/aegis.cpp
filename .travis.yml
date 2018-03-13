@@ -23,5 +23,5 @@ matrix:
 
 script:
   - g++-7 --version
-  - g++-7 -std=c++17 -Iinclude -Ilib/spdlog/include -Ilib/websocketpp -Ilib/asio/asio/include -Ilib/json/src -Ilib/zstr/src src/main.cpp -lssl -lpthread -lcrypto -lz -o aegis
-  - g++-7 -std=c++17 -Iinclude -Ilib/spdlog/include -Ilib/websocketpp -Ilib/asio/asio/include -Ilib/json/src -Ilib/zstr/src src/main.cpp -lssl -lpthread -lcrypto -lz -o minimal
+  - g++-7 -std=c++17 -Iinclude -Ilib/spdlog/include -Ilib/websocketpp -Ilib/asio/asio/include -Ilib/json/single_include -Ilib/zstr/src src/main.cpp -lssl -lpthread -lcrypto -lz -o aegis
+  - g++-7 -std=c++17 -Iinclude -Ilib/spdlog/include -Ilib/websocketpp -Ilib/asio/asio/include -Ilib/json/single_include -Ilib/zstr/src src/main.cpp -lssl -lpthread -lcrypto -lz -o minimal
