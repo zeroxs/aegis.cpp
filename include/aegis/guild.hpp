@@ -555,7 +555,7 @@ public:
     */
     rest_api get_guild_embed();
 
-    /// Nodify the guild embed settings
+    /// Modify the guild embed settings
     /**
     * @param callback A callback to execute after REST execution
     *

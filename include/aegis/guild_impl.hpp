@@ -454,7 +454,7 @@ inline rest_api guild::delete_guild()
 {
     //requires OWNER
     if (owner_id != self()->member_id)
-        return { make_error_code(error::no_permission),std::make_optional<std::future<rest_reply>>() };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     auto fut = post_task(fmt::format("/guilds/{}", guild_id), "DELETE");
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };

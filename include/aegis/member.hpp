@@ -92,7 +92,7 @@ public:
     /**
     * @param guild_id The snowflake for the guild to check if nickname is set
     *
-    * @returns A string of the nickname or empty is no nickname is set
+    * @returns A string of the nickname or empty if no nickname is set
     */
     std::optional<std::string> get_name(snowflake guild_id)
     {
