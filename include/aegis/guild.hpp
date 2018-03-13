@@ -92,10 +92,9 @@ public:
     */
     member * self() const
     {
-        auto self_id = state->user.id;
-        auto slf = get_member(self_id);
+        auto slf = get_member(state->user.id);
         if (slf == nullptr)
-            throw std::runtime_error("guild::self() is nullptr");
+            throw aegiscpp::exception("guild::self() is nullptr", make_error_code(error::member_not_found));
         return slf;
     }
 
@@ -264,7 +263,7 @@ public:
     /**
     * @returns Snowflake of owner
     */
-    snowflake get_owner() const noexcept;
+    const snowflake get_owner() const noexcept;
 
 
     /// Create a new guild

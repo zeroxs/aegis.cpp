@@ -273,8 +273,8 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
         }
 
         const json result = json::parse(payload);
-        if (log->level() > spdlog::level::level_enum::trace && !result.is_null()
-            && (result["t"].is_null() || (result["t"] != "GUILD_CREATE" && result["t"] != "PRESENCE_UPDATE")))
+        if ((log->level() == spdlog::level::level_enum::trace || wsdbg) && !result.is_null()
+            && (result["t"].is_null() || (result["t"] != "GUILD_CREATE" && result["t"] != "PRESENCE_UPDATE" && result["t"] != "GUILD_MEMBERS_CHUNK")))
             log->trace("Shard#{}: {}", _shard->shardid, payload);
 
 
@@ -286,13 +286,12 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
         ///check old messages and remove
 
         for (auto iter = _shard->debug_messages.begin(); iter != _shard->debug_messages.end(); ++iter)
-            if (iter->first < t_time - 210)//210 captures enough to include anything leading up to a 'fresh websocket' state reconnect fail
+            if (iter->first < t_time - 30)//30 seconds captures enough to include anything leading up to a 'fresh websocket' state reconnect fail
                 _shard->debug_messages.erase(iter++);
         //////////////////////////////////////////////////////////////////////////
 
         if (!result["s"].is_null())
-            if (result["s"].get<int64_t>() > _shard->sequence)
-                _shard->sequence = result["s"];
+            _shard->sequence = result["s"];
 
         if (!result.is_null())
         {
@@ -474,7 +473,7 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
                         auto _guild = get_guild(guild_id);
                         if (_guild == nullptr)
                         {
-                            log->error("Guild Delete: [{}] does not exist", guild_id);
+                            log->critical("Guild Delete: [{}] does not exist", guild_id);
                             //this should never happen
                             return;
                         }

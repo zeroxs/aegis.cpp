@@ -123,14 +123,6 @@ inline void channel::load_with_guild(guild & _guild, const json & obj, shard * _
     }
 }
 
-inline bool channel::create_debug_message(std::string content)
-{
-    json obj;
-    obj["content"] = content;
-    ratelimit.push(channel_id, fmt::format("/channels/{}/messages", channel_id), obj.dump(), "POST");
-    return true;
-}
-
 inline rest_api channel::create_message(std::string content)
 {
     std::error_code ec;

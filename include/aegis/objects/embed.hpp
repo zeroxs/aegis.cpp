@@ -47,18 +47,19 @@ namespace aegiscpp
 class embed
 {
 public:
-    std::string title; /**<\todo Needs documentation */
+    // Combined Limit: 6000
+    std::string title; /**<\todo Needs documentation */ // Limit: 256
     std::string type; /**<\todo Needs documentation */
-    std::string description; /**<\todo Needs documentation */
+    std::string description; /**<\todo Needs documentation */ // Limit: 2048
     std::string url; /**<\todo Needs documentation */
     std::string timestamp; /**<\todo Needs documentation */
     int32_t color = 0; /**<\todo Needs documentation */
-    footer footer_; /**<\todo Needs documentation */
+    footer footer_; /**<\todo Needs documentation */ // Limit: 2048
     image image_; /**<\todo Needs documentation */
     thumbnail thumbnail_; /**<\todo Needs documentation */
     video video_; /**<\todo Needs documentation */
     provider provider_; /**<\todo Needs documentation */
-    std::vector<field> fields; /**<\todo Needs documentation */
+    std::vector<field> fields; /**<\todo Needs documentation */ // Limit: 25 name:256 value:1024
 };
 
 /**\todo Needs documentation

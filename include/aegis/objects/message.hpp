@@ -60,12 +60,12 @@ public:
     * @param emoji Reference to bucket factory that manages ratelimits for emoji messages
     */
     explicit message(shard * _shard, snowflake channel_id, std::string content)
-        : _initialized(true)
+        : _channel_id(channel_id)
+        , _initialized(true)
         , _shard(_shard)
         , _content(content)
         , _guild(nullptr)
         , _channel(nullptr)
-        , _channel_id(channel_id)
     {
         _channel = get_shard().state->core->get_channel(_channel_id).get();
 
@@ -151,7 +151,7 @@ public:
         if (_guild == nullptr)
         {
             if (_guild_id == 0) throw std::runtime_error("message::get_guild() id = 0");// This should -never- throw
-            return *get_shard().state->core->get_guild_create(_guild_id, _shard);
+            return *get_shard().state->core->get_guild(_guild_id);
         }
         return *_guild;
     }
@@ -161,7 +161,7 @@ public:
         if (_channel == nullptr)
         {
             if (_channel_id == 0) throw std::runtime_error("message::get_channel() id = 0");// This should -never- throw
-            return *get_guild().get_channel_create(_channel_id, _shard);
+            return *get_guild().get_channel(_channel_id);
         }
         return *_channel;
     }
@@ -212,19 +212,19 @@ inline void from_json(const nlohmann::json& j, message& m)
     if (j.count("webhook_id") && !j["webhook_id"].is_null())
         m.webhook_id = j["webhook_id"];
     if (j.count("mentions") && !j["mentions"].is_null())
-        for (auto i : j["mentions"])
+        for (const auto& i : j["mentions"])
             m.mentions.push_back(i["id"]);
     if (j.count("roles") && !j["roles"].is_null())
-        for (auto i : j["roles"])
+        for (const auto& i : j["roles"])
             m.mention_roles.push_back(i);
     if (j.count("attachments") && !j["attachments"].is_null())
-        for (auto i : j["attachments"])
+        for (const auto& i : j["attachments"])
             m.attachments.push_back(i);
     if (j.count("embeds") && !j["embeds"].is_null())
-        for (auto i : j["embeds"])
+        for (const auto& i : j["embeds"])
             m.embeds.push_back(i);
     if (j.count("reactions") && !j["reactions"].is_null())
-        for (auto i : j["reactions"])
+        for (const auto& i : j["reactions"])
             m.reactions.push_back(i);
 }
 

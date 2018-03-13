@@ -109,14 +109,6 @@ public:
     */
     void load_with_guild(guild & _guild, const json & obj, shard * _shard);
 
-    /// Send debug message to this channel bypassing async and permission checks
-    /**
-    * @param content A string of the message to send
-    *
-    * @returns true on successful request
-    */
-    bool create_debug_message(std::string content);
-
     /// Send message to this channel
     /**
     * @param content A string of the message to send

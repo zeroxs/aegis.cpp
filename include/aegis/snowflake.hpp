@@ -38,12 +38,12 @@ namespace aegiscpp
 class snowflake
 {
 public:
-    snowflake() : m_snowflake(0) {}
-    snowflake(uint64_t snowflake) : m_snowflake(snowflake) {}
+    snowflake() : snowflake_id(0) {}
+    snowflake(uint64_t _snowflake) : snowflake_id(_snowflake) {}
 
     operator uint64_t() const
     {
-        return m_snowflake;
+        return snowflake_id;
     }
 
     constexpr std::tuple<uint64_t, uint8_t, uint8_t, uint16_t> get_all()
@@ -53,22 +53,22 @@ public:
 
     constexpr uint16_t get_count()
     {
-        return static_cast<int16_t>(m_snowflake & _countMask);
+        return static_cast<int16_t>(snowflake_id & _countMask);
     };
 
     constexpr uint8_t get_process()
     {
-        return static_cast<int8_t>(m_snowflake & _workerMask) >> 12;
+        return static_cast<int8_t>(snowflake_id & _workerMask) >> 12;
     };
 
     constexpr uint8_t get_worker()
     {
-        return static_cast<int8_t>(m_snowflake & _workerMask) >> 17;
+        return static_cast<int8_t>(snowflake_id & _workerMask) >> 17;
     };
 
     constexpr uint64_t get_timestamp()
     {
-        return (m_snowflake & _timestampMask) >> 22;
+        return (snowflake_id & _timestampMask) >> 22;
     };
 
     static constexpr std::tuple<uint64_t, uint8_t, uint8_t, uint16_t> c_get_all(uint64_t snowflake)
@@ -107,7 +107,7 @@ public:
     };
 
 private:
-    uint64_t m_snowflake;
+    uint64_t snowflake_id;
     static constexpr uint64_t _countMask = 0x0000000000000FFFL;
     static constexpr uint64_t _processMask = 0x000000000001F000L;
     static constexpr uint64_t _workerMask = 0x00000000003E0000L;

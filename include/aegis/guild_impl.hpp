@@ -39,8 +39,8 @@ using json = nlohmann::json;
 
 inline guild::~guild()
 {
-    for (auto &[k, v] : members)
-        v->leave(guild_id);
+    for (auto & v : members)
+        v.second->leave(guild_id);
 }
 
 inline void guild::add_member(std::shared_ptr<member> _member) noexcept
@@ -253,7 +253,7 @@ inline void guild::load_role(const json & obj) noexcept
     return;
 }
 
-inline snowflake guild::get_owner() const noexcept
+inline const snowflake guild::get_owner() const noexcept
 {
     return owner_id;
 }

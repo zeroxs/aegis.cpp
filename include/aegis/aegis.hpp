@@ -135,7 +135,7 @@ public:
     *
     * @param token A string of the authentication token
     */
-    aegis(std::string token)
+    aegis(std::string_view _token)
         : shard_max_count(0)
         , force_shard_count(0)
         , selfbot(false)
@@ -143,10 +143,10 @@ public:
         , member_id(0)
         , mfa_enabled(false)
         , discriminator(0)
-        , state{ { 0,{} }, this }
-        , token(token)
-        , status(Uninitialized)
-        , ratelimit_o(std::bind(&aegis::call, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
+        , state{ { 0, {} }, this }
+        , token{ _token }
+        , status{ Uninitialized }
+        , ratelimit_o{ std::bind(&aegis::call, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3) }
     {
         spdlog::set_async_mode(32);
         log = spdlog::stdout_color_mt("aegis");
@@ -498,11 +498,11 @@ public:
         }
     }
 
-    ratelimiter & ratelimit() { return ratelimit_o; }
-    websocket & get_websocket() { return websocket_o; }
-    shard_status get_state() const { return status; }
-    void set_state(shard_status s) { status = s; }
-    bot_state & get_bot_obj() { return state; }
+    ratelimiter & ratelimit() noexcept { return ratelimit_o; }
+    websocket & get_websocket() noexcept { return websocket_o; }
+    shard_status get_state() const noexcept { return status; }
+    void set_state(shard_status s) noexcept { status = s; }
+    bot_state & get_bot_obj() noexcept { return state; }
 
     std::shared_ptr<asio::io_service> rest_scheduler;
 
@@ -511,9 +511,9 @@ public:
     std::string ws_gateway;
 
     std::vector<std::unique_ptr<shard>> shards;
-    std::unordered_map<int64_t, std::shared_ptr<member>> members;
-    std::unordered_map<int64_t, std::shared_ptr<channel>> channels;
-    std::unordered_map<int64_t, std::unique_ptr<guild>> guilds;
+    std::map<uint64_t, std::shared_ptr<member>> members;
+    std::map<uint64_t, std::shared_ptr<channel>> channels;
+    std::map<uint64_t, std::unique_ptr<guild>> guilds;
 
     json self_presence;
     int16_t force_shard_count;
@@ -521,6 +521,7 @@ public:
     bool debugmode;
     std::string mention;
     callbacks _callbacks;
+    bool wsdbg = false;
 
     std::shared_ptr<member> get_member(snowflake id) const noexcept
     {
@@ -546,7 +547,7 @@ public:
         return it->second.get();
     }
 
-    std::shared_ptr<member> get_member_create(snowflake id)
+    std::shared_ptr<member> get_member_create(snowflake id) noexcept
     {
         auto it = members.find(id);
         if (it == members.end())
@@ -559,7 +560,7 @@ public:
         return it->second;
     }
 
-    std::shared_ptr<channel> get_channel_create(snowflake id)
+    std::shared_ptr<channel> get_channel_create(snowflake id) noexcept
     {
         auto it = channels.find(id);
         if (it == channels.end())
@@ -572,7 +573,7 @@ public:
         return it->second;
     }
 
-    guild * get_guild_create(snowflake id, shard * _shard)
+    guild * get_guild_create(snowflake id, shard * _shard) noexcept
     {
         auto _guild = get_guild(id);
         if (_guild == nullptr)
@@ -593,8 +594,7 @@ public:
 
     member * self() const noexcept
     {
-        auto self_id = state.user.id;
-        auto it = members.find(self_id);
+        auto it = members.find(state.user.id);
         if (it == members.end())
             return nullptr;
         return it->second.get();

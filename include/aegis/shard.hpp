@@ -85,11 +85,11 @@ public:
     */
     struct
     {
-        int32_t guilds;
-        int32_t guilds_outage;
-        int32_t members;
-        int32_t channels;
-        int32_t messages;
+        int64_t guilds;
+        int64_t guilds_outage;
+        int64_t members;
+        int64_t channels;
+        int64_t messages;
         int64_t presence_changes;
     } counters = { 0,0,0,0,0,0 };
 
