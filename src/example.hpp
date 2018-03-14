@@ -77,6 +77,7 @@ public:
         //bot.i_resumed = std::bind(&example::resumed, this, _1, _2, _3);
     }
 
+    const snowflake bot_owner_id = 171000788183678976LL;
 
     // All the hooks into the websocket stream
     void TypingStart(typing_start obj);

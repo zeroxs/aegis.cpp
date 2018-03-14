@@ -55,13 +55,6 @@ inline void example::MessageCreateDM(message_create obj)
     if (toks.size() == 0)
         return;
 
-    if (obj.bot->control_channel)
-    {
-        auto ctrl_channel = obj.bot->get_channel(obj.bot->control_channel);
-        if (ctrl_channel)
-            ctrl_channel->create_message(fmt::format("User: {}\nMessage: {}", username, content));
-    }
-
     if (toks[0] == "help")
         _channel->create_message("This bot is in development. If you'd like more information on it, please join the discord server https://discord.gg/Kv7aP5K");
 
@@ -136,7 +129,7 @@ inline void example::MessageCreate(message_create obj)
     }
     else if (toks[0] == "?exit")
     {
-        if (_member->member_id != obj.bot->owner_id)
+        if (_member->member_id != bot_owner_id)
         {
             _channel.create_message("No perms `exit`");
             return;
@@ -232,7 +225,7 @@ inline void example::MessageCreate(message_create obj)
             w << "[" << r.role_id << "] : [A:" << r._permission.get_allow_perms() << "] : [" << r.name << "]\n";
 
         }
-        _channel.create_debug_message(w.str());
+        _channel.create_message(w.str());
     }
     else if (toks[0] == "?shard")
     {

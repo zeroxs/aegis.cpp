@@ -42,8 +42,8 @@ int main(int argc, char * argv[])
         auto & _guild = _channel->get_guild();
 
         snowflake channel_id = _channel->channel_id;
-        snowflake message_id = obj.msg.message_id;
-        std::string content = obj.msg.content;
+        snowflake message_id = obj.msg.get_id();
+        std::string content{ obj.msg.get_content() };
 
         if (content == "Hi")
             bot.get_channel(channel_id)->create_message("Hello back");
