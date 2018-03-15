@@ -39,69 +39,79 @@ class snowflake
 {
 public:
     snowflake() : snowflake_id(0) {}
-    snowflake(uint64_t _snowflake) : snowflake_id(_snowflake) {}
+    snowflake(int64_t _snowflake) : snowflake_id(_snowflake) {}
 
-    operator uint64_t() const
+    operator int64_t() const noexcept
     {
         return snowflake_id;
     }
 
-    constexpr std::tuple<uint64_t, uint8_t, uint8_t, uint16_t> get_all()
+    operator std::string() const noexcept
+    {
+        return std::to_string(snowflake_id);
+    }
+
+    constexpr int64_t get() const noexcept
+    {
+        return snowflake_id;
+    };
+
+    constexpr std::tuple<int64_t, int8_t, int8_t, int16_t> get_all() const noexcept
     {
         return { get_timestamp(), get_worker(), get_process(), get_count() };
     };
 
-    constexpr uint16_t get_count()
+    constexpr int16_t get_count() const noexcept
     {
         return static_cast<int16_t>(snowflake_id & _countMask);
     };
 
-    constexpr uint8_t get_process()
+    constexpr int8_t get_process() const noexcept
     {
-        return static_cast<int8_t>(snowflake_id & _workerMask) >> 12;
+        return static_cast<int8_t>((snowflake_id & _workerMask) >> 12);
     };
 
-    constexpr uint8_t get_worker()
+    constexpr int8_t get_worker() const noexcept
     {
-        return static_cast<int8_t>(snowflake_id & _workerMask) >> 17;
+        return static_cast<int8_t>((snowflake_id & _workerMask) >> 17);
     };
 
-    constexpr uint64_t get_timestamp()
+    constexpr int64_t get_timestamp() const noexcept
     {
         return (snowflake_id & _timestampMask) >> 22;
     };
 
-    static constexpr std::tuple<uint64_t, uint8_t, uint8_t, uint16_t> c_get_all(uint64_t snowflake)
+    static constexpr std::tuple<int64_t, int8_t, int8_t, int16_t> c_get_all(int64_t snowflake)
     {
         return { c_get_timestamp(snowflake), c_get_worker(snowflake), c_get_process(snowflake), c_get_count(snowflake) };
     };
 
-    static constexpr uint16_t c_get_count(uint64_t snowflake)
+    static constexpr int16_t c_get_count(int64_t snowflake)
     {
         return static_cast<int16_t>(snowflake & _countMask);
     };
 
-    static constexpr int8_t c_get_process(uint64_t snowflake)
+    static constexpr int8_t c_get_process(int64_t snowflake)
     {
-        return static_cast<int8_t>(snowflake & _workerMask) >> 12;
+        return static_cast<int8_t>((snowflake & _workerMask) >> 12);
     };
 
-    static constexpr uint8_t c_get_worker(uint64_t snowflake)
+    static constexpr int8_t c_get_worker(int64_t snowflake)
     {
-        return static_cast<int8_t>(snowflake & _workerMask) >> 17;
+        return static_cast<int8_t>((snowflake & _workerMask) >> 17);
     };
 
-    static constexpr uint64_t c_get_timestamp(uint64_t snowflake)
+    static constexpr int64_t c_get_timestamp(int64_t snowflake)
     {
         return (snowflake & _timestampMask) >> 22;
     };
 
-    constexpr uint64_t get_time()
+    constexpr int64_t get_time() const noexcept
     {
         return get_timestamp() + _discordEpoch;
     };
 
-    static constexpr uint64_t c_get_time(uint64_t snowflake)
+    static constexpr int64_t c_get_time(int64_t snowflake)
     {
         return c_get_timestamp(snowflake) + _discordEpoch;
     };
@@ -129,7 +139,7 @@ inline void from_json(const nlohmann::json& j, snowflake& s)
 */
 inline void to_json(nlohmann::json& j, const snowflake& s)
 {
-    j = json{ static_cast<int64_t>(s) };
+    j = nlohmann::json{ static_cast<int64_t>(s) };
 }
 
 }
