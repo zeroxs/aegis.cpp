@@ -28,7 +28,6 @@
 
 #include "../config.hpp"
 #include "../snowflake.hpp"
-#include "../structs.hpp"
 #include "guild_member.hpp"
 #include "channel.hpp"
 #include "role.hpp"

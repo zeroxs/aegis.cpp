@@ -1,5 +1,5 @@
 //
-// shard_impl.hpp
+// shard.cpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -25,23 +25,16 @@
 
 #pragma once
 
-
-#include "config.hpp"
-#include "common.hpp"
-#include "aegis.hpp"
 #include "shard.hpp"
+#include "aegis.hpp"
 #include "utility.hpp"
 
 
-#include <websocketpp/config/asio_client.hpp>
-#include <websocketpp/common/connection_hdl.hpp>
-#include <websocketpp/client.hpp>
 
 namespace aegiscpp
 {
 
-
-inline void shard::do_reset()
+AEGIS_DECL void shard::do_reset() noexcept
 {
     heartbeat_ack = 0;
     lastheartbeat = 0;
@@ -54,18 +47,28 @@ inline void shard::do_reset()
     }
 }
 
-inline void shard::start_reconnect()
+AEGIS_DECL void shard::start_reconnect() noexcept
 {
-    reconnect_timer = state->core->websocket_o.set_timer(10000, [this](const asio::error_code & ec)
+    reconnect_timer = get_bot().websocket_o.set_timer(10000, [this](const asio::error_code & ec)
     {
         if (ec == asio::error::operation_aborted)
             return;
         connection_state = Connecting;
         asio::error_code wsec;
-        connection = state->core->websocket_o.get_connection(state->core->gateway_url, wsec);
-        state->core->setup_callbacks(this);
-        state->core->websocket_o.connect(connection);
+        connection = get_bot().websocket_o.get_connection(get_bot().gateway_url, wsec);
+        get_bot().setup_callbacks(this);
+        get_bot().websocket_o.connect(connection);
     });
+}
+
+AEGIS_DECL member * shard::get_bot_user() const noexcept
+{
+    return get_bot().self();
+}
+
+AEGIS_DECL aegis & shard::get_bot() const noexcept
+{
+    return *_bot;
 }
 
 }

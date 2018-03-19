@@ -29,6 +29,7 @@
 #include "../config.hpp"
 #include "../snowflake.hpp"
 #include "emoji.hpp"
+#include <nlohmann/json.hpp>
 
 
 namespace aegiscpp

@@ -28,6 +28,7 @@
 
 #include "../config.hpp"
 #include "../snowflake.hpp"
+#include <nlohmann/json.hpp>
 #include <string>
 
 

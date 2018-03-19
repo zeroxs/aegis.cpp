@@ -29,6 +29,7 @@
 #include "../config.hpp"
 #include "../snowflake.hpp"
 #include "../objects/message.hpp"
+#include "../error.hpp"
 #include <string>
 #include <vector>
 
@@ -46,13 +47,15 @@ class aegis;
 */
 struct message_create
 {
-    channel & get_channel() { if (_channel == nullptr) throw std::runtime_error("Channel not set"); return *_channel; }
-    member & get_member() { if (_member == nullptr) throw std::runtime_error("Member not set"); return *_member; }
-    channel * _channel; /**<\todo Needs documentation */
-    member * _member; /**<\todo Needs documentation */
+    bool has_member() { return _member; }
+    bool has_channel() { return _channel; }
+    member & get_member() { if (_member == nullptr) throw aegiscpp::exception("Member not set", make_error_code(error::member_not_found)); return *_member; }
+    channel & get_channel() { if (_channel == nullptr) throw aegiscpp::exception("Channel not set", make_error_code(error::channel_not_found)); return *_channel; }
     message msg; /**<\todo Needs documentation */
-    shard * _shard; /**<\todo Needs documentation */
-    aegis * bot; /**<\todo Needs documentation */
+    shard * const _shard; /**<\todo Needs documentation */
+    aegis * const bot; /**<\todo Needs documentation */
+    channel * const _channel; /**<\todo Needs documentation */
+    member * const _member; /**<\todo Needs documentation */
 };
 
 }

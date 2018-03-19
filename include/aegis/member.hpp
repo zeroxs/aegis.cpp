@@ -26,12 +26,13 @@
 #pragma once
 
 
-#include "config.hpp"
-#include "guild.hpp"
+#include "aegis/config.hpp"
+#include "aegis/guild.hpp"
 #include <string>
 #include <optional>
 #include <queue>
 #include <memory>
+#include <set>
 
 namespace aegiscpp
 {
@@ -57,7 +58,7 @@ public:
     */
     struct guild_info
     {
-        std::vector<uint16_t> roles;
+        std::set<int64_t> roles;
         std::optional<std::string> nickname;
         //std::string joined_at;
         uint64_t joined_at = 0;
@@ -86,7 +87,7 @@ public:
     *
     * @param _shard Pointer to the shard this guild is managed by
     */
-    void load(guild * _guild, const json & obj, shard * _shard);
+    AEGIS_DECL void load(guild * _guild, const json & obj, shard * _shard);
 
     /// Get the nickname of this user
     /**
@@ -135,12 +136,9 @@ public:
     /**
     * @returns A string of the full username and discriminator
     */
-    std::string get_full_name()
-    {
-        return fmt::format("{}#{:0=4}", name, discriminator);
-    }
+    AEGIS_DECL std::string get_full_name() const noexcept;
 
-    std::unordered_map<int64_t, guild_info> guilds; /**< Map of snowflakes to member owned guild information */
+    std::map<int64_t, guild_info> guilds; /**< Map of snowflakes to member owned guild information */
     //std::pair<message_snowflake, time_sent>
     //std::queue<std::pair<snowflake, int64_t>> msghistory;
 
@@ -154,6 +152,19 @@ public:
     {
         guilds.erase(guild_id);
     }
+
+    /// Get the snowflake of this user
+    /**
+    * @returns A snowflake of the user
+    */
+    const snowflake get_id() const noexcept
+    {
+        return member_id;
+    }
 };
 
 }
+
+#if defined(AEGIS_HEADER_ONLY)
+# include "aegis/member.cpp"
+#endif // defined(AEGIS_HEADER_ONLY)

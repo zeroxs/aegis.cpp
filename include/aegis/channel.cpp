@@ -1,5 +1,5 @@
 //
-// channel_impl.hpp
+// channel.cpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -25,8 +25,17 @@
 
 #pragma once
 
-#include "config.hpp"
-#include "error.hpp"
+#include "aegis/config.hpp"
+#include <spdlog/fmt/fmt.h>
+#include <asio.hpp>
+#include "aegis/channel.hpp"
+#include "aegis/error.hpp"
+#include "aegis/guild.hpp"
+#include "aegis/shard.hpp"
+#include "aegis/error.hpp"
+#include "aegis/member.hpp"
+#include "aegis/aegis.hpp"
+#include "aegis/rest_reply.hpp"
 
 namespace aegiscpp
 {
@@ -34,46 +43,50 @@ namespace aegiscpp
 using json = nlohmann::json;
 using rest_limits::bucket_factory;
 
-inline guild & channel::get_guild()
+AEGIS_DECL guild & channel::get_guild() const
 {
+    if (_guild == nullptr)
+        throw aegiscpp::exception("Guild not set", make_error_code(error::guild_not_found));
     return *_guild;
 }
 
-inline permission channel::perms()
+AEGIS_DECL aegis & channel::get_bot() const noexcept
+{
+    return *_bot;
+}
+
+AEGIS_DECL permission channel::perms()
 {
     return permission(_guild->get_permissions(*_guild->self(), *this));
 }
 
 
-inline std::future<rest_reply> channel::post_task(std::string path, std::string method, std::string obj)
+AEGIS_DECL std::future<rest_reply> channel::post_task(std::string path, std::string method, std::string obj)
 {
-    auto task(std::make_shared<std::packaged_task<rest_reply()>>(
-        std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, channel_id, path, obj, method)));
+    auto task(std::make_shared<std::packaged_task<rest_reply()>>(std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, channel_id, path, obj, method)));
 
     auto fut = task->get_future();
-
-    get_guild().state->core->rest_service().post([task]() { (*task)(); });
+    
+    get_bot().rest_service().post([t = std::move(task)]() { (*t)(); });
 
     return fut;
 }
 
-inline std::future<rest_reply> channel::post_emoji_task(std::string path, std::string method, std::string obj)
+AEGIS_DECL std::future<rest_reply> channel::post_emoji_task(std::string path, std::string method, std::string obj)
 {
-    auto task(std::make_shared<std::packaged_task<rest_reply()>>(
-        std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &emojilimit, channel_id, path, obj, method)));
+    auto task(std::make_shared<std::packaged_task<rest_reply()>>(std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &emojilimit, channel_id, path, obj, method)));
 
     auto fut = task->get_future();
 
-    get_guild().state->core->rest_service().post([task]() { (*task)(); });
+    get_bot().rest_service().post([t = std::move(task)]() { (*t)(); });
 
     return fut;
 }
 
-inline void channel::load_with_guild(guild & _guild, const json & obj, shard * _shard)
+AEGIS_DECL void channel::load_with_guild(guild & _guild, const json & obj, shard * _shard)
 {
     snowflake channel_id = obj["id"];
     channel * _channel = _guild.get_channel_create(channel_id, _shard);
-    _channel->guild_id = _guild.guild_id;
 
     try
     {
@@ -119,11 +132,11 @@ inline void channel::load_with_guild(guild & _guild, const json & obj, shard * _
     }
     catch (std::exception&e)
     {
-        log->error("Shard#{} : Error processing channel[{}] of guild[{}] {}", _shard->get_id(), channel_id, _channel->guild_id, e.what());
+        throw aegiscpp::exception(fmt::format("Shard#{} : Error processing channel[{}] of guild[{}] {}", _shard->get_id(), channel_id, _channel->guild_id, e.what()), make_error_code(error::channel_error));
     }
 }
 
-inline rest_api channel::create_message(std::string content)
+AEGIS_DECL rest_api channel::create_message(std::string content)
 {
     std::error_code ec;
     if (_guild != nullptr)//probably a DM
@@ -135,57 +148,9 @@ inline rest_api channel::create_message(std::string content)
 
     auto fut = post_task(fmt::format("/channels/{}/messages", channel_id), "POST", obj.dump());
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
-
-//     auto task(std::make_shared<std::packaged_task<rest_reply()>>(
-//         std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, channel_id, fmt::format("/channels/{}/messages", channel_id), obj.dump(), "POST")));
-// 
-//     auto fut = task->get_future().share();
-// 
-//     get_guild().state->core->rest_scheduler->post([task]() { (*task)(); });
-// 
-//     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
-
-
-
-
-//     std::promise<rest_reply> prom;
-//     auto fut = prom.get_future();
-//     prom.set_value(rest_reply());
-// 
-//     get_guild().state->core->rest_scheduler->post([prom = std::move(prom), channel_id = channel_id, msg = obj.dump(), ratelimit = &ratelimit, method = "POST"s]() mutable
-//     {
-//         //std::promise<rest_reply> prom2;
-//         prom.set_value(std::move(ratelimit->do_async(channel_id, fmt::format("/channels/{}/messages", channel_id), msg, method)));
-//     });
-/*
-//     if (_guild != nullptr)//probably a DM
-//         if (!permission(_guild->get_permissions(*_guild->self(), *this)).can_send_messages())
-//             return { false, "Cannot send messages" };
-//     std::future<rest_reply> ad;
-
-    //std::packaged_task<rest_reply(snowflake, std::string, std::string, std::string)> task(std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-
-    json obj;
-    obj["content"] = content;
-
-    auto task(std::make_shared<std::packaged_task<rest_reply(snowflake, std::string, std::string, std::string)>>(std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, channel_id, fmt::format("/channels/{}/messages", channel_id), obj.dump(), "POST")));
-//     std::packaged_task<rest_reply(snowflake, std::string, std::string, std::string)> task([&, msg = obj.dump()]()
-//     {
-//         return ratelimit.do_async(channel_id, fmt::format("/channels/{}/messages", channel_id), msg, "POST");
-//     });
-// 
-//     std::function<rest_reply(void)> f = std::bind(std::forward(task));
-
-    auto fut = task->get_future();
-    //get_guild().state->core->rest_scheduler->post(std::bind(std::move(task), channel_id, fmt::format("/channels/{}/messages", channel_id), obj.dump(), "POST"));
-    get_guild().state->core->rest_scheduler->post([task, channel_id = channel_id, msg = obj.dump()]()
-    {
-        return (*task.get())(channel_id, fmt::format("/channels/{}/messages", channel_id), msg, "POST");
-    });
-    return fut;*/
 }
 
-inline rest_api channel::create_message_embed(std::string content, const json embed)
+AEGIS_DECL rest_api channel::create_message_embed(std::string content, const json embed)
 {
     std::error_code ec;
     if (_guild != nullptr)//probably a DM
@@ -201,7 +166,7 @@ inline rest_api channel::create_message_embed(std::string content, const json em
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::edit_message(snowflake message_id, std::string content)
+AEGIS_DECL rest_api channel::edit_message(snowflake message_id, std::string content)
 {
     json obj;
     obj["content"] = content;
@@ -209,7 +174,7 @@ inline rest_api channel::edit_message(snowflake message_id, std::string content)
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::edit_message_embed(snowflake message_id, std::string content, json embed)
+AEGIS_DECL rest_api channel::edit_message_embed(snowflake message_id, std::string content, json embed)
 {
     json obj;
     if (!content.empty())
@@ -222,7 +187,7 @@ inline rest_api channel::edit_message_embed(snowflake message_id, std::string co
 
 /**\todo can delete your own messages freely - provide separate function or keep history of messages
 */
-inline rest_api channel::delete_message(snowflake message_id)
+AEGIS_DECL rest_api channel::delete_message(snowflake message_id)
 {
     std::error_code ec;
     if (!perms().can_manage_messages())
@@ -232,7 +197,7 @@ inline rest_api channel::delete_message(snowflake message_id)
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::bulk_delete_message(std::vector<int64_t> messages)
+AEGIS_DECL rest_api channel::bulk_delete_message(std::vector<int64_t> messages)
 {
     std::error_code ec;
     if (!perms().can_manage_messages())
@@ -246,7 +211,7 @@ inline rest_api channel::bulk_delete_message(std::vector<int64_t> messages)
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
+AEGIS_DECL rest_api channel::modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
                                     std::optional<bool> nsfw, std::optional<int> bitrate, std::optional<int> user_limit,
                                     std::optional<std::vector<permission_overwrite>> permission_overwrites, std::optional<snowflake> parent_id)
 {
@@ -288,7 +253,7 @@ inline rest_api channel::modify_channel(std::optional<std::string> name, std::op
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::delete_channel()
+AEGIS_DECL rest_api channel::delete_channel()
 {
     std::error_code ec;
     if (!perms().can_manage_channels())
@@ -298,7 +263,7 @@ inline rest_api channel::delete_channel()
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::create_reaction(snowflake message_id, std::string emoji_text)
+AEGIS_DECL rest_api channel::create_reaction(snowflake message_id, std::string emoji_text)
 {
     std::error_code ec;
     if (!perms().can_add_reactions())
@@ -308,7 +273,7 @@ inline rest_api channel::create_reaction(snowflake message_id, std::string emoji
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::delete_own_reaction(snowflake message_id, std::string emoji_text)
+AEGIS_DECL rest_api channel::delete_own_reaction(snowflake message_id, std::string emoji_text)
 {
     std::error_code ec;
     if (!perms().can_add_reactions())
@@ -318,7 +283,7 @@ inline rest_api channel::delete_own_reaction(snowflake message_id, std::string e
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake member_id)
+AEGIS_DECL rest_api channel::delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake member_id)
 {
     std::error_code ec;
     if (!perms().can_manage_messages())
@@ -331,13 +296,13 @@ inline rest_api channel::delete_user_reaction(snowflake message_id, std::string 
 /**\todo Support query parameters
 *  \todo before[snowflake], after[snowflake], limit[int]
 */
-inline rest_api channel::get_reactions(snowflake message_id, std::string emoji_text)
+AEGIS_DECL rest_api channel::get_reactions(snowflake message_id, std::string emoji_text)
 {
     auto fut = post_task(fmt::format("/channels/{}/messages/{}/reactions/{}", channel_id, message_id, emoji_text), "GET");
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::delete_all_reactions(snowflake message_id)
+AEGIS_DECL rest_api channel::delete_all_reactions(snowflake message_id)
 {
     std::error_code ec;
     if (!perms().can_manage_messages())
@@ -347,7 +312,7 @@ inline rest_api channel::delete_all_reactions(snowflake message_id)
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::edit_channel_permissions(snowflake overwrite_id, int64_t allow, int64_t deny, std::string type)
+AEGIS_DECL rest_api channel::edit_channel_permissions(snowflake overwrite_id, int64_t allow, int64_t deny, std::string type)
 {
     std::error_code ec;
     if (!perms().can_manage_roles())
@@ -362,7 +327,7 @@ inline rest_api channel::edit_channel_permissions(snowflake overwrite_id, int64_
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::get_channel_invites()
+AEGIS_DECL rest_api channel::get_channel_invites()
 {
     std::error_code ec;
     if (!perms().can_manage_channels())
@@ -372,7 +337,7 @@ inline rest_api channel::get_channel_invites()
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique)
+AEGIS_DECL rest_api channel::create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique)
 {
     std::error_code ec;
     if (!perms().can_invite())
@@ -392,7 +357,7 @@ inline rest_api channel::create_channel_invite(std::optional<int> max_age, std::
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::delete_channel_permission(snowflake overwrite_id)
+AEGIS_DECL rest_api channel::delete_channel_permission(snowflake overwrite_id)
 {
     std::error_code ec;
     if (!perms().can_manage_roles())
@@ -402,18 +367,18 @@ inline rest_api channel::delete_channel_permission(snowflake overwrite_id)
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::trigger_typing_indicator()
+AEGIS_DECL rest_api channel::trigger_typing_indicator()
 {
     auto fut = post_task(fmt::format("/channels/{}/typing", channel_id));
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api channel::get_pinned_messages()
+AEGIS_DECL rest_api channel::get_pinned_messages()
 {
     return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
-inline rest_api channel::add_pinned_channel_message()
+AEGIS_DECL rest_api channel::add_pinned_channel_message()
 {
     std::error_code ec;
     if (!perms().can_manage_messages())
@@ -422,7 +387,7 @@ inline rest_api channel::add_pinned_channel_message()
     return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
-inline rest_api channel::delete_pinned_channel_message()
+AEGIS_DECL rest_api channel::delete_pinned_channel_message()
 {
     std::error_code ec;
     if (!perms().can_manage_messages())
@@ -433,14 +398,14 @@ inline rest_api channel::delete_pinned_channel_message()
 
 /**\todo Will likely move to aegis class
 */
-inline rest_api channel::group_dm_add_recipient()//will go in aegis::aegis
+AEGIS_DECL rest_api channel::group_dm_add_recipient()//will go in aegis::aegis
 {
     return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Will likely move to aegis class
 */
-inline rest_api channel::group_dm_remove_recipient()//will go in aegis::aegis
+AEGIS_DECL rest_api channel::group_dm_remove_recipient()//will go in aegis::aegis
 {
     return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }

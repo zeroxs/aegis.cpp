@@ -26,12 +26,23 @@
 #pragma once
 
 
-#include "config.hpp"
-#include "structs.hpp"
-
+#include "aegis/config.hpp"
+#include <chrono>
+#include <functional>
+#include <string>
+#include <queue>
+#include <map>
+#include <memory>
+#include <atomic>
+#include "aegis/rest_reply.hpp"
+#include <optional>
+#include <thread>
+#include <mutex>
 
 namespace aegiscpp
 {
+
+class aegis;
 
 namespace rest_limits
 {
@@ -64,17 +75,7 @@ public:
     /**
     * @returns true if bucket ratelimits permit a message to be sent
     */
-    bool can_async()
-    {
-        if (limit == 0)
-            return true;
-        if (remaining > 0)
-            return true;
-        int64_t time = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-        if (time < reset)
-            return false;
-        return true;
-    }
+    AEGIS_DECL const bool can_async() const noexcept;
 
     std::mutex m;
     std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_reply)>>> _queue;
@@ -103,39 +104,14 @@ public:
 
     }
 
-    rest_reply do_async(int64_t id, std::string path, std::string content, std::string method)
-    {
-        bucket * use_bucket = nullptr;
+    bucket_factory(const bucket_factory &) = delete;
+    bucket_factory(bucket_factory &&) = delete;
+    bucket_factory & operator=(const bucket_factory &) = delete;
 
-        auto bkt = _buckets.find(id);
-        if (bkt != _buckets.end())
-            use_bucket = bkt->second.get();
-        else
-            use_bucket = _buckets.emplace(id, std::make_unique<bucket>()).first->second.get();
-
-        {
-            auto log = spdlog::get("aegis");
-            std::scoped_lock<std::mutex> lock(use_bucket->m);
-            int64_t time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            log->debug("Checking if can work C:{} R:{}", time, use_bucket->reset);
-            while (!use_bucket->can_async())
-            {
-                time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                log->debug("Can't work. Waiting {}s", use_bucket->reset - time);
-                std::this_thread::sleep_for(std::chrono::seconds((use_bucket->reset - time) + 1));
-            }
-            log->debug("Working");
-            std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_reply)>>> query;
-            std::optional<rest_reply> reply(_call(path, content, method));
-            use_bucket->limit = reply->limit;
-            use_bucket->remaining = reply->remaining;
-            use_bucket->reset = reply->reset;
-            return reply.value_or(rest_reply());
-        }
-    }
+    AEGIS_DECL rest_reply do_async(int64_t id, std::string path, std::string content, std::string method);
 
 private:
-    std::unordered_map<int64_t, std::unique_ptr<bucket>> _buckets;
+    std::map<int64_t, std::unique_ptr<bucket>> _buckets;
     rest_call _call;
     std::atomic_int64_t & global_limit;
 };
@@ -170,15 +146,16 @@ public:
     {
     };
 
+    ratelimiter(const ratelimiter &) = delete;
+    ratelimiter(ratelimiter &&) = delete;
+    ratelimiter & operator=(const ratelimiter &) = delete;
+
     /// Add a new bucket factory
     /**
     * @see bucket_type
     * @param buckettype Enum value of bucket to add
     */
-    void add(const uint16_t buckettype)
-    {
-        _map.emplace(buckettype, std::make_unique<bucket_factory>(_call, global_limit));
-    }
+    AEGIS_DECL void add(const uint16_t buckettype);
 
     /// Get a bucket factory object
     /**
@@ -187,30 +164,23 @@ public:
     *
     * @returns Reference to a bucket_factory object
     */
-    bucket_factory & get(uint16_t buckettype) noexcept
-    {
-        auto bkt = _map.find(buckettype);
-        if (bkt != _map.end())
-            return *bkt->second.get();
-
-        return *_map.emplace(buckettype, std::make_unique<bucket_factory>(_call, global_limit)).first->second.get();
-    }
+    AEGIS_DECL bucket_factory & get(uint16_t buckettype) noexcept;
 
     /// Check if globally ratelimited
     /**
     * @returns true if globally ratelimited
     */
-    bool is_global()
+    const bool is_global() const noexcept
     {
         return global_limit > 0;
     }
 
 private:
-    friend aegis;
+    friend class aegis;
 
     std::atomic_int64_t global_limit; /**< Timestamp in seconds when global ratelimit expires */
 
-    std::unordered_map<uint16_t, std::unique_ptr<bucket_factory>> _map;
+    std::map<uint16_t, std::unique_ptr<bucket_factory>> _map;
     rest_call _call;
 
     //std::unordered_map<uint64_t, int> bucket;
@@ -220,3 +190,6 @@ private:
 
 }
 
+#if defined(AEGIS_HEADER_ONLY)
+# include "aegis/ratelimit.cpp"
+#endif // defined(AEGIS_HEADER_ONLY)

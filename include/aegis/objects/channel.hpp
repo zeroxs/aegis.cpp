@@ -28,7 +28,7 @@
 
 #include "../config.hpp"
 #include "../snowflake.hpp"
-#include "../structs.hpp"
+#include "../objects/user.hpp"
 #include "../objects/user.hpp"
 #include "permission_overwrite.hpp"
 #include "user.hpp"
@@ -40,6 +40,17 @@
 
 namespace aegiscpp
 {
+
+/**\todo Needs documentation
+*/
+enum channel_type
+{
+    Text = 0,
+    DirectMessage = 1,
+    Voice = 2,
+    GroupDirectMessage = 3,
+    Category = 4
+};
 
 /**\todo Needs documentation
 */

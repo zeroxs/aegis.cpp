@@ -41,7 +41,7 @@ int main(int argc, char * argv[])
         auto _channel = obj._channel;
         auto & _guild = _channel->get_guild();
 
-        snowflake channel_id = _channel->channel_id;
+        snowflake channel_id = _channel->get_id();
         snowflake message_id = obj.msg.get_id();
         std::string content{ obj.msg.get_content() };
 

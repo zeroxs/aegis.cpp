@@ -81,6 +81,18 @@ enum value
     /// Globally Rate Limited
     global_rate_limited,
 
+    /// Member related error
+    member_error,
+
+    /// Channel related error
+    channel_error,
+
+    /// Guild related error
+    guild_error,
+
+    /// Malformed Redis request
+    bad_redis_request,
+
     max_errors
 
 };
@@ -123,6 +135,14 @@ public:
                 return "Rate Limited";
             case error::global_rate_limited:
                 return "Globally Rate Limited";
+            case error::member_error:
+                return "Member related error";
+            case error::channel_error:
+                return "Channel related error";
+            case error::guild_error:
+                return "Guild related error";
+            case error::bad_redis_request:
+                return "Bad Redis request";
             default:
                 return "Unknown";
         }

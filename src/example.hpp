@@ -28,6 +28,8 @@
 #pragma once
 #include <future>
 #include <aegis.hpp>
+#include <aegis/shard.hpp>
+#include <nlohmann/json.hpp>
 
 namespace example_bot
 {

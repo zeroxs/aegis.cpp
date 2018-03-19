@@ -28,10 +28,16 @@
 
 #include "../config.hpp"
 #include "../snowflake.hpp"
-#include "../structs.hpp"
+#include "../channel.hpp"
+#include "../guild.hpp"
+#include "../shard.hpp"
+#include "../rest_reply.hpp"
 #include "attachment.hpp"
 #include "embed.hpp"
 #include "reaction.hpp"
+#include "user.hpp"
+#include "../shard.hpp"
+#include "../aegis.hpp"
 #include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
@@ -43,6 +49,20 @@ namespace aegiscpp
 
 class member;
 class channel;
+
+/**\todo Needs documentation
+*/
+enum message_type
+{
+    Default = 0,
+    RecipientAdd = 1,
+    RecipientRemove = 2,
+    Call = 3,
+    ChannelNameChange = 4,
+    ChannelIconChange = 5,
+    ChannelPinnedMessage = 6,
+    GuildMemberJoin = 7
+};
 
 /**\todo Needs documentation
 */
@@ -67,14 +87,14 @@ public:
         , _guild(nullptr)
         , _channel(nullptr)
     {
-        _channel = get_shard().state->core->get_channel(_channel_id).get();
+        _channel = get_shard().get_bot().get_channel(_channel_id);
 
         if (_channel != nullptr)
         {
             _guild_id = _channel->guild_id;
             if (_channel->_guild != nullptr)
             {
-                _guild = get_shard().state->core->get_guild(_guild_id);
+                _guild = get_shard().get_bot().get_guild(_guild_id);
                 _initialized = true;
                 return;
             }
@@ -84,26 +104,6 @@ public:
     explicit message()
     {
 
-    }
-
-    void init(shard * _shard)
-    {
-        if (_shard == nullptr)
-            return;
-        this->_shard = _shard;
-
-        _channel = get_shard().state->core->get_channel(_channel_id).get();
-
-        if (_channel != nullptr)
-        {
-            _guild_id = _channel->guild_id;
-            if (_channel->_guild != nullptr)
-            {
-                _guild = get_shard().state->core->get_guild(_guild_id);
-                _initialized = true;
-                return;
-            }
-        }
     }
 
     std::string timestamp; /**<\todo Needs documentation */
@@ -120,6 +120,16 @@ public:
     std::string webhook_id; /**<\todo Needs documentation */
     message_type type = Default; /**<\todo Needs documentation */
     user author; /**< author object for this message */
+
+    bool is_bot() const noexcept
+    {
+        return author.is_bot();
+    }
+
+    bool is_webhook() const noexcept
+    {
+        return author.is_webhook();
+    }
 
     bool is_valid() const noexcept
     {
@@ -143,7 +153,7 @@ public:
 
     shard & get_shard() const
     {
-        if (_shard == nullptr) throw std::runtime_error("message::get_shard() nullptr");// This should -never- throw
+        if (_shard == nullptr) throw aegiscpp::exception("message::get_shard() nullptr");// This should -never- throw
         return *_shard;
     }
 
@@ -151,8 +161,8 @@ public:
     {
         if (_guild == nullptr)
         {
-            if (_guild_id == 0) throw std::runtime_error("message::get_guild() id = 0");// This should -never- throw
-            return *get_shard().state->core->get_guild(_guild_id);
+            if (_guild_id == 0) throw aegiscpp::exception("message::get_guild() id = 0", make_error_code(error::guild_not_found));// This should -never- throw
+            return *get_shard().get_bot().get_guild(_guild_id);
         }
         return *_guild;
     }
@@ -161,24 +171,52 @@ public:
     {
         if (_channel == nullptr)
         {
-            if (_channel_id == 0) throw std::runtime_error("message::get_channel() id = 0");// This should -never- throw
+            if (_channel_id == 0) throw aegiscpp::exception("message::get_channel() id = 0", make_error_code(error::channel_not_found));// This should -never- throw
             return *get_guild().get_channel(_channel_id);
         }
         return *_channel;
     }
 
-    bool edit(const std::string & content) noexcept
+    rest_api edit(const std::string & content) noexcept
     {
         if (!_initialized)
-            return false;
-        get_channel().edit_message(_message_id, content);
-        return true;
+            return { make_error_code(error::general),std::make_optional<std::future<rest_reply>>() };
+        return get_channel().edit_message(_message_id, content);
+    }
+
+    rest_api create_reaction(const std::string & content) noexcept
+    {
+        if (!_initialized)
+            return { make_error_code(error::general),std::make_optional<std::future<rest_reply>>() };
+        return get_channel().create_reaction(_message_id, content);
+    }
+
+    rest_api delete_own_reaction(const std::string & content) noexcept
+    {
+        if (!_initialized)
+            return { make_error_code(error::general),std::make_optional<std::future<rest_reply>>() };
+        return get_channel().delete_own_reaction(_message_id, content);
+    }
+
+    rest_api delete_user_reaction(const std::string & content, snowflake member_id) noexcept
+    {
+        if (!_initialized)
+            return { make_error_code(error::general),std::make_optional<std::future<rest_reply>>() };
+        return get_channel().delete_user_reaction(_message_id, content, member_id);
+    }
+
+    rest_api delete_all_reactions() noexcept
+    {
+        if (!_initialized)
+            return { make_error_code(error::general),std::make_optional<std::future<rest_reply>>() };
+        return get_channel().delete_all_reactions(_message_id);
     }
 
     /// Obtain the relevant snowflakes related to this message
     /**
-     * Returns { _channel_id, _guild_id, _message_id }
-     * @returns std::tuple<snowflake, snowflake, snowflake>
+     * Returns { _channel_id, _guild_id, _message_id, _author_id }
+     * Some may be 0 such as guild for a DM or author for a webhook
+     * @returns std::tuple<snowflake, snowflake, snowflake, snowflake>
      */ 
     std::tuple<snowflake, snowflake, snowflake, snowflake> get_related_ids()
     {
@@ -188,14 +226,37 @@ public:
 private:
     friend void from_json(const nlohmann::json& j, message& m);
     friend void to_json(nlohmann::json& j, const message& m);
+    friend class aegis;
+
+    void init(shard * _shard)
+    {
+        if (_shard == nullptr)
+            return;
+        this->_shard = _shard;
+
+        _channel = get_shard().get_bot().get_channel(_channel_id);
+
+        if (_channel != nullptr)
+        {
+            _guild_id = _channel->get_guild_id();
+            if (_channel->_guild != nullptr)
+            {
+                _guild = get_shard().get_bot().get_guild(_guild_id);
+                _initialized = true;
+                return;
+            }
+        }
+    }
+
     bool _initialized = false;
     shard * _shard = nullptr;/**< Pointer to the shard that handled this message */
     std::string _content;/**< String of the message contents */
-    guild * _guild = nullptr;/**< Pointer to the guild this message belongs to */
     channel * _channel = nullptr;/**< Pointer to the channel this message belongs to */
+    guild * _guild = nullptr;/**< Pointer to the guild this message belongs to */
+    member * _member = nullptr;/**< Pointer to the author of this message */
+    snowflake _message_id = 0; /**< snowflake of the message */
     snowflake _channel_id = 0; /**< snowflake of the channel this message belongs to */
     snowflake _guild_id = 0; /**< snowflake of the guild this message belongs to */
-    snowflake _message_id = 0; /**< snowflake of the message */
     snowflake _author_id = 0; /**< snowflake of the author of this message */
 };
 

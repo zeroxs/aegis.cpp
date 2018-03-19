@@ -26,8 +26,13 @@
 #pragma once
 
 
-#include "config.hpp"
-#include "objects/permission_overwrite.hpp"
+#include "aegis/config.hpp"
+#include <future>
+#include "aegis/ratelimit.hpp"
+#include "aegis/permission.hpp"
+#include "aegis/snowflake.hpp"
+#include "aegis/objects/permission_overwrite.hpp"
+#include "aegis/objects/channel.hpp"
 
 
 namespace aegiscpp
@@ -40,6 +45,7 @@ using rest_limits::bucket_factory;
 
 class guild;
 class shard;
+
 
 /**
 * Channel class for performing actions pertaining to the specified channel
@@ -57,57 +63,38 @@ public:
     *
     * @param emoji Reference to bucket factory that manages ratelimits for emoji messages
     */
-    explicit channel(snowflake channel_id, snowflake guild_id, bucket_factory & ratelimit, bucket_factory & emojilimit)
+    explicit channel(snowflake channel_id, snowflake guild_id, aegis * b, bucket_factory & ratelimit, bucket_factory & emojilimit)
         : channel_id(channel_id)
         , guild_id(guild_id)
         , ratelimit(ratelimit)
         , emojilimit(emojilimit)
-        , log(spdlog::get("aegis"))
         , _guild(nullptr)
+        , _bot(b)
     {
 
     }
-
-    snowflake channel_id; /**< snowflake of this channel */
-    snowflake guild_id; /**< snowflake of the guild this channel belongs to */
-    bucket_factory & ratelimit; /**< Bucket factory for tracking the regular ratelimits */
-    bucket_factory & emojilimit; /**< Bucket factory for tracking emoji actions */
-    std::shared_ptr<spdlog::logger> log; /**< shared_ptr to global logger */
-
-    guild * _guild; /**< Pointer to the guild this channel belongs to */
-
-    snowflake last_message_id = 0; /**< Snowflake of the last message sent in this channel */
-    std::string name; /**< String of the name of this channel */
-    std::string topic; /**< String of the topic of this channel */
-    uint32_t position = 0; /**< Position of channel in guild channel list */
-    channel_type type = channel_type::Text; /**< Type of channel */
-
-    uint16_t bitrate = 0; /**< Bitrate of voice channel */
-    uint16_t user_limit = 0; /**< User limit of voice channel */
-
-    std::unordered_map<int64_t, permission_overwrite> overrides; /**< Snowflake map of user/role to permission overrides */
 
     /// Get a reference to the guild object this channel belongs to
     /**
     * @returns Reference to the guild this channel belongs to
     */
-    guild & get_guild();
+    AEGIS_DECL guild & get_guild() const;
 
-    permission perms();
+    AEGIS_DECL permission perms();
 
-    std::future<rest_reply> post_task(std::string path, std::string method = "POST", std::string obj = {});
+    AEGIS_DECL std::future<rest_reply> post_task(std::string path, std::string method = "POST", std::string obj = {});
 
-    std::future<rest_reply> post_emoji_task(std::string path, std::string method = "POST", std::string obj = {});
+    AEGIS_DECL std::future<rest_reply> post_emoji_task(std::string path, std::string method = "POST", std::string obj = {});
 
     /// Load this channel with guild data
     /**
     * @param _guild Reference of the guild this channel belongs to
     *
-    * @param obj Const reference to the object conmtaining this channel object
+    * @param obj Const reference to the object containing this channel object
     *
     * @param _shard Pointer to the shard that tracks this channel
     */
-    void load_with_guild(guild & _guild, const json & obj, shard * _shard);
+    AEGIS_DECL void load_with_guild(guild & _guild, const json & obj, shard * _shard);
 
     /// Send message to this channel
     /**
@@ -115,7 +102,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api create_message(std::string content);
+    AEGIS_DECL rest_api create_message(std::string content);
 
     /// Send an embed message to this channel
     /**
@@ -125,7 +112,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api create_message_embed(std::string content, const json embed);
+    AEGIS_DECL rest_api create_message_embed(std::string content, const json embed);
 
     /// Edit a message in this channel
     /**
@@ -135,7 +122,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api edit_message(snowflake message_id, std::string content);
+    AEGIS_DECL rest_api edit_message(snowflake message_id, std::string content);
 
     /// Edit an embed message in this channel
     /**
@@ -147,7 +134,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api edit_message_embed(snowflake message_id, std::string content, json embed);
+    AEGIS_DECL rest_api edit_message_embed(snowflake message_id, std::string content, json embed);
 
     /// Delete a message
     /**
@@ -155,7 +142,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api delete_message(snowflake message_id);
+    AEGIS_DECL rest_api delete_message(snowflake message_id);
 
     /// Delete up to 100 messages at once
     /**
@@ -163,7 +150,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api bulk_delete_message(std::vector<int64_t> messages);
+    AEGIS_DECL rest_api bulk_delete_message(std::vector<int64_t> messages);
 
     /// Modify this channel (all parameters optional)
     /**
@@ -185,7 +172,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
+    AEGIS_DECL rest_api modify_channel(std::optional<std::string> name, std::optional<int> position, std::optional<std::string> topic,
                         std::optional<bool> nsfw, std::optional<int> bitrate, std::optional<int> user_limit,
                         std::optional<std::vector<permission_overwrite>> permission_overwrites, std::optional<snowflake> parent_id);
 
@@ -195,7 +182,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api delete_channel();
+    AEGIS_DECL rest_api delete_channel();
 
     /// Add new reaction on message
     /**
@@ -207,7 +194,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api create_reaction(snowflake message_id, std::string emoji_text);
+    AEGIS_DECL rest_api create_reaction(snowflake message_id, std::string emoji_text);
 
     /// Delete own reaction on message
     /**
@@ -219,7 +206,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api delete_own_reaction(snowflake message_id, std::string emoji_text);
+    AEGIS_DECL rest_api delete_own_reaction(snowflake message_id, std::string emoji_text);
 
     /// Delete specified member reaction on message
     /**
@@ -233,7 +220,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake member_id);
+    AEGIS_DECL rest_api delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake member_id);
 
     /// Get all reactions for this message
     /**
@@ -245,7 +232,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api get_reactions(snowflake message_id, std::string emoji_text);
+    AEGIS_DECL rest_api get_reactions(snowflake message_id, std::string emoji_text);
 
     /// Delete all reactions by message
     /**
@@ -255,7 +242,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api delete_all_reactions(snowflake message_id);
+    AEGIS_DECL rest_api delete_all_reactions(snowflake message_id);
 
     /// Edit channel permission override
     /**
@@ -271,7 +258,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api edit_channel_permissions(snowflake overwrite_id, int64_t allow, int64_t deny, std::string type);
+    AEGIS_DECL rest_api edit_channel_permissions(snowflake overwrite_id, int64_t allow, int64_t deny, std::string type);
 
     /// Get active channel invites
     /**
@@ -279,7 +266,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api get_channel_invites();
+    AEGIS_DECL rest_api get_channel_invites();
 
     /// Create a new channel invite
     /**
@@ -295,7 +282,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique);
+    AEGIS_DECL rest_api create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique);
 
     /// Delete channel permission override
     /**
@@ -305,7 +292,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api delete_channel_permission(snowflake overwrite_id);
+    AEGIS_DECL rest_api delete_channel_permission(snowflake overwrite_id);
 
     /// Trigger typing indicator in channel (lasts 10 seconds)
     /**
@@ -313,7 +300,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api trigger_typing_indicator();
+    AEGIS_DECL rest_api trigger_typing_indicator();
 
     /// Get pinned messages in channel
     /**
@@ -321,7 +308,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api get_pinned_messages();
+    AEGIS_DECL rest_api get_pinned_messages();
 
     /// Add a pinned message in channel
     /**
@@ -329,7 +316,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api add_pinned_channel_message();
+    AEGIS_DECL rest_api add_pinned_channel_message();
 
     /// Delete a pinned message in channel
     /**
@@ -337,7 +324,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api delete_pinned_channel_message();
+    AEGIS_DECL rest_api delete_pinned_channel_message();
 
     /// Add member to a group direct message
     /**
@@ -345,7 +332,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api group_dm_add_recipient();
+    AEGIS_DECL rest_api group_dm_add_recipient();
 
     /// Remove member from a group direct message
     /**
@@ -353,9 +340,65 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    rest_api group_dm_remove_recipient();
+    AEGIS_DECL rest_api group_dm_remove_recipient();
 
+    /// Get the type of this channel
+    /**
+    * @returns An channel_type enum for this channel
+    */
+    const channel_type get_type() const noexcept
+    {
+        return type;
+    }
+
+    /// Gets the Bot object
+    /**
+    * @see aegis
+    *
+    * @returns Aegis main object
+    */
+    AEGIS_DECL aegis & get_bot() const noexcept;
+
+    /// Get the snowflake of this channel
+    /**
+    * @returns A snowflake of the channel
+    */
+    const snowflake get_id() const noexcept
+    {
+        return channel_id;
+    }
+
+    /// Get the snowflake of this channel's guild
+    /**
+    * @returns A snowflake of this channel's guild
+    */
+    const snowflake get_guild_id() const noexcept
+    {
+        return guild_id;
+    }
+
+private:
+    friend class aegis;
+    friend class guild;
+    friend class message;
+    snowflake channel_id; /**< snowflake of this channel */
+    snowflake guild_id; /**< snowflake of the guild this channel belongs to */
+    bucket_factory & ratelimit; /**< Bucket factory for tracking the regular ratelimits */
+    bucket_factory & emojilimit; /**< Bucket factory for tracking emoji actions */
+    guild * _guild; /**< Pointer to the guild this channel belongs to */
+    snowflake last_message_id = 0; /**< Snowflake of the last message sent in this channel */
+    std::string name; /**< String of the name of this channel */
+    std::string topic; /**< String of the topic of this channel */
+    uint32_t position = 0; /**< Position of channel in guild channel list */
+    channel_type type = channel_type::Text; /**< Type of channel */
+    uint16_t bitrate = 0; /**< Bit rate of voice channel */
+    uint16_t user_limit = 0; /**< User limit of voice channel */
+    std::map<int64_t, permission_overwrite> overrides; /**< Snowflake map of user/role to permission overrides */
+    aegis * _bot;
 };
 
 }
 
+#if defined(AEGIS_HEADER_ONLY)
+# include "aegis/channel.cpp"
+#endif // defined(AEGIS_HEADER_ONLY)

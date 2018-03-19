@@ -1,5 +1,5 @@
 ﻿//
-// aegis_impl.hpp
+// aegis.cpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -25,48 +25,257 @@
 
 #pragma once
 
-#include "config.hpp"
-#include "objects/message.hpp"
-#include "events/message_create.hpp"
-#include "events/typing_start.hpp"
+#include "aegis/config.hpp"
+#include "aegis/objects/message.hpp"
+#include "aegis/events/message_create.hpp"
+#include "aegis/events/typing_start.hpp"
+#include "aegis/guild.hpp"
+#include "aegis/channel.hpp"
+#include "aegis/member.hpp"
+#include "aegis/ratelimit.hpp"
+#include <zstr.hpp>
+
+
+#pragma region websocket events
+#include "aegis/events/ready.hpp"
+#include "aegis/events/resumed.hpp"
+#include "aegis/events/typing_start.hpp"
+#include "aegis/events/message_create.hpp"
+#include "aegis/events/presence_update.hpp"
+#include "aegis/events/channel_create.hpp"
+#include "aegis/events/channel_delete.hpp"
+#include "aegis/events/channel_pins_update.hpp"
+#include "aegis/events/channel_update.hpp"
+#include "aegis/events/guild_ban_add.hpp"
+#include "aegis/events/guild_ban_remove.hpp"
+#include "aegis/events/guild_create.hpp"
+#include "aegis/events/guild_delete.hpp"
+#include "aegis/events/guild_emojis_update.hpp"
+#include "aegis/events/guild_integrations_update.hpp"
+#include "aegis/events/guild_member_add.hpp"
+#include "aegis/events/guild_member_remove.hpp"
+#include "aegis/events/guild_member_update.hpp"
+#include "aegis/events/guild_members_chunk.hpp"
+#include "aegis/events/guild_role_create.hpp"
+#include "aegis/events/guild_role_delete.hpp"
+#include "aegis/events/guild_role_update.hpp"
+#include "aegis/events/guild_update.hpp"
+#include "aegis/events/message_delete.hpp"
+#include "aegis/events/message_delete_bulk.hpp"
+#include "aegis/events/message_reaction_add.hpp"
+#include "aegis/events/message_reaction_remove.hpp"
+#include "aegis/events/message_reaction_remove_all.hpp"
+#include "aegis/events/message_update.hpp"
+#include "aegis/events/user_update.hpp"
+#include "aegis/events/voice_server_update.hpp"
+#include "aegis/events/voice_state_update.hpp"
+#include "aegis/events/webhooks_update.hpp"
+#pragma endregion websocket events
+
+
 
 namespace aegiscpp
 {
 
-using namespace std::chrono;
-namespace spd = spdlog;
-using json = nlohmann::json;
-using namespace std::literals;
 
-inline void aegis::process_ready(const json & d, shard * _shard)
+AEGIS_DECL int64_t aegis::get_member_count() const noexcept
+{
+    int64_t count = 0;
+    for (auto & kv : guilds)
+        count += kv.second->get_member_count();
+    return count;
+}
+
+AEGIS_DECL member * aegis::get_member(snowflake id) const noexcept
+{
+    auto it = members.find(id);
+    if (it == members.end())
+        return nullptr;
+    return it->second.get();
+}
+
+AEGIS_DECL channel * aegis::get_channel(snowflake id) const noexcept
+{
+    auto it = channels.find(id);
+    if (it == channels.end())
+        return nullptr;
+    return it->second.get();
+}
+
+AEGIS_DECL guild * aegis::get_guild(snowflake id) const noexcept
+{
+    auto it = guilds.find(id);
+    if (it == guilds.end())
+        return nullptr;
+    return it->second.get();
+}
+
+AEGIS_DECL member * aegis::get_member_create(snowflake id) noexcept
+{
+    auto it = members.find(id);
+    if (it == members.end())
+    {
+        auto g = std::make_unique<member>(id);
+        auto ptr = g.get();
+        members.emplace(id, std::move(g));
+        return ptr;
+    }
+    return it->second.get();
+}
+
+AEGIS_DECL channel * aegis::get_channel_create(snowflake id) noexcept
+{
+    auto it = channels.find(id);
+    if (it == channels.end())
+    {
+        auto g = std::make_unique<channel>(id, 0, this, ratelimit().get(rest_limits::bucket_type::CHANNEL), ratelimit().get(rest_limits::bucket_type::EMOJI));
+        auto ptr = g.get();
+        channels.emplace(id, std::move(g));
+        return ptr;
+    }
+    return it->second.get();
+}
+
+AEGIS_DECL guild * aegis::get_guild_create(snowflake id, shard * _shard) noexcept
+{
+    auto it = guilds.find(id);
+    if (it == guilds.end())
+    {
+        auto g = std::make_unique<guild>(_shard->shardid, id, this, ratelimit().get(rest_limits::bucket_type::GUILD));
+        auto ptr = g.get();
+        guilds.emplace(id, std::move(g));
+        return ptr;
+    }
+    return it->second.get();
+}
+
+AEGIS_DECL member & aegis::get_member_by_any(snowflake id) const
+{
+    auto it = members.find(id);
+    if (it == members.end())
+        throw aegiscpp::exception(make_error_code(error::member_not_found));
+    return *it->second;
+}
+
+AEGIS_DECL void aegis::setup_callbacks(shard * _shard)
+{
+    _shard->connection->set_message_handler(std::bind(&aegis::on_message, this, std::placeholders::_1, std::placeholders::_2, _shard));
+    _shard->connection->set_open_handler(std::bind(&aegis::on_connect, this, std::placeholders::_1, _shard));
+    _shard->connection->set_close_handler(std::bind(&aegis::on_close, this, std::placeholders::_1, _shard));
+}
+
+AEGIS_DECL void aegis::shutdown()
+{
+    set_state(Shutdown);
+    rest_work.reset();
+    websocket_o.stop_perpetual();
+    websocket_o.stop();
+    for (auto & _shard : shards)
+    {
+        _shard->connection_state = Shutdown;
+        _shard->connection->close(1001, "");
+        _shard->do_reset();
+    }
+}
+
+
+AEGIS_DECL void aegis::create_websocket(std::error_code & ec)
+{
+    log->info("Creating websocket");
+    if (status != Ready)
+    {
+        log->critical("aegis::websocketcreate() called in the wrong state");
+        ec = make_error_code(error::invalid_state);
+        return;
+    }
+
+    std::optional<rest_reply> res;
+
+    if (!selfbot)
+        res = get("/gateway/bot");
+    else
+        res = get("/gateway");
+
+    if (!res.has_value() || res->content.size() == 0)
+    {
+        ec = make_error_code(error::get_gateway);
+        return;
+    }
+
+    if (res->reply_code == 401)
+    {
+        ec = make_error_code(error::invalid_token);
+        return;
+    }
+
+
+    json ret = json::parse(res->content);
+    if (ret.count("message"))
+    {
+        if (ret["message"] == "401: Unauthorized")
+        {
+            ec = make_error_code(error::invalid_token);
+            return;
+        }
+    }
+
+    if (!selfbot)
+    {
+        if (force_shard_count)
+        {
+            shard_max_count = force_shard_count;
+            log->info("Forcing Shard count by config: {}", shard_max_count);
+        }
+        else
+        {
+            shard_max_count = ret["shards"];
+            log->info("Shard count: {}", shard_max_count);
+        }
+    }
+    else
+        shard_max_count = 1;
+
+    ws_gateway = ret["url"];
+    gateway_url = ws_gateway + "/?encoding=json&v=6";
+
+    websocket_o.clear_access_channels(websocketpp::log::alevel::all);
+
+    websocket_o.set_tls_init_handler([](websocketpp::connection_hdl)
+    {
+        return websocketpp::lib::make_shared<asio::ssl::context>(asio::ssl::context::tlsv1);
+    });
+
+    ec = std::error_code();
+}
+
+AEGIS_DECL void aegis::process_ready(const json & d, shard * _shard)
 {
     _shard->session_id = d["session_id"];
 
     const json & guilds = d["guilds"];
 
-    if (self() == nullptr)
+    if (_self == nullptr)
     {
         const json & userdata = d["user"];
         discriminator = static_cast<uint16_t>(std::stoi(userdata["discriminator"].get<std::string>()));
         member_id = userdata["id"];
         username = userdata["username"];
         mfa_enabled = userdata["mfa_enabled"];
-        if (mention.size() == 0)
+        if (mention.empty())
         {
             std::stringstream ss;
             ss << "<@" << member_id << ">";
             mention = ss.str();
         }
 
-        auto ptr = std::make_shared<member>(member_id);
-        members.emplace(member_id, ptr);
-        ptr->member_id = member_id;
-        ptr->isbot = true;
-        ptr->name = username;
-        ptr->discriminator = discriminator;
-        ptr->status = member::Online;
-        state.user.id = member_id;
-        state.user.name = username;
+        auto m = std::make_unique<member>(member_id);
+        _self = m.get();
+        members.emplace(member_id, std::move(m));
+        _self->member_id = member_id;
+        _self->isbot = true;
+        _self->name = username;
+        _self->discriminator = discriminator;
+        _self->status = member::Online;
     }
 
     for (auto & guildobj : guilds)
@@ -90,7 +299,7 @@ inline void aegis::process_ready(const json & d, shard * _shard)
     }
 }
 
-inline void aegis::channel_create(const json & obj, shard * _shard)
+AEGIS_DECL void aegis::channel_create(const json & obj, shard * _shard)
 {
     snowflake channel_id = obj["id"];
     auto _channel = get_channel_create(channel_id);
@@ -100,7 +309,6 @@ inline void aegis::channel_create(const json & obj, shard * _shard)
         //log->debug("Shard#{} : Channel[{}] created for DirectMessage", _shard.m_shardid, channel_id);
         if (obj.count("name") && !obj["name"].is_null()) _channel->name = obj["name"];
         _channel->type = static_cast<channel_type>(obj["type"].get<int>());// 0 = text, 2 = voice
-        _channel->guild_id = 0;
 
         if (!obj["last_message_id"].is_null()) _channel->last_message_id = obj["last_message_id"];
 
@@ -114,7 +322,7 @@ inline void aegis::channel_create(const json & obj, shard * _shard)
     }
 }
 
-inline void aegis::keep_alive(const asio::error_code & ec, const int ms, shard * _shard)
+AEGIS_DECL void aegis::keep_alive(const asio::error_code & ec, const int ms, shard * _shard)
 {
     if (ec != asio::error::operation_aborted)
     {
@@ -156,22 +364,22 @@ inline void aegis::keep_alive(const asio::error_code & ec, const int ms, shard *
     }
 }
 
-inline std::optional<rest_reply> aegis::get(std::string_view path)
+AEGIS_DECL std::optional<rest_reply> aegis::get(std::string_view path)
 {
     return call(path, "", "GET");
 }
 
-inline std::optional<rest_reply> aegis::get(std::string_view path, std::string_view content)
+AEGIS_DECL std::optional<rest_reply> aegis::get(std::string_view path, std::string_view content)
 {
     return call(path, content, "GET");
 }
 
-inline std::optional<rest_reply> aegis::post(std::string_view path, std::string_view content)
+AEGIS_DECL std::optional<rest_reply> aegis::post(std::string_view path, std::string_view content)
 {
     return call(path, content, "POST");
 }
 
-inline std::optional<rest_reply> aegis::call(std::string_view path, std::string_view content, std::string_view method)
+AEGIS_DECL std::optional<rest_reply> aegis::call(std::string_view path, std::string_view content, std::string_view method)
 {
     try
     {
@@ -228,23 +436,23 @@ inline std::optional<rest_reply> aegis::call(std::string_view path, std::string_
         int32_t remaining = 0;
         int64_t reset = 0;
         int32_t retry = 0;
-        if (auto test = hresponse.get_header("X-RateLimit-Limit"); test.size() > 0)
+        if (auto test = hresponse.get_header("X-RateLimit-Limit"); !test.empty())
             limit = std::stoul(test);
-        if (auto test = hresponse.get_header("X-RateLimit-Remaining"); test.size() > 0)
+        if (auto test = hresponse.get_header("X-RateLimit-Remaining"); !test.empty())
             remaining = std::stoul(test);
-        if (auto test = hresponse.get_header("X-RateLimit-Reset"); test.size() > 0)
+        if (auto test = hresponse.get_header("X-RateLimit-Reset"); !test.empty())
             reset = std::stoul(test);
-        if (auto test = hresponse.get_header("Retry-After"); test.size() > 0)
+        if (auto test = hresponse.get_header("Retry-After"); !test.empty())
             retry = std::stoul(test);
 
         log->debug("status: {} limit: {} remaining: {} reset: {}", hresponse.get_status_code(), limit, remaining, reset);
 
-        bool global = !(hresponse.get_header("X-RateLimit-Global").size() == 0);
+        bool global = !(hresponse.get_header("X-RateLimit-Global").empty());
 
         //TODO: check this with OpenSSL 1.1.0+ 
         if (error != asio::error::eof && error != asio::ssl::error::stream_truncated)
             throw asio::system_error(error);
-        return { { hresponse.get_status_code(), global, limit, remaining, reset, retry, hresponse.get_body().size() > 0 ? hresponse.get_body() : "" } };
+        return { { hresponse.get_status_code(), global, limit, remaining, reset, retry, !hresponse.get_body().empty() ? hresponse.get_body() : "" } };
     }
     catch (std::exception& e)
     {
@@ -253,7 +461,7 @@ inline std::optional<rest_reply> aegis::call(std::string_view path, std::string_
     return {};
 }
 
-inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, shard * _shard)
+AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, shard * _shard)
 {
     std::string payload = msg->get_payload();
 
@@ -297,6 +505,8 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
         {
             if (!result["t"].is_null())
             {
+                ++message_count[result["t"].get<std::string>()];
+
                 if (result["t"] == "PRESENCE_UPDATE")
                 {
                     _shard->counters.presence_changes++;
@@ -338,8 +548,8 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
                     auto _channel = get_channel(result["d"]["channel_id"]);
                     auto _member = get_member(result["d"]["user_id"]);
                     typing_start obj;
-                    obj._channel = _channel.get();
-                    obj._member = _member.get();
+                    obj._channel = _channel;
+                    obj._member = _member;
                     obj.timestamp = result["d"]["timestamp"];
                     obj.bot = this;
                     obj._shard = _shard;
@@ -352,13 +562,10 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
                 {
                     _shard->counters.messages++;
 
-                    message_create obj;
-                    obj._member = get_member(result["d"]["author"]["id"]).get();
-                    obj._channel = get_channel(result["d"]["channel_id"]).get();
-                    obj.msg = result["d"];
+                    member * _m;
+
+                    message_create obj{ result["d"], _shard, this, get_channel(result["d"]["channel_id"]), get_member(result["d"]["author"]["id"]) };
                     obj.msg.init(_shard);
-                    obj.bot = this;
-                    obj._shard = _shard;
 
                     if (obj._channel == nullptr)
                         //catch this
@@ -380,8 +587,8 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
                 {
                     message_update obj;
                     if (result["d"].count("author") && result["d"]["author"].count("id"))
-                        obj._member = get_member(result["d"]["author"]["id"]).get();
-                    obj._channel = get_channel(result["d"]["channel_id"]).get();
+                        obj._member = get_member(result["d"]["author"]["id"]);
+                    obj._channel = get_channel(result["d"]["channel_id"]);
                     obj.msg = result["d"];
                     obj.bot = this;
                     obj._shard = _shard;
@@ -491,7 +698,7 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
                 else if (cmd == "MESSAGE_DELETE")
                 {
                     message_delete obj;
-                    obj._channel = get_channel(result["d"]["channel_id"]).get();
+                    obj._channel = get_channel(result["d"]["channel_id"]);
                     obj.bot = this;
                     obj.message_id = result["d"]["id"];
                     obj.channel_id = result["d"]["channel_id"];
@@ -522,7 +729,7 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
                     //if (!user["email"].is_null()) _member.m_email = user["email"];
 
                     user_update obj;
-                    obj._member = _member.get();
+                    obj._member = _member;
                     obj.bot = this;
                     obj._shard = _shard;
                     obj = result["d"];
@@ -709,7 +916,7 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
                         snowflake member_id = result["d"]["user"]["id"];
                         snowflake guild_id = result["d"]["guild_id"];
 
-                        auto _member = get_member_create(member_id).get();
+                        auto _member = get_member_create(member_id);
                         auto _guild = get_guild(guild_id);
 
                         if (_member == nullptr)
@@ -749,7 +956,7 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
                             return;
                         auto & members = result["d"]["members"];
                         //log->info("GUILD_MEMBERS_CHUNK: {1} {0}", guild_id, members.size());
-                        if (members.size())
+                        if (!members.empty())
                         {
                             for (auto & _member : members)
                             {
@@ -903,7 +1110,7 @@ inline void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, 
 
 }
 
-inline void aegis::on_connect(websocketpp::connection_hdl hdl, shard * _shard)
+AEGIS_DECL void aegis::on_connect(websocketpp::connection_hdl hdl, shard * _shard)
 {
     log->info("Connection established");
     _shard->connection_state = Connecting;
@@ -980,7 +1187,7 @@ inline void aegis::on_connect(websocketpp::connection_hdl hdl, shard * _shard)
     }
 }
 
-inline void aegis::on_close(websocketpp::connection_hdl hdl, shard * _shard)
+AEGIS_DECL void aegis::on_close(websocketpp::connection_hdl hdl, shard * _shard)
 {
     log->info("Connection closed");
     if (status == Shutdown)
@@ -990,7 +1197,7 @@ inline void aegis::on_close(websocketpp::connection_hdl hdl, shard * _shard)
     _shard->start_reconnect();
 }
 
-inline void aegis::status_thread()
+AEGIS_DECL void aegis::status_thread()
 {
     using namespace std::chrono_literals;
     int64_t checktime;
@@ -1049,7 +1256,7 @@ inline void aegis::status_thread()
     }
 }
 
-inline void aegis::debug_trace(shard * _shard)
+AEGIS_DECL void aegis::debug_trace(shard * _shard)
 {
     fmt::MemoryWriter w;
 
@@ -1073,7 +1280,7 @@ inline void aegis::debug_trace(shard * _shard)
     log->critical(w.str());
 }
 
-inline void aegis::rich_presence(const json & obj, shard * _shard)
+AEGIS_DECL void aegis::rich_presence(const json & obj, shard * _shard)
 {
     json rp = {
         { "op", 3 },
@@ -1089,6 +1296,30 @@ inline void aegis::rich_presence(const json & obj, shard * _shard)
     log->trace("Shard#{}: Rich Presence send: {}", _shard->shardid, obj.dump());
     if (_shard->connection)
         _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
+}
+
+AEGIS_DECL void aegis::connect(std::error_code & ec) noexcept
+{
+    log->info("Websocket[s] connecting");
+
+    for (uint32_t k = 0; k < shard_max_count; ++k)
+    {
+        auto _shard = std::make_unique<shard>(this);
+        _shard->connection = websocket_o.get_connection(gateway_url, ec);
+        _shard->shardid = k;
+
+        if (ec)
+        {
+            log->error("Websocket connection failed: {0}", ec.message());
+            return;
+        }
+
+        setup_callbacks(_shard.get());
+
+        websocket_o.connect(_shard->connection);
+        shards.push_back(std::move(_shard));
+        std::this_thread::sleep_for(6000ms);
+    }
 }
 
 }

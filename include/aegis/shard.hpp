@@ -26,42 +26,51 @@
 #pragma once
 
 
-#include "config.hpp"
+#include "aegis/config.hpp"
+#include <memory>
+#include <map>
 #include <string>
 #include <chrono>
-#include <sstream>
-
+#include <stdint.h>
+#include <websocketpp/config/asio_client.hpp>
+#include <websocketpp/common/connection_hdl.hpp>
+#include <websocketpp/client.hpp>
 
 namespace aegiscpp
 {
+
+class aegis;
+class member;
+
 
 class shard
 {
 public:
     /// Constructs a shard object for connecting to the websocket gateway and tracking timers
     /// 
-    shard()
+    shard(aegis * b)
         : heartbeattime(0)
         , heartbeat_ack(0)
         , lastheartbeat(0)
         , lastwsevent(0)
         , last_status_time(0)
         , sequence(0)
-        , connection_state(shard_status::Uninitialized)
+        , connection_state(bot_status::Uninitialized)
+        , _bot(b)
     {
     }
 
     /// Resets connection, heartbeat, and timer related objects to allow reconnection
     /// 
-    void do_reset();
+    AEGIS_DECL void do_reset() noexcept;
 
-    void start_reconnect();
+    AEGIS_DECL void start_reconnect() noexcept;
 
     /// Get this shard's websocket message sequence counter
     /**
     * @returns Sequence counter specific to this shard
     */
-    const int64_t get_sequence() const
+    const int64_t get_sequence() const noexcept
     {
         return sequence;
     }
@@ -72,10 +81,26 @@ public:
     *
     * @returns Shard id
     */
-    const int16_t get_id() const
+    const int16_t get_id() const noexcept
     {
         return shardid;
     }
+
+    /// Gets the Bot object
+    /**
+    * @see aegis
+    *
+    * @returns Aegis main object
+    */
+    AEGIS_DECL aegis & get_bot() const noexcept;
+
+    /// Gets the member object representing the bot
+    /**
+    * @see member
+    *
+    * @returns The bot's own member object
+    */
+    AEGIS_DECL member * get_bot_user() const noexcept;
 
     /// Contains counters of valued objects and events
     /**
@@ -95,8 +120,6 @@ public:
 
     websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr connection;
 
-    bot_state * state;
-
 private:
     friend aegis;
 
@@ -111,9 +134,14 @@ private:
     int64_t last_status_time;
     int64_t sequence;
     int16_t shardid;
-    shard_status connection_state;
+    bot_status connection_state;
     // Websocket++ socket connection
     websocketpp::connection_hdl hdl;
+    aegis * _bot;
 };
 
 }
+
+#if defined(AEGIS_HEADER_ONLY)
+# include "aegis/shard.cpp"
+#endif // defined(AEGIS_HEADER_ONLY)

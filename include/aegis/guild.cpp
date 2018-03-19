@@ -1,5 +1,5 @@
 //
-// guild_impl.hpp
+// guild.cpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -28,6 +28,13 @@
 
 #include "aegis/config.hpp"
 #include <string>
+#include <memory>
+#include "guild.hpp"
+#include "member.hpp"
+#include "shard.hpp"
+#include "channel.hpp"
+#include "error.hpp"
+#include "aegis.hpp"
 
 namespace aegiscpp
 {
@@ -36,44 +43,51 @@ using rest_limits::bucket_factory;
 using json = nlohmann::json;
 
 
-
-inline guild::~guild()
+AEGIS_DECL guild::~guild()
 {
     for (auto & v : members)
         v.second->leave(guild_id);
 }
 
-inline void guild::add_member(std::shared_ptr<member> _member) noexcept
+AEGIS_DECL member * guild::self() const
+{
+    return get_bot().self();
+}
+
+AEGIS_DECL aegis & guild::get_bot() const noexcept
+{
+    return *_bot;
+}
+
+AEGIS_DECL void guild::add_member(member * _member) noexcept
 {
     members.emplace(_member->member_id, _member);
 }
 
-inline void guild::remove_member(snowflake member_id) noexcept
+AEGIS_DECL void guild::remove_member(snowflake member_id) noexcept
 {
     auto _member = members.find(member_id);
     if (_member == members.end())
     {
-        state->core->log->error("Unable to remove member [{}] from guild [{}] (does not exist)", member_id, guild_id);
+        get_bot().log->error("Unable to remove member [{}] from guild [{}] (does not exist)", member_id, guild_id);
         return;
     }
     _member->second->guilds.erase(guild_id);
-    members.erase(_member);
+    members.erase(member_id);
 }
 
-inline bool guild::member_has_role(snowflake member_id, snowflake role_id)
+AEGIS_DECL bool guild::member_has_role(snowflake member_id, snowflake role_id) const noexcept
 {
     auto _member = get_member(member_id);
     if (_member == nullptr)
         return false;
-    for (auto r : _member->guilds[guild_id].roles)
-    {
-        if (role_snowflakes[role_id] == r)
-            return true;
-    }
+    auto it = _member->guilds[guild_id].roles.find(role_id);
+    if (it != _member->guilds[guild_id].roles.end())
+        return true;
     return false;
 }
 
-inline void guild::load(const json & obj, shard * _shard) noexcept
+AEGIS_DECL void guild::load(const json & obj, shard * _shard) noexcept
 {
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
     snowflake g_id = obj["id"];
@@ -81,7 +95,7 @@ inline void guild::load(const json & obj, shard * _shard) noexcept
     shard_id = _shard->get_id();
     is_init = false;
 
-    aegis & bot = *state->core;
+    aegis & bot = get_bot();
     try
     {
         json voice_states;
@@ -187,27 +201,26 @@ inline void guild::load(const json & obj, shard * _shard) noexcept
     }
     catch (std::exception&e)
     {
-        log->error("Shard#{} : Error processing guild[{}] {}", _shard->get_id(), g_id, (std::string)e.what());
+        get_bot().log->error("Shard#{} : Error processing guild[{}] {}", _shard->get_id(), g_id, (std::string)e.what());
     }
 }
 
-inline channel * guild::get_channel_create(snowflake id, shard * _shard) noexcept
+AEGIS_DECL channel * guild::get_channel_create(snowflake id, shard * _shard) noexcept
 {
     auto _channel = get_channel(id);
     if (_channel == nullptr)
     {
-        auto g = std::make_shared<channel>(id, guild_id, state->core->ratelimit().get(rest_limits::bucket_type::CHANNEL), state->core->ratelimit().get(rest_limits::bucket_type::EMOJI));
+        auto g = std::make_unique<channel>(id, guild_id, _bot, get_bot().ratelimit().get(rest_limits::bucket_type::CHANNEL), get_bot().ratelimit().get(rest_limits::bucket_type::EMOJI));
         auto ptr = g.get();
-        channels.emplace(id, g);
-        state->core->channels.emplace(id, g);
-        g->_guild = this;
-        ptr->channel_id = id;
+        channels.emplace(id, ptr);
+        get_bot().channels.emplace(id, std::move(g));
+        ptr->_guild = this;
         return ptr;
     }
     return _channel;
 }
 
-inline void guild::load_presence(const json & obj) noexcept
+AEGIS_DECL void guild::load_presence(const json & obj) noexcept
 {
     json user = obj["user"];
 
@@ -231,17 +244,16 @@ inline void guild::load_presence(const json & obj) noexcept
     return;
 }
 
-inline void guild::load_role(const json & obj) noexcept
+AEGIS_DECL void guild::load_role(const json & obj) noexcept
 {
     snowflake role_id = obj["id"];
     if (!roles.count(role_id))
     {
         auto r = std::make_unique<role>();
         //auto & _role = *r.get();
-        roles.emplace(role_id, std::move(r));
-        role_snowflakes.emplace(role_id, role_offset++);
+        roles.emplace(role_id, role());
     }
-    auto & _role = *roles[role_id].get();
+    auto & _role = roles[role_id];
     _role.role_id = role_id;
     _role.hoist = obj["hoist"];
     _role.managed = obj["managed"];
@@ -253,35 +265,35 @@ inline void guild::load_role(const json & obj) noexcept
     return;
 }
 
-inline const snowflake guild::get_owner() const noexcept
+AEGIS_DECL const snowflake guild::get_owner() const noexcept
 {
     return owner_id;
 }
 
-inline channel * guild::get_channel(snowflake id) const noexcept
+AEGIS_DECL channel * guild::get_channel(snowflake id) const noexcept
 {
     auto it = channels.find(id);
     if (it == channels.end())
         return nullptr;
-    return it->second.get();
+    return it->second;
 }
 
-inline member * guild::get_member(snowflake member_id) const noexcept
+AEGIS_DECL member * guild::get_member(snowflake member_id) const noexcept
 {
     auto m = members.find(member_id);
     if (m == members.end())
         return nullptr;
-    return m->second.get();
+    return m->second;
 }
 
-inline permission guild::get_permissions(snowflake member_id, snowflake channel_id) noexcept
+AEGIS_DECL permission guild::get_permissions(snowflake member_id, snowflake channel_id) noexcept
 {
     if (!members.count(member_id) || !channels.count(channel_id))
         return 0;
     return get_permissions(*members[guild_id], *channels[channel_id]);
 }
 
-inline permission guild::get_permissions(member & _member, channel & _channel) noexcept
+AEGIS_DECL permission guild::get_permissions(member & _member, channel & _channel) noexcept
 {
     int64_t _base_permissions = base_permissions(_member);
 
@@ -290,7 +302,7 @@ inline permission guild::get_permissions(member & _member, channel & _channel) n
     return _base_permissions | _compute_overwrites;
 }
 
-inline int64_t guild::base_permissions(member & _member) const noexcept
+AEGIS_DECL int64_t guild::base_permissions(member & _member) const noexcept
 {
     if (owner_id == _member.member_id)
         return ~0;
@@ -307,7 +319,7 @@ inline int64_t guild::base_permissions(member & _member) const noexcept
     return permissions;
 }
 
-inline int64_t guild::compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const noexcept
+AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const noexcept
 {
     if (_base_permissions & 0x8)//admin
         return ~0;
@@ -348,24 +360,15 @@ inline int64_t guild::compute_overwrites(int64_t _base_permissions, member & _me
     return permissions;
 }
 
-inline role & guild::get_role(uint64_t r) const
+AEGIS_DECL const role & guild::get_role(int64_t r) const
 {
     for (auto & kv : roles)
-        if (kv.second->role_id == r)
-            return *kv.second.get();
+        if (kv.second.role_id == r)
+            return kv.second;
     throw std::out_of_range(fmt::format("G: {} role:[{}] does not exist", guild_id, r));
 }
 
-inline role & guild::get_role(uint16_t r) const
-{
-    int64_t realrole_id = get_role_snowflake(r);
-    for (auto & kv : roles)
-        if (kv.second->role_id == realrole_id)
-            return *kv.second.get();
-    throw std::out_of_range(fmt::format("G: {} role:[{}] shorthand:[{}] does not exist", guild_id, realrole_id, r));
-}
-
-inline void guild::remove_role(snowflake role_id)
+AEGIS_DECL void guild::remove_role(snowflake role_id)
 {
     for (auto & kv : members)
     {
@@ -376,54 +379,55 @@ inline void guild::remove_role(snowflake role_id)
             if (rl == role_id)
             {
                 g.value()->roles.erase(std::find(g.value()->roles.begin(), g.value()->roles.end(), role_id));
+                break;
             }
         }
     }
     roles.erase(role_id);
 }
 
-inline int32_t guild::get_member_count() const noexcept
+AEGIS_DECL int32_t guild::get_member_count() const noexcept
 {
     return static_cast<int32_t>(members.size());
 }
 
 
-inline std::future<rest_reply> guild::post_task(std::string path, std::string method, std::string obj)
+AEGIS_DECL std::future<rest_reply> guild::post_task(std::string path, std::string method, std::string obj)
 {
     auto task(std::make_shared<std::packaged_task<rest_reply()>>(
         std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, guild_id, path, obj, method)));
 
     auto fut = task->get_future();
 
-    state->core->rest_service().post([task]() { (*task)(); });
+    get_bot().rest_service().post([task]() { (*task)(); });
 
     return fut;
 }
 
 /**\todo Incomplete. Signature may change. Location may change.
 */
-inline rest_api guild::create_guild()
+AEGIS_DECL rest_api guild::create_guild()
 {
     //TODO: 
-    return { make_error_code(error::not_implemented),std::make_optional<std::future<rest_reply>>() };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Incomplete. Signature may change. Location may change.
 */
-inline rest_api guild::get_guild()
+AEGIS_DECL rest_api guild::get_guild()
 {
     //TODO: 
-    return { make_error_code(error::not_implemented),std::make_optional<std::future<rest_reply>>() };
+    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
-inline rest_api guild::modify_guild(std::optional<std::string> name, std::optional<std::string> voice_region, std::optional<int> verification_level,
+AEGIS_DECL rest_api guild::modify_guild(std::optional<std::string> name, std::optional<std::string> voice_region, std::optional<int> verification_level,
                     std::optional<int> default_message_notifications, std::optional<snowflake> afk_channel_id, std::optional<int> afk_timeout,
                     std::optional<std::string> icon, std::optional<snowflake> owner_id, std::optional<std::string> splash)
 {
     if (!perms().can_manage_guild())
-        return { make_error_code(error::no_permission),std::make_optional<std::future<rest_reply>>() };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
     if (owner_id.has_value() && owner_id != self()->member_id)
-        return { make_error_code(error::no_permission),std::make_optional<std::future<rest_reply>>() };
+        return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj;
     if (name.has_value())
@@ -450,7 +454,7 @@ inline rest_api guild::modify_guild(std::optional<std::string> name, std::option
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api guild::delete_guild()
+AEGIS_DECL rest_api guild::delete_guild()
 {
     //requires OWNER
     if (owner_id != self()->member_id)
@@ -460,7 +464,7 @@ inline rest_api guild::delete_guild()
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api guild::create_text_channel(std::string name, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites)
+AEGIS_DECL rest_api guild::create_text_channel(std::string name, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites)
 {
     //requires MANAGE_CHANNELS
     if (!perms().can_manage_channels())
@@ -479,7 +483,7 @@ inline rest_api guild::create_text_channel(std::string name, int64_t parent_id, 
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api guild::create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites)
+AEGIS_DECL rest_api guild::create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites)
 {
     if (!perms().can_manage_channels())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -497,7 +501,7 @@ inline rest_api guild::create_voice_channel(std::string name, int32_t bitrate, i
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api guild::create_category_channel(std::string name, int64_t parent_id, std::vector<permission_overwrite> permission_overwrites)
+AEGIS_DECL rest_api guild::create_category_channel(std::string name, int64_t parent_id, std::vector<permission_overwrite> permission_overwrites)
 {
     if (!perms().can_manage_channels())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -517,7 +521,7 @@ inline rest_api guild::create_category_channel(std::string name, int64_t parent_
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::modify_channel_positions()
+AEGIS_DECL rest_api guild::modify_channel_positions()
 {
     if (!perms().can_manage_channels())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -525,7 +529,7 @@ inline rest_api guild::modify_channel_positions()
     return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
-inline rest_api guild::modify_guild_member(snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
+AEGIS_DECL rest_api guild::modify_guild_member(snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
                             std::optional<bool> deaf, std::optional<std::vector<snowflake>> roles, std::optional<snowflake> channel_id)
 {
     permission perm = perms();
@@ -566,7 +570,7 @@ inline rest_api guild::modify_guild_member(snowflake user_id, std::optional<std:
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api guild::modify_my_nick(std::string newname)
+AEGIS_DECL rest_api guild::modify_my_nick(std::string newname)
 {
     if (!perms().can_change_name())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -576,7 +580,7 @@ inline rest_api guild::modify_my_nick(std::string newname)
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api guild::add_guild_member_role(snowflake user_id, snowflake role_id)
+AEGIS_DECL rest_api guild::add_guild_member_role(snowflake user_id, snowflake role_id)
 {
     if (!perms().can_manage_roles())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -585,7 +589,7 @@ inline rest_api guild::add_guild_member_role(snowflake user_id, snowflake role_i
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api guild::remove_guild_member_role(snowflake user_id, snowflake role_id)
+AEGIS_DECL rest_api guild::remove_guild_member_role(snowflake user_id, snowflake role_id)
 {
     if (!perms().can_manage_roles())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -594,7 +598,7 @@ inline rest_api guild::remove_guild_member_role(snowflake user_id, snowflake rol
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api guild::remove_guild_member(snowflake user_id)
+AEGIS_DECL rest_api guild::remove_guild_member(snowflake user_id)
 {
     if (!perms().can_kick())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -603,7 +607,7 @@ inline rest_api guild::remove_guild_member(snowflake user_id)
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api guild::create_guild_ban(snowflake user_id, int8_t delete_message_days)
+AEGIS_DECL rest_api guild::create_guild_ban(snowflake user_id, int8_t delete_message_days)
 {
     if (!perms().can_ban())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -613,7 +617,7 @@ inline rest_api guild::create_guild_ban(snowflake user_id, int8_t delete_message
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-inline rest_api guild::remove_guild_ban(snowflake user_id)
+AEGIS_DECL rest_api guild::remove_guild_ban(snowflake user_id)
 {
     if (!perms().can_ban())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -624,7 +628,7 @@ inline rest_api guild::remove_guild_ban(snowflake user_id)
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::create_guild_role()
+AEGIS_DECL rest_api guild::create_guild_role()
 {
     if (!perms().can_manage_roles())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -634,7 +638,7 @@ inline rest_api guild::create_guild_role()
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::modify_guild_role_positions()
+AEGIS_DECL rest_api guild::modify_guild_role_positions()
 {
     if (!perms().can_manage_roles())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -644,7 +648,7 @@ inline rest_api guild::modify_guild_role_positions()
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::modify_guild_role(snowflake role_id)
+AEGIS_DECL rest_api guild::modify_guild_role(snowflake role_id)
 {
     if (!perms().can_manage_roles())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -654,7 +658,7 @@ inline rest_api guild::modify_guild_role(snowflake role_id)
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::delete_guild_role(snowflake role_id)
+AEGIS_DECL rest_api guild::delete_guild_role(snowflake role_id)
 {
     if (!perms().can_manage_roles())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -664,7 +668,7 @@ inline rest_api guild::delete_guild_role(snowflake role_id)
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::get_guild_prune_count(int16_t days)
+AEGIS_DECL rest_api guild::get_guild_prune_count(int16_t days)
 {
     if (!perms().can_kick())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -674,7 +678,7 @@ inline rest_api guild::get_guild_prune_count(int16_t days)
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::begin_guild_prune(int16_t days)
+AEGIS_DECL rest_api guild::begin_guild_prune(int16_t days)
 {
     if (!perms().can_kick())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -684,7 +688,7 @@ inline rest_api guild::begin_guild_prune(int16_t days)
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::get_guild_invites()
+AEGIS_DECL rest_api guild::get_guild_invites()
 {
     if (!perms().can_manage_guild())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -694,7 +698,7 @@ inline rest_api guild::get_guild_invites()
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::get_guild_integrations()
+AEGIS_DECL rest_api guild::get_guild_integrations()
 {
     if (!perms().can_manage_guild())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -704,7 +708,7 @@ inline rest_api guild::get_guild_integrations()
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::create_guild_integration()
+AEGIS_DECL rest_api guild::create_guild_integration()
 {
     if (!perms().can_manage_guild())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -714,7 +718,7 @@ inline rest_api guild::create_guild_integration()
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::modify_guild_integration()
+AEGIS_DECL rest_api guild::modify_guild_integration()
 {
     if (!perms().can_manage_guild())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -724,7 +728,7 @@ inline rest_api guild::modify_guild_integration()
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::delete_guild_integration()
+AEGIS_DECL rest_api guild::delete_guild_integration()
 {
     if (!perms().can_manage_guild())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -734,7 +738,7 @@ inline rest_api guild::delete_guild_integration()
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::sync_guild_integration()
+AEGIS_DECL rest_api guild::sync_guild_integration()
 {
     if (!perms().can_manage_guild())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -744,7 +748,7 @@ inline rest_api guild::sync_guild_integration()
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::get_guild_embed()
+AEGIS_DECL rest_api guild::get_guild_embed()
 {
     if (!perms().can_manage_guild())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -754,7 +758,7 @@ inline rest_api guild::get_guild_embed()
 
 /**\todo Incomplete. Signature may change
 */
-inline rest_api guild::modify_guild_embed()
+AEGIS_DECL rest_api guild::modify_guild_embed()
 {
     if (!perms().can_manage_guild())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
@@ -762,7 +766,7 @@ inline rest_api guild::modify_guild_embed()
     return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
-inline rest_api guild::leave()
+AEGIS_DECL rest_api guild::leave()
 {
     auto fut = post_task(fmt::format("/users/@me/guilds/{0}", guild_id), "DELETE");
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };

@@ -1,5 +1,5 @@
 //
-// state_c.hpp
+// src.cpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -23,32 +23,29 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#pragma once
+#define AEGIS_SOURCE
 
-#include "aegis/config.hpp"
-#include "snowflake.hpp"
-#include <string>
+#include <aegis/config.hpp>
 
-namespace aegiscpp
-{
+#if defined(AEGIS_HEADER_ONLY)
+# error Do not compile Aegis library source with AEGIS_HEADER_ONLY defined
+#endif
 
-class aegis;
+#include <zstr.hpp>
 
-/**\todo Needs documentation
-*/
-struct bot_state
-{
-    /**\todo Needs documentation
-    */
-    struct user_c
-    {
-        snowflake id;
-        std::string name;
-    };
+#include <aegis/error.hpp>
 
-    user_c user;
-    aegis * core;
+#include <aegis/config.hpp>
+#include <aegis/common.hpp>
+#include <aegis/utility.hpp>
 
-};
+#include <aegis/snowflake.hpp>
+#include <aegis/role.hpp>
+#include <aegis/error.hpp>
 
-}
+#include <aegis/aegis.cpp>
+#include <aegis/guild.cpp>
+#include <aegis/channel.cpp>
+#include <aegis/shard.cpp>
+#include <aegis/member.cpp>
+#include <aegis/ratelimit.cpp>

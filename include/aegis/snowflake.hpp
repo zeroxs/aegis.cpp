@@ -28,6 +28,9 @@
 
 
 #include "aegis/config.hpp"
+#include <nlohmann/json.hpp>
+#include <stdint.h>
+#include <string>
 
 
 namespace aegiscpp
@@ -44,11 +47,6 @@ public:
     operator int64_t() const noexcept
     {
         return snowflake_id;
-    }
-
-    operator std::string() const noexcept
-    {
-        return std::to_string(snowflake_id);
     }
 
     constexpr int64_t get() const noexcept

@@ -59,12 +59,17 @@ namespace aegiscpp
 {
 using namespace std::string_view_literals;
 
-template <typename F, typename... Ts>
-inline auto async(F&& f, Ts&&... params)
+/**\todo Needs documentation
+*/
+enum bot_status
 {
-    return std::async(std::launch::async, std::forward<F>(f),
-                      std::forward<Ts>(params)...);
-}
+    Uninitialized = 0,
+    Ready = 1,
+    Connecting = 2,
+    Online = 3,
+    Reconnecting = 4,
+    Shutdown = 5
+};
 
 namespace utility
 {

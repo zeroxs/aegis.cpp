@@ -27,6 +27,7 @@
 
 
 #include "aegis/config.hpp"
+#include <stdint.h>
 
 
 namespace aegiscpp
@@ -37,40 +38,40 @@ namespace aegiscpp
 class permission
 {
 public:
-    permission() {}
+    permission() = default;
     permission(int64_t allow) : _allow_permissions(allow) {}
     //permission(const permission&) = delete;
 
-    int64_t get_allow_perms() { return _allow_permissions; }
-    bool can_invite() { return (_allow_permissions & 0x1) > 0; }
-    bool can_kick() { return (_allow_permissions & 0x2) > 0; }
-    bool can_ban() { return (_allow_permissions & 0x4) > 0; }
-    bool is_admin() { return (_allow_permissions & 0x8) > 0; }
-    bool can_manage_channels() { return (_allow_permissions & 0x10) > 0; }
-    bool can_manage_guild() { return (_allow_permissions & 0x20) > 0; }
-    bool can_add_reactions() { return (_allow_permissions & 0x40) > 0; }
-    bool can_view_audit_logs() { return (_allow_permissions & 0x80) > 0; }
-    bool can_read_messages() { return (_allow_permissions & 0x400) > 0; }
-    bool can_send_messages() { return (_allow_permissions & 0x800) > 0; }
-    bool can_tts() { return (_allow_permissions & 0x1000) > 0; }
-    bool can_manage_messages() { return (_allow_permissions & 0x2000) > 0; }
-    bool can_embed() { return (_allow_permissions & 0x4000) > 0; }
-    bool can_attach_files() { return (_allow_permissions & 0x8000) > 0; }
-    bool can_read_history() { return (_allow_permissions & 0x10000) > 0; }
-    bool can_mention_everyone() { return (_allow_permissions & 0x20000) > 0; }
-    bool can_external_emoiji() { return (_allow_permissions & 0x40000) > 0; }
-    bool can_change_name() { return (_allow_permissions & 0x4000000) > 0; }
-    bool can_manage_names() { return (_allow_permissions & 0x8000000) > 0; }
-    bool can_manage_roles() { return (_allow_permissions & 0x10000000) > 0; }
-    bool can_manage_webhooks() { return (_allow_permissions & 0x20000000) > 0; }
-    bool can_manage_emojis() { return (_allow_permissions & 0x40000000) > 0; }
+    int64_t get_allow_perms() const noexcept { return _allow_permissions; }
+    bool can_invite() const noexcept { return (_allow_permissions & 0x1) > 0; }
+    bool can_kick() const noexcept { return (_allow_permissions & 0x2) > 0; }
+    bool can_ban() const noexcept { return (_allow_permissions & 0x4) > 0; }
+    bool is_admin() const noexcept { return (_allow_permissions & 0x8) > 0; }
+    bool can_manage_channels() const noexcept { return (_allow_permissions & 0x10) > 0; }
+    bool can_manage_guild() const noexcept { return (_allow_permissions & 0x20) > 0; }
+    bool can_add_reactions() const noexcept { return (_allow_permissions & 0x40) > 0; }
+    bool can_view_audit_logs() const noexcept { return (_allow_permissions & 0x80) > 0; }
+    bool can_read_messages() const noexcept { return (_allow_permissions & 0x400) > 0; }
+    bool can_send_messages() const noexcept { return (_allow_permissions & 0x800) > 0; }
+    bool can_tts() const noexcept { return (_allow_permissions & 0x1000) > 0; }
+    bool can_manage_messages() const noexcept { return (_allow_permissions & 0x2000) > 0; }
+    bool can_embed() const noexcept { return (_allow_permissions & 0x4000) > 0; }
+    bool can_attach_files() const noexcept { return (_allow_permissions & 0x8000) > 0; }
+    bool can_read_history() const noexcept { return (_allow_permissions & 0x10000) > 0; }
+    bool can_mention_everyone() const noexcept { return (_allow_permissions & 0x20000) > 0; }
+    bool can_external_emoiji() const noexcept { return (_allow_permissions & 0x40000) > 0; }
+    bool can_change_name() const noexcept { return (_allow_permissions & 0x4000000) > 0; }
+    bool can_manage_names() const noexcept { return (_allow_permissions & 0x8000000) > 0; }
+    bool can_manage_roles() const noexcept { return (_allow_permissions & 0x10000000) > 0; }
+    bool can_manage_webhooks() const noexcept { return (_allow_permissions & 0x20000000) > 0; }
+    bool can_manage_emojis() const noexcept { return (_allow_permissions & 0x40000000) > 0; }
 
-    bool can_voice_connect() { return (_allow_permissions & 0x100000) > 0; }
-    bool can_voice_mute() { return (_allow_permissions & 0x400000) > 0; }
-    bool can_voice_speak() { return (_allow_permissions & 0x200000) > 0; }
-    bool can_voice_deafen() { return (_allow_permissions & 0x800000) > 0; }
-    bool can_voice_move() { return (_allow_permissions & 0x1000000) > 0; }
-    bool can_voice_activity() { return (_allow_permissions & 0x2000000) > 0; }
+    bool can_voice_connect() const noexcept { return (_allow_permissions & 0x100000) > 0; }
+    bool can_voice_mute() const noexcept { return (_allow_permissions & 0x400000) > 0; }
+    bool can_voice_speak() const noexcept { return (_allow_permissions & 0x200000) > 0; }
+    bool can_voice_deafen() const noexcept { return (_allow_permissions & 0x800000) > 0; }
+    bool can_voice_move() const noexcept { return (_allow_permissions & 0x1000000) > 0; }
+    bool can_voice_activity() const noexcept { return (_allow_permissions & 0x2000000) > 0; }
 
 private:
     int64_t _allow_permissions = 0;

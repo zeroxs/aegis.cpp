@@ -28,7 +28,6 @@
 
 #include "../config.hpp"
 #include "../snowflake.hpp"
-#include "../structs.hpp"
 #include "attachment.hpp"
 #include "embed.hpp"
 #include "reaction.hpp"
@@ -48,6 +47,16 @@ class channel;
 */
 struct user
 {
+    bool is_bot() const noexcept
+    {
+        return isbot;
+    }
+
+    bool is_webhook() const noexcept
+    {
+        return (isbot) && (discriminator == "0" || discriminator == "0000");
+    }
+
     snowflake user_id; /**<\todo Needs documentation */
     snowflake guild_id; /**<\todo Needs documentation */
     std::string username; /**<\todo Needs documentation */
@@ -56,7 +65,6 @@ struct user
     bool isbot = false; /**<\todo Needs documentation */
     bool mfa_enabled = false; /**<\todo Needs documentation */
     bool verified = false; /**<\todo Needs documentation */
-    std::string email; /**<\todo Needs documentation */
 };
 
 /**\todo Needs documentation

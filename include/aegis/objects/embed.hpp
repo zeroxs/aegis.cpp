@@ -34,6 +34,7 @@
 #include "thumbnail.hpp"
 #include "video.hpp"
 #include "provider.hpp"
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 

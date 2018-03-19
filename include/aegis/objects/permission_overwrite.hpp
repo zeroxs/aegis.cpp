@@ -28,7 +28,6 @@
 
 #include "../config.hpp"
 #include "../snowflake.hpp"
-#include "../structs.hpp"
 #include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
@@ -40,6 +39,15 @@ namespace aegiscpp
 
 class member;
 class channel;
+
+
+/**\todo Needs documentation
+*/
+enum overwrite_type
+{
+    User,
+    Role
+};
 
 /**\todo Needs documentation
 */

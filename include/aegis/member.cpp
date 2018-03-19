@@ -1,5 +1,5 @@
 //
-// member_impl.hpp
+// member.cpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -26,21 +26,26 @@
 #pragma once
 
 
-#include "config.hpp"
-#include "guild.hpp"
-#include "shard.hpp"
+#include "aegis/config.hpp"
+#include "aegis/member.hpp"
+#include "aegis/guild.hpp"
+#include "aegis/shard.hpp"
+#include "aegis/error.hpp"
 #include <string>
 #include <optional>
 #include <queue>
+#include <spdlog/fmt/fmt.h>
 
 
 namespace aegiscpp
 {
 
+AEGIS_DECL std::string member::get_full_name() const noexcept
+{
+    return fmt::format("{}#{:0=4}", name, discriminator);
+}
 
-
-
-inline void member::load(guild * _guild, const json & obj, shard * _shard)
+AEGIS_DECL void member::load(guild * _guild, const json & obj, shard * _shard)
 {
     const json & user = obj["user"];
     snowflake member_id = user["id"];
@@ -56,7 +61,7 @@ inline void member::load(guild * _guild, const json & obj, shard * _shard)
         if (_guild == nullptr)
             return;
 
-        _guild->add_member(shared_from_this());
+        _guild->add_member(this);
 
         auto g_info = get_guild_info(_guild->guild_id);
         if (!g_info.has_value())
@@ -82,11 +87,11 @@ inline void member::load(guild * _guild, const json & obj, shard * _shard)
                 guilds.emplace(_guild->guild_id, member::guild_info());
             }
             g_info.value()->roles.clear();
-            g_info.value()->roles.push_back(_guild->role_snowflakes[_guild->guild_id]);//default everyone role
+            g_info.value()->roles.emplace(_guild->guild_id);//default everyone role
 
             json roles = obj["roles"];
             for (auto & r : roles)
-                g_info.value()->roles.push_back(_guild->role_snowflakes[std::stoll(r.get<std::string>())]);
+                g_info.value()->roles.emplace(std::stoll(r.get<std::string>()));
         }
 
         if (obj.count("nick") && !obj["nick"].is_null())
@@ -95,9 +100,9 @@ inline void member::load(guild * _guild, const json & obj, shard * _shard)
     catch (std::exception&e)
     {
         if (_guild != nullptr)
-            _guild->state->core->log->error("Shard#{} : Error processing member[{}] of guild[{}] {}", _shard->get_id(), member_id, _guild->guild_id, e.what());
+            _guild->get_bot().log->error("Shard#{} : Error processing member[{}] of guild[{}] {}", _shard->get_id(), member_id, _guild->get_id(), e.what());
         else
-            spdlog::get("aegis")->error("Shard#{} : Error processing member[{}] {}", _shard->get_id(), member_id, e.what());
+            throw aegiscpp::exception(fmt::format("Shard#{} : Error processing member[{}] {}", _shard->get_id(), member_id, e.what()), make_error_code(error::member_error));
     }
 }
 
