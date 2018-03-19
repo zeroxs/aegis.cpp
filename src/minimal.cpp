@@ -31,23 +31,25 @@ int main(int argc, char * argv[])
 {
     aegis bot("TOKEN");
     callbacks cbs;
-    cbs.i_message_create = [&](message_create obj) -> bool
+    cbs.i_message_create = [&](message_create obj)
     {
-        std::string username;
-        auto _member = obj._member;
-        if (_member != nullptr)
-            username = obj._member->name;
+        const auto &[channel_id, guild_id, message_id, member_id] = obj.msg.get_related_ids();
+       
+        if (obj.msg.is_bot() || !obj.has_member() || !obj.has_channel())
+            return;
 
-        auto _channel = obj._channel;
-        auto & _guild = _channel->get_guild();
+        auto & _member = obj.get_member();
+        auto & _channel = obj.get_channel();
+        auto & _guild = _channel.get_guild();
 
-        snowflake channel_id = _channel->get_id();
-        snowflake message_id = obj.msg.get_id();
+        auto & username = _member.name;
+
         std::string content{ obj.msg.get_content() };
 
         if (content == "Hi")
             bot.get_channel(channel_id)->create_message("Hello back");
-        return true;
+
+        return;
     };
     bot._callbacks = cbs;
     bot.easy_start();

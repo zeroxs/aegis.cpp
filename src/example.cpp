@@ -1,5 +1,5 @@
 //
-// example_impl.hpp
+// example.cpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -23,20 +23,12 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
-#pragma once
-
+#include "example.hpp"
 
 namespace example_bot
 {
 
-inline void example::TypingStart(typing_start obj)
-{
-    //obj.bot->log->info("Typing start");
-    return;
-}
-
-inline void example::MessageCreateDM(message_create obj)
+void example::MessageCreateDM(message_create obj)
 {
     std::string username;
 
@@ -52,7 +44,7 @@ inline void example::MessageCreateDM(message_create obj)
     std::string content(obj.msg.get_content());
 
     auto toks = split(content, ' ');
-    if (toks.size() == 0)
+    if (toks.empty())
         return;
 
     if (toks[0] == "help")
@@ -61,7 +53,7 @@ inline void example::MessageCreateDM(message_create obj)
     if (toks[0] == obj.bot->mention)
     {
         //user is mentioning me
-        if (toks.size() < 1)
+        if (toks.size() == 1)
             return;
         if (toks[1] == "help")
         {
@@ -74,22 +66,23 @@ inline void example::MessageCreateDM(message_create obj)
     return;
 }
 
-inline void example::MessageCreate(message_create obj)
+void example::MessageCreate(message_create obj)
 {
-    std::string username;
-    auto _member = obj._member;
-    if (_member != nullptr)
-        username = obj._member->name;
+    const auto &[channel_id, guild_id, message_id, member_id] = obj.msg.get_related_ids();
 
+    if (obj.msg.is_bot() || !obj.has_member() || !obj.has_channel())
+        return;
+
+    auto & _member = obj.get_member();
     auto & _channel = obj.get_channel();
     auto & _guild = _channel.get_guild();
 
-    snowflake channel_id = _channel.channel_id;
-    snowflake message_id = obj.msg.get_id();
-    std::string content(obj.msg.get_content());
+    auto & username = _member.name;
+
+    std::string content{ obj.msg.get_content() };
 
     auto toks = split(content, ' ');
-    if (toks.size() == 0)
+    if (toks.empty())
         return;
 
     // basic stats of the example bot
@@ -97,7 +90,7 @@ inline void example::MessageCreate(message_create obj)
     if (toks[0] == obj.bot->mention)
     {
         //user is mentioning me
-        if (toks.size() < 1)
+        if (toks.size() == 1)
             return;
         if (toks[1] == "help")
         {
@@ -126,10 +119,11 @@ inline void example::MessageCreate(message_create obj)
         };
 
         _channel.create_message_embed({}, t);
+        return;
     }
     else if (toks[0] == "?exit")
     {
-        if (_member->member_id != bot_owner_id)
+        if (_member.member_id != bot_owner_id)
         {
             _channel.create_message("No perms `exit`");
             return;
@@ -221,7 +215,7 @@ inline void example::MessageCreate(message_create obj)
         auto gld = hasguildinfo.value();//->guilds[_guild.guild_id];
         for (auto & rl : gld->roles)
         {
-            role & r = _guild.get_role(rl);
+            auto & r = _guild.get_role(rl);
             w << "[" << r.role_id << "] : [A:" << r._permission.get_allow_perms() << "] : [" << r.name << "]\n";
 
         }
@@ -242,141 +236,9 @@ inline void example::MessageCreate(message_create obj)
         s += "```";
         _channel.create_message(s);
     }
-
-    return;
 }
 
-inline void example::MessageUpdate(message_update obj)
-{
-    return;
-}
-
-inline void example::MessageDelete(message_delete obj)
-{
-    return;
-}
-
-// inline void example::MessageDeleteBulk(message_delete_bulk obj)
-// {
-//     return;
-// }
-
-inline void example::GuildCreate(guild_create)
-{
-    return;
-}
-
-inline void example::GuildUpdate(guild_update obj)
-{
-    return;
-}
-
-inline void example::GuildDelete(guild_delete obj)
-{
-    return;
-}
-
-inline void example::UserUpdate(user_update obj)
-{
-    return;
-}
-
-inline void example::Ready(ready obj)
-{
-    return;
-}
-
-inline void example::Resumed(resumed obj)
-{
-    return;
-}
-
-inline void example::ChannelCreate(channel_create obj)
-{
-    return;
-}
-
-inline void example::ChannelUpdate(channel_update obj)
-{
-    return;
-}
-
-inline void example::ChannelDelete(channel_delete obj)
-{
-    return;
-}
-
-inline void example::GuildBanAdd(guild_ban_add obj)
-{
-    return;
-}
-
-inline void example::GuildBanRemove(guild_ban_remove obj)
-{
-    return;
-}
-
-// inline void example::GuildEmojisUpdate(guild_emojis_update obj)
-// {
-//     return;
-// }
-// 
-// inline void example::GuildIntegrationsUpdate(guild_integrations_update obj)
-// {
-//     return;
-// }
-
-inline void example::GuildMemberAdd(guild_member_add obj)
-{
-    return;
-}
-
-inline void example::GuildMemberRemove(guild_member_remove obj)
-{
-    return;
-}
-
-inline void example::GuildMemberUpdate(guild_member_update obj)
-{
-    return;
-}
-
-inline void example::GuildMemberChunk(guild_members_chunk obj)
-{
-    return;
-}
-
-// inline void example::GuildRoleCreate(guild_role_create obj)
-// {
-//     return;
-// }
-// 
-// inline void example::GuildRoleUpdate(guild_role_update obj)
-// {
-//     return;
-// }
-// 
-// inline void example::GuildRoleDelete(guild_role_delete obj)
-// {
-//     return;
-// }
-
-inline void example::PresenceUpdate(presence_update obj)
-{
-    return;
-}
-
-// inline void example::VoiceStateUpdate(voice_state_update obj)
-// {
-//     return;
-// }
-// 
-// inline void example::VoiceServerUpdate(voice_server_update obj)
-// {
-//     return;
-// }
-
-inline json example::make_info_obj(shard * _shard, aegis * bot)
+json example::make_info_obj(shard * _shard, aegis * bot)
 {
     int64_t guild_count = bot->guilds.size();
     int64_t member_count = 0;
@@ -392,8 +254,8 @@ inline json example::make_info_obj(shard * _shard, aegis * bot)
     int64_t eventsseen = 0;
 
     {
-        for (auto & bot_ptr : bot->shards)
-            eventsseen += bot_ptr->get_sequence();
+        for (auto & e : bot->message_count)
+            eventsseen += e.second;
 
         for (auto &[k, v] : bot->members)
         {
@@ -407,7 +269,7 @@ inline json example::make_info_obj(shard * _shard, aegis * bot)
 
         for (auto &[k, v] : bot->channels)
         {
-            if (v->type == channel_type::Text)
+            if (v->get_type() == channel_type::Text)
                 channel_text_count++;
             else
                 channel_voice_count++;

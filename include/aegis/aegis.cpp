@@ -562,8 +562,6 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                 {
                     _shard->counters.messages++;
 
-                    member * _m;
-
                     message_create obj{ result["d"], _shard, this, get_channel(result["d"]["channel_id"]), get_member(result["d"]["author"]["id"]) };
                     obj.msg.init(_shard);
 

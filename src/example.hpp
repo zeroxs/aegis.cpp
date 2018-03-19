@@ -23,12 +23,11 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
-
 #pragma once
-#include <future>
+#include <aegis/config.hpp>
 #include <aegis.hpp>
-#include <aegis/shard.hpp>
+#include <string>
+#include <stdint.h>
 #include <nlohmann/json.hpp>
 
 namespace example_bot
@@ -69,14 +68,9 @@ public:
     void inject(aegis & bot)
     {
         callbacks cbs;
-        cbs.i_typing_start = std::bind(&example::TypingStart, this, _1);
         cbs.i_message_create = std::bind(&example::MessageCreate, this, _1);
         cbs.i_message_create_dm = std::bind(&example::MessageCreateDM, this, _1);
         bot._callbacks = cbs;
-        //bot.i_guild_create = std::bind(&example::guild_create, this, _1, _2, _3);
-        //bot.i_guild_delete = std::bind(&example::guild_delete, this, _1, _2, _3);
-        //bot.i_ready = std::bind(&example::ready, this, _1, _2, _3);
-        //bot.i_resumed = std::bind(&example::resumed, this, _1, _2, _3);
     }
 
     const snowflake bot_owner_id = 171000788183678976LL;
@@ -92,7 +86,7 @@ public:
 
     void MessageDelete(message_delete obj);
 
-//     void MessageDeleteBulk(message_delete_bulk obj);
+    void MessageDeleteBulk(message_delete_bulk obj);
 
     void GuildCreate(guild_create);
 
@@ -116,9 +110,9 @@ public:
 
     void GuildBanRemove(guild_ban_remove obj);
 
-//     void GuildEmojisUpdate(guild_emojis_update obj);
-// 
-//     void GuildIntegrationsUpdate(guild_integrations_update obj);
+    void GuildEmojisUpdate(guild_emojis_update obj);
+
+    void GuildIntegrationsUpdate(guild_integrations_update obj);
 
     void GuildMemberAdd(guild_member_add obj);
 
@@ -128,22 +122,19 @@ public:
 
     void GuildMemberChunk(guild_members_chunk obj);
     
-//     void GuildRoleCreate(guild_role_create obj);
-// 
-//     void GuildRoleUpdate(guild_role_update obj);
-// 
-//     void GuildRoleDelete(guild_role_delete obj);
+    void GuildRoleCreate(guild_role_create obj);
+
+    void GuildRoleUpdate(guild_role_update obj);
+
+    void GuildRoleDelete(guild_role_delete obj);
 
     void PresenceUpdate(presence_update obj);
 
-//     void VoiceStateUpdate(voice_state_update obj);
-// 
-//     void VoiceServerUpdate(voice_server_update obj);
+    void VoiceStateUpdate(voice_state_update obj);
+
+    void VoiceServerUpdate(voice_server_update obj);
 
     json make_info_obj(shard * _shard, aegis * bot);
 };
 
 }
-
-#include "example_impl.hpp"
-
