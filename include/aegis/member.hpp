@@ -27,7 +27,6 @@
 
 
 #include "aegis/config.hpp"
-#include "aegis/guild.hpp"
 #include <string>
 #include <optional>
 #include <queue>

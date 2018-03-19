@@ -397,15 +397,17 @@ AEGIS_DECL rest_api channel::delete_pinned_channel_message()
 }
 
 /**\todo Will likely move to aegis class
+* requires OAuth permissions to perform
 */
-AEGIS_DECL rest_api channel::group_dm_add_recipient()//will go in aegis::aegis
+AEGIS_DECL rest_api channel::group_dm_add_recipient()//will go in aegiscpp::aegis
 {
     return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }
 
 /**\todo Will likely move to aegis class
+* requires OAuth permissions to perform
 */
-AEGIS_DECL rest_api channel::group_dm_remove_recipient()//will go in aegis::aegis
+AEGIS_DECL rest_api channel::group_dm_remove_recipient()//will go in aegiscpp::aegis
 {
     return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
 }

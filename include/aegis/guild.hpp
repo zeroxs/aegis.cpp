@@ -433,7 +433,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    AEGIS_DECL rest_api create_guild_role();
+    AEGIS_DECL rest_api create_guild_role(std::string name, permission _perms, int32_t color, bool hoist, bool mentionable);
 
     /// Modify the guild role positions
     /**
@@ -441,7 +441,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    AEGIS_DECL rest_api modify_guild_role_positions();
+    AEGIS_DECL rest_api modify_guild_role_positions(snowflake id, int16_t position);
 
     /// Modify a guild role
     /**
@@ -451,7 +451,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    AEGIS_DECL rest_api modify_guild_role(snowflake role_id);
+    AEGIS_DECL rest_api modify_guild_role(snowflake id, std::string name, permission _perms, int32_t color, bool hoist, bool mentionable);
 
     /// Delete a guild role
     /**

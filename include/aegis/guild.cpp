@@ -613,7 +613,7 @@ AEGIS_DECL rest_api guild::create_guild_ban(snowflake user_id, int8_t delete_mes
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj = { "delete-message-days", delete_message_days };
-    auto fut = post_task(fmt::format("/guilds/{}/bans/{}", guild_id, user_id), "PUT");
+    auto fut = post_task(fmt::format("/guilds/{}/bans/{}", guild_id, user_id), "PUT", obj);
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -626,44 +626,43 @@ AEGIS_DECL rest_api guild::remove_guild_ban(snowflake user_id)
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-/**\todo Incomplete. Signature may change
-*/
-AEGIS_DECL rest_api guild::create_guild_role()
+AEGIS_DECL rest_api guild::create_guild_role(std::string name, permission _perms, int32_t color, bool hoist, bool mentionable)
 {
     if (!perms().can_manage_roles())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
+    json obj = { { "name", name },{ "permissions", _perms },{ "color", color },{ "hoist", hoist },{ "mentionable", mentionable } };
+    auto fut = post_task(fmt::format("/guilds/{}/roles", guild_id), "POST", obj);
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-/**\todo Incomplete. Signature may change
-*/
-AEGIS_DECL rest_api guild::modify_guild_role_positions()
+AEGIS_DECL rest_api guild::modify_guild_role_positions(snowflake role_id, int16_t position)
 {
     if (!perms().can_manage_roles())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
+    json obj = { { "id", role_id },{ "position", position } };
+    auto fut = post_task(fmt::format("/guilds/{}/roles", guild_id), "PATCH", obj);
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-/**\todo Incomplete. Signature may change
-*/
-AEGIS_DECL rest_api guild::modify_guild_role(snowflake role_id)
+AEGIS_DECL rest_api guild::modify_guild_role(snowflake role_id, std::string name, permission _perms, int32_t color, bool hoist, bool mentionable)
 {
     if (!perms().can_manage_roles())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
+    json obj = { { "name", name },{ "permissions", _perms },{ "color", color },{ "hoist", hoist },{ "mentionable", mentionable } };
+    auto fut = post_task(fmt::format("/guilds/{}/roles/{}", guild_id, role_id), "POST", obj);
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-/**\todo Incomplete. Signature may change
-*/
 AEGIS_DECL rest_api guild::delete_guild_role(snowflake role_id)
 {
     if (!perms().can_manage_roles())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    return { make_error_code(error::not_implemented), std::make_optional<std::future<rest_reply>>() };
+    auto fut = post_task(fmt::format("/guilds/{}/roles/{}", guild_id, role_id), "DELETE");
+    return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
 /**\todo Incomplete. Signature may change
