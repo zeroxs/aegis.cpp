@@ -1206,21 +1206,22 @@ AEGIS_DECL void aegis::on_close(websocketpp::connection_hdl hdl, shard * _shard)
     _shard->start_reconnect();
 }
 
-AEGIS_DECL void aegis::status_thread()
+AEGIS_DECL void aegis::ws_status(const asio::error_code & ec)
 {
+    if (ec == asio::error::operation_aborted)
+        return;
     using namespace std::chrono_literals;
     int64_t checktime;
-    while (status != Shutdown)
+    if (status != Shutdown)
     {
         try
         {
-            //TODO: mutex this
             checktime = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
             for (auto & _shard : shards)
             {
                 if (_shard && _shard->connection)
                 {
-                    if (_shard->lastwsevent && _shard->lastwsevent < checktime - 90)
+                    if (_shard->lastwsevent && (_shard->lastwsevent < (checktime - 90)))
                     {
                         log->critical("Shard#{} : Websocket had no events in last 90s", _shard->shardid);
                         debug_trace(_shard.get());
@@ -1231,19 +1232,8 @@ AEGIS_DECL void aegis::status_thread()
                         _shard->connection_state = Reconnecting;
                         _shard->do_reset();
                     }
-                    else if (!_shard->lastwsevent && _shard->last_status_time < checktime - 180)
-                    {
-                        log->critical("Shard#{} : Fresh Websocket had no events in last 180s", _shard->shardid);
-                        debug_trace(_shard.get());
-                        if (_shard->connection->get_state() < websocketpp::session::state::closing)
-                            websocket_o.close(_shard->connection, 1001, "");
-                        else
-                            _shard->start_reconnect();
-                        _shard->connection_state = Reconnecting;
-                        _shard->do_reset();
-                    }
-                    _shard->last_status_time = checktime;
                 }
+                _shard->last_status_time = checktime;
 
                 //find a prettier way to do this
                 if (_shard && !_shard->connection && !_shard->reconnect_timer)
@@ -1251,18 +1241,17 @@ AEGIS_DECL void aegis::status_thread()
                     _shard->start_reconnect();
                 }
             }
-
-            std::this_thread::sleep_for(5s);
         }
         catch (std::exception & e)
         {
-            log->error("status_thread() error : {}", e.what());
+            log->error("ws_status() error : {}", e.what());
         }
         catch (...)
         {
-            log->error("status_thread() error : unknown");
+            log->error("ws_status() error : unknown");
         }
     }
+    ws_timer = websocket_o.set_timer(5000, std::bind(&aegis::ws_status, this, std::placeholders::_1));
 }
 
 AEGIS_DECL void aegis::debug_trace(shard * _shard)

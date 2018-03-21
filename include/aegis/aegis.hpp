@@ -382,6 +382,8 @@ public:
         for (std::size_t i = 0; i < count; ++i)
             rest_threads.emplace_back(std::bind(static_cast<asio::io_service::count_type(asio::io_service::*)()>(&asio::io_service::run), &rest_service()));
 
+        ws_timer = websocket_o.set_timer(5000, std::bind(&aegis::ws_status, this, std::placeholders::_1));
+
         for (auto & thread : threads)
             thread.join();
 
@@ -489,7 +491,6 @@ public:
     * @param _shard
     */
     AEGIS_DECL void rich_presence(const json & obj, shard * _shard);
-    AEGIS_DECL void status_thread();
 
     member * self() const
     {
@@ -568,6 +569,8 @@ private:
     AEGIS_DECL void on_close(websocketpp::connection_hdl hdl, shard * _shard);
     AEGIS_DECL void process_ready(const json & d, shard * _shard);
     AEGIS_DECL void keep_alive(const asio::error_code& error, const int ms, shard * _shard);
+    AEGIS_DECL void ws_status(const asio::error_code & ec);
+    std::shared_ptr<asio::steady_timer> ws_timer;
 };
 
 }
