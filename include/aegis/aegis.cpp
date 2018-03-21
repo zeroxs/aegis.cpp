@@ -707,8 +707,9 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                 }
                 else if (cmd == "MESSAGE_DELETE_BULK")
                 {
+                    message_delete_bulk obj;
                     if (_callbacks.i_message_delete_bulk)
-                        _callbacks.i_message_delete_bulk(result, _shard, *this);
+                        _callbacks.i_message_delete_bulk(obj);
                     return;
                 }
                 else if (cmd == "USER_UPDATE")
@@ -739,8 +740,9 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                 }
                 else if (cmd == "VOICE_STATE_UPDATE")
                 {
+                    voice_state_update obj;
                     if (_callbacks.i_voice_state_update)
-                        _callbacks.i_voice_state_update(result, _shard, *this);
+                        _callbacks.i_voice_state_update(obj);
                     return;
                 }
                 else if (cmd == "RESUMED")
@@ -770,8 +772,9 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                 }
                 else if (cmd == "CHANNEL_CREATE")
                 {
+                    aegiscpp::channel_create obj;
                     if (_callbacks.i_channel_create)
-                        _callbacks.i_channel_create(result, _shard, *this);
+                        _callbacks.i_channel_create(obj);
 
                     snowflake channel_id = result["d"]["id"];
 
@@ -802,8 +805,9 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                 {
                     if (cmd == "CHANNEL_UPDATE")
                     {
+                        channel_update obj;
                         if (_callbacks.i_channel_update)
-                            _callbacks.i_channel_update(result, _shard, *this);
+                            _callbacks.i_channel_update(obj);
 
                         snowflake channel_id = result["d"]["id"];
 
@@ -829,8 +833,9 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                     {
                         _shard->counters.channels--;
                        
+                        channel_delete obj;
                         if (_callbacks.i_channel_delete)
-                            _callbacks.i_channel_delete(result, _shard, *this);
+                            _callbacks.i_channel_delete(obj);
                         return;
                     }
                     else if (cmd == "GUILD_BAN_ADD")
@@ -855,14 +860,16 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                     }
                     else if (cmd == "GUILD_EMOJIS_UPDATE")
                     {
+                        guild_emojis_update obj;
                         if (_callbacks.i_guild_emojis_update)
-                            _callbacks.i_guild_emojis_update(result, _shard, *this);
+                            _callbacks.i_guild_emojis_update(obj);
                         return;
                     }
                     else if (cmd == "GUILD_INTEGRATIONS_UPDATE")
                     {
+                        guild_integrations_update obj;
                         if (_callbacks.i_guild_integrations_update)
-                            _callbacks.i_guild_integrations_update(result, _shard, *this);
+                            _callbacks.i_guild_integrations_update(obj);
                         return;
                     }
                     else if (cmd == "GUILD_MEMBER_ADD")
@@ -984,8 +991,9 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                         auto _guild = get_guild(guild_id);
                         _guild->load_role(result["d"]["role"]);
 
+                        guild_role_create obj;
                         if (_callbacks.i_guild_role_create)
-                            _callbacks.i_guild_role_create(result, _shard, *this);
+                            _callbacks.i_guild_role_create(obj);
                         return;
                     }
                     else if (cmd == "GUILD_ROLE_UPDATE")
@@ -995,8 +1003,9 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                         auto _guild = get_guild(guild_id);
                         _guild->load_role(result["d"]["role"]);
 
+                        guild_role_update obj;
                         if (_callbacks.i_guild_role_update)
-                            _callbacks.i_guild_role_update(result, _shard, *this);
+                            _callbacks.i_guild_role_update(obj);
                         return;
                     }
                     else if (cmd == "GUILD_ROLE_DELETE")
@@ -1012,14 +1021,16 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                             _guild->remove_role(role_id);
                         }
 
+                        guild_role_delete obj;
                         if (_callbacks.i_guild_role_delete)
-                            _callbacks.i_guild_role_delete(result, _shard, *this);
+                            _callbacks.i_guild_role_delete(obj);
                         return;
                     }
                     else if (cmd == "VOICE_SERVER_UPDATE")
                     {
+                        voice_server_update obj;
                         if (_callbacks.i_voice_server_update)
-                            _callbacks.i_voice_server_update(result, _shard, *this);
+                            _callbacks.i_voice_server_update(obj);
                         return;
                     }
                 }
