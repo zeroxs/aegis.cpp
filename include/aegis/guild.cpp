@@ -607,12 +607,16 @@ AEGIS_DECL rest_api guild::remove_guild_member(snowflake user_id)
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-AEGIS_DECL rest_api guild::create_guild_ban(snowflake user_id, int8_t delete_message_days)
+AEGIS_DECL rest_api guild::create_guild_ban(snowflake user_id, int8_t delete_message_days, std::string reason)
 {
     if (!perms().can_ban())
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
-    json obj = { "delete-message-days", delete_message_days };
+    json obj;
+    if (reason.empty())
+        obj = { "delete-message-days", delete_message_days };
+    else
+        obj = { { "delete-message-days", delete_message_days }, { "reason", reason } };
     auto fut = post_task(fmt::format("/guilds/{}/bans/{}", guild_id, user_id), "PUT", obj.dump());
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }

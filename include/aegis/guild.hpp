@@ -393,7 +393,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    AEGIS_DECL rest_api create_guild_ban(snowflake user_id, int8_t delete_message_days);
+    AEGIS_DECL rest_api create_guild_ban(snowflake user_id, int8_t delete_message_days, std::string reason = "");
 
     /// Remove a guild ban
     /**
