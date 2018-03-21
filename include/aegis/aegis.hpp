@@ -87,39 +87,40 @@ class channel;
 class guild;
 
 
+/// User hook-able callbacks. Only callbacks that are specified will be executed.
+/// With the exception of some messages such as READY, RESUME, and some data creation
+/// messages, a lack of a callback will cause the message to effectively be unprocessed.
 struct callbacks
 {
-    using c_inject = std::function<void(const nlohmann::json & msg, shard * _shard, aegis & bot)>;
-    /// User callbacks
-    std::function<void(typing_start obj)> i_typing_start;
-    std::function<void(message_create obj)> i_message_create;
-    std::function<void(message_create obj)> i_message_create_dm;
-    std::function<void(message_update obj)> i_message_update;
-    std::function<void(message_delete obj)> i_message_delete;
-    c_inject i_message_delete_bulk;//TODO
-    std::function<void(guild_create obj)> i_guild_create;
-    std::function<void(guild_update obj)> i_guild_update;
-    std::function<void(guild_delete obj)> i_guild_delete;
-    std::function<void(user_update obj)> i_user_update;
-    std::function<void(ready obj)> i_ready;
-    std::function<void(resumed obj)> i_resumed;
-    c_inject i_channel_create;//TODO
-    c_inject i_channel_update;//TODO
-    c_inject i_channel_delete;//TODO
-    std::function<void(guild_ban_add obj)> i_guild_ban_add;
-    std::function<void(guild_ban_remove obj)> i_guild_ban_remove;
-    c_inject i_guild_emojis_update;//TODO
-    c_inject i_guild_integrations_update;//TODO
-    std::function<void(guild_member_add obj)> i_guild_member_add;
-    std::function<void(guild_member_remove obj)> i_guild_member_remove;
-    std::function<void(guild_member_update obj)> i_guild_member_update;
-    std::function<void(guild_members_chunk obj)> i_guild_member_chunk;
-    c_inject i_guild_role_create;//TODO
-    c_inject i_guild_role_update;//TODO
-    c_inject i_guild_role_delete;//TODO
-    std::function<void(presence_update obj)> i_presence_update;
-    c_inject i_voice_state_update;//TODO
-    c_inject i_voice_server_update;//TODO
+    std::function<void(typing_start obj)> i_typing_start;/**< TYPING_START callback */
+    std::function<void(message_create obj)> i_message_create;/**< MESSAGE_CREATE callback */
+    std::function<void(message_create obj)> i_message_create_dm;/**< MESSAGE_CREATE callback for direct messages */
+    std::function<void(message_update obj)> i_message_update;/**< MESSAGE_UPDATE callback */
+    std::function<void(message_delete obj)> i_message_delete;/**< MESSAGE_DELETE callback */
+    std::function<void(message_delete_bulk obj)> i_message_delete_bulk;/**<\todo MESSAGE_DELETE_BULK callback */
+    std::function<void(guild_create obj)> i_guild_create;/**< GUILD_CREATE callback */
+    std::function<void(guild_update obj)> i_guild_update;/**< GUILD_UPDATE callback */
+    std::function<void(guild_delete obj)> i_guild_delete;/**< GUILD_DELETE callback */
+    std::function<void(user_update obj)> i_user_update;/**< USER_UPDATE callback */
+    std::function<void(ready obj)> i_ready;/**< READY callback */
+    std::function<void(resumed obj)> i_resumed;/**< RESUME callback */
+    std::function<void(channel_create obj)> i_channel_create;/**<\todo CHANNEL_CREATE callback */
+    std::function<void(channel_update obj)> i_channel_update;/**<\todo CHANNEL_UPDATE callback */
+    std::function<void(channel_delete obj)> i_channel_delete;/**<\todo CHANNEL_DELETE callback */
+    std::function<void(guild_ban_add obj)> i_guild_ban_add;/**< GUILD_BAN_ADD callback */
+    std::function<void(guild_ban_remove obj)> i_guild_ban_remove;/**< GUILD_BAN_REMOVE callback */
+    std::function<void(guild_emojis_update obj)> i_guild_emojis_update;/**<\todo GUILD_EMOJIS_UPDATE callback */
+    std::function<void(guild_integrations_update obj)> i_guild_integrations_update;/**<\todo GUILD_INTEGRATIONS_UPDATE callback */
+    std::function<void(guild_member_add obj)> i_guild_member_add;/**< GUILD_MEMBER_ADD callback */
+    std::function<void(guild_member_remove obj)> i_guild_member_remove;/**< GUILD_MEMBER_REMOVE callback */
+    std::function<void(guild_member_update obj)> i_guild_member_update;/**< GUILD_MEMBER_UPDATE callback */
+    std::function<void(guild_members_chunk obj)> i_guild_member_chunk;/**< GUILD_MEMBERS_CHUNK callback */
+    std::function<void(guild_role_create obj)> i_guild_role_create;/**<\todo GUILD_ROLE_CREATE callback */
+    std::function<void(guild_role_update obj)> i_guild_role_update;/**<\todo GUILD_ROLE_UPDATE callback */
+    std::function<void(guild_role_delete obj)> i_guild_role_delete;/**<\todo GUILD_ROLE_DELETE callback */
+    std::function<void(presence_update obj)> i_presence_update;/**< PRESENCE_UPDATE callback */
+    std::function<void(voice_state_update obj)> i_voice_state_update;/**<\todo VOICE_STATE_UPDATE callback */
+    std::function<void(voice_server_update obj)> i_voice_server_update;/**<\todo VOICE_SERVER_UPDATE callback */
 };
 
 
@@ -162,22 +163,7 @@ public:
         , status{ Uninitialized }
         , ratelimit_o{ std::bind(&aegis::call, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3) }
     {
-        //spdlog::set_async_mode(64);
-
-// #ifdef _DEBUG
-//         std::vector<spdlog::sink_ptr> sinks;
-// #ifdef _WIN32
-//         sinks.push_back(std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>());
-// #else //ansi terminal colors
-//         sinks.push_back(std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>());
-// #endif
-//         sinks.push_back(std::make_shared<spdlog::sinks::stderr_sink_mt>());
-// 
-//         log = spdlog::create("aegis", begin(sinks), end(sinks));
-// 
-// #else
         log = spdlog::stdout_color_mt("aegis");
-//#endif
         log->set_pattern("%Y-%m-%d %H:%M:%S.%e [%L] [th#%t] : %v");
         log->set_level(spdlog::level::level_enum::trace);
         ratelimit_o.add(bucket_type::GUILD);
@@ -440,22 +426,68 @@ public:
     callbacks _callbacks;
     bool wsdbg = false;
 
+    /// Obtain a pointer to a member by snowflake
+    /**
+    * @param id Snowflake of member to search for
+    *
+    * @returns Pointer to member or nullptr
+    */
     AEGIS_DECL member * get_member(snowflake id) const noexcept;
 
+    /// Obtain a pointer to a channel by snowflake
+    /**
+    * @param id Snowflake of channel to search for
+    *
+    * @returns Pointer to channel or nullptr
+    */
     AEGIS_DECL channel * get_channel(snowflake id) const noexcept;
 
+    /// Obtain a pointer to a guild by snowflake
+    /**
+    * @param id Snowflake of guild to search for
+    *
+    * @returns Pointer to guild or nullptr
+    */
     AEGIS_DECL guild * get_guild(snowflake id) const noexcept;
 
+    /// Obtain a pointer to a member by snowflake. If none exists, creates the object.
+    /**
+    * @param id Snowflake of member to search for
+    *
+    * @returns Pointer to member
+    */
     AEGIS_DECL member * get_member_create(snowflake id) noexcept;
 
+    /// Obtain a pointer to a channel by snowflake. If none exists, creates the object.
+    /**
+    * @param id Snowflake of channel to search for
+    *
+    * @returns Pointer to channel
+    */
     AEGIS_DECL channel * get_channel_create(snowflake id) noexcept;
 
+    /// Obtain a pointer to a guild by snowflake. If none exists, creates the object.
+    /**
+    * @param id Snowflake of guild to search for
+    *
+    * @returns Pointer to guild
+    */
     AEGIS_DECL guild * get_guild_create(snowflake id, shard * _shard) noexcept;
 
     AEGIS_DECL member & get_member_by_any(snowflake id) const;
 
-    //called by CHANNEL_CREATE (DirectMessage)
+    /// Called by CHANNEL_CREATE (DirectMessage)
+    /**
+    * @param id Snowflake of guild to search for
+    *
+    * @returns Pointer to guild
+    */
     AEGIS_DECL void channel_create(const json & obj, shard * _shard);
+
+    /**\todo Incomplete/unsupported. Bots currently do not support Rich Presence.
+    * @param obj
+    * @param _shard
+    */
     AEGIS_DECL void rich_presence(const json & obj, shard * _shard);
     AEGIS_DECL void status_thread();
 
@@ -513,9 +545,6 @@ private:
     std::string username;
     bool mfa_enabled;
     int16_t discriminator;
-
-
-    //std::unordered_map<std::string, c_inject> m_cbmap;
 
     // Gateway URL for the Discord Websocket
     std::string gateway_url;

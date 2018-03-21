@@ -223,11 +223,10 @@ public:
         return { _channel_id, _guild_id, _message_id, _author_id };
     };
 
-private:
-    friend void from_json(const nlohmann::json& j, message& m);
-    friend void to_json(nlohmann::json& j, const message& m);
-    friend class aegis;
-
+    /// Initializes the pointers for this message according to ids provided
+    /**
+    * @param _shard Pointer to shard object
+    */
     void init(shard * _shard)
     {
         if (_shard == nullptr)
@@ -247,6 +246,11 @@ private:
             }
         }
     }
+
+private:
+    friend void from_json(const nlohmann::json& j, message& m);
+    friend void to_json(nlohmann::json& j, const message& m);
+    friend class aegis;
 
     bool _initialized = false;
     shard * _shard = nullptr;/**< Pointer to the shard that handled this message */
@@ -304,6 +308,7 @@ inline void from_json(const nlohmann::json& j, message& m)
     if (j.count("reactions") && !j["reactions"].is_null())
         for (const auto& i : j["reactions"])
             m.reactions.push_back(i);
+    bool _initialized = true;
 }
 
 /**\todo Needs documentation

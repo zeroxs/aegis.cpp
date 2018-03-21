@@ -57,7 +57,7 @@ struct rest_reply
     websocketpp::http::status_code::value reply_code; /**< REST HTTP reply code */
     bool global = false; /**< Is global ratelimited */
     int32_t limit = 0; /**< Rate limit current endpoint call limit */
-    int32_t remaining = 0; /**< Rate limit remaining time */
+    int32_t remaining = 0; /**< Rate limit remaining count */
     int64_t reset = 0; /**< Rate limit reset time */
     int32_t retry = 0; /**< Rate limit retry time */
     std::string content; /**< REST call's reply body */

@@ -10,11 +10,11 @@ C++17 library for interfacing with the [Discord API](https://discordapp.com/deve
 
 This project is licensed under the MIT license. See [LICENSE](https://github.com/zeroxs/aegis.cpp/blob/master/LICENSE)
 
-Libraries used:
+Libraries used (all are header-only with the exception of zlib):
 - [Asio](https://github.com/chriskohlhoff/asio)
 - [Websocketpp](https://github.com/zaphoyd/websocketpp)
 - [JSON for Modern C++](https://github.com/nlohmann/json)
-- [spdlog](https://github.com/gabime/spdlog)
+- [spdlog](https://github.com/gabime/spdlog) (by extension, [fmtlib](https://github.com/fmtlib/fmt))
 - [OpenSSL 1.0.2](https://www.openssl.org)
 - [zlib](https://zlib.net)
 - [zstr](https://github.com/mateidavid/zstr)
@@ -31,9 +31,14 @@ Libraries used:
 You can access the [documentation here](https://docs.aegisbot.pw). It is a work in progress itself and has some missing parts, but most of the library is now documented.
 
 # Using this library #
-`#include "aegis/aegis.hpp"`
+```cpp
+#include "aegis/aegis.hpp"
 
+
+
+
+```
 Quick and dirty g++-7 command
-`g++-7 -std=c++17 -Iinclude -Ilib/spdlog/include -Ilib/websocketpp -Ilib/asio/asio/include -Ilib/json/src -Ilib/zstr/src src/main.cpp -lssl -lpthread -lcrypto -lz -o aegis`
+`g++-7 -std=c++17 -Iinclude -Ilib/spdlog/include -Ilib/websocketpp -Ilib/asio/asio/include -Ilib/json/src -Ilib/zstr/src src/main.cpp -lssl -lpthread -lcrypto -lz -ldl -o aegis`
 
 Visual Studio solution inside `project/`

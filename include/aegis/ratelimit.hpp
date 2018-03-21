@@ -67,9 +67,9 @@ public:
         , reset(0)
     {
     }
-    std::atomic_int64_t limit;
-    std::atomic_int64_t remaining;
-    std::atomic_int64_t reset;
+    std::atomic_int64_t limit; /**< Rate limit current endpoint call limit */
+    std::atomic_int64_t remaining; /**< Rate limit remaining count */
+    std::atomic_int64_t reset; /**< Rate limit reset time */
 
     /// Check if bucket can send a message without hitting the ratelimit
     /**
@@ -118,8 +118,7 @@ private:
 
 /**
 * Major parameter of REST API access
-* Emoji is a partial major parameter
-* Emojis are ratelimited per guild
+* Emoji is a partial major parameter and is ratelimited per guild across all members
 */
 enum bucket_type
 {
@@ -182,8 +181,6 @@ private:
 
     std::map<uint16_t, std::unique_ptr<bucket_factory>> _map;
     rest_call _call;
-
-    //std::unordered_map<uint64_t, int> bucket;
 };
 
 }

@@ -178,8 +178,6 @@ public:
 
     /// Delete this channel
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api delete_channel();
@@ -190,8 +188,6 @@ public:
     *
     * @param emoji_text Text of emoji being added `name:snowflake`
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api create_reaction(snowflake message_id, std::string emoji_text);
@@ -201,8 +197,6 @@ public:
     * @param message_id Snowflake of message
     *
     * @param emoji_text Text of emoji being added `name:snowflake`
-    *
-    * @param callback A callback to execute after REST execution
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
@@ -216,8 +210,6 @@ public:
     *
     * @param member_id Snowflake of member to remove emoji from
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake member_id);
@@ -228,8 +220,6 @@ public:
     *
     * @param emoji_text Text of emoji being added `name:snowflake`
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api get_reactions(snowflake message_id, std::string emoji_text);
@@ -237,8 +227,6 @@ public:
     /// Delete all reactions by message
     /**
     * @param message_id Snowflake of message
-    *
-    * @param callback A callback to execute after REST execution
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
@@ -254,16 +242,12 @@ public:
     *
     * @param type Type of override (role/user)
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api edit_channel_permissions(snowflake overwrite_id, int64_t allow, int64_t deny, std::string type);
 
     /// Get active channel invites
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api get_channel_invites();
@@ -278,8 +262,6 @@ public:
     *
     * @param unique Is this invite code a unique one-use
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique);
@@ -288,56 +270,42 @@ public:
     /**
     * @param overwrite_id Snowflake of the channel permission to delete
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api delete_channel_permission(snowflake overwrite_id);
 
     /// Trigger typing indicator in channel (lasts 10 seconds)
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api trigger_typing_indicator();
 
     /// Get pinned messages in channel
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api get_pinned_messages();
 
     /// Add a pinned message in channel
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api add_pinned_channel_message();
 
     /// Delete a pinned message in channel
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api delete_pinned_channel_message();
 
     /// Add member to a group direct message
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api group_dm_add_recipient();
 
     /// Remove member from a group direct message
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api group_dm_remove_recipient();

@@ -275,8 +275,6 @@ public:
 
     /// Delete a guild
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api delete_guild();
@@ -290,8 +288,6 @@ public:
     * @param nsfw Whether the channel will be labelled as not safe for work
     *
     * @param permission_overwrites Array of permission overwrites to apply to the channel
-    *
-    * @param callback A callback to execute after REST execution
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
@@ -311,8 +307,6 @@ public:
     *
     * @param permission_overwrites Array of permission overwrites to apply to the channel
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites);
@@ -325,16 +319,12 @@ public:
     *
     * @param permission_overwrites Array of permission overwrites to apply to the channel
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api create_category_channel(std::string name, int64_t parent_id, std::vector<permission_overwrite> permission_overwrites);
 
     /// Modify positions of channels
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api modify_channel_positions();
@@ -354,8 +344,6 @@ public:
     *
     * @param channel_id Snowflake of the channel to move user to
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api modify_guild_member(snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
@@ -364,8 +352,6 @@ public:
     /// Modify own nickname
     /**
     * @param newname String of the new nickname to apply
-    *
-    * @param callback A callback to execute after REST execution
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
@@ -377,8 +363,6 @@ public:
     *
     * @param role_id The snowflake of the role to add to member
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api add_guild_member_role(snowflake user_id, snowflake role_id);
@@ -389,8 +373,6 @@ public:
     *
     * @param role_id The snowflake of the role to remove from member
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api remove_guild_member_role(snowflake user_id, snowflake role_id);
@@ -398,8 +380,6 @@ public:
     /// Remove guild member (kick)
     /**
     * @param user_id The snowflake of the member to kick
-    *
-    * @param callback A callback to execute after REST execution
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
@@ -411,8 +391,6 @@ public:
     *
     * @param delete_message_days How many days to delete member message history (0-7)
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api create_guild_ban(snowflake user_id, int8_t delete_message_days);
@@ -421,15 +399,23 @@ public:
     /**
     * @param user_id The snowflake of the member to unban
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api remove_guild_ban(snowflake user_id);
 
     /// Create a guild role
     /**
-    * @param callback A callback to execute after REST execution
+    * @see aegiscpp::permission
+    * 
+    * @param name The name of the role to create
+    *
+    * @param _perms The permissions to set
+    *
+    * @param color 32bit integer of the color
+    *
+    * @param hoist Whether the role should be separated from other roles
+    *
+    * @param mentionable Whether the role can be specifically mentioned
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
@@ -437,17 +423,25 @@ public:
 
     /// Modify the guild role positions
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api modify_guild_role_positions(snowflake id, int16_t position);
 
     /// Modify a guild role
     /**
-    * @param role_id The snowflake of the role to edit
+    * @see aegiscpp::permission
     *
-    * @param callback A callback to execute after REST execution
+    * @param id The snowflake of the role to modify
+    *
+    * @param name The name to set the role to
+    *
+    * @param _perms The permissions to set
+    *
+    * @param color 32bit integer of the color
+    *
+    * @param hoist Whether the role should be separated from other roles
+    *
+    * @param mentionable Whether the role can be specifically mentioned
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
@@ -457,8 +451,6 @@ public:
     /**
     * @param role_id The snowflake of the role to delete
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api delete_guild_role(snowflake role_id);
@@ -466,8 +458,6 @@ public:
     /// Get a count of members that would be pruned
     /**
     * @param days The days of inactivity to prune the member
-    *
-    * @param callback A callback to execute after REST execution
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
@@ -477,80 +467,60 @@ public:
     /**
     * @param days The days of inactivity to prune the member
     *
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api begin_guild_prune(int16_t days);
 
     /// Get active guild invites
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api get_guild_invites();
 
     /// Get guild integrations
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api get_guild_integrations();
 
     /// Create a new guild integration
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api create_guild_integration();
 
     /// Modify a guild integration
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api modify_guild_integration();
 
     /// Delete a guild integration
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api delete_guild_integration();
 
     /// Get the guild integrations
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api sync_guild_integration();
 
     /// Get the guild embed settings
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api get_guild_embed();
 
     /// Modify the guild embed settings
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api modify_guild_embed();
     
     /// Leave the guild this object is associated with
     /**
-    * @param callback A callback to execute after REST execution
-    *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
     AEGIS_DECL rest_api leave();
