@@ -136,7 +136,7 @@ AEGIS_DECL void channel::load_with_guild(guild & _guild, const json & obj, shard
     }
 }
 
-AEGIS_DECL rest_api channel::create_message(std::string content)
+AEGIS_DECL rest_api channel::create_message(std::string content, int64_t nonce)
 {
     std::error_code ec;
     if (_guild != nullptr)//probably a DM
@@ -146,11 +146,14 @@ AEGIS_DECL rest_api channel::create_message(std::string content)
     json obj;
     obj["content"] = content;
 
+    if (nonce)
+        obj["nonce"] = nonce;
+
     auto fut = post_task(fmt::format("/channels/{}/messages", channel_id), "POST", obj.dump());
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
-AEGIS_DECL rest_api channel::create_message_embed(std::string content, const json embed)
+AEGIS_DECL rest_api channel::create_message_embed(std::string content, const json embed, int64_t nonce)
 {
     std::error_code ec;
     if (_guild != nullptr)//probably a DM
@@ -161,6 +164,9 @@ AEGIS_DECL rest_api channel::create_message_embed(std::string content, const jso
     if (!content.empty())
         obj["content"] = content;
     obj["embed"] = embed;
+
+    if (nonce)
+        obj["nonce"] = nonce;
 
     auto fut = post_task(fmt::format("/channels/{}/messages", channel_id), "POST", obj.dump());
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };

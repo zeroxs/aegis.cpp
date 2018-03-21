@@ -102,7 +102,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    AEGIS_DECL rest_api create_message(std::string content);
+    AEGIS_DECL rest_api create_message(std::string content, int64_t nonce = 0);
 
     /// Send an embed message to this channel
     /**
@@ -112,7 +112,7 @@ public:
     *
     * @returns std::tuple<std::error_code,std::shared_future<rest_reply>>
     */
-    AEGIS_DECL rest_api create_message_embed(std::string content, const json embed);
+    AEGIS_DECL rest_api create_message_embed(std::string content, const json embed, int64_t nonce = 0);
 
     /// Edit a message in this channel
     /**
