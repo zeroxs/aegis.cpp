@@ -43,7 +43,6 @@ struct rest_reply
 {
     rest_reply() = default;
     rest_reply(bool p) { permissions = p; }
-    rest_reply(bool p, std::string msg) { permissions = p; reason = msg; }
     rest_reply(websocketpp::http::status_code::value reply_code, bool global, int32_t limit, int32_t remaining, int64_t reset, int32_t retry, std::string content)
         : reply_code(reply_code)
         , global(global)
@@ -62,7 +61,6 @@ struct rest_reply
     int32_t retry = 0; /**< Rate limit retry time */
     std::string content; /**< REST call's reply body */
     bool permissions = true; /**< Whether the call had proper permissions */
-    std::string reason;
 };
 
 }

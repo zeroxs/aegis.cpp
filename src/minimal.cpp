@@ -47,7 +47,7 @@ int main(int argc, char * argv[])
         std::string content{ obj.msg.get_content() };
 
         if (content == "Hi")
-            bot.get_channel(channel_id)->create_message("Hello back");
+            _channel.create_message("Hello back");
 
         return;
     };

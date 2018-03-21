@@ -149,14 +149,6 @@ AEGIS_DECL guild * aegis::get_guild_create(snowflake id, shard * _shard) noexcep
     return it->second.get();
 }
 
-AEGIS_DECL member & aegis::get_member_by_any(snowflake id) const
-{
-    auto it = members.find(id);
-    if (it == members.end())
-        throw aegiscpp::exception(make_error_code(error::member_not_found));
-    return *it->second;
-}
-
 AEGIS_DECL void aegis::setup_callbacks(shard * _shard)
 {
     _shard->connection->set_message_handler(std::bind(&aegis::on_message, this, std::placeholders::_1, std::placeholders::_2, _shard));

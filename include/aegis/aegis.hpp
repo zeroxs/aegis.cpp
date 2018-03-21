@@ -476,8 +476,6 @@ public:
     */
     AEGIS_DECL guild * get_guild_create(snowflake id, shard * _shard) noexcept;
 
-    AEGIS_DECL member & get_member_by_any(snowflake id) const;
-
     /// Called by CHANNEL_CREATE (DirectMessage)
     /**
     * @param id Snowflake of guild to search for
