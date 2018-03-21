@@ -613,7 +613,7 @@ AEGIS_DECL rest_api guild::create_guild_ban(snowflake user_id, int8_t delete_mes
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj = { "delete-message-days", delete_message_days };
-    auto fut = post_task(fmt::format("/guilds/{}/bans/{}", guild_id, user_id), "PUT", obj);
+    auto fut = post_task(fmt::format("/guilds/{}/bans/{}", guild_id, user_id), "PUT", obj.dump());
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -632,7 +632,7 @@ AEGIS_DECL rest_api guild::create_guild_role(std::string name, permission _perms
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj = { { "name", name },{ "permissions", _perms },{ "color", color },{ "hoist", hoist },{ "mentionable", mentionable } };
-    auto fut = post_task(fmt::format("/guilds/{}/roles", guild_id), "POST", obj);
+    auto fut = post_task(fmt::format("/guilds/{}/roles", guild_id), "POST", obj.dump());
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -642,7 +642,7 @@ AEGIS_DECL rest_api guild::modify_guild_role_positions(snowflake role_id, int16_
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj = { { "id", role_id },{ "position", position } };
-    auto fut = post_task(fmt::format("/guilds/{}/roles", guild_id), "PATCH", obj);
+    auto fut = post_task(fmt::format("/guilds/{}/roles", guild_id), "PATCH", obj.dump());
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -652,7 +652,7 @@ AEGIS_DECL rest_api guild::modify_guild_role(snowflake role_id, std::string name
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj = { { "name", name },{ "permissions", _perms },{ "color", color },{ "hoist", hoist },{ "mentionable", mentionable } };
-    auto fut = post_task(fmt::format("/guilds/{}/roles/{}", guild_id, role_id), "POST", obj);
+    auto fut = post_task(fmt::format("/guilds/{}/roles/{}", guild_id, role_id), "POST", obj.dump());
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
