@@ -134,7 +134,7 @@ public:
     using websocket = websocketpp::client<websocketpp::config::asio_tls_client>;
 
     /// Type of a pointer to the Websocket++ TLS connection
-    using connection_ptr= websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr;
+    using connection_ptr = websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr;
 
     /// Type of a pointer to the Websocket++ message payload
     using message_ptr = websocketpp::config::asio_client::message_type::ptr;
@@ -483,12 +483,6 @@ public:
     * @returns Pointer to guild
     */
     AEGIS_DECL void channel_create(const json & obj, shard * _shard);
-
-    /**\todo Incomplete/unsupported. Bots currently do not support Rich Presence.
-    * @param obj
-    * @param _shard
-    */
-    AEGIS_DECL void rich_presence(const json & obj, shard * _shard);
 
     member * self() const
     {

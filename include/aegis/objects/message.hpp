@@ -69,15 +69,13 @@ enum message_type
 class message
 {
 public:
-    /// Constructor for the channel object
+    /// Constructor for the message object
     /**
-    * @param channel_id Snowflake of this channel
+    * @param _shard Pointer to the shard this message is being handled by
     *
-    * @param guild_id Snowflake of guild this channel belongs to
+    * @param channel_id Snowflake of channel this message belongs to
     *
-    * @param ratelimit Reference to bucket factory that manages ratelimits for this channel
-    *
-    * @param emoji Reference to bucket factory that manages ratelimits for emoji messages
+    * @param content String of the message sent
     */
     explicit message(shard * _shard, snowflake channel_id, std::string content)
         : _channel_id(channel_id)

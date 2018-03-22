@@ -128,7 +128,9 @@ AEGIS_DECL channel * aegis::get_channel_create(snowflake id) noexcept
     auto it = channels.find(id);
     if (it == channels.end())
     {
-        auto g = std::make_unique<channel>(id, 0, this, ratelimit().get(rest_limits::bucket_type::CHANNEL), ratelimit().get(rest_limits::bucket_type::EMOJI));
+        auto g = std::make_unique<channel>(id, 0, this
+                                           , ratelimit().get(rest_limits::bucket_type::CHANNEL)
+                                           , ratelimit().get(rest_limits::bucket_type::EMOJI));
         auto ptr = g.get();
         channels.emplace(id, std::move(g));
         return ptr;
@@ -141,7 +143,8 @@ AEGIS_DECL guild * aegis::get_guild_create(snowflake id, shard * _shard) noexcep
     auto it = guilds.find(id);
     if (it == guilds.end())
     {
-        auto g = std::make_unique<guild>(_shard->shardid, id, this, ratelimit().get(rest_limits::bucket_type::GUILD));
+        auto g = std::make_unique<guild>(_shard->shardid, id, this
+                                         , ratelimit().get(rest_limits::bucket_type::GUILD));
         auto ptr = g.get();
         guilds.emplace(id, std::move(g));
         return ptr;
@@ -151,9 +154,14 @@ AEGIS_DECL guild * aegis::get_guild_create(snowflake id, shard * _shard) noexcep
 
 AEGIS_DECL void aegis::setup_callbacks(shard * _shard)
 {
-    _shard->connection->set_message_handler(std::bind(&aegis::on_message, this, std::placeholders::_1, std::placeholders::_2, _shard));
-    _shard->connection->set_open_handler(std::bind(&aegis::on_connect, this, std::placeholders::_1, _shard));
-    _shard->connection->set_close_handler(std::bind(&aegis::on_close, this, std::placeholders::_1, _shard));
+    _shard->connection->set_message_handler(
+        std::bind(&aegis::on_message, this, std::placeholders::_1, std::placeholders::_2, _shard));
+
+    _shard->connection->set_open_handler(
+        std::bind(&aegis::on_connect, this, std::placeholders::_1, _shard));
+
+    _shard->connection->set_close_handler(
+        std::bind(&aegis::on_close, this, std::placeholders::_1, _shard));
 }
 
 AEGIS_DECL void aegis::shutdown()
@@ -249,7 +257,7 @@ AEGIS_DECL void aegis::process_ready(const json & d, shard * _shard)
     if (_self == nullptr)
     {
         const json & userdata = d["user"];
-        discriminator = static_cast<uint16_t>(std::stoi(userdata["discriminator"].get<std::string>()));
+        discriminator = static_cast<int16_t>(std::stoi(userdata["discriminator"].get<std::string>()));
         member_id = userdata["id"];
         username = userdata["username"];
         mfa_enabled = userdata["mfa_enabled"];
@@ -286,7 +294,11 @@ AEGIS_DECL void aegis::process_ready(const json & d, shard * _shard)
         if (!unavailable)
         {
             _guild->load(guildobj, _shard);
-            log->info("Shard#{} : CREATED Guild: {} [T:{}] [{}]", _shard->get_id(), _guild->guild_id, guilds.size(), guildobj["name"].get<std::string>());
+            log->info("Shard#{} : CREATED Guild: {} [T:{}] [{}]"
+                      , _shard->get_id()
+                      , _guild->guild_id
+                      , guilds.size()
+                      , guildobj["name"].get<std::string>());
         }
     }
 }
@@ -347,7 +359,10 @@ AEGIS_DECL void aegis::keep_alive(const asio::error_code & ec, const int ms, sha
             obj["op"] = 1;
             _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
             _shard->lastheartbeat = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-            _shard->keepalivetimer = websocket_o.set_timer(ms, std::bind(&aegis::keep_alive, this, std::placeholders::_1, ms, _shard));
+            _shard->keepalivetimer = websocket_o.set_timer(
+                ms,
+                std::bind(&aegis::keep_alive, this, std::placeholders::_1, ms, _shard)
+            );
         }
         catch (websocketpp::exception & e)
         {
@@ -444,7 +459,8 @@ AEGIS_DECL std::optional<rest_reply> aegis::call(std::string_view path, std::str
         //TODO: check this with OpenSSL 1.1.0+ 
         if (error != asio::error::eof && error != asio::ssl::error::stream_truncated)
             throw asio::system_error(error);
-        return { { hresponse.get_status_code(), global, limit, remaining, reset, retry, !hresponse.get_body().empty() ? hresponse.get_body() : "" } };
+        return { { hresponse.get_status_code(), global, limit, remaining, reset, retry
+            , !hresponse.get_body().empty() ? hresponse.get_body() : "" } };
     }
     catch (std::exception& e)
     {
@@ -474,7 +490,10 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
 
         const json result = json::parse(payload);
         if ((log->level() == spdlog::level::level_enum::trace || wsdbg) && !result.is_null()
-            && (result["t"].is_null() || (result["t"] != "GUILD_CREATE" && result["t"] != "PRESENCE_UPDATE" && result["t"] != "GUILD_MEMBERS_CHUNK")))
+            && (result["t"].is_null()
+                || (result["t"] != "GUILD_CREATE"
+                    && result["t"] != "PRESENCE_UPDATE"
+                    && result["t"] != "GUILD_MEMBERS_CHUNK")))
             log->trace("Shard#{}: {}", _shard->shardid, payload);
 
 
@@ -486,7 +505,7 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
         ///check old messages and remove
 
         for (auto iter = _shard->debug_messages.begin(); iter != _shard->debug_messages.end(); ++iter)
-            if (iter->first < t_time - 30)//30 seconds captures enough to include anything leading up to a 'fresh websocket' state reconnect fail
+            if (iter->first < t_time - 30)
                 _shard->debug_messages.erase(iter++);
         //////////////////////////////////////////////////////////////////////////
 
@@ -554,7 +573,9 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                 {
                     _shard->counters.messages++;
 
-                    message_create obj{ result["d"], _shard, this, get_channel(result["d"]["channel_id"]), get_member(result["d"]["author"]["id"]) };
+                    message_create obj{ result["d"], _shard, this
+                        , get_channel(result["d"]["channel_id"])
+                        , get_member(result["d"]["author"]["id"]) };
                     obj.msg.init(_shard);
 
                     if (obj._channel == nullptr)
@@ -711,11 +732,16 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                     auto _member = get_member_create(member_id);
 
                     const json & user = result["d"]["user"];
-                    if (user.count("username") && !user["username"].is_null()) _member->name = user["username"];
-                    if (user.count("avatar") && !user["avatar"].is_null()) _member->avatar = user["avatar"];
-                    if (user.count("discriminator") && !user["discriminator"].is_null()) _member->discriminator = static_cast<uint16_t>(std::stoi(user["discriminator"].get<std::string>()));
-                    if (user.count("mfa_enabled") && !user["mfa_enabled"].is_null()) _member->mfa_enabled = user["mfa_enabled"];
-                    if (user.count("bot") && !user["bot"].is_null()) _member->isbot = user["bot"];
+                    if (user.count("username") && !user["username"].is_null())
+                        _member->name = user["username"];
+                    if (user.count("avatar") && !user["avatar"].is_null())
+                        _member->avatar = user["avatar"];
+                    if (user.count("discriminator") && !user["discriminator"].is_null())
+                        _member->discriminator = static_cast<uint16_t>(std::stoi(user["discriminator"].get<std::string>()));
+                    if (user.count("mfa_enabled") && !user["mfa_enabled"].is_null())
+                        _member->mfa_enabled = user["mfa_enabled"];
+                    if (user.count("bot") && !user["bot"].is_null())
+                        _member->isbot = user["bot"];
                     //if (!user["verified"].is_null()) _member.m_verified = user["verified"];
                     //if (!user["email"].is_null()) _member.m_email = user["email"];
 
@@ -743,7 +769,10 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                     log->info("Shard#[{}] RESUMED Processed", _shard->shardid);
                     if (_shard->keepalivetimer)
                         _shard->keepalivetimer->cancel();
-                    _shard->keepalivetimer = websocket_o.set_timer(_shard->heartbeattime, std::bind(&aegis::keep_alive, this, std::placeholders::_1, _shard->heartbeattime, _shard));
+                    _shard->keepalivetimer = websocket_o.set_timer(
+                        _shard->heartbeattime
+                        , std::bind(&aegis::keep_alive, this, std::placeholders::_1, _shard->heartbeattime, _shard)
+                    );
                     return;
                 }
                 else if (cmd == "READY")
@@ -1041,16 +1070,28 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                             {
                                 { "token", token },
                                 { "properties",
-                                {
-                                    { "$os", utility::platform::get_platform() },
-                                    { "$browser", "aegis.cpp" },
-                                    { "$device", "aegis.cpp" }
-                                }
+                                    {
+                                        { "$os", utility::platform::get_platform() },
+                                        { "$browser", "aegis.cpp" },
+                                        { "$device", "aegis.cpp" }
+                                    }
                                 },
                                 { "shard", json::array({ _shard->shardid, shard_max_count }) },
                                 { "compress", true },
                                 { "large_threshhold", 250 },
-                                { "presence",{ { "game",{ { "name", self_presence },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
+                                { "presence",
+                                    {
+                                        { "game",
+                                            {
+                                                { "name", self_presence },
+                                                { "type", 0 }
+                                            }
+                                        },
+                                        { "status", "online" },
+                                        { "since", 1 },
+                                        { "afk", false }
+                                    }
+                                }
                             }
                         }
                     };
@@ -1086,7 +1127,10 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
             if (result["op"] == 10)
             {
                 int heartbeat = result["d"]["heartbeat_interval"];
-                _shard->keepalivetimer = websocket_o.set_timer(heartbeat, std::bind(&aegis::keep_alive, this, std::placeholders::_1, heartbeat, _shard));
+                _shard->keepalivetimer = websocket_o.set_timer(
+                    heartbeat,
+                    std::bind(&aegis::keep_alive, this, std::placeholders::_1, heartbeat, _shard)
+                );
                 _shard->heartbeattime = heartbeat;
             }
             if (result["op"] == 11)
@@ -1128,16 +1172,28 @@ AEGIS_DECL void aegis::on_connect(websocketpp::connection_hdl hdl, shard * _shar
                     {
                         { "token", token },
                         { "properties",
-                        {
-                            { "$os", utility::platform::get_platform() },
-                            { "$browser", "aegis.cpp" },
-                            { "$device", "aegis.cpp" }
-                        }
+                            {
+                                { "$os", utility::platform::get_platform() },
+                                { "$browser", "aegis.cpp" },
+                                { "$device", "aegis.cpp" }
+                            }
                         },
                         { "shard", json::array({ _shard->shardid, shard_max_count }) },
                         { "compress", true },
                         { "large_threshhold", 250 },
-                        { "presence",{ { "game",{ { "name", self_presence },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
+                        { "presence",
+                            {
+                                { "game",
+                                    {
+                                        { "name", self_presence },
+                                        { "type", 0 }
+                                    }
+                                },
+                                { "status", "online" },
+                                { "since", 1 },
+                                { "afk", false }
+                            }
+                        }
                     }
                 }
             };
@@ -1147,8 +1203,7 @@ AEGIS_DECL void aegis::on_connect(websocketpp::connection_hdl hdl, shard * _shar
             log->info("Attemping RESUME with id : {}", _shard->session_id);
             obj = {
                 { "op", 6 },
-                {
-                    "d",
+                { "d",
                     {
                         { "token", token },
                         { "session_id", _shard->session_id },
@@ -1170,15 +1225,27 @@ AEGIS_DECL void aegis::on_connect(websocketpp::connection_hdl hdl, shard * _shar
                 {
                     { "token", token },
                     { "properties",
-                    {
-                        { "$os", utility::platform::get_platform() },
-                        { "$browser", "aegis.cpp" },
-                        { "$device", "aegis.cpp" }
-                    }
+                        {
+                            { "$os", utility::platform::get_platform() },
+                            { "$browser", "aegis.cpp" },
+                            { "$device", "aegis.cpp" }
+                        }
                     },
                     { "compress", true },
                     { "large_threshhold", 250 },
-                    { "presence",{ { "game",{ { "name", self_presence },{ "type", 0 } } },{ "status", "online" },{ "since", 1 },{ "afk", false } } }
+                    { "presence",
+                        {
+                            { "game",
+                                {
+                                    { "name", self_presence },
+                                    { "type", 0 }
+                                }
+                            },
+                            { "status", "online" },
+                            { "since", 1 },
+                            { "afk", false }
+                        }
+                    }
                 }
             }
         };
@@ -1262,30 +1329,21 @@ AEGIS_DECL void aegis::debug_trace(shard * _shard)
 
     for (auto & c : shards)
     {
-        w << fmt::format("Shard#{} shard:{:p} m_connection:{:p}\n", _shard->shardid, static_cast<void*>(c.get()), static_cast<void*>(c->connection.get()));
+        if (c == nullptr)
+            w << fmt::format("Shard#{} shard:{:p}\n",
+                             _shard->shardid,
+                             static_cast<void*>(c.get()));
+
+        else
+            w << fmt::format("Shard#{} shard:{:p} m_connection:{:p}\n",
+                             _shard->shardid,
+                             static_cast<void*>(c.get()),
+                             static_cast<void*>(c->connection.get()));
     }
 
     w << "==========<End Error Trace>==========";
 
     log->critical(w.str());
-}
-
-AEGIS_DECL void aegis::rich_presence(const json & obj, shard * _shard)
-{
-    json rp = {
-        { "op", 3 },
-        {
-            "d",
-            {
-                { "game", obj },
-                { "status", "online" },
-                { "afk", false }
-            }
-        }
-    };
-    log->trace("Shard#{}: Rich Presence send: {}", _shard->shardid, obj.dump());
-    if (_shard->connection)
-        _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
 }
 
 AEGIS_DECL void aegis::connect(std::error_code & ec) noexcept
