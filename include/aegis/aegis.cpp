@@ -489,7 +489,7 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
         }
 
         const json result = json::parse(payload);
-        if ((log->level() == spdlog::level::level_enum::trace || wsdbg) && !result.is_null()
+        if ((log->level() == spdlog::level::level_enum::trace && wsdbg) && !result.is_null()
             && (result["t"].is_null()
                 || (result["t"] != "GUILD_CREATE"
                     && result["t"] != "PRESENCE_UPDATE"
