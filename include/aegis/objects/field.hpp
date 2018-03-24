@@ -42,9 +42,12 @@ namespace aegiscpp
 */
 struct field
 {
+    field(std::string n, std::string v) : name(n), value(v) {}
+    field(std::string n, std::string v, bool il) : name(n), value(v), is_inline(il) {}
+    field() = default;
     std::string name; /**<\todo Needs documentation */
     std::string value; /**<\todo Needs documentation */
-    bool isinline = false; /**<\todo Needs documentation */
+    bool is_inline = false; /**<\todo Needs documentation */
 };
 
 /**\todo Needs documentation
@@ -56,7 +59,7 @@ inline void from_json(const nlohmann::json& j, field& m)
     if (j.count("value"))
         m.value = j["value"];
     if (j.count("inline"))
-        m.isinline = j["inline"];
+        m.is_inline = j["inline"];
 }
 
 /**\todo Needs documentation
@@ -65,7 +68,7 @@ inline void to_json(nlohmann::json& j, const field& m)
 {
     j["name"] = m.name;
     j["value"] = m.value;
-    j["inline"] = m.isinline;
+    j["inline"] = m.is_inline;
 }
 
 }

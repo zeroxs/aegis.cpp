@@ -48,6 +48,56 @@ namespace aegiscpp
 class embed
 {
 public:
+    /// Adds a new embed field
+    /**
+     * @param name Name of the field
+     * @param value Text to be shown within field
+     * @param is_inline Sets whether the field is inline
+     */
+    void add_field(std::string name, std::string value, bool is_inline = false)
+    {
+        fields.emplace_back(name, value, is_inline);
+    }
+    /// Sets the title of the embed
+    /**
+    * @param str Title to set
+    */
+    void set_title(std::string str)
+    {
+        title = str;
+    }
+    /// Sets the description of the embed
+    /**
+    * @param str Description to set
+    */
+    void set_description(std::string str)
+    {
+        description = str;
+    }
+    /// Sets the url of the embed
+    /**
+    * @param str Url to set
+    */
+    void set_url(std::string str)
+    {
+        url = str;
+    }
+    /// Sets the timestamp of the embed
+    /**
+    * @param str Timestamp to set
+    */
+    void set_timestamp(std::string str)
+    {
+        timestamp = str;
+    }
+    /// Sets the color of the embed
+    /**
+    * @param clr Color to set
+    */
+    void set_color(int32_t clr)
+    {
+        color = clr;
+    }
     // Combined Limit: 6000
     std::string title; /**<\todo Needs documentation */ // Limit: 256
     std::string type; /**<\todo Needs documentation */
@@ -90,7 +140,7 @@ inline void from_json(const nlohmann::json& j, embed& m)
     if (j.count("provider") && !j["provider"].is_null())
         m.provider_ = j["provider"];
     if (j.count("fields") && !j["fields"].is_null())
-        for (auto i : j["fields"])
+        for (const auto& i : j["fields"])
             m.fields.push_back(i);
 }
 
