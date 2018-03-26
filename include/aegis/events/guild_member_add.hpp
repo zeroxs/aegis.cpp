@@ -42,7 +42,7 @@ namespace aegiscpp
 */
 struct guild_member_add
 {
-    guild_member _member; /**<\todo Needs documentation */
+    guild_member _member_data; /**<\todo Needs documentation */
     shard * _shard; /**<\todo Needs documentation */
     aegis * bot; /**<\todo Needs documentation */
 };
@@ -51,7 +51,7 @@ struct guild_member_add
 */
 inline void from_json(const nlohmann::json& j, guild_member_add& m)
 {
-    m._member = j;
+    m._member_data = j;
 }
 
 }
