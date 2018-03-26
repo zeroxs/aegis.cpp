@@ -368,6 +368,10 @@ AEGIS_DECL void aegis::keep_alive(const asio::error_code & ec, const int ms, sha
         {
             log->error("Websocket exception : {0}", e.what());
         }
+        catch (...)
+        {
+            log->critical("Uncaught websocket exception");
+        }
     }
 }
 
@@ -1160,12 +1164,67 @@ AEGIS_DECL void aegis::on_connect(websocketpp::connection_hdl hdl, shard * _shar
     log->info("Connection established");
     _shard->connection_state = Connecting;
 
-    if (!selfbot)
+    try
     {
-        json obj;
-        if (_shard->session_id.empty())
+        if (!selfbot)
         {
-            obj = {
+            json obj;
+            if (_shard->session_id.empty())
+            {
+                obj = {
+                    { "op", 2 },
+                    {
+                        "d",
+                        {
+                            { "token", token },
+                            { "properties",
+                                {
+                                    { "$os", utility::platform::get_platform() },
+                                    { "$browser", "aegis.cpp" },
+                                    { "$device", "aegis.cpp" }
+                                }
+                            },
+                            { "shard", json::array({ _shard->shardid, shard_max_count }) },
+                            { "compress", true },
+                            { "large_threshhold", 250 },
+                            { "presence",
+                                {
+                                    { "game",
+                                        {
+                                            { "name", self_presence },
+                                            { "type", 0 }
+                                        }
+                                    },
+                                    { "status", "online" },
+                                    { "since", 1 },
+                                    { "afk", false }
+                                }
+                            }
+                        }
+                    }
+                };
+            }
+            else
+            {
+                log->info("Attemping RESUME with id : {}", _shard->session_id);
+                obj = {
+                    { "op", 6 },
+                    { "d",
+                        {
+                            { "token", token },
+                            { "session_id", _shard->session_id },
+                            { "seq", _shard->sequence }
+                        }
+                    }
+                };
+            }
+            //log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
+            if (_shard->connection)
+                _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
+        }
+        else
+        {
+            json obj = {
                 { "op", 2 },
                 {
                     "d",
@@ -1178,7 +1237,6 @@ AEGIS_DECL void aegis::on_connect(websocketpp::connection_hdl hdl, shard * _shar
                                 { "$device", "aegis.cpp" }
                             }
                         },
-                        { "shard", json::array({ _shard->shardid, shard_max_count }) },
                         { "compress", true },
                         { "large_threshhold", 250 },
                         { "presence",
@@ -1197,61 +1255,14 @@ AEGIS_DECL void aegis::on_connect(websocketpp::connection_hdl hdl, shard * _shar
                     }
                 }
             };
+            //log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
+            if (_shard->connection)
+                _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
         }
-        else
-        {
-            log->info("Attemping RESUME with id : {}", _shard->session_id);
-            obj = {
-                { "op", 6 },
-                { "d",
-                    {
-                        { "token", token },
-                        { "session_id", _shard->session_id },
-                        { "seq", _shard->sequence }
-                    }
-                }
-            };
-        }
-        //log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
-        if (_shard->connection)
-            _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
     }
-    else
+    catch (...)
     {
-        json obj = {
-            { "op", 2 },
-            {
-                "d",
-                {
-                    { "token", token },
-                    { "properties",
-                        {
-                            { "$os", utility::platform::get_platform() },
-                            { "$browser", "aegis.cpp" },
-                            { "$device", "aegis.cpp" }
-                        }
-                    },
-                    { "compress", true },
-                    { "large_threshhold", 250 },
-                    { "presence",
-                        {
-                            { "game",
-                                {
-                                    { "name", self_presence },
-                                    { "type", 0 }
-                                }
-                            },
-                            { "status", "online" },
-                            { "since", 1 },
-                            { "afk", false }
-                        }
-                    }
-                }
-            }
-        };
-        //log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
-        if (_shard->connection)
-            _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
+        log->critical("Uncaught on_connect exception");
     }
 }
 
