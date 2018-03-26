@@ -49,12 +49,12 @@ struct user
 {
     bool is_bot() const noexcept
     {
-        return isbot;
+        return is_bot;
     }
 
     bool is_webhook() const noexcept
     {
-        return (isbot) && (discriminator == "0" || discriminator == "0000");
+        return (is_bot) && (discriminator == "0" || discriminator == "0000");
     }
 
     snowflake user_id; /**<\todo Needs documentation */
@@ -62,7 +62,7 @@ struct user
     std::string username; /**<\todo Needs documentation */
     std::string discriminator; /**<\todo Needs documentation */
     std::string avatar; /**<\todo Needs documentation */
-    bool isbot = false; /**<\todo Needs documentation */
+    bool is_bot = false; /**<\todo Needs documentation */
     bool mfa_enabled = false; /**<\todo Needs documentation */
     bool verified = false; /**<\todo Needs documentation */
 };
@@ -81,7 +81,7 @@ inline void from_json(const nlohmann::json& j, user& m)
     if (j.count("avatar") && !j["avatar"].is_null())
         m.avatar = j["avatar"];
     if (j.count("bot") &&  !j["bot"].is_null())
-        m.isbot = j["bot"];
+        m.is_bot = j["bot"];
     if (j.count("mfa_enabled") && !j["mfa_enabled"].is_null())
         m.mfa_enabled = j["mfa_enabled"];
     if (j.count("verified") && !j["verified"].is_null())
@@ -96,7 +96,7 @@ inline void to_json(nlohmann::json& j, const user& m)
     j["guild_id"] = m.guild_id;
     j["username"] = m.username;
     j["discriminator"] = m.discriminator;
-    j["bot"] = m.isbot;
+    j["bot"] = m.is_bot;
     j["mfa_enabled"] = m.mfa_enabled;
     j["verified"] = m.verified;
 }

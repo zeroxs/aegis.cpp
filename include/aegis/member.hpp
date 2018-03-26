@@ -49,7 +49,7 @@ public:
     std::string name; /**< Username of member */
     uint16_t discriminator = 0; /**< 4 digit discriminator (1-9999) */
     std::string avatar; /**< Hash of member avatar */
-    bool isbot = false; /**< true if member is a bot */
+    bool is_bot = false; /**< true if member is a bot */
     bool mfa_enabled = false; /**< true if member has Two-factor authentication enabled */
 
     /**

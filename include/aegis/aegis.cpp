@@ -272,7 +272,7 @@ AEGIS_DECL void aegis::process_ready(const json & d, shard * _shard)
         _self = m.get();
         members.emplace(member_id, std::move(m));
         _self->member_id = member_id;
-        _self->isbot = true;
+        _self->is_bot = true;
         _self->name = username;
         _self->discriminator = discriminator;
         _self->status = member::Online;
@@ -741,7 +741,7 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                     if (user.count("mfa_enabled") && !user["mfa_enabled"].is_null())
                         _member->mfa_enabled = user["mfa_enabled"];
                     if (user.count("bot") && !user["bot"].is_null())
-                        _member->isbot = user["bot"];
+                        _member->is_bot = user["bot"];
                     //if (!user["verified"].is_null()) _member.m_verified = user["verified"];
                     //if (!user["email"].is_null()) _member.m_email = user["email"];
 

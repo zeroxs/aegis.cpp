@@ -56,7 +56,7 @@ AEGIS_DECL void member::load(guild * _guild, const json & obj, shard * _shard)
         if (user.count("avatar") && !user["avatar"].is_null()) avatar = user["avatar"];
         if (user.count("discriminator") && !user["discriminator"].is_null()) discriminator = static_cast<uint16_t>(std::stoi(user["discriminator"].get<std::string>()));
         if (user.count("bot"))
-            isbot = user["bot"].is_null() ? false : true;
+            is_bot = user["bot"].is_null() ? false : true;
 
         if (_guild == nullptr)
             return;
