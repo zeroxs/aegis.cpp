@@ -1,5 +1,5 @@
 //
-// src.cpp
+// src.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -36,7 +36,6 @@
 #include <aegis/error.hpp>
 
 #include <aegis/config.hpp>
-#include <aegis/common.hpp>
 #include <aegis/utility.hpp>
 
 #include <aegis/snowflake.hpp>

@@ -61,20 +61,34 @@ AEGIS_DECL permission channel::perms()
 }
 
 
-AEGIS_DECL std::future<rest_reply> channel::post_task(std::string path, std::string method, std::string obj)
+AEGIS_DECL std::future<rest_reply> channel::post_task(std::string path, std::string method, const nlohmann::json & obj)
 {
-    auto task(std::make_shared<std::packaged_task<rest_reply()>>(std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, channel_id, path, obj, method)));
+    try
+    {
+        auto task(std::make_shared<std::packaged_task<rest_reply()>>(
+            std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, channel_id, path, obj.dump(), method)));
 
-    auto fut = task->get_future();
-    
-    get_bot().rest_service().post([t = std::move(task)]() { (*t)(); });
+        auto fut = task->get_future();
 
-    return fut;
+        get_bot().rest_service().post([t = std::move(task)]() { (*t)(); });
+
+        return fut;
+    }
+    catch (nlohmann::json::type_error& e)
+    {
+        get_bot().log->critical("json::type_error channel::post_task() exception : {}", e.what());
+    }
+    catch (...)
+    {
+        get_bot().log->critical("Uncaught post_task exception");
+    }
+    return {};
 }
 
-AEGIS_DECL std::future<rest_reply> channel::post_emoji_task(std::string path, std::string method, std::string obj)
+AEGIS_DECL std::future<rest_reply> channel::post_emoji_task(std::string path, std::string method, const nlohmann::json & obj)
 {
-    auto task(std::make_shared<std::packaged_task<rest_reply()>>(std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &emojilimit, channel_id, path, obj, method)));
+    auto task(std::make_shared<std::packaged_task<rest_reply()>>(
+        std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &emojilimit, channel_id, path, obj.dump(), method)));
 
     auto fut = task->get_future();
 
@@ -149,7 +163,7 @@ AEGIS_DECL rest_api channel::create_message(std::string content, int64_t nonce)
     if (nonce)
         obj["nonce"] = nonce;
 
-    auto fut = post_task(fmt::format("/channels/{}/messages", channel_id), "POST", obj.dump());
+    auto fut = post_task(fmt::format("/channels/{}/messages", channel_id), "POST", obj);
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -168,7 +182,7 @@ AEGIS_DECL rest_api channel::create_message_embed(std::string content, const jso
     if (nonce)
         obj["nonce"] = nonce;
 
-    auto fut = post_task(fmt::format("/channels/{}/messages", channel_id), "POST", obj.dump());
+    auto fut = post_task(fmt::format("/channels/{}/messages", channel_id), "POST", obj);
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -176,7 +190,7 @@ AEGIS_DECL rest_api channel::edit_message(snowflake message_id, std::string cont
 {
     json obj;
     obj["content"] = content;
-    auto fut = post_task(fmt::format("/channels/{}/messages/{}", channel_id, message_id), "PATCH", obj.dump());
+    auto fut = post_task(fmt::format("/channels/{}/messages/{}", channel_id, message_id), "PATCH", obj);
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -187,7 +201,7 @@ AEGIS_DECL rest_api channel::edit_message_embed(snowflake message_id, std::strin
         obj["content"] = content;
     obj["embed"] = embed;
     obj["content"] = content;
-    auto fut = post_task(fmt::format("/channels/{}/messages/{}", channel_id, message_id), "PATCH", obj.dump());
+    auto fut = post_task(fmt::format("/channels/{}/messages/{}", channel_id, message_id), "PATCH", obj);
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -213,7 +227,7 @@ AEGIS_DECL rest_api channel::bulk_delete_message(std::vector<int64_t> messages)
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj = messages;
-    auto fut = post_task(fmt::format("/channels/{}/messages/bulk-delete", channel_id), "POST", obj.dump());
+    auto fut = post_task(fmt::format("/channels/{}/messages/bulk-delete", channel_id), "POST", obj);
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -255,7 +269,7 @@ AEGIS_DECL rest_api channel::modify_channel(std::optional<std::string> name, std
     if (parent_id.has_value())//VIP only
         obj["parent_id"] = parent_id.value();
 
-    auto fut = post_task(fmt::format("/channels/{}", channel_id), "PATCH", obj.dump());
+    auto fut = post_task(fmt::format("/channels/{}", channel_id), "PATCH", obj);
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -329,7 +343,7 @@ AEGIS_DECL rest_api channel::edit_channel_permissions(snowflake overwrite_id, in
     obj["deny"] = deny;
     obj["type"] = type;
  
-    auto fut = post_task(fmt::format("/channels/{}/permissions/{}", channel_id, overwrite_id), "PUT", obj.dump());
+    auto fut = post_task(fmt::format("/channels/{}/permissions/{}", channel_id, overwrite_id), "PUT", obj);
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -359,7 +373,7 @@ AEGIS_DECL rest_api channel::create_channel_invite(std::optional<int> max_age, s
     if (unique.has_value())
         obj["unique"] = unique.value();
 
-    auto fut = post_task(fmt::format("/channels/{}/invites", channel_id), "POST", obj.dump());
+    auto fut = post_task(fmt::format("/channels/{}/invites", channel_id), "POST", obj);
     return { ec, std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 

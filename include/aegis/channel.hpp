@@ -82,9 +82,9 @@ public:
 
     AEGIS_DECL permission perms();
 
-    AEGIS_DECL std::future<rest_reply> post_task(std::string path, std::string method = "POST", std::string obj = {});
+    AEGIS_DECL std::future<rest_reply> post_task(std::string path, std::string method = "POST", const nlohmann::json & obj = {});
 
-    AEGIS_DECL std::future<rest_reply> post_emoji_task(std::string path, std::string method = "POST", std::string obj = {});
+    AEGIS_DECL std::future<rest_reply> post_emoji_task(std::string path, std::string method = "POST", const nlohmann::json & obj = {});
 
     /// Load this channel with guild data
     /**

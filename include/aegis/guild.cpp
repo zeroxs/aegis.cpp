@@ -391,18 +391,30 @@ AEGIS_DECL int32_t guild::get_member_count() const noexcept
     return static_cast<int32_t>(members.size());
 }
 
-
-AEGIS_DECL std::future<rest_reply> guild::post_task(std::string path, std::string method, std::string obj)
+AEGIS_DECL std::future<rest_reply> guild::post_task(std::string path, std::string method, const nlohmann::json & obj)
 {
-    auto task(std::make_shared<std::packaged_task<rest_reply()>>(
-        std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, guild_id, path, obj, method)));
+    try
+    {
+        auto task(std::make_shared<std::packaged_task<rest_reply()>>(
+            std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, guild_id, path, obj.dump(), method)));
 
-    auto fut = task->get_future();
+        auto fut = task->get_future();
 
-    get_bot().rest_service().post([task]() { (*task)(); });
+        get_bot().rest_service().post([task]() { (*task)(); });
 
-    return fut;
+        return fut;
+    }
+    catch (nlohmann::json::type_error& e)
+    {
+        get_bot().log->critical("json::type_error guild::post_task() exception : {}", e.what());
+    }
+    catch (...)
+    {
+        get_bot().log->critical("Uncaught post_task exception");
+    }
+    return {};
 }
+
 
 /**\todo Incomplete. Signature may change. Location may change.
 */
@@ -450,7 +462,7 @@ AEGIS_DECL rest_api guild::modify_guild(std::optional<std::string> name, std::op
         obj["splash"] = splash.value();
 
 
-    auto fut = post_task(fmt::format("/guilds/{}", guild_id), "PATCH", obj.dump());
+    auto fut = post_task(fmt::format("/guilds/{}", guild_id), "PATCH", obj);
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -479,7 +491,7 @@ AEGIS_DECL rest_api guild::create_text_channel(std::string name, int64_t parent_
         obj["permission_overwrites"].push_back(p_ow);
     }
 
-    auto fut = post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj.dump());
+    auto fut = post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj);
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -497,7 +509,7 @@ AEGIS_DECL rest_api guild::create_voice_channel(std::string name, int32_t bitrat
         obj["permission_overwrites"].push_back(p_ow);
     }
 
-    auto fut = post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj.dump());
+    auto fut = post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj);
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -515,7 +527,7 @@ AEGIS_DECL rest_api guild::create_category_channel(std::string name, int64_t par
         obj["permission_overwrites"].push_back(p_ow);
     }
 
-    auto fut = post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj.dump());
+    auto fut = post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj);
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -566,7 +578,7 @@ AEGIS_DECL rest_api guild::modify_guild_member(snowflake user_id, std::optional<
         obj["channel_id"] = channel_id.value();//requires MOVE_MEMBERS
     }
 
-    auto fut = post_task(fmt::format("/guilds/{}/members/{}", guild_id, user_id), "PATCH", obj.dump());
+    auto fut = post_task(fmt::format("/guilds/{}/members/{}", guild_id, user_id), "PATCH", obj);
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -576,7 +588,7 @@ AEGIS_DECL rest_api guild::modify_my_nick(std::string newname)
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj = { "nick", newname };
-    auto fut = post_task(fmt::format("/guilds/{}/members/@me/nick", guild_id), "PATCH", obj.dump());
+    auto fut = post_task(fmt::format("/guilds/{}/members/@me/nick", guild_id), "PATCH", obj);
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -617,7 +629,7 @@ AEGIS_DECL rest_api guild::create_guild_ban(snowflake user_id, int8_t delete_mes
         obj = { "delete-message-days", delete_message_days };
     else
         obj = { { "delete-message-days", delete_message_days }, { "reason", reason } };
-    auto fut = post_task(fmt::format("/guilds/{}/bans/{}", guild_id, user_id), "PUT", obj.dump());
+    auto fut = post_task(fmt::format("/guilds/{}/bans/{}", guild_id, user_id), "PUT", obj);
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -636,7 +648,7 @@ AEGIS_DECL rest_api guild::create_guild_role(std::string name, permission _perms
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj = { { "name", name },{ "permissions", _perms },{ "color", color },{ "hoist", hoist },{ "mentionable", mentionable } };
-    auto fut = post_task(fmt::format("/guilds/{}/roles", guild_id), "POST", obj.dump());
+    auto fut = post_task(fmt::format("/guilds/{}/roles", guild_id), "POST", obj);
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -646,7 +658,7 @@ AEGIS_DECL rest_api guild::modify_guild_role_positions(snowflake role_id, int16_
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj = { { "id", role_id },{ "position", position } };
-    auto fut = post_task(fmt::format("/guilds/{}/roles", guild_id), "PATCH", obj.dump());
+    auto fut = post_task(fmt::format("/guilds/{}/roles", guild_id), "PATCH", obj);
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 
@@ -656,7 +668,7 @@ AEGIS_DECL rest_api guild::modify_guild_role(snowflake role_id, std::string name
         return { make_error_code(error::no_permission), std::make_optional<std::future<rest_reply>>() };
 
     json obj = { { "name", name },{ "permissions", _perms },{ "color", color },{ "hoist", hoist },{ "mentionable", mentionable } };
-    auto fut = post_task(fmt::format("/guilds/{}/roles/{}", guild_id, role_id), "POST", obj.dump());
+    auto fut = post_task(fmt::format("/guilds/{}/roles/{}", guild_id, role_id), "POST", obj);
     return { std::error_code(), std::make_optional<std::future<rest_reply>>(std::move(fut)) };
 }
 

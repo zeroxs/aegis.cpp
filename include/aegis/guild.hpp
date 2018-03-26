@@ -78,7 +78,7 @@ public:
     bucket_factory & ratelimit;
 
 
-    AEGIS_DECL std::future<rest_reply> post_task(std::string path, std::string method = "POST", std::string obj = {});
+    AEGIS_DECL std::future<rest_reply> post_task(std::string path, std::string method = "POST", const nlohmann::json & obj = {});
 
     permission perms()
     {
