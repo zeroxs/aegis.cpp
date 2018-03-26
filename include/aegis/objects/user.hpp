@@ -43,32 +43,54 @@ namespace aegiscpp
 class member;
 class channel;
 
-/**\todo Needs documentation
-*/
+/// User object used to store basic details of a user.
 struct user
 {
+    /// Returns whether user is a bot
+    /**
+     * @returns true if user is a bot
+     */
     bool is_bot() const noexcept
     {
-        return is_bot;
+        return _is_bot;
     }
 
+    /// Set user bot flag
+    /**
+     * @param isbot true if user is a bot
+     */
+    void is_bot(bool isbot) noexcept
+    {
+        _is_bot = isbot;
+    }
+
+    /// Returns whether user is a webhook
+    /**
+     * @returns true if user is a webhook
+     */
     bool is_webhook() const noexcept
     {
-        return (is_bot) && (discriminator == "0" || discriminator == "0000");
+        return (_is_bot) && (discriminator == "0000" || discriminator == "0");
     }
 
-    snowflake user_id; /**<\todo Needs documentation */
-    snowflake guild_id; /**<\todo Needs documentation */
-    std::string username; /**<\todo Needs documentation */
-    std::string discriminator; /**<\todo Needs documentation */
-    std::string avatar; /**<\todo Needs documentation */
-    bool is_bot = false; /**<\todo Needs documentation */
-    bool mfa_enabled = false; /**<\todo Needs documentation */
-    bool verified = false; /**<\todo Needs documentation */
+    snowflake user_id; /**< snowflake of user */
+    snowflake guild_id; /**< snowflake of guild of the event this user is attached to */
+    std::string username; /**< username of user */
+    std::string discriminator; /**< discriminator of user */
+    std::string avatar; /**< Hash of user's avatar */
+private:
+    friend void from_json(const nlohmann::json& j, user& m);
+    friend void to_json(nlohmann::json& j, const user& m);
+    bool _is_bot = false;
+    bool mfa_enabled = false;
+    bool verified = false;
 };
 
-/**\todo Needs documentation
-*/
+/// Parse json into user object
+/**
+ * @param j const reference to json object
+ * @param m reference to user object
+ */
 inline void from_json(const nlohmann::json& j, user& m)
 {
     m.user_id = j["id"];
@@ -81,14 +103,17 @@ inline void from_json(const nlohmann::json& j, user& m)
     if (j.count("avatar") && !j["avatar"].is_null())
         m.avatar = j["avatar"];
     if (j.count("bot") &&  !j["bot"].is_null())
-        m.is_bot = j["bot"];
+        m._is_bot = j["bot"];
     if (j.count("mfa_enabled") && !j["mfa_enabled"].is_null())
         m.mfa_enabled = j["mfa_enabled"];
     if (j.count("verified") && !j["verified"].is_null())
         m.verified = j["verified"];
 }
 
-/**\todo Needs documentation
+/// Dump user object into json
+/**
+* @param j reference to json object
+* @param m const reference to user object
 */
 inline void to_json(nlohmann::json& j, const user& m)
 {
@@ -96,7 +121,7 @@ inline void to_json(nlohmann::json& j, const user& m)
     j["guild_id"] = m.guild_id;
     j["username"] = m.username;
     j["discriminator"] = m.discriminator;
-    j["bot"] = m.is_bot;
+    j["bot"] = m._is_bot;
     j["mfa_enabled"] = m.mfa_enabled;
     j["verified"] = m.verified;
 }
