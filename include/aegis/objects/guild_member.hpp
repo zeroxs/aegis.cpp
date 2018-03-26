@@ -49,8 +49,6 @@ struct guild_member
     std::string joined_at; /**<\todo Needs documentation */
     bool deaf = false; /**<\todo Needs documentation */
     bool mute = false; /**<\todo Needs documentation */
-    shard * _shard; /**<\todo Needs documentation */
-    aegis * bot; /**<\todo Needs documentation */
 };
 
 /**\todo Needs documentation
