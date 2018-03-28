@@ -118,13 +118,13 @@ private:
     std::map<int64_t, std::string> debug_messages;
     std::shared_ptr<asio::steady_timer> reconnect_timer;
     std::shared_ptr<asio::steady_timer> keepalivetimer;
-    long heartbeattime;
+    int32_t heartbeattime;
     int64_t heartbeat_ack;
     int64_t lastheartbeat;
     int64_t lastwsevent;
     int64_t last_status_time;
     int64_t sequence;
-    int16_t shardid;
+    int32_t shardid;
     bot_status connection_state;
     // Websocket++ socket connection
     websocketpp::connection_hdl hdl;

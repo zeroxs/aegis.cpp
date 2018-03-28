@@ -242,6 +242,7 @@ public:
             return;
         websocket_o.start_perpetual();
         status = Ready;
+        starttime = std::chrono::steady_clock::now();
         ec.clear();
     }
 
@@ -499,7 +500,10 @@ public:
 
     std::shared_ptr<spdlog::logger> log;
 
-    std::chrono::steady_clock::time_point starttime;
+    /// Return bot uptime as {days hours minutes seconds}
+    /**
+     * @returns std::string of 'formatted' time
+     */
     std::string uptime() const noexcept
     {
         using seconds = std::chrono::duration<int, std::ratio<1, 1>>;
@@ -534,6 +538,37 @@ private:
     friend class channel;
     friend class shard;
 
+    AEGIS_DECL void ws_presence_update(const json & result, shard * _shard);
+    AEGIS_DECL void ws_typing_start(const json & result, shard * _shard);
+    AEGIS_DECL void ws_message_create(const json & result, shard * _shard);
+    AEGIS_DECL void ws_message_update(const json & result, shard * _shard);
+    AEGIS_DECL void ws_guild_create(const json & result, shard * _shard);
+    AEGIS_DECL void ws_guild_update(const json & result, shard * _shard);
+    AEGIS_DECL void ws_guild_delete(const json & result, shard * _shard);
+    AEGIS_DECL void ws_message_delete(const json & result, shard * _shard);
+    AEGIS_DECL void ws_message_delete_bulk(const json & result, shard * _shard);
+    AEGIS_DECL void ws_user_update(const json & result, shard * _shard);
+    AEGIS_DECL void ws_voice_state_update(const json & result, shard * _shard);
+    AEGIS_DECL void ws_resumed(const json & result, shard * _shard);
+    AEGIS_DECL void ws_ready(const json & result, shard * _shard);
+    AEGIS_DECL void ws_channel_create(const json & result, shard * _shard);
+    AEGIS_DECL void ws_channel_update(const json & result, shard * _shard);
+    AEGIS_DECL void ws_channel_delete(const json & result, shard * _shard);
+    AEGIS_DECL void ws_guild_ban_add(const json & result, shard * _shard);
+    AEGIS_DECL void ws_guild_ban_remove(const json & result, shard * _shard);
+    AEGIS_DECL void ws_guild_emojis_update(const json & result, shard * _shard);
+    AEGIS_DECL void ws_guild_integrations_update(const json & result, shard * _shard);
+    AEGIS_DECL void ws_guild_member_add(const json & result, shard * _shard);
+    AEGIS_DECL void ws_guild_member_remove(const json & result, shard * _shard);
+    AEGIS_DECL void ws_guild_member_update(const json & result, shard * _shard);
+    AEGIS_DECL void ws_guild_members_chunk(const json & result, shard * _shard);
+    AEGIS_DECL void ws_guild_role_create(const json & result, shard * _shard);
+    AEGIS_DECL void ws_guild_role_update(const json & result, shard * _shard);
+    AEGIS_DECL void ws_guild_role_delete(const json & result, shard * _shard);
+    AEGIS_DECL void ws_voice_server_update(const json & result, shard * _shard);
+
+    std::chrono::steady_clock::time_point starttime;
+   
     snowflake member_id;
     std::string username;
     bool mfa_enabled;
@@ -560,9 +595,10 @@ private:
     AEGIS_DECL void on_connect(websocketpp::connection_hdl hdl, shard * _shard);
     AEGIS_DECL void on_close(websocketpp::connection_hdl hdl, shard * _shard);
     AEGIS_DECL void process_ready(const json & d, shard * _shard);
-    AEGIS_DECL void keep_alive(const asio::error_code& error, const int ms, shard * _shard);
+    AEGIS_DECL void keep_alive(const asio::error_code & error, const int32_t ms, shard * _shard);
     AEGIS_DECL void ws_status(const asio::error_code & ec);
     std::shared_ptr<asio::steady_timer> ws_timer;
+    std::map<std::string, std::function<void(const json &, shard *)>> ws_handlers;
 };
 
 }

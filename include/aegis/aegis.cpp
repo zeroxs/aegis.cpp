@@ -208,6 +208,33 @@ AEGIS_DECL void aegis::create_websocket(std::error_code & ec)
         return;
     }
 
+    ws_handlers.emplace("PRESENCE_UPDATE",          std::bind(&aegis::ws_presence_update, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("TYPING_START",             std::bind(&aegis::ws_typing_start, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("MESSAGE_CREATE",           std::bind(&aegis::ws_message_create, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("MESSAGE_DELETE",           std::bind(&aegis::ws_message_delete, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("GUILD_CREATE",             std::bind(&aegis::ws_guild_create, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("GUILD_UPDATE",             std::bind(&aegis::ws_guild_update, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("GUILD_DELETE",             std::bind(&aegis::ws_guild_delete, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("MESSAGE_DELETE_BULK",      std::bind(&aegis::ws_message_delete_bulk, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("USER_UPDATE",              std::bind(&aegis::ws_user_update, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("RESUMED",                  std::bind(&aegis::ws_resumed, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("READY",                    std::bind(&aegis::ws_ready, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("CHANNEL_CREATE",           std::bind(&aegis::ws_channel_create, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("CHANNEL_UPDATE",           std::bind(&aegis::ws_channel_update, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("CHANNEL_DELETE",           std::bind(&aegis::ws_channel_delete, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("GUILD_BAN_ADD",            std::bind(&aegis::ws_guild_ban_add, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("GUILD_BAN_REMOVE",         std::bind(&aegis::ws_guild_ban_remove, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("GUILD_EMOJIS_UPDATE",      std::bind(&aegis::ws_guild_emojis_update, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("GUILD_INTEGRATIONS_UPDATE",std::bind(&aegis::ws_guild_integrations_update, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("GUILD_MEMBER_ADD",         std::bind(&aegis::ws_guild_member_add, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("GUILD_MEMBER_REMOVE",      std::bind(&aegis::ws_guild_member_remove, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("GUILD_MEMBER_UPDATE",      std::bind(&aegis::ws_guild_member_update, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("GUILD_MEMBERS_CHUNK",      std::bind(&aegis::ws_guild_members_chunk, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("GUILD_ROLE_CREATE",        std::bind(&aegis::ws_guild_role_create, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("GUILD_ROLE_UPDATE",        std::bind(&aegis::ws_guild_role_update, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("GUILD_ROLE_DELETE",        std::bind(&aegis::ws_guild_role_delete, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("VOICE_STATE_UPDATE",       std::bind(&aegis::ws_voice_state_update, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("VOICE_SERVER_UPDATE",      std::bind(&aegis::ws_voice_server_update, this, std::placeholders::_1, std::placeholders::_2));
 
     json ret = json::parse(res->content);
     if (ret.count("message"))
@@ -326,7 +353,7 @@ AEGIS_DECL void aegis::channel_create(const json & obj, shard * _shard)
     }
 }
 
-AEGIS_DECL void aegis::keep_alive(const asio::error_code & ec, const int ms, shard * _shard)
+AEGIS_DECL void aegis::keep_alive(const asio::error_code & ec, const int32_t ms, shard * _shard)
 {
     if (ec != asio::error::operation_aborted)
     {
@@ -492,643 +519,141 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
             payload = ss.str();
         }
 
-        const json result = json::parse(payload);
-        if ((log->level() == spdlog::level::level_enum::trace && wsdbg) && !result.is_null()
-            && (result["t"].is_null()
-                || (result["t"] != "GUILD_CREATE"
-                    && result["t"] != "PRESENCE_UPDATE"
-                    && result["t"] != "GUILD_MEMBERS_CHUNK")))
-            log->trace("Shard#{}: {}", _shard->shardid, payload);
+       const json result = json::parse(payload);
 
-
-        //////////////////////////////////////////////////////////////////////////
-        int64_t t_time = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-        _shard->debug_messages[t_time] = payload;
-
-        _shard->lastwsevent = t_time;
-        ///check old messages and remove
-
-        for (auto iter = _shard->debug_messages.begin(); iter != _shard->debug_messages.end(); ++iter)
-            if (iter->first < t_time - 30)
-                _shard->debug_messages.erase(iter++);
-        //////////////////////////////////////////////////////////////////////////
-
-        if (!result["s"].is_null())
-            _shard->sequence = result["s"];
-
-        if (!result.is_null())
+       if (!result.is_null())
         {
-            if (!result["t"].is_null())
+        
+           if ((log->level() == spdlog::level::level_enum::trace && wsdbg)
+               && (result["t"].is_null()
+                   || (result["t"] != "GUILD_CREATE"
+                       && result["t"] != "PRESENCE_UPDATE"
+                       && result["t"] != "GUILD_MEMBERS_CHUNK")))
+               log->trace("Shard#{}: {}", _shard->shardid, payload);
+
+            //////////////////////////////////////////////////////////////////////////
+            int64_t t_time = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+            _shard->debug_messages[t_time] = payload;
+        
+            _shard->lastwsevent = t_time;
+            ///check old messages and remove
+        
+            for (auto iter = _shard->debug_messages.begin(); iter != _shard->debug_messages.end(); ++iter)
+                if (iter->first < t_time - 30)
+                    _shard->debug_messages.erase(iter++);
+            //////////////////////////////////////////////////////////////////////////
+        
+            if (!result["s"].is_null())
+                _shard->sequence = result["s"];
+        
+            if (!result.is_null())
             {
-                ++message_count[result["t"].get<std::string>()];
-
-                if (result["t"] == "PRESENCE_UPDATE")
+                //does string message exist
+                if (!result["t"].is_null())
                 {
-                    _shard->counters.presence_changes++;
-
-                    json user = result["d"]["user"];
-                    snowflake guild_id = result["d"]["guild_id"];
-                    snowflake member_id = user["id"];
-
-
-                    member::member_status status;
-                    if (result["d"]["status"] == "idle")
-                        status = member::Idle;
-                    else if (result["d"]["status"] == "dnd")
-                        status = member::DoNotDisturb;
-                    else if (result["d"]["status"] == "online")
-                        status = member::Online;
-                    else
-                        status = member::Offline;
-
-                    auto _member = get_member_create(member_id);
-                    auto  _guild = get_guild(guild_id);
-                    _member->load(_guild, result["d"], _shard);
-                    _member->status = status;
-
-                    presence_update obj;
-                    obj.bot = this;
-                    obj._shard = _shard;
-                    obj._user = result["d"]["user"];
-
-                    if (_callbacks.i_presence_update)
-                        _callbacks.i_presence_update(obj);
-                    return;
-                }
-
-                const std::string & cmd = result["t"].get<std::string>();
-
-                if (cmd == "TYPING_START")
-                {
-                    auto _channel = get_channel(result["d"]["channel_id"]);
-                    auto _member = get_member(result["d"]["user_id"]);
-                    typing_start obj;
-                    obj._channel = _channel;
-                    obj._member = _member;
-                    obj.timestamp = result["d"]["timestamp"];
-                    obj.bot = this;
-                    obj._shard = _shard;
-
-                    if (_callbacks.i_typing_start)
-                        _callbacks.i_typing_start(std::move(obj));
-                    return;
-                }
-                if (cmd == "MESSAGE_CREATE")
-                {
-                    _shard->counters.messages++;
-
-                    message_create obj{ result["d"], _shard, this
-                        , get_channel(result["d"]["channel_id"])
-                        , get_member(result["d"]["author"]["id"]) };
-                    obj.msg.init(_shard);
-
-                    if (obj._channel == nullptr)
-                        //catch this
-                        return;
-
-                    if (obj._channel->guild_id == 0)//DM
+        
+                    std::string cmd = result["t"];
+        
+                    auto it = ws_handlers.find(cmd);
+                    if (it != ws_handlers.end())
                     {
-                        if (_callbacks.i_message_create_dm)
-                            _callbacks.i_message_create_dm(obj);
+                        //message id found
+                        ++message_count[cmd];
+        
+                        //execute handler
+                        (it->second)(result, _shard);
                     }
                     else
                     {
-                        if (_callbacks.i_message_create)
-                            _callbacks.i_message_create(obj);
+                        //message id exists but not found
                     }
-                    return;
                 }
-                if (cmd == "MESSAGE_UPDATE")
+        
+                //no message. check opcodes
+        
+                if (result["op"] == 9)
                 {
-                    message_update obj;
-                    if (result["d"].count("author") && result["d"]["author"].count("id"))
-                        obj._member = get_member(result["d"]["author"]["id"]);
-                    obj._channel = get_channel(result["d"]["channel_id"]);
-                    obj.msg = result["d"];
-                    obj.bot = this;
-                    obj._shard = _shard;
-
-                    if (_callbacks.i_message_update)
-                        _callbacks.i_message_update(obj);
-                    return;
-                }
-                else if (cmd == "GUILD_CREATE")
-                {
-                    snowflake guild_id = result["d"]["id"];
-
-                    auto _guild = get_guild_create(guild_id, _shard);
-                    if (_guild->unavailable)
+                    if (result["d"] == false)
                     {
-                        //outage
-                    }
-
-                    _guild->load(result["d"], _shard);
-
-                    //TODO: abide by rate limits (120/60)
-                    json chunk;
-                    chunk["d"]["guild_id"] = std::to_string(guild_id);
-                    chunk["d"]["query"] = "";
-                    chunk["d"]["limit"] = 0;
-                    chunk["op"] = 8;
-                    _shard->connection->send(chunk.dump(), websocketpp::frame::opcode::text);
-
-                    guild_create obj;
-                    obj.bot = this;
-                    obj._guild = result["d"];
-                    obj._shard = _shard;
-
-                    if (_callbacks.i_guild_create)
-                        _callbacks.i_guild_create(obj);
-                    return;
-                }
-                else if (cmd == "GUILD_UPDATE")
-                {
-                    snowflake guild_id = result["d"]["id"];
-
-                    auto _guild = get_guild(guild_id);
-                    if (_guild == nullptr)
-                    {
-                        log->error("Guild Update: [{}] does not exist", guild_id);
-                        //this should never happen
-                        return;
-                    }
-
-                    _guild->load(result["d"], _shard);
-
-                    guild_update obj;
-                    obj.bot = this;
-                    obj._shard = _shard;
-                    obj._guild = result["d"];
-
-                    if (_callbacks.i_guild_update)
-                        _callbacks.i_guild_update(obj);
-                    return;
-                }
-                else if (cmd == "GUILD_DELETE")
-                {
-                    guild_delete obj;
-                    obj.bot = this;
-                    obj._shard = _shard;
-                    obj.guild_id = result["d"]["id"];
-                    if (result["d"].count("unavailable"))
-                        obj.unavailable = result["d"]["unavailable"];
-                    else
-                        obj.unavailable = false;
-
-                    if (_callbacks.i_guild_delete)
-                        _callbacks.i_guild_delete(obj);
-
-                    if (obj.unavailable == true)
-                    {
-                        //outage
-                    }
-                    else
-                    {
-                        snowflake guild_id = result["d"]["id"];
-
-                        auto _guild = get_guild(guild_id);
-                        if (_guild == nullptr)
-                        {
-                            log->critical("Guild Delete: [{}] does not exist", guild_id);
-                            //this should never happen
-                            return;
-                        }
-
-                        _guild->unavailable = obj.unavailable;
-
-                        //kicked or left
-                        //websocket_o.set_timer(5000, [this, id, _shard](const asio::error_code & ec)
-                        //{
-                            guilds.erase(guild_id);
-                        //});
-                    }
-                    return;
-                }
-                else if (cmd == "MESSAGE_DELETE")
-                {
-                    message_delete obj;
-                    obj._channel = get_channel(result["d"]["channel_id"]);
-                    obj.bot = this;
-                    obj.message_id = result["d"]["id"];
-                    obj.channel_id = result["d"]["channel_id"];
-
-                    if (_callbacks.i_message_delete)
-                        _callbacks.i_message_delete(obj);
-                    return;
-                }
-                else if (cmd == "MESSAGE_DELETE_BULK")
-                {
-                    message_delete_bulk obj;
-                    if (_callbacks.i_message_delete_bulk)
-                        _callbacks.i_message_delete_bulk(obj);
-                    return;
-                }
-                else if (cmd == "USER_UPDATE")
-                {
-                    snowflake member_id = result["d"]["user"]["id"];
-
-                    auto _member = get_member_create(member_id);
-
-                    const json & user = result["d"]["user"];
-                    if (user.count("username") && !user["username"].is_null())
-                        _member->name = user["username"];
-                    if (user.count("avatar") && !user["avatar"].is_null())
-                        _member->avatar = user["avatar"];
-                    if (user.count("discriminator") && !user["discriminator"].is_null())
-                        _member->discriminator = static_cast<uint16_t>(std::stoi(user["discriminator"].get<std::string>()));
-                    if (user.count("mfa_enabled") && !user["mfa_enabled"].is_null())
-                        _member->mfa_enabled = user["mfa_enabled"];
-                    if (user.count("bot") && !user["bot"].is_null())
-                        _member->is_bot = user["bot"];
-                    //if (!user["verified"].is_null()) _member.m_verified = user["verified"];
-                    //if (!user["email"].is_null()) _member.m_email = user["email"];
-
-                    user_update obj;
-                    obj._member = _member;
-                    obj.bot = this;
-                    obj._shard = _shard;
-                    obj = result["d"];
-
-                    if (_callbacks.i_user_update)
-                        _callbacks.i_user_update(obj);
-
-                    return;
-                }
-                else if (cmd == "VOICE_STATE_UPDATE")
-                {
-                    voice_state_update obj;
-                    if (_callbacks.i_voice_state_update)
-                        _callbacks.i_voice_state_update(obj);
-                    return;
-                }
-                else if (cmd == "RESUMED")
-                {
-                    _shard->connection_state = Online;
-                    log->info("Shard#[{}] RESUMED Processed", _shard->shardid);
-                    if (_shard->keepalivetimer)
-                        _shard->keepalivetimer->cancel();
-                    _shard->keepalivetimer = websocket_o.set_timer(
-                        _shard->heartbeattime
-                        , std::bind(&aegis::keep_alive, this, std::placeholders::_1, _shard->heartbeattime, _shard)
-                    );
-                    return;
-                }
-                else if (cmd == "READY")
-                {
-                    process_ready(result["d"], _shard);
-                    _shard->connection_state = Online;
-                    log->info("Shard#[{}] READY Processed", _shard->shardid);
-
-                    ready obj;
-                    obj = result["d"];
-                    obj.bot = this;
-                    obj._shard = _shard;
-
-                    if (_callbacks.i_ready)
-                        _callbacks.i_ready(obj);
-
-                    return;
-                }
-                else if (cmd == "CHANNEL_CREATE")
-                {
-                    aegiscpp::channel_create obj;
-                    if (_callbacks.i_channel_create)
-                        _callbacks.i_channel_create(obj);
-
-                    snowflake channel_id = result["d"]["id"];
-
-                    if (result["d"].count("guild_id") && !result["d"]["guild_id"].is_null())
-                    {
-                        //guild channel
-                        snowflake guild_id = result["d"]["guild_id"];
-                        auto _guild = get_guild(guild_id);
-                        auto _channel = _guild->get_channel_create(channel_id, _shard);
-                        _channel->load_with_guild(*_guild, result["d"], _shard);
-                        _shard->counters.channels++;
-                    }
-                    else
-                    {
-                        //dm
-                        auto _channel = get_channel_create(channel_id);
-                        channel_create(result["d"], _shard);
-                    }
-
-                    return;
-                }
-
-                //////////////////////////////////////////////////////////////////////////
-                //start of guild_snowflake events
-                //everything beyond here has a guild_snowflake
-
-                if (result["d"].count("guild_id"))
-                {
-                    if (cmd == "CHANNEL_UPDATE")
-                    {
-                        channel_update obj;
-                        if (_callbacks.i_channel_update)
-                            _callbacks.i_channel_update(obj);
-
-                        snowflake channel_id = result["d"]["id"];
-
-                        if (!result["d"]["guild_id"].is_null())
-                        {
-                            //guild channel
-                            snowflake guild_id = result["d"]["guild_id"];
-                            guild * _guild = get_guild(guild_id);
-                            if (_guild == nullptr)//TODO: errors
-                                return;
-                            channel * _channel = _guild->get_channel_create(channel_id, _shard);
-                            _channel->load_with_guild(*_guild, result["d"], _shard);
-                        }
-                        else
-                        {
-                            //dm
-                            auto _channel = get_channel_create(channel_id);
-                            channel_create(result["d"], _shard);
-                        }
-                        return;
-                    }
-                    else if (cmd == "CHANNEL_DELETE")
-                    {
-                        channel_delete obj;
-                        if (_callbacks.i_channel_delete)
-                            _callbacks.i_channel_delete(obj);
-                        return;
-                    }
-                    else if (cmd == "GUILD_BAN_ADD")
-                    {
-                        guild_ban_add obj;
-                        obj.bot = this;
-                        obj._shard = _shard;
-
-                        if (_callbacks.i_guild_ban_add)
-                            _callbacks.i_guild_ban_add(obj);
-                        return;
-                    }
-                    else if (cmd == "GUILD_BAN_REMOVE")
-                    {
-                        guild_ban_remove obj;
-                        obj.bot = this;
-                        obj._shard = _shard;
-
-                        if (_callbacks.i_guild_ban_remove)
-                            _callbacks.i_guild_ban_remove(obj);
-                        return;
-                    }
-                    else if (cmd == "GUILD_EMOJIS_UPDATE")
-                    {
-                        guild_emojis_update obj;
-                        if (_callbacks.i_guild_emojis_update)
-                            _callbacks.i_guild_emojis_update(obj);
-                        return;
-                    }
-                    else if (cmd == "GUILD_INTEGRATIONS_UPDATE")
-                    {
-                        guild_integrations_update obj;
-                        if (_callbacks.i_guild_integrations_update)
-                            _callbacks.i_guild_integrations_update(obj);
-                        return;
-                    }
-                    else if (cmd == "GUILD_MEMBER_ADD")
-                    {
-                        snowflake member_id = result["d"]["user"]["id"];
-                        snowflake guild_id = result["d"]["guild_id"];
-                       
-                        auto _member = get_member_create(member_id);
-                        auto _guild = get_guild(guild_id);
-                       
-                        _member->load(_guild, result["d"], _shard);
-
-                        guild_member_add obj;
-                        obj.bot = this;
-                        obj._shard = _shard;
-
-                        if (_callbacks.i_guild_member_add)
-                            _callbacks.i_guild_member_add(obj);
-                        return;
-                    }
-                    else if (cmd == "GUILD_MEMBER_REMOVE")
-                    {
-                        snowflake member_id = result["d"]["user"]["id"];
-                        snowflake guild_id = result["d"]["guild_id"];
-                        
-                        auto _member = get_member(member_id);
-                        auto _guild = get_guild(guild_id);
-
-                        if (_guild != nullptr)
-                        {
-                            //if user was self, guild may already be deleted
-                            _guild->remove_member(member_id);
-                        }
-
-                        guild_member_remove obj;
-                        obj.bot = this;
-                        obj._shard = _shard;
-
-                        if (_callbacks.i_guild_member_remove)
-                            _callbacks.i_guild_member_remove(obj);
-                        return;
-                    }
-                    else if (cmd == "GUILD_MEMBER_UPDATE")
-                    {
-                        snowflake member_id = result["d"]["user"]["id"];
-                        snowflake guild_id = result["d"]["guild_id"];
-
-                        auto _member = get_member_create(member_id);
-                        auto _guild = get_guild(guild_id);
-
-                        if (_member == nullptr)
-                        {
-#ifdef WIN32
-                            log->critical("Shard#{} : Error in [{}] _member == nullptr", _shard->shardid, __FUNCSIG__);
-#else
-                            log->critical("Shard#{} : Error in [{}] _member == nullptr", _shard->shardid, __PRETTY_FUNCTION__);
-#endif
-                            return;
-                        }
-                        if (_guild == nullptr)
-                        {
-#ifdef WIN32
-                            log->critical("Shard#{} : Error in [{}] _guild == nullptr", _shard->shardid, __FUNCSIG__);
-#else
-                            log->critical("Shard#{} : Error in [{}] _guild == nullptr", _shard->shardid, __PRETTY_FUNCTION__);
-#endif
-                            return;
-                        }
-
-                        _member->load(_guild, result["d"], _shard);
-                       
-                        guild_member_update obj;
-                        obj.bot = this;
-                        obj._shard = _shard;
-
-                        if (_callbacks.i_guild_member_update)
-                            _callbacks.i_guild_member_update(obj);
-                        return;
-                    }
-                    else if (cmd == "GUILD_MEMBERS_CHUNK")
-                    {
-                        snowflake guild_id = result["d"]["guild_id"];
-                        auto _guild = get_guild(guild_id);
-                        if (_guild == nullptr)
-                            return;
-                        auto & members = result["d"]["members"];
-                        //log->info("GUILD_MEMBERS_CHUNK: {1} {0}", guild_id, members.size());
-                        if (!members.empty())
-                        {
-                            for (auto & _member : members)
+                        _shard->sequence = 0;
+                        log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->shardid);
+                        std::this_thread::sleep_for(std::chrono::seconds(6));
+                        json obj = {
+                            { "op", 2 },
                             {
-                                snowflake member_id = _member["user"]["id"];
-
-                                auto _member_ptr = get_member_create(member_id);
-
-                                _member_ptr->load(_guild, _member, _shard);
-                            }
-                        }
-
-
-
-                        guild_members_chunk obj;
-                        obj = result["d"];
-                        obj.bot = this;
-                        obj._shard = _shard;
-
-                        if (_callbacks.i_guild_member_chunk)
-                            _callbacks.i_guild_member_chunk(obj);
-                        return;
-                    }
-                    else if (cmd == "GUILD_ROLE_CREATE")
-                    {
-                        snowflake guild_id = result["d"]["guild_id"];
-                       
-                        auto _guild = get_guild(guild_id);
-                        _guild->load_role(result["d"]["role"]);
-
-                        guild_role_create obj;
-                        if (_callbacks.i_guild_role_create)
-                            _callbacks.i_guild_role_create(obj);
-                        return;
-                    }
-                    else if (cmd == "GUILD_ROLE_UPDATE")
-                    {
-                        snowflake guild_id = result["d"]["guild_id"];
-
-                        auto _guild = get_guild(guild_id);
-                        _guild->load_role(result["d"]["role"]);
-
-                        guild_role_update obj;
-                        if (_callbacks.i_guild_role_update)
-                            _callbacks.i_guild_role_update(obj);
-                        return;
-                    }
-                    else if (cmd == "GUILD_ROLE_DELETE")
-                    {
-                        snowflake guild_id = result["d"]["guild_id"];
-                        snowflake role_id = result["d"]["role_id"];
-
-                        auto _guild = get_guild(guild_id);
-
-                        if (_guild != nullptr)
-                        {
-                            //if role was own, we may have been kicked and guild may already be deleted
-                            _guild->remove_role(role_id);
-                        }
-
-                        guild_role_delete obj;
-                        if (_callbacks.i_guild_role_delete)
-                            _callbacks.i_guild_role_delete(obj);
-                        return;
-                    }
-                    else if (cmd == "VOICE_SERVER_UPDATE")
-                    {
-                        voice_server_update obj;
-                        if (_callbacks.i_voice_server_update)
-                            _callbacks.i_voice_server_update(obj);
-                        return;
-                    }
-                }
-            }
-            if (result["op"] == 9)
-            {
-                if (result["d"] == false)
-                {
-                    _shard->sequence = 0;
-                    log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->shardid);
-                    std::this_thread::sleep_for(std::chrono::seconds(2));
-                    json obj = {
-                        { "op", 2 },
-                        {
-                            "d",
-                            {
-                                { "token", token },
-                                { "properties",
-                                    {
-                                        { "$os", utility::platform::get_platform() },
-                                        { "$browser", "aegis.cpp" },
-                                        { "$device", "aegis.cpp" }
-                                    }
-                                },
-                                { "shard", json::array({ _shard->shardid, shard_max_count }) },
-                                { "compress", true },
-                                { "large_threshhold", 250 },
-                                { "presence",
-                                    {
-                                        { "game",
-                                            {
-                                                { "name", self_presence },
-                                                { "type", 0 }
-                                            }
-                                        },
-                                        { "status", "online" },
-                                        { "since", 1 },
-                                        { "afk", false }
+                                "d",
+                                {
+                                    { "token", token },
+                                    { "properties",
+                                        {
+                                            { "$os", utility::platform::get_platform() },
+                                            { "$browser", "aegis.cpp" },
+                                            { "$device", "aegis.cpp" }
+                                        }
+                                    },
+                                    { "shard", json::array({ _shard->shardid, shard_max_count }) },
+                                    { "compress", true },
+                                    { "large_threshhold", 250 },
+                                    { "presence",
+                                        {
+                                            { "game",
+                                                {
+                                                    { "name", self_presence },
+                                                    { "type", 0 }
+                                                }
+                                            },
+                                            { "status", "online" },
+                                            { "since", 1 },
+                                            { "afk", false }
+                                        }
                                     }
                                 }
                             }
+                        };
+                        //log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
+                        if (_shard->connection_state == Connecting && _shard->connection != nullptr)
+                        {
+                            _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
                         }
-                    };
-                    //log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
-                    if (_shard->connection_state == Connecting && _shard->connection != nullptr)
-                    {
-                        _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
+                        else
+                        {
+                            //debug?
+                            log->error("Shard#{} : Invalid session received with an invalid connection state state: {} connection exists: {}", _shard->shardid, static_cast<int32_t>(_shard->connection_state), _shard->connection != nullptr);
+                            websocket_o.close(_shard->connection, 1001, "");
+                            _shard->connection_state = Reconnecting;
+                            _shard->do_reset();
+                        }
                     }
                     else
                     {
-                        //debug?
-                        log->error("Shard#{} : Invalid session received with an invalid connection state state: {} connection exists: {}", _shard->shardid, static_cast<int32_t>(_shard->connection_state), _shard->connection!=nullptr);
-                        websocket_o.close(_shard->connection, 1001, "");
-                        _shard->connection_state = Reconnecting;
-                        _shard->do_reset();
+        
                     }
+                    debug_trace(_shard);
                 }
-                else
+                if (result["op"] == 1)
                 {
-
+                    //requested heartbeat
+                    json obj;
+                    obj["d"] = _shard->sequence;
+                    obj["op"] = 1;
+        
+                    _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
                 }
-                debug_trace(_shard);
-            }
-            if (result["op"] == 1)
-            {
-                //requested heartbeat
-                json obj;
-                obj["d"] = _shard->sequence;
-                obj["op"] = 1;
-
-                _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
-            }
-            if (result["op"] == 10)
-            {
-                int heartbeat = result["d"]["heartbeat_interval"];
-                _shard->keepalivetimer = websocket_o.set_timer(
-                    heartbeat,
-                    std::bind(&aegis::keep_alive, this, std::placeholders::_1, heartbeat, _shard)
-                );
-                _shard->heartbeattime = heartbeat;
-            }
-            if (result["op"] == 11)
-            {
-                //heartbeat ACK
-                _shard->heartbeat_ack = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+                if (result["op"] == 10)
+                {
+                    int32_t heartbeat = result["d"]["heartbeat_interval"];
+                    _shard->keepalivetimer = websocket_o.set_timer(
+                        heartbeat,
+                        std::bind(&aegis::keep_alive, this, std::placeholders::_1, heartbeat, _shard)
+                    );
+                    _shard->heartbeattime = heartbeat;
+                }
+                if (result["op"] == 11)
+                {
+                    //heartbeat ACK
+                    _shard->heartbeat_ack = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+                }
+        
             }
         }
     }
@@ -1367,6 +892,514 @@ AEGIS_DECL void aegis::connect(std::error_code & ec) noexcept
         shards.push_back(std::move(_shard));
         std::this_thread::sleep_for(6000ms);
     }
+}
+
+AEGIS_DECL void aegis::ws_presence_update(const json & result, shard * _shard)
+{
+    _shard->counters.presence_changes++;
+    json user = result["d"]["user"];
+    snowflake guild_id = result["d"]["guild_id"];
+    snowflake member_id = user["id"];
+
+
+    member::member_status status;
+    if (result["d"]["status"] == "idle")
+        status = member::Idle;
+    else if (result["d"]["status"] == "dnd")
+        status = member::DoNotDisturb;
+    else if (result["d"]["status"] == "online")
+        status = member::Online;
+    else
+        status = member::Offline;
+
+    auto _member = get_member_create(member_id);
+    auto  _guild = get_guild(guild_id);
+    _member->load(_guild, result["d"], _shard);
+    _member->status = status;
+
+    presence_update obj;
+    obj.bot = this;
+    obj._shard = _shard;
+    obj._user = result["d"]["user"];
+
+    if (_callbacks.i_presence_update)
+        _callbacks.i_presence_update(obj);
+}
+
+AEGIS_DECL void aegis::ws_typing_start(const json & result, shard * _shard)
+{
+    auto _channel = get_channel(result["d"]["channel_id"]);
+    auto _member = get_member(result["d"]["user_id"]);
+    typing_start obj;
+    obj._channel = _channel;
+    obj._member = _member;
+    obj.timestamp = result["d"]["timestamp"];
+    obj.bot = this;
+    obj._shard = _shard;
+
+    if (_callbacks.i_typing_start)
+        _callbacks.i_typing_start(obj);
+}
+
+
+AEGIS_DECL void aegis::ws_message_create(const json & result, shard * _shard)
+{
+    _shard->counters.messages++;
+
+    message_create obj{ result["d"], _shard, this
+        , get_channel(result["d"]["channel_id"])
+        , get_member(result["d"]["author"]["id"]) };
+    obj.msg.init(_shard);
+
+    if (obj._channel == nullptr)
+        //catch this
+        return;
+
+    if (obj._channel->guild_id == 0)//DM
+    {
+        if (_callbacks.i_message_create_dm)
+            _callbacks.i_message_create_dm(obj);
+    }
+    else
+    {
+        if (_callbacks.i_message_create)
+            _callbacks.i_message_create(obj);
+    }
+}
+
+AEGIS_DECL void aegis::ws_message_update(const json & result, shard * _shard)
+{
+    message_update obj;
+    if (result["d"].count("author") && result["d"]["author"].count("id"))
+        obj._member = get_member(result["d"]["author"]["id"]);
+    obj._channel = get_channel(result["d"]["channel_id"]);
+    obj.msg = result["d"];
+    obj.bot = this;
+    obj._shard = _shard;
+
+    if (_callbacks.i_message_update)
+        _callbacks.i_message_update(obj);
+}
+
+AEGIS_DECL void aegis::ws_guild_create(const json & result, shard * _shard)
+{
+    snowflake guild_id = result["d"]["id"];
+
+    auto _guild = get_guild_create(guild_id, _shard);
+    if (_guild->unavailable && _guild->get_owner())
+    {
+        //outage
+    }
+
+    _guild->load(result["d"], _shard);
+
+    //TODO: abide by rate limits (120/60)
+    json chunk;
+    chunk["d"]["guild_id"] = std::to_string(guild_id);
+    chunk["d"]["query"] = "";
+    chunk["d"]["limit"] = 0;
+    chunk["op"] = 8;
+    _shard->connection->send(chunk.dump(), websocketpp::frame::opcode::text);
+
+    guild_create obj;
+    obj.bot = this;
+    obj._guild = result["d"];
+    obj._shard = _shard;
+
+    if (_callbacks.i_guild_create)
+        _callbacks.i_guild_create(obj);
+}
+
+AEGIS_DECL void aegis::ws_guild_update(const json & result, shard * _shard)
+{
+    snowflake guild_id = result["d"]["id"];
+
+    auto _guild = get_guild(guild_id);
+    if (_guild == nullptr)
+    {
+        log->error("Guild Update: [{}] does not exist", guild_id);
+        //this should never happen
+        return;
+    }
+
+    _guild->load(result["d"], _shard);
+
+    guild_update obj;
+    obj.bot = this;
+    obj._shard = _shard;
+    obj._guild = result["d"];
+
+    if (_callbacks.i_guild_update)
+        _callbacks.i_guild_update(obj);
+}
+
+AEGIS_DECL void aegis::ws_guild_delete(const json & result, shard * _shard)
+{
+    guild_delete obj;
+    obj.bot = this;
+    obj._shard = _shard;
+    obj.guild_id = result["d"]["id"];
+    if (result["d"].count("unavailable"))
+        obj.unavailable = result["d"]["unavailable"];
+    else
+        obj.unavailable = false;
+
+    if (_callbacks.i_guild_delete)
+        _callbacks.i_guild_delete(obj);
+
+    if (obj.unavailable == true)
+    {
+        //outage
+    }
+    else
+    {
+        snowflake guild_id = result["d"]["id"];
+
+        auto _guild = get_guild(guild_id);
+        if (_guild == nullptr)
+        {
+            log->critical("Guild Delete: [{}] does not exist", guild_id);
+            //this should never happen
+            return;
+        }
+
+        _guild->unavailable = obj.unavailable;
+
+        //kicked or left
+        //websocket_o.set_timer(5000, [this, id, _shard](const asio::error_code & ec)
+        //{
+        guilds.erase(guild_id);
+        //});
+    }
+}
+
+AEGIS_DECL void aegis::ws_message_delete(const json & result, shard * _shard)
+{
+    message_delete obj;
+    obj._channel = get_channel(result["d"]["channel_id"]);
+    obj.bot = this;
+    obj.message_id = result["d"]["id"];
+    obj.channel_id = result["d"]["channel_id"];
+
+    if (_callbacks.i_message_delete)
+        _callbacks.i_message_delete(obj);
+}
+
+AEGIS_DECL void aegis::ws_message_delete_bulk(const json & result, shard * _shard)
+{
+    message_delete_bulk obj;
+    if (_callbacks.i_message_delete_bulk)
+        _callbacks.i_message_delete_bulk(obj);
+}
+
+AEGIS_DECL void aegis::ws_user_update(const json & result, shard * _shard)
+{
+    snowflake member_id = result["d"]["user"]["id"];
+
+    auto _member = get_member_create(member_id);
+
+    const json & user = result["d"]["user"];
+    if (user.count("username") && !user["username"].is_null())
+        _member->name = user["username"];
+    if (user.count("avatar") && !user["avatar"].is_null())
+        _member->avatar = user["avatar"];
+    if (user.count("discriminator") && !user["discriminator"].is_null())
+        _member->discriminator = static_cast<uint16_t>(std::stoi(user["discriminator"].get<std::string>()));
+    if (user.count("mfa_enabled") && !user["mfa_enabled"].is_null())
+        _member->mfa_enabled = user["mfa_enabled"];
+    if (user.count("bot") && !user["bot"].is_null())
+        _member->is_bot = user["bot"];
+    //if (!user["verified"].is_null()) _member.m_verified = user["verified"];
+    //if (!user["email"].is_null()) _member.m_email = user["email"];
+
+    user_update obj;
+    obj._member = _member;
+    obj.bot = this;
+    obj._shard = _shard;
+    obj = result["d"];
+
+    if (_callbacks.i_user_update)
+        _callbacks.i_user_update(obj);
+}
+
+AEGIS_DECL void aegis::ws_voice_state_update(const json & result, shard * _shard)
+{
+    voice_state_update obj;
+    if (_callbacks.i_voice_state_update)
+        _callbacks.i_voice_state_update(obj);
+}
+
+AEGIS_DECL void aegis::ws_resumed(const json & result, shard * _shard)
+{
+    _shard->connection_state = Online;
+    log->info("Shard#[{}] RESUMED Processed", _shard->shardid);
+    if (_shard->keepalivetimer)
+        _shard->keepalivetimer->cancel();
+    _shard->keepalivetimer = websocket_o.set_timer(
+        _shard->heartbeattime
+        , std::bind(&aegis::keep_alive, this, std::placeholders::_1, _shard->heartbeattime, _shard)
+    );
+}
+
+AEGIS_DECL void aegis::ws_ready(const json & result, shard * _shard)
+{
+    process_ready(result["d"], _shard);
+    _shard->connection_state = Online;
+    log->info("Shard#[{}] READY Processed", _shard->shardid);
+
+    ready obj;
+    obj = result["d"];
+    obj.bot = this;
+    obj._shard = _shard;
+
+    if (_callbacks.i_ready)
+        _callbacks.i_ready(obj);
+}
+
+AEGIS_DECL void aegis::ws_channel_create(const json & result, shard * _shard)
+{
+    snowflake channel_id = result["d"]["id"];
+
+    if (result["d"].count("guild_id") && !result["d"]["guild_id"].is_null())
+    {
+        //guild channel
+        snowflake guild_id = result["d"]["guild_id"];
+        auto _guild = get_guild(guild_id);
+        auto _channel = _guild->get_channel_create(channel_id, _shard);
+        _channel->load_with_guild(*_guild, result["d"], _shard);
+    }
+    else
+    {
+        //dm
+        auto _channel = get_channel_create(channel_id);
+        channel_create(result["d"], _shard);
+    }
+
+    aegiscpp::channel_create obj;
+    if (_callbacks.i_channel_create)
+        _callbacks.i_channel_create(obj);
+}
+
+AEGIS_DECL void aegis::ws_channel_update(const json & result, shard * _shard)
+{
+    snowflake channel_id = result["d"]["id"];
+
+    if (!result["d"]["guild_id"].is_null())
+    {
+        //guild channel
+        snowflake guild_id = result["d"]["guild_id"];
+        guild * _guild = get_guild(guild_id);
+        if (_guild == nullptr)//TODO: errors
+            return;
+        channel * _channel = _guild->get_channel_create(channel_id, _shard);
+        _channel->load_with_guild(*_guild, result["d"], _shard);
+    }
+    else
+    {
+        //dm
+        auto _channel = get_channel_create(channel_id);
+        channel_create(result["d"], _shard);
+    }
+
+    channel_update obj;
+    if (_callbacks.i_channel_update)
+        _callbacks.i_channel_update(obj);
+}
+
+AEGIS_DECL void aegis::ws_channel_delete(const json & result, shard * _shard)
+{
+    channel_delete obj;
+    if (_callbacks.i_channel_delete)
+        _callbacks.i_channel_delete(obj);
+}
+
+AEGIS_DECL void aegis::ws_guild_ban_add(const json & result, shard * _shard)
+{
+    guild_ban_add obj;
+    obj.bot = this;
+    obj._shard = _shard;
+
+    if (_callbacks.i_guild_ban_add)
+        _callbacks.i_guild_ban_add(obj);
+}
+
+AEGIS_DECL void aegis::ws_guild_ban_remove(const json & result, shard * _shard)
+{
+    guild_ban_remove obj;
+    obj.bot = this;
+    obj._shard = _shard;
+
+    if (_callbacks.i_guild_ban_remove)
+        _callbacks.i_guild_ban_remove(obj);
+}
+
+AEGIS_DECL void aegis::ws_guild_emojis_update(const json & result, shard * _shard)
+{
+    guild_emojis_update obj;
+    if (_callbacks.i_guild_emojis_update)
+        _callbacks.i_guild_emojis_update(obj);
+}
+
+AEGIS_DECL void aegis::ws_guild_integrations_update(const json & result, shard * _shard)
+{
+    guild_integrations_update obj;
+    if (_callbacks.i_guild_integrations_update)
+        _callbacks.i_guild_integrations_update(obj);
+}
+
+AEGIS_DECL void aegis::ws_guild_member_add(const json & result, shard * _shard)
+{
+    snowflake member_id = result["d"]["user"]["id"];
+    snowflake guild_id = result["d"]["guild_id"];
+
+    auto _member = get_member_create(member_id);
+    auto _guild = get_guild(guild_id);
+
+    _member->load(_guild, result["d"], _shard);
+
+    guild_member_add obj;
+    obj.bot = this;
+    obj._shard = _shard;
+
+    if (_callbacks.i_guild_member_add)
+        _callbacks.i_guild_member_add(obj);
+}
+
+AEGIS_DECL void aegis::ws_guild_member_remove(const json & result, shard * _shard)
+{
+    snowflake member_id = result["d"]["user"]["id"];
+    snowflake guild_id = result["d"]["guild_id"];
+
+    auto _member = get_member(member_id);
+    auto _guild = get_guild(guild_id);
+
+    if (_guild != nullptr)
+    {
+        //if user was self, guild may already be deleted
+        _guild->remove_member(member_id);
+    }
+
+    guild_member_remove obj;
+    obj.bot = this;
+    obj._shard = _shard;
+
+    if (_callbacks.i_guild_member_remove)
+        _callbacks.i_guild_member_remove(obj);
+}
+
+AEGIS_DECL void aegis::ws_guild_member_update(const json & result, shard * _shard)
+{
+    snowflake member_id = result["d"]["user"]["id"];
+    snowflake guild_id = result["d"]["guild_id"];
+
+    auto _member = get_member_create(member_id);
+    auto _guild = get_guild(guild_id);
+
+    if (_member == nullptr)
+    {
+#ifdef WIN32
+        log->critical("Shard#{} : Error in [{}] _member == nullptr", _shard->shardid, __FUNCSIG__);
+#else
+        log->critical("Shard#{} : Error in [{}] _member == nullptr", _shard->shardid, __PRETTY_FUNCTION__);
+#endif
+        return;
+    }
+    if (_guild == nullptr)
+    {
+#ifdef WIN32
+        log->critical("Shard#{} : Error in [{}] _guild == nullptr", _shard->shardid, __FUNCSIG__);
+#else
+        log->critical("Shard#{} : Error in [{}] _guild == nullptr", _shard->shardid, __PRETTY_FUNCTION__);
+#endif
+        return;
+    }
+
+    _member->load(_guild, result["d"], _shard);
+
+    guild_member_update obj;
+    obj.bot = this;
+    obj._shard = _shard;
+
+    if (_callbacks.i_guild_member_update)
+        _callbacks.i_guild_member_update(obj);
+}
+
+AEGIS_DECL void aegis::ws_guild_members_chunk(const json & result, shard * _shard)
+{
+    snowflake guild_id = result["d"]["guild_id"];
+    auto _guild = get_guild(guild_id);
+    if (_guild == nullptr)
+        return;
+    auto & members = result["d"]["members"];
+    //log->info("GUILD_MEMBERS_CHUNK: {1} {0}", guild_id, members.size());
+    if (!members.empty())
+    {
+        for (auto & _member : members)
+        {
+            snowflake member_id = _member["user"]["id"];
+
+            auto _member_ptr = get_member_create(member_id);
+
+            _member_ptr->load(_guild, _member, _shard);
+        }
+    }
+
+    guild_members_chunk obj;
+    obj = result["d"];
+    obj.bot = this;
+    obj._shard = _shard;
+
+    if (_callbacks.i_guild_member_chunk)
+        _callbacks.i_guild_member_chunk(obj);
+}
+
+AEGIS_DECL void aegis::ws_guild_role_create(const json & result, shard * _shard)
+{
+    snowflake guild_id = result["d"]["guild_id"];
+
+    auto _guild = get_guild(guild_id);
+    _guild->load_role(result["d"]["role"]);
+
+    guild_role_create obj;
+    if (_callbacks.i_guild_role_create)
+        _callbacks.i_guild_role_create(obj);
+}
+
+AEGIS_DECL void aegis::ws_guild_role_update(const json & result, shard * _shard)
+{
+    snowflake guild_id = result["d"]["guild_id"];
+
+    auto _guild = get_guild(guild_id);
+    _guild->load_role(result["d"]["role"]);
+
+    guild_role_update obj;
+    if (_callbacks.i_guild_role_update)
+        _callbacks.i_guild_role_update(obj);
+}
+
+AEGIS_DECL void aegis::ws_guild_role_delete(const json & result, shard * _shard)
+{
+    snowflake guild_id = result["d"]["guild_id"];
+    snowflake role_id = result["d"]["role_id"];
+
+    auto _guild = get_guild(guild_id);
+
+    if (_guild != nullptr)
+    {
+        //if role was own, we may have been kicked and guild may already be deleted
+        _guild->remove_role(role_id);
+    }
+
+    guild_role_delete obj;
+    if (_callbacks.i_guild_role_delete)
+        _callbacks.i_guild_role_delete(obj);
+}
+
+AEGIS_DECL void aegis::ws_voice_server_update(const json & result, shard * _shard)
+{
+    voice_server_update obj;
+    if (_callbacks.i_voice_server_update)
+        _callbacks.i_voice_server_update(obj);
 }
 
 }
