@@ -229,9 +229,21 @@ void example::MessageCreate(message_create obj)
     else if (toks[0] == "?shards")
     {
         std::string s = "```\n";
+
+        std::vector<int16_t> shard_guild_c(obj.bot->shards.size());
+        std::vector<int16_t> shard_channel_c(obj.bot->shards.size());
+        std::vector<int16_t> shard_member_c(obj.bot->shards.size());
+
+        for (auto & v : obj.bot->guilds)
+        {
+            ++shard_guild_c[v.second->shard_id];
+            shard_channel_c[v.second->shard_id] += v.second->channels.size();
+            shard_member_c[v.second->shard_id] += v.second->members.size();
+        }
+
         for (auto & shard : obj.bot->shards)
         {
-            s += fmt::format("shard#{} tracking {:4} guilds {:4} channels {:4} members {:4} messages {:4} presence updates\n", shard->get_id(), shard->counters.guilds, shard->counters.channels, shard->counters.members, shard->counters.messages, shard->counters.presence_changes);
+            s += fmt::format("shard#[{:4}] tracking {:4} guilds {:5} channels {:7} members {:9} messages {:10} presence\n", shard->get_id(), shard_guild_c[shard->get_id()], shard_channel_c[shard->get_id()], shard_guild_c[shard->get_id()], shard->counters.messages, shard->counters.presence_changes);
         }
         s += "```";
         _channel.create_message(s);
