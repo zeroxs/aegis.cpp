@@ -614,15 +614,12 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                 }
                 else if (cmd == "GUILD_CREATE")
                 {
-                    _shard->counters.guilds++;
-                    
                     snowflake guild_id = result["d"]["id"];
 
                     auto _guild = get_guild_create(guild_id, _shard);
                     if (_guild->unavailable)
                     {
                         //outage
-                        _shard->counters.guilds_outage--;
                     }
 
                     _guild->load(result["d"], _shard);
@@ -669,8 +666,6 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                 }
                 else if (cmd == "GUILD_DELETE")
                 {
-                    _shard->counters.guilds--;
-                    
                     guild_delete obj;
                     obj.bot = this;
                     obj._shard = _shard;
@@ -686,7 +681,6 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                     if (obj.unavailable == true)
                     {
                         //outage
-                        _shard->counters.guilds_outage++;
                     }
                     else
                     {
@@ -856,8 +850,6 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                     }
                     else if (cmd == "CHANNEL_DELETE")
                     {
-                        _shard->counters.channels--;
-                       
                         channel_delete obj;
                         if (_callbacks.i_channel_delete)
                             _callbacks.i_channel_delete(obj);
@@ -899,8 +891,6 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                     }
                     else if (cmd == "GUILD_MEMBER_ADD")
                     {
-                        _shard->counters.members++;
-
                         snowflake member_id = result["d"]["user"]["id"];
                         snowflake guild_id = result["d"]["guild_id"];
                        
@@ -919,8 +909,6 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
                     }
                     else if (cmd == "GUILD_MEMBER_REMOVE")
                     {
-                        _shard->counters.members--;
-
                         snowflake member_id = result["d"]["user"]["id"];
                         snowflake guild_id = result["d"]["guild_id"];
                         

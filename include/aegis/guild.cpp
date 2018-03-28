@@ -142,7 +142,6 @@ AEGIS_DECL void guild::load(const json & obj, shard * _shard) noexcept
                 auto _member = bot.get_member_create(member_id);
                 this->members.emplace(member_id, _member);
                 _member->load(this, member, _shard);
-                ++_shard->counters.members;
             }
         }
 
@@ -155,7 +154,6 @@ AEGIS_DECL void guild::load(const json & obj, shard * _shard) noexcept
                 snowflake channel_id = channel_obj["id"];
                 auto _channel = get_channel_create(channel_id, _shard);
                 _channel->load_with_guild(*this, channel_obj, _shard);
-                ++_shard->counters.channels;
             }
         }
 

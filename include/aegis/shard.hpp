@@ -103,20 +103,11 @@ public:
     AEGIS_DECL member * get_bot_user() const noexcept;
 
     /// Contains counters of valued objects and events
-    /**
-    * @see guild
-    * @see channel
-    * @see member
-    */
     struct
     {
-        int64_t guilds;
-        int64_t guilds_outage;
-        int64_t members;
-        int64_t channels;
         int64_t messages;
         int64_t presence_changes;
-    } counters = { 0,0,0,0,0,0 };
+    } counters = { 0,0 };
 
     websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr connection;
 
