@@ -25,15 +25,12 @@
 
 #pragma once
 
-
 #include "../config.hpp"
 #include "../snowflake.hpp"
 #include "../objects/user.hpp"
-#include <nlohmann/json.hpp>
+#include "base_event.hpp"
 #include <string>
 #include <vector>
-
-
 
 namespace aegiscpp
 {
@@ -44,12 +41,10 @@ class aegis;
 
 /**\todo Needs documentation
 */
-struct user_update
+struct user_update : public base_event
 {
     member * _member; /**<\todo Needs documentation */
     user _user; /**<\todo Needs documentation */
-    shard * _shard; /**<\todo Needs documentation */
-    aegis * bot; /**<\todo Needs documentation */
 };
 
 /**\todo Needs documentation

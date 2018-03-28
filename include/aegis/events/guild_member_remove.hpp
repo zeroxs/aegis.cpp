@@ -25,28 +25,22 @@
 
 #pragma once
 
-
 #include "../config.hpp"
 #include "../snowflake.hpp"
 #include "../objects/user.hpp"
-#include "../objects/guild_member.hpp"
+#include "base_event.hpp"
 #include <string>
 #include <vector>
-#include <nlohmann/json.hpp>
-
-
 
 namespace aegiscpp
 {
 
 /**\todo Needs documentation
 */
-struct guild_member_remove
+struct guild_member_remove : public base_event
 {
-    user _user; /**<\todo Needs documentation */
-    snowflake guild_id; /**<\todo Needs documentation */
-    shard * _shard; /**<\todo Needs documentation */
-    aegis * bot; /**<\todo Needs documentation */
+    user _user; /**< User being removed from guild */
+    snowflake guild_id; /**< snowflake of guild */
 };
 
 /**\todo Needs documentation

@@ -26,20 +26,14 @@
 #pragma once
 
 #include "../config.hpp"
-#include <nlohmann/json.hpp>
-
-
+#include "base_event.hpp"
 
 namespace aegiscpp
 {
 
-class member;
-class shard;
-class aegis;
-
 /**\todo Needs documentation
 */
-struct guild_role_delete
+struct guild_role_delete : public base_event
 {
 };
 

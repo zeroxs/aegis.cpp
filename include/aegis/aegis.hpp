@@ -154,6 +154,7 @@ public:
     aegis(std::string_view _token)
         : shard_max_count(0)
         , force_shard_count(0)
+        , log(spdlog::stdout_color_mt("aegis"))
         , selfbot(false)
         , debugmode(false)
         , member_id(0)
@@ -163,7 +164,6 @@ public:
         , status{ Uninitialized }
         , ratelimit_o{ std::bind(&aegis::call, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3) }
     {
-        log = spdlog::stdout_color_mt("aegis");
         log->set_pattern("%Y-%m-%d %H:%M:%S.%e [%L] [th#%t] : %v");
         log->set_level(spdlog::level::level_enum::trace);
         ratelimit_o.add(bucket_type::GUILD);
@@ -429,6 +429,8 @@ public:
     callbacks _callbacks;
     bool wsdbg = false;
 
+    std::shared_ptr<spdlog::logger> log;
+
     /// Obtain a pointer to a member by snowflake
     /**
     * @param id Snowflake of member to search for
@@ -497,8 +499,6 @@ public:
     }
 
     AEGIS_DECL int64_t get_member_count() const noexcept;
-
-    std::shared_ptr<spdlog::logger> log;
 
     /// Return bot uptime as {days hours minutes seconds}
     /**

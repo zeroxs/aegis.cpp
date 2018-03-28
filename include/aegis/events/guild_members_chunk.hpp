@@ -25,28 +25,23 @@
 
 #pragma once
 
-
 #include "../config.hpp"
 #include "../snowflake.hpp"
 #include "../objects/user.hpp"
 #include "../objects/guild_member.hpp"
+#include "base_event.hpp"
 #include <string>
 #include <vector>
-#include <nlohmann/json.hpp>
-
-
 
 namespace aegiscpp
 {
 
 /**\todo Needs documentation
 */
-struct guild_members_chunk
+struct guild_members_chunk : public base_event
 {
     snowflake guild_id; /**<\todo Needs documentation */
     std::vector<guild_member> members; /**<\todo Needs documentation */
-    shard * _shard; /**<\todo Needs documentation */
-    aegis * bot; /**<\todo Needs documentation */
 };
 
 /**\todo Needs documentation
@@ -55,7 +50,7 @@ inline void from_json(const nlohmann::json& j, guild_members_chunk& m)
 {
     m.guild_id = j["guild_id"];
     if (j.count("members") && !j["members"].is_null())
-        for (auto i : j["members"])
+        for (const auto & i : j["members"])
             m.members.push_back(i);
 }
 

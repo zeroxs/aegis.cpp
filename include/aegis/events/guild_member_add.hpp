@@ -25,26 +25,21 @@
 
 #pragma once
 
-
 #include "../config.hpp"
 #include "../snowflake.hpp"
 #include "../objects/guild_member.hpp"
+#include "base_event.hpp"
 #include <string>
 #include <vector>
-#include <nlohmann/json.hpp>
-
-
 
 namespace aegiscpp
 {
 
 /**\todo Needs documentation
 */
-struct guild_member_add
+struct guild_member_add : public base_event
 {
     guild_member _member_data; /**<\todo Needs documentation */
-    shard * _shard; /**<\todo Needs documentation */
-    aegis * bot; /**<\todo Needs documentation */
 };
 
 /**\todo Needs documentation

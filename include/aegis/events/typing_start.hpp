@@ -25,15 +25,12 @@
 
 #pragma once
 
-
 #include "../config.hpp"
 #include "../snowflake.hpp"
-#include <nlohmann/json.hpp>
+#include "base_event.hpp"
 #include <string>
 #include <chrono>
 #include <sstream>
-
-
 
 namespace aegiscpp
 {
@@ -45,13 +42,11 @@ class aegis;
 
 /**\todo Needs documentation
 */
-struct typing_start
+struct typing_start : public base_event
 {
     channel * _channel; /**<\todo Needs documentation */
     member * _member; /**<\todo Needs documentation */
     int64_t timestamp; /**<\todo Needs documentation */
-    shard * _shard; /**<\todo Needs documentation */
-    aegis * bot; /**<\todo Needs documentation */
 };
 
 }

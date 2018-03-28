@@ -25,15 +25,12 @@
 
 #pragma once
 
-
 #include "../config.hpp"
 #include "../snowflake.hpp"
 #include "../objects/message.hpp"
-#include <nlohmann/json.hpp>
+#include "base_event.hpp"
 #include <string>
 #include <vector>
-
-
 
 namespace aegiscpp
 {
@@ -43,11 +40,9 @@ class aegis;
 
 /**\todo Needs documentation
 */
-struct resumed
+struct resumed : public base_event
 {
     std::vector<std::string> _trace; /**<\todo Needs documentation */
-    shard * _shard; /**<\todo Needs documentation */
-    aegis * bot; /**<\todo Needs documentation */
 };
 
 /**\todo Needs documentation
@@ -55,7 +50,7 @@ struct resumed
 inline void from_json(const nlohmann::json& j, resumed& m)
 {
     if (j.count("_trace") && !j["_trace"].is_null())
-        for (auto i : j["_trace"])
+        for (const auto & i : j["_trace"])
             m._trace.push_back(i);
 }
 
@@ -63,7 +58,7 @@ inline void from_json(const nlohmann::json& j, resumed& m)
 */
 inline void to_json(nlohmann::json& j, const resumed& m)
 {
-    if (m._trace.size() > 0)
+    if (!m._trace.empty())
         for (auto i : m._trace)
             j["_trace"].push_back(i);
 }

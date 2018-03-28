@@ -491,7 +491,7 @@ AEGIS_DECL std::optional<rest_reply> aegis::call(std::string_view path, std::str
         if (error != asio::error::eof && error != asio::ssl::error::stream_truncated)
             throw asio::system_error(error);
         return { { hresponse.get_status_code(), global, limit, remaining, reset, retry
-            , !hresponse.get_body().empty() ? hresponse.get_body() : "" } };
+            , hresponse.get_body() } };
     }
     catch (std::exception& e)
     {
@@ -946,12 +946,14 @@ AEGIS_DECL void aegis::ws_message_create(const json & result, shard * _shard)
 {
     _shard->counters.messages++;
 
-    message_create obj{ result["d"], _shard, this
+    message_create obj( result["d"]
         , get_channel(result["d"]["channel_id"])
-        , get_member(result["d"]["author"]["id"]) };
+        , get_member(result["d"]["author"]["id"]));
+    obj.bot = this;
+    obj._shard = _shard;
     obj.msg.init(_shard);
 
-    if (obj._channel == nullptr)
+    if (!obj.has_channel())
         //catch this
         return;
 
@@ -969,11 +971,9 @@ AEGIS_DECL void aegis::ws_message_create(const json & result, shard * _shard)
 
 AEGIS_DECL void aegis::ws_message_update(const json & result, shard * _shard)
 {
-    message_update obj;
-    if (result["d"].count("author") && result["d"]["author"].count("id"))
-        obj._member = get_member(result["d"]["author"]["id"]);
-    obj._channel = get_channel(result["d"]["channel_id"]);
-    obj.msg = result["d"];
+    message_update obj( result["d"]
+        , get_channel(result["d"]["channel_id"])
+        , (result["d"].count("author") && result["d"]["author"].count("id"))? get_member(result["d"]["author"]["id"]) : nullptr );
     obj.bot = this;
     obj._shard = _shard;
 
@@ -1075,11 +1075,10 @@ AEGIS_DECL void aegis::ws_guild_delete(const json & result, shard * _shard)
 
 AEGIS_DECL void aegis::ws_message_delete(const json & result, shard * _shard)
 {
-    message_delete obj;
-    obj._channel = get_channel(result["d"]["channel_id"]);
+    message_delete obj( get_channel(result["d"]["channel_id"]) 
+    , static_cast<snowflake>(result["d"]["id"].get<int64_t>()) );
     obj.bot = this;
     obj.message_id = result["d"]["id"];
-    obj.channel_id = result["d"]["channel_id"];
 
     if (_callbacks.i_message_delete)
         _callbacks.i_message_delete(obj);
@@ -1088,6 +1087,10 @@ AEGIS_DECL void aegis::ws_message_delete(const json & result, shard * _shard)
 AEGIS_DECL void aegis::ws_message_delete_bulk(const json & result, shard * _shard)
 {
     message_delete_bulk obj;
+    obj = result["d"];
+    obj.bot = this;
+    obj._shard = _shard;
+
     if (_callbacks.i_message_delete_bulk)
         _callbacks.i_message_delete_bulk(obj);
 }
@@ -1125,6 +1128,10 @@ AEGIS_DECL void aegis::ws_user_update(const json & result, shard * _shard)
 AEGIS_DECL void aegis::ws_voice_state_update(const json & result, shard * _shard)
 {
     voice_state_update obj;
+    obj.bot = this;
+    obj._shard = _shard;
+    obj = result["d"];
+    
     if (_callbacks.i_voice_state_update)
         _callbacks.i_voice_state_update(obj);
 }
@@ -1139,6 +1146,14 @@ AEGIS_DECL void aegis::ws_resumed(const json & result, shard * _shard)
         _shard->heartbeattime
         , std::bind(&aegis::keep_alive, this, std::placeholders::_1, _shard->heartbeattime, _shard)
     );
+
+    resumed obj;
+    obj.bot = this;
+    obj._shard = _shard;
+    obj = result["d"];
+
+    if (_callbacks.i_resumed)
+        _callbacks.i_resumed(obj);
 }
 
 AEGIS_DECL void aegis::ws_ready(const json & result, shard * _shard)
@@ -1176,6 +1191,10 @@ AEGIS_DECL void aegis::ws_channel_create(const json & result, shard * _shard)
     }
 
     aegiscpp::channel_create obj;
+    obj = result["d"];
+    obj.bot = this;
+    obj._shard = _shard;
+
     if (_callbacks.i_channel_create)
         _callbacks.i_channel_create(obj);
 }
@@ -1202,6 +1221,10 @@ AEGIS_DECL void aegis::ws_channel_update(const json & result, shard * _shard)
     }
 
     channel_update obj;
+    obj = result["d"];
+    obj.bot = this;
+    obj._shard = _shard;
+
     if (_callbacks.i_channel_update)
         _callbacks.i_channel_update(obj);
 }
@@ -1209,6 +1232,10 @@ AEGIS_DECL void aegis::ws_channel_update(const json & result, shard * _shard)
 AEGIS_DECL void aegis::ws_channel_delete(const json & result, shard * _shard)
 {
     channel_delete obj;
+    obj = result["d"];
+    obj.bot = this;
+    obj._shard = _shard;
+
     if (_callbacks.i_channel_delete)
         _callbacks.i_channel_delete(obj);
 }
@@ -1216,6 +1243,7 @@ AEGIS_DECL void aegis::ws_channel_delete(const json & result, shard * _shard)
 AEGIS_DECL void aegis::ws_guild_ban_add(const json & result, shard * _shard)
 {
     guild_ban_add obj;
+    obj = result["d"];
     obj.bot = this;
     obj._shard = _shard;
 
@@ -1226,6 +1254,7 @@ AEGIS_DECL void aegis::ws_guild_ban_add(const json & result, shard * _shard)
 AEGIS_DECL void aegis::ws_guild_ban_remove(const json & result, shard * _shard)
 {
     guild_ban_remove obj;
+    obj = result["d"];
     obj.bot = this;
     obj._shard = _shard;
 
@@ -1236,6 +1265,10 @@ AEGIS_DECL void aegis::ws_guild_ban_remove(const json & result, shard * _shard)
 AEGIS_DECL void aegis::ws_guild_emojis_update(const json & result, shard * _shard)
 {
     guild_emojis_update obj;
+    obj = result["d"];
+    obj.bot = this;
+    obj._shard = _shard;
+
     if (_callbacks.i_guild_emojis_update)
         _callbacks.i_guild_emojis_update(obj);
 }
@@ -1243,6 +1276,10 @@ AEGIS_DECL void aegis::ws_guild_emojis_update(const json & result, shard * _shar
 AEGIS_DECL void aegis::ws_guild_integrations_update(const json & result, shard * _shard)
 {
     guild_integrations_update obj;
+    obj = result["d"];
+    obj.bot = this;
+    obj._shard = _shard;
+
     if (_callbacks.i_guild_integrations_update)
         _callbacks.i_guild_integrations_update(obj);
 }
@@ -1258,6 +1295,7 @@ AEGIS_DECL void aegis::ws_guild_member_add(const json & result, shard * _shard)
     _member->load(_guild, result["d"], _shard);
 
     guild_member_add obj;
+    obj = result["d"];
     obj.bot = this;
     obj._shard = _shard;
 
@@ -1280,6 +1318,7 @@ AEGIS_DECL void aegis::ws_guild_member_remove(const json & result, shard * _shar
     }
 
     guild_member_remove obj;
+    obj = result["d"];
     obj.bot = this;
     obj._shard = _shard;
 
@@ -1317,6 +1356,7 @@ AEGIS_DECL void aegis::ws_guild_member_update(const json & result, shard * _shar
     _member->load(_guild, result["d"], _shard);
 
     guild_member_update obj;
+    obj = result["d"];
     obj.bot = this;
     obj._shard = _shard;
 
@@ -1361,6 +1401,10 @@ AEGIS_DECL void aegis::ws_guild_role_create(const json & result, shard * _shard)
     _guild->load_role(result["d"]["role"]);
 
     guild_role_create obj;
+    obj = result["d"];
+    obj.bot = this;
+    obj._shard = _shard;
+
     if (_callbacks.i_guild_role_create)
         _callbacks.i_guild_role_create(obj);
 }
@@ -1373,6 +1417,10 @@ AEGIS_DECL void aegis::ws_guild_role_update(const json & result, shard * _shard)
     _guild->load_role(result["d"]["role"]);
 
     guild_role_update obj;
+    obj = result["d"];
+    obj.bot = this;
+    obj._shard = _shard;
+
     if (_callbacks.i_guild_role_update)
         _callbacks.i_guild_role_update(obj);
 }
@@ -1391,6 +1439,10 @@ AEGIS_DECL void aegis::ws_guild_role_delete(const json & result, shard * _shard)
     }
 
     guild_role_delete obj;
+    obj = result["d"];
+    obj.bot = this;
+    obj._shard = _shard;
+
     if (_callbacks.i_guild_role_delete)
         _callbacks.i_guild_role_delete(obj);
 }
@@ -1398,6 +1450,10 @@ AEGIS_DECL void aegis::ws_guild_role_delete(const json & result, shard * _shard)
 AEGIS_DECL void aegis::ws_voice_server_update(const json & result, shard * _shard)
 {
     voice_server_update obj;
+    obj = result["d"];
+    obj.bot = this;
+    obj._shard = _shard;
+
     if (_callbacks.i_voice_server_update)
         _callbacks.i_voice_server_update(obj);
 }

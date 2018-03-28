@@ -25,42 +25,26 @@
 
 #pragma once
 
-
 #include "../config.hpp"
 #include "../snowflake.hpp"
 #include "../objects/message.hpp"
+#include "base_event.hpp"
 #include <string>
 #include <vector>
-
-
 
 namespace aegiscpp
 {
 
-class member;
 class channel;
-class shard;
-class aegis;
 
 /**\todo Needs documentation
 */
-struct message_delete
+struct message_delete : public base_event
 {
-    channel * _channel; /**<\todo Needs documentation */
-    member * _member; /**<\todo Needs documentation */
+    message_delete(channel * c, snowflake m) : _channel(c), message_id(m) {};
+    channel * const _channel; /**<\todo Needs documentation */
     snowflake message_id; /**<\todo Needs documentation */
-    snowflake channel_id; /**<\todo Needs documentation */
-    shard * _shard; /**<\todo Needs documentation */
-    aegis * bot; /**<\todo Needs documentation */
 };
-
-/**\todo Needs documentation
-*/
-inline void from_json(const nlohmann::json& j, message_delete& m)
-{
-    m.message_id = j["id"];
-    m.channel_id = j["channel_id"];
-}
 
 }
 

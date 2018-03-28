@@ -25,24 +25,21 @@
 
 #pragma once
 
-
 #include "../config.hpp"
 #include "../snowflake.hpp"
 #include "../objects/user.hpp"
 #include "../objects/channel.hpp"
 #include "../objects/guild.hpp"
+#include "base_event.hpp"
 #include <string>
 #include <vector>
-#include <nlohmann/json.hpp>
-
-
 
 namespace aegiscpp
 {
 
 /**\todo Needs documentation
 */
-struct ready
+struct ready : public base_event
 {
     int8_t v; /**<\todo Needs documentation */
     user _user; /**<\todo Needs documentation */
@@ -50,8 +47,6 @@ struct ready
     std::vector<guild_gw> guilds; /**<\todo Needs documentation */
     std::string session_id; /**<\todo Needs documentation */
     std::vector<std::string> _trace; /**<\todo Needs documentation */
-    shard * _shard; /**<\todo Needs documentation */
-    aegis * bot; /**<\todo Needs documentation */
 };
 
 /**\todo Needs documentation
@@ -60,13 +55,13 @@ inline void from_json(const nlohmann::json& j, ready& m)
 {
     m._user = j["user"];
     if (j.count("private_channels") && !j["private_channels"].is_null())
-        for (auto i : j["private_channels"])
+        for (const auto & i : j["private_channels"])
             m.private_channels.push_back(i);
     if (j.count("guilds") && !j["guilds"].is_null())
-        for (auto i : j["guilds"])
+        for (const auto & i : j["guilds"])
             m.guilds.push_back(i);
     if (j.count("_trace") && !j["_trace"].is_null())
-        for (auto i : j["_trace"])
+        for (const auto & i : j["_trace"])
             m._trace.push_back(i);
 }
 
@@ -75,13 +70,13 @@ inline void from_json(const nlohmann::json& j, ready& m)
 inline void to_json(nlohmann::json& j, const ready& m)
 {
     j["user"] = m._user;
-    if (m._trace.size() > 0)
+    if (!m.private_channels.empty())
         for (auto i : m.private_channels)
             j["private_channels"].push_back(i);
-    if (m._trace.size() > 0)
+    if (!m.guilds.empty())
         for (auto i : m.guilds)
             j["guilds"].push_back(i);
-    if (m._trace.size() > 0)
+    if (!m._trace.empty())
         for (auto i : m._trace)
             j["_trace"].push_back(i);
 }

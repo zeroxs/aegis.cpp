@@ -26,9 +26,7 @@
 #pragma once
 
 #include "../config.hpp"
-#include <nlohmann/json.hpp>
-
-
+#include "base_event.hpp"
 
 namespace aegiscpp
 {
@@ -39,7 +37,7 @@ class aegis;
 
 /**\todo Needs documentation
 */
-struct voice_state_update
+struct voice_state_update : public base_event
 {
 };
 

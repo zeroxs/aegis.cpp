@@ -1,5 +1,5 @@
 //
-// message_delete_bulk.hpp
+// base_event.hpp
 // aegis.cpp
 //
 // Copyright (c) 2017 Sara W (sara at xandium dot net)
@@ -25,22 +25,23 @@
 
 #pragma once
 
+
 #include "../config.hpp"
-#include "base_event.hpp"
+#include <nlohmann/json.hpp>
 
 namespace aegiscpp
 {
 
+class shard;
+class aegis;
+
 /**\todo Needs documentation
 */
-struct message_delete_bulk : public base_event
+struct base_event
 {
+    shard * _shard; /**< Pointer to shard object this message came from */
+    aegis * bot; /**< Pointer to the main bot object */
 };
 
-/**\todo Needs documentation
-*/
-inline void from_json(const nlohmann::json& j, message_delete_bulk& m)
-{
 }
 
-}
