@@ -1076,7 +1076,7 @@ AEGIS_DECL void aegis::ws_guild_delete(const json & result, shard * _shard)
 AEGIS_DECL void aegis::ws_message_delete(const json & result, shard * _shard)
 {
     message_delete obj( get_channel(result["d"]["channel_id"]) 
-    , static_cast<snowflake>(result["d"]["id"].get<int64_t>()) );
+    , static_cast<snowflake>(std::stoll(result["d"]["id"].get<std::string>())) );
     obj.bot = this;
     obj.message_id = result["d"]["id"];
 
