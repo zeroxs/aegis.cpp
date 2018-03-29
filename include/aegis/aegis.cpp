@@ -554,14 +554,16 @@ AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr m
         
                     std::string cmd = result["t"];
         
-                    auto it = ws_handlers.find(cmd);
+                    const auto it = ws_handlers.find(cmd);
                     if (it != ws_handlers.end())
                     {
                         //message id found
                         ++message_count[cmd];
         
-                        //execute handler
-                        (it->second)(result, _shard);
+                        io_service().post([this, it, res = std::move(result), _shard, cmd]()
+                        {
+                            (it->second)(res, _shard);
+                        });
                     }
                     else
                     {
