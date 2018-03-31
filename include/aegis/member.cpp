@@ -102,7 +102,7 @@ AEGIS_DECL void member::load(guild * _guild, const json & obj, shard * _shard)
         if (_guild != nullptr)
             _guild->get_bot().log->error("Shard#{} : Error processing member[{}] of guild[{}] {}", _shard->get_id(), member_id, _guild->get_id(), e.what());
         else
-            throw aegiscpp::exception(fmt::format("Shard#{} : Error processing member[{}] {}", _shard->get_id(), member_id, e.what()), make_error_code(error::member_error));
+            throw aegiscpp::exception(fmt::format("Shard#{} : Error processing member[{}] {}", _shard->get_id(), member_id, e.what()), make_error_code(aegiscpp::member_error));
     }
 }
 

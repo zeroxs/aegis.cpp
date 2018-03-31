@@ -27,8 +27,8 @@
 
 
 #if !defined(AEGIS_VERSION_LONG)
-#define AEGIS_VERSION_LONG      0x00000300
-#define AEGIS_VERSION_TEXT      "aegis.cpp 0.4.0 2018/03/15"
+#define AEGIS_VERSION_LONG      0x00000500
+#define AEGIS_VERSION_TEXT      "aegis.cpp 0.5.0 2018/03/30"
 
 #define AEGIS_VERSION_MAJOR     ((AEGIS_VERSION_LONG & 0x00ff0000) >> 16)
 #define AEGIS_VERSION_MINOR     ((AEGIS_VERSION_LONG & 0x0000ff00) >> 8)

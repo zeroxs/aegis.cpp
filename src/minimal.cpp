@@ -31,10 +31,31 @@ int main(int argc, char * argv[])
 {
     aegis bot("TOKEN");
     callbacks cbs;
+    std::mutex m_ping_test;
+    std::condition_variable cv_ping_test;
+    int64_t ws_checktime = 0;
     cbs.i_message_create = [&](message_create obj)
     {
         const auto &[channel_id, guild_id, message_id, member_id] = obj.msg.get_related_ids();
        
+        //ping test
+        static snowflake ping_check(0);
+        static int64_t checktime(0);
+
+        if (obj.get_member().get_id() == obj.bot->self()->get_id())
+        {
+            if (obj.msg.nonce == checktime)
+            {
+                {
+                    std::lock_guard<std::mutex> lk(m_ping_test);
+                    ws_checktime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count() - checktime;
+                }
+                cv_ping_test.notify_all();
+                return;
+            }
+        }
+
+
         if (obj.msg.is_bot() || !obj.has_member() || !obj.has_channel())
             return;
 
@@ -46,8 +67,38 @@ int main(int argc, char * argv[])
 
         std::string content{ obj.msg.get_content() };
 
+        // Simple Hi response
         if (content == "Hi")
+        {
             _channel.create_message("Hello back");
+        }
+        // Complex ping reply. Edits bot's message to display REST response time
+        // Then when the Websocket receives the message, edits it again to show the time
+        // the message took to come over the websocket
+        else if (content == "ping")
+        {
+            std::unique_lock<std::mutex> lk(m_ping_test);
+            checktime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+            auto apireply = _channel.create_message("Pong").get();
+            if (apireply.reply_code == 200)
+            {
+                bot.log->info(apireply.content);
+                message msg = json::parse(apireply.content);
+                msg.init(obj._shard);
+                std::string to_edit = fmt::format("Ping reply: REST [{}ms]", (duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count() - checktime));
+                msg.edit(to_edit);
+                if (cv_ping_test.wait_for(lk, 20s) == std::cv_status::no_timeout)
+                {
+                    msg.edit(fmt::format("{} WS [{}ms]", to_edit, ws_checktime));
+                    return;
+                }
+                else
+                {
+                    msg.edit(fmt::format("{} WS [timeout20s]", to_edit));
+                    return;
+                }
+            }
+        }
 
         return;
     };

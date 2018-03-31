@@ -41,11 +41,6 @@ using error_code = std::error_code;
 
 /**\todo Needs documentation
 */
-namespace error
-{
-
-/**\todo Needs documentation
-*/
 enum value
 {
     /// Catch-all library error
@@ -90,6 +85,9 @@ enum value
     /// Guild related error
     guild_error,
 
+    /// Shard related error
+    shard_error,
+
     /// Malformed Redis request
     bad_redis_request,
 
@@ -109,39 +107,41 @@ public:
         return "aegis";
     }
 
-    std::string message(int value) const override
+    std::string message(int val) const override
     {
-        switch (value)
+        switch (val)
         {
-            case error::general:
+            case value::general:
                 return "Generic error";
-            case error::invalid_token:
+            case value::invalid_token:
                 return "Token invalid";
-            case error::invalid_state:
+            case value::invalid_state:
                 return "Invalid state";
-            case error::get_gateway:
+            case value::get_gateway:
                 return "Unable to retrieve Gateway data";
-            case error::no_permission:
+            case value::no_permission:
                 return "No permission for this action";
-            case error::not_implemented:
+            case value::not_implemented:
                 return "Feature not yet implemented";
-            case error::member_not_found:
+            case value::member_not_found:
                 return "Member not found";
-            case error::channel_not_found:
+            case value::channel_not_found:
                 return "Channel not found";
-            case error::guild_not_found:
+            case value::guild_not_found:
                 return "Guild not found";
-            case error::rate_limited:
+            case value::rate_limited:
                 return "Rate Limited";
-            case error::global_rate_limited:
+            case value::global_rate_limited:
                 return "Globally Rate Limited";
-            case error::member_error:
+            case value::member_error:
                 return "Member related error";
-            case error::channel_error:
+            case value::channel_error:
                 return "Channel related error";
-            case error::guild_error:
+            case value::guild_error:
                 return "Guild related error";
-            case error::bad_redis_request:
+            case value::shard_error:
+                return "Shard related error";
+            case value::bad_redis_request:
                 return "Bad Redis request";
             default:
                 return "Unknown";
@@ -159,12 +159,11 @@ inline const std::error_category & get_category()
 
 /**\todo Needs documentation
 */
-inline std::error_code make_error_code(error::value e)
+inline std::error_code make_error_code(aegiscpp::value e)
 {
     return std::error_code(static_cast<int>(e), get_category());
 }
 
-}
 }
 
 namespace aegiscpp
@@ -175,7 +174,7 @@ namespace aegiscpp
 class exception : public std::exception
 {
 public:
-    exception(std::string const & msg, std::error_code ec = make_error_code(error::general))
+    exception(std::string const & msg, std::error_code ec = make_error_code(value::general))
         : _msg(msg.empty() ? ec.message() : msg)
         , _code(ec)
     {

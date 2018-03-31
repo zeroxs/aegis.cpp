@@ -185,7 +185,7 @@ AEGIS_DECL void aegis::create_websocket(std::error_code & ec)
     if (status != Ready)
     {
         log->critical("aegis::websocketcreate() called in the wrong state");
-        ec = make_error_code(error::invalid_state);
+        ec = make_error_code(aegiscpp::invalid_state);
         return;
     }
 
@@ -198,13 +198,13 @@ AEGIS_DECL void aegis::create_websocket(std::error_code & ec)
 
     if (!res.has_value() || res->content.size() == 0)
     {
-        ec = make_error_code(error::get_gateway);
+        ec = make_error_code(aegiscpp::get_gateway);
         return;
     }
 
     if (res->reply_code == 401)
     {
-        ec = make_error_code(error::invalid_token);
+        ec = make_error_code(aegiscpp::invalid_token);
         return;
     }
 
@@ -241,7 +241,7 @@ AEGIS_DECL void aegis::create_websocket(std::error_code & ec)
     {
         if (ret["message"] == "401: Unauthorized")
         {
-            ec = make_error_code(error::invalid_token);
+            ec = make_error_code(aegiscpp::invalid_token);
             return;
         }
     }

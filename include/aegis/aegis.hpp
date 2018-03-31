@@ -193,8 +193,8 @@ public:
         if (status != Uninitialized)
         {
             log->critical("aegis::initialize() called in the wrong state");
-            using error::make_error_code;
-            ec = make_error_code(error::invalid_state);
+            using aegiscpp::make_error_code;
+            ec = make_error_code(aegiscpp::invalid_state);
             return;
         }
 
@@ -231,8 +231,8 @@ public:
         if (status != Uninitialized)
         {
             log->critical("aegis::initialize() called in the wrong state");
-            using error::make_error_code;
-            ec = make_error_code(error::invalid_state);
+            using aegiscpp::make_error_code;
+            ec = make_error_code(aegiscpp::invalid_state);
             return;
         }
 
@@ -370,6 +370,12 @@ public:
         if (count == 0)
             count = std::thread::hardware_concurrency();
 
+        // ensure any sort of single blocking call in message processing usercode doesn't block everything
+        // this will not protect against faulty usercode entirely, but will at least provide some leeway
+        // to allow a single blocking message to not halt operations
+        if (count == 1)
+            count = 2;
+
         // Create rest_scheduler work object so threads do not exit immediately
         rest_work = std::make_shared<asio::io_service::work>(std::ref(rest_scheduler));
      
@@ -490,7 +496,7 @@ public:
     member * self() const
     {
         if (_self == nullptr)
-            throw aegiscpp::exception("Self not found", make_error_code(error::member_not_found));
+            throw aegiscpp::exception("Self not found", make_error_code(aegiscpp::member_not_found));
         return _self;
         /*auto it = members.find(state.user.id);
         if (it == members.end())
