@@ -832,7 +832,7 @@ public:
     AEGIS_DECL rest_api modify_guild_role_positions(snowflake role_id, int16_t position)
     {
         std::error_code ec;
-        auto res = modify_guild_role_positions(ec, id, position);
+        auto res = modify_guild_role_positions(ec, role_id, position);
         if (ec)
             throw ec;
         return res;
