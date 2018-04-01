@@ -251,27 +251,6 @@ public:
      */
     AEGIS_DECL const snowflake get_owner() const noexcept;
 
-    /// Create a new guild
-    /**\todo
-     * @param ec Indicates what error occurred, if any
-     * 
-     * @returns std::future<rest_reply>
-     */
-    AEGIS_DECL rest_api create_guild(std::error_code & ec);
-
-    /// Create a new guild
-    /**\todo
-     * @returns std::future<rest_reply>
-     */
-    AEGIS_DECL rest_api create_guild()
-    {
-        std::error_code ec;
-        auto res = create_guild(ec);
-        if (ec)
-            throw ec;
-        return res;
-    }
-
     /// Get guild information
     /**
      * @param ec Indicates what error occurred, if any
@@ -296,7 +275,7 @@ public:
     }
 
     /// Modify guild information
-    /**\todo better elaborate
+    /**
      * @param ec Indicates what error occurred, if any
      * 
      * @param name Set name of guild
@@ -304,8 +283,12 @@ public:
      * @param voice_region Set region for voice
      * 
      * @param verification_level Set verification level from unrestricted level to verified phone level
-     * 
+     * (NONE=0, LOW(verified email)=1, MEDIUM(registered >5m)=2, HIGH(member of server >10m)=3 VERY_HIGH(verified phone)=4
+     *
      * @param default_message_notifications Set default notification level for new members
+     * 
+     * @param explicit_content_filter Set filter level for new content
+     * (DISABLED=0, MEMBERS_WITHOUT_ROLES=1, ALL_MEMBERS=2)
      * 
      * @param afk_channel_id Set channel for idle voice connections to be moved to
      * 
@@ -319,22 +302,30 @@ public:
      * 
      * @returns std::future<rest_reply>
      */
-    AEGIS_DECL rest_api modify_guild(std::error_code & ec, std::optional<std::string> name = {}, std::optional<std::string> voice_region = {},
-                                     std::optional<int> verification_level = {}, std::optional<int> default_message_notifications = {},
-                                     std::optional<snowflake> afk_channel_id = {}, std::optional<int> afk_timeout = {},
-                                     std::optional<std::string> icon = {}, std::optional<snowflake> owner_id = {},
-                                     std::optional<std::string> splash = {});
+    AEGIS_DECL rest_api modify_guild(
+        std::error_code & ec, std::optional<std::string> name = {},
+        std::optional<std::string> voice_region = {}, std::optional<int> verification_level = {},
+        std::optional<int> default_message_notifications = {}, std::optional<int> explicit_content_filter = {},
+        std::optional<snowflake> afk_channel_id = {}, std::optional<int> afk_timeout = {},
+        std::optional<std::string> icon = {}, std::optional<snowflake> owner_id = {},
+        std::optional<std::string> splash = {}
+    );
 
 
     /// Modify guild information
-    /**\todo better elaborate
+    /**
      * @param name Set name of guild
      * 
      * @param voice_region Set region for voice
      * 
      * @param verification_level Set verification level from unrestricted level to verified phone level
-     * 
+     * (NONE=0, LOW(verified email)=1, MEDIUM(registered >5m)=2, HIGH(member of server >10m)=3 VERY_HIGH(verified phone)=4
+     *
      * @param default_message_notifications Set default notification level for new members
+     * (ALL_MESSAGES=0, ONLY_MENTIONS=1)
+     * 
+     * @param explicit_content_filter Set filter level for new content
+     * (DISABLED=0, MEMBERS_WITHOUT_ROLES=1, ALL_MEMBERS=2)
      * 
      * @param afk_channel_id Set channel for idle voice connections to be moved to
      * 
@@ -347,18 +338,20 @@ public:
      * @param splash \todo
      * 
      * @throws aegiscpp::exception Thrown on failure.
-     * 
      * @returns std::future<rest_reply>
      */
-    AEGIS_DECL rest_api modify_guild(std::optional<std::string> name = {}, std::optional<std::string> voice_region = {},
-                                     std::optional<int> verification_level = {}, std::optional<int> default_message_notifications = {},
-                                     std::optional<snowflake> afk_channel_id = {}, std::optional<int> afk_timeout = {},
-                                     std::optional<std::string> icon = {}, std::optional<snowflake> owner_id = {},
-                                     std::optional<std::string> splash = {})
+    AEGIS_DECL rest_api modify_guild(
+        std::optional<std::string> name = {},
+        std::optional<std::string> voice_region = {}, std::optional<int> verification_level = {},
+        std::optional<int> default_message_notifications = {}, std::optional<int> explicit_content_filter = {},
+        std::optional<snowflake> afk_channel_id = {}, std::optional<int> afk_timeout = {},
+        std::optional<std::string> icon = {}, std::optional<snowflake> owner_id = {},
+        std::optional<std::string> splash = {}
+    )
     {
         std::error_code ec;
         auto res = modify_guild(ec, name, voice_region, verification_level, default_message_notifications,
-                                afk_channel_id, afk_timeout, icon, owner_id, splash);
+                                explicit_content_filter, afk_channel_id, afk_timeout, icon, owner_id, splash);
         if (ec)
             throw ec;
         return res;
@@ -401,8 +394,8 @@ public:
      *
      * @returns std::future<rest_reply>
      */
-    AEGIS_DECL rest_api create_text_channel(std::error_code & ec, std::string name, int64_t parent_id, bool nsfw,
-                                            std::vector<permission_overwrite> permission_overwrites);
+    AEGIS_DECL rest_api create_text_channel(std::error_code & ec, std::string name, int64_t parent_id = 0, bool nsfw = false,
+                                            std::vector<permission_overwrite> permission_overwrites = {});
 
     /// Create a text channel
     /**
@@ -417,8 +410,8 @@ public:
      * @throws aegiscpp::exception Thrown on failure.
      * @returns std::future<rest_reply>
      */
-    AEGIS_DECL rest_api create_text_channel(std::string name, int64_t parent_id, bool nsfw,
-                                            std::vector<permission_overwrite> permission_overwrites)
+    AEGIS_DECL rest_api create_text_channel(std::string name, int64_t parent_id = 0, bool nsfw = false ,
+                                            std::vector<permission_overwrite> permission_overwrites = {})
     {
         std::error_code ec;
         auto res = create_text_channel(ec, name, parent_id, nsfw, permission_overwrites);
@@ -445,8 +438,8 @@ public:
      *
      * @returns std::future<rest_reply>
      */
-    AEGIS_DECL rest_api create_voice_channel(std::error_code & ec, std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id,
-                                             bool nsfw, std::vector<permission_overwrite> permission_overwrites);
+    AEGIS_DECL rest_api create_voice_channel(std::error_code & ec, std::string name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
+                                             std::vector<permission_overwrite> permission_overwrites = {});
 
     /// Create a voice channel
     /**
@@ -465,11 +458,11 @@ public:
      * @throws aegiscpp::exception Thrown on failure.
      * @returns std::future<rest_reply>
      */
-    AEGIS_DECL rest_api create_voice_channel(std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id,
-                                             bool nsfw, std::vector<permission_overwrite> permission_overwrites)
+    AEGIS_DECL rest_api create_voice_channel(std::string name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
+                                             std::vector<permission_overwrite> permission_overwrites = {})
     {
         std::error_code ec;
-        auto res = create_voice_channel(ec, name, bitrate, user_limit, parent_id, nsfw, permission_overwrites);
+        auto res = create_voice_channel(ec, name, bitrate, user_limit, parent_id, permission_overwrites);
         if (ec)
             throw ec;
         return res;

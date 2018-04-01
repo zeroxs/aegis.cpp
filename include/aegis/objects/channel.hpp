@@ -85,7 +85,7 @@ inline void from_json(const nlohmann::json& j, channel_gw& m)
     if (j.count("position") && !j["position"].is_null())
         m.position = j["position"];
     if (j.count("permission_overwrites") && !j["permission_overwrites"].is_null())
-        for (auto i : j["permission_overwrites"])
+        for (const auto & i : j["permission_overwrites"])
             m.permission_overwrites.push_back(i);
     if (j.count("name") && !j["name"].is_null())
         m.name = j["name"];
@@ -108,7 +108,7 @@ inline void from_json(const nlohmann::json& j, channel_gw& m)
     if (j.count("parent_id") && !j["parent_id"].is_null())
         m.parent_id = j["parent_id"];
     if (j.count("recipients") && !j["recipients"].is_null())
-        for (auto i : j["recipients"])
+        for (const auto & i : j["recipients"])
             m.recipients.push_back(i);
 }
 
@@ -116,24 +116,38 @@ inline void from_json(const nlohmann::json& j, channel_gw& m)
 */
 inline void to_json(nlohmann::json& j, const channel_gw& m)
 {
-    j["id"] = m.channel_id;
+    if (m.channel_id)
+        j["id"] = m.channel_id;
     j["type"] = m.type;
-    j["guild_id"] = m.guild_id;
-    j["position"] = m.position;
+    if (m.guild_id)
+        j["guild_id"] = m.guild_id;
+    if (m.position)
+        j["position"] = m.position;
     j["name"] = m.name;
-    j["topic"] = m.topic;
-    j["nsfw"] = m.nsfw;
-    j["last_message_id"] = m.last_message_id;
-    j["bitrate"] = m.bitrate;
-    j["userlimit"] = m.userlimit;
-    j["icon"] = m.icon;
-    j["owner_id"] = m.owner_id;
-    j["application_id"] = m.application_id;
-    j["parent_id"] = m.parent_id;
-    if (m.permission_overwrites.size() > 0)
+    if (!m.topic.empty())
+        j["topic"] = m.topic;
+    if (m.nsfw)
+        j["nsfw"] = m.nsfw;
+    if (m.last_message_id)
+        j["last_message_id"] = m.last_message_id;
+    if (m.bitrate)
+        j["bitrate"] = m.bitrate;
+    if (m.userlimit)
+        j["userlimit"] = m.userlimit;
+    if (!m.icon.empty())
+        j["icon"] = m.icon;
+    if (m.bitrate)
+        j["owner_id"] = m.owner_id;
+    if (m.application_id)
+        j["application_id"] = m.application_id;
+    if (m.parent_id)
+        j["parent_id"] = m.parent_id;
+
+    if (!m.permission_overwrites.empty())
         for (auto i : m.permission_overwrites)
             j["permission_overwrites"].push_back(i);
-    if (m.recipients.size() > 0)
+
+    if (!m.recipients.empty())
         for (auto i : m.recipients)
             j["recipients"].push_back(i);
 }

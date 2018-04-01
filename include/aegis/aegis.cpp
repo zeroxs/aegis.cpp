@@ -1466,4 +1466,48 @@ AEGIS_DECL void aegis::ws_voice_server_update(const json & result, shard * _shar
         _callbacks.i_voice_server_update(obj);
 }
 
+AEGIS_DECL rest_reply aegis::create_guild(
+    std::error_code & ec, std::string name,
+    std::optional<std::string> voice_region, std::optional<int> verification_level,
+    std::optional<int> default_message_notifications, std::optional<int> explicit_content_filter,
+    std::optional<std::string> icon, std::optional<std::vector<role>> roles,
+    std::optional<std::vector<std::tuple<std::string, int>>> channels
+)
+{
+    json obj;
+    obj["name"] = name;
+    if (voice_region.has_value())
+        obj["region"] = voice_region.value();
+    if (verification_level.has_value())
+        obj["verification_level"] = verification_level.value();
+    if (default_message_notifications.has_value())
+        obj["default_message_notifications"] = default_message_notifications.value();
+    if (verification_level.has_value())
+        obj["explicit_content_filter"] = verification_level.value();
+    if (icon.has_value())
+        obj["icon"] = icon.value();
+    if (roles.has_value())
+        obj["roles"] = roles.value();
+    if (channels.has_value())
+        for (auto & c : channels.value())
+            obj["channels"].push_back(json({ { "name", std::get<0>(c) }, { "type", std::get<1>(c) } }));
+
+    try
+    {
+        auto r = call("/guilds", obj.dump(), "POST");
+        ec = r.code();
+        return r;
+    }
+    catch (nlohmann::json::type_error& e)
+    {
+        log->critical("json::type_error guild::post_task() exception : {}", e.what());
+    }
+    catch (...)
+    {
+        log->critical("Uncaught post_task exception");
+    }
+    ec = make_error_code(aegiscpp::general);
+    return {};
+}
+
 }

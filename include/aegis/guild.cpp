@@ -376,7 +376,9 @@ AEGIS_DECL void guild::remove_role(snowflake role_id)
         {
             if (rl == role_id)
             {
-                g.value()->roles.erase(std::find(g.value()->roles.begin(), g.value()->roles.end(), role_id));
+                auto it = std::find(g.value()->roles.begin(), g.value()->roles.end(), role_id);
+                if (it != g.value()->roles.end())
+                    g.value()->roles.erase(it);
                 break;
             }
         }
@@ -413,29 +415,16 @@ AEGIS_DECL std::future<rest_reply> guild::post_task(std::string path, std::strin
     return {};
 }
 
-
-/**\todo Incomplete. Signature may change. Location may change.
-*/
-AEGIS_DECL rest_api guild::create_guild(std::error_code & ec)
-{
-    //TODO: 
-    ec = aegiscpp::error_code();
-    ec = make_error_code(aegiscpp::not_implemented);
-    return {};
-}
-
 /**\todo Incomplete. Signature may change. Location may change.
 */
 AEGIS_DECL rest_api guild::get_guild(std::error_code & ec)
 {
-    //TODO: 
     ec = aegiscpp::error_code();
-    ec = make_error_code(aegiscpp::not_implemented);
-    return {};
+    return post_task(fmt::format("/guilds/{}", guild_id), "GET");
 }
 
 AEGIS_DECL rest_api guild::modify_guild(std::error_code & ec, std::optional<std::string> name, std::optional<std::string> voice_region, std::optional<int> verification_level,
-                    std::optional<int> default_message_notifications, std::optional<snowflake> afk_channel_id, std::optional<int> afk_timeout,
+                    std::optional<int> default_message_notifications, std::optional<int> explicit_content_filter, std::optional<snowflake> afk_channel_id, std::optional<int> afk_timeout,
                     std::optional<std::string> icon, std::optional<snowflake> owner_id, std::optional<std::string> splash)
 {
     if ((!perms().can_manage_guild()) || (owner_id.has_value() && owner_id != self()->member_id))
@@ -453,6 +442,8 @@ AEGIS_DECL rest_api guild::modify_guild(std::error_code & ec, std::optional<std:
         obj["verification_level"] = verification_level.value();
     if (default_message_notifications.has_value())
         obj["default_message_notifications"] = default_message_notifications.value();
+    if (verification_level.has_value())
+        obj["explicit_content_filter"] = verification_level.value();
     if (afk_channel_id.has_value())
         obj["afk_channel_id"] = afk_channel_id.value();
     if (afk_timeout.has_value())
@@ -492,6 +483,8 @@ AEGIS_DECL rest_api guild::create_text_channel(std::error_code & ec, std::string
     json obj;
     obj["name"] = name;
     obj["type"] = 0;
+    obj["parent_id"] = parent_id;
+    obj["nsfw"] = nsfw;
     obj["permission_overwrites"] = json::array();
     for (auto & p_ow : permission_overwrites)
     {
@@ -501,7 +494,7 @@ AEGIS_DECL rest_api guild::create_text_channel(std::error_code & ec, std::string
     return post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj);
 }
 
-AEGIS_DECL rest_api guild::create_voice_channel(std::error_code & ec, std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, bool nsfw, std::vector<permission_overwrite> permission_overwrites)
+AEGIS_DECL rest_api guild::create_voice_channel(std::error_code & ec, std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, std::vector<permission_overwrite> permission_overwrites)
 {
     if (!perms().can_manage_channels())
     {
@@ -512,6 +505,9 @@ AEGIS_DECL rest_api guild::create_voice_channel(std::error_code & ec, std::strin
     json obj;
     obj["name"] = name;
     obj["type"] = 2;
+    obj["bitrate"] = bitrate;
+    obj["user_limit"] = user_limit;
+    obj["parent_id"] = parent_id;
     obj["permission_overwrites"] = json::array();
     for (auto & p_ow : permission_overwrites)
     {

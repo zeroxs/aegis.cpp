@@ -80,6 +80,8 @@ struct user_update;
 struct voice_server_update;
 struct voice_state_update;
 struct webhooks_update;
+struct channel_gw;
+struct guild_gw;
 
 class shard;
 class member;
@@ -368,6 +370,89 @@ public:
     * @returns Response object
     */
     AEGIS_DECL rest_reply call(std::string_view path, std::string_view content, std::string_view method, std::string_view host = "");
+
+    /// Create new guild - Unique case. Does not belong to any ratelimit bucket so it is run
+    /// directly on the same thread and does not attempt to manage ratelimits due to the already
+    /// existing requirement that the bot must be in less than 10 guilds for this call to succeed
+    /**
+    * @param ec Indicates what error occurred, if any
+    *
+    * @param name Set name of guild
+    *
+    * @param voice_region Set region for voice
+    *
+    * @param verification_level Set verification level from unrestricted level to verified phone level
+    * (NONE=0, LOW(verified email)=1, MEDIUM(registered >5m)=2, HIGH(member of server >10m)=3 VERY_HIGH(verified phone)=4
+    *
+    * @param default_message_notifications Set default notification level for new members
+    *
+    * @param explicit_content_filter Set filter level for new content
+    * (DISABLED=0, MEMBERS_WITHOUT_ROLES=1, ALL_MEMBERS=2)
+    *
+    * @param afk_channel_id Set channel for idle voice connections to be moved to
+    *
+    * @param afk_timeout Set time where voice connections are considered to be idle
+    *
+    * @param icon Set icon \todo
+    *
+    * @param owner_id Transfer owner to someone else
+    *
+    * @param splash \todo
+    *
+    * @returns rest_reply
+    */
+    AEGIS_DECL rest_reply create_guild(
+        std::error_code & ec, std::string name,
+        std::optional<std::string> voice_region = {}, std::optional<int> verification_level = {},
+        std::optional<int> default_message_notifications = {}, std::optional<int> explicit_content_filter = {},
+        std::optional<std::string> icon = {}, std::optional<std::vector<role>> roles = {},
+        std::optional<std::vector<std::tuple<std::string, int>>> channels = {}
+    );
+
+    /// Create new guild - Unique case. Does not belong to any ratelimit bucket so it is run
+    /// directly on the same thread and does not attempt to manage ratelimits due to the already
+    /// existing requirement that the bot must be in less than 10 guilds for this call to succeed
+    /**
+    * @param name Set name of guild
+    *
+    * @param voice_region Set region for voice
+    *
+    * @param verification_level Set verification level from unrestricted level to verified phone level
+    * (NONE=0, LOW(verified email)=1, MEDIUM(registered >5m)=2, HIGH(member of server >10m)=3 VERY_HIGH(verified phone)=4
+    *
+    * @param default_message_notifications Set default notification level for new members
+    *
+    * @param explicit_content_filter Set filter level for new content
+    * (DISABLED=0, MEMBERS_WITHOUT_ROLES=1, ALL_MEMBERS=2)
+    *
+    * @param afk_channel_id Set channel for idle voice connections to be moved to
+    *
+    * @param afk_timeout Set time where voice connections are considered to be idle
+    *
+    * @param icon Set icon \todo
+    *
+    * @param owner_id Transfer owner to someone else
+    *
+    * @param splash \todo
+    *
+    * @throws aegiscpp::exception Thrown on failure.
+    * @returns rest_reply
+    */
+    AEGIS_DECL rest_reply create_guild(
+        std::string name,
+        std::optional<std::string> voice_region = {}, std::optional<int> verification_level = {},
+        std::optional<int> default_message_notifications = {}, std::optional<int> explicit_content_filter = {},
+        std::optional<std::string> icon = {}, std::optional<std::vector<role>> roles = {},
+        std::optional<std::vector<std::tuple<std::string, int>>> channels = {}
+    )
+    {
+        std::error_code ec;
+        auto res = create_guild(ec, name, voice_region, verification_level, default_message_notifications,
+                                explicit_content_filter, icon, roles, channels);
+        if (ec)
+            throw ec;
+        return res;
+    }
 
     /// Spawns specified amount of threads and starts running the io_service or default hardware hinted contexts
     /**
