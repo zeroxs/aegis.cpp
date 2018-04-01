@@ -78,8 +78,8 @@ public:
     bucket_factory & ratelimit;
 
 
-    AEGIS_DECL std::future<rest_reply> post_task(std::string path, std::string method = "POST", 
-                                                 const nlohmann::json & obj = {});
+    AEGIS_DECL std::future<rest_reply> post_task(std::string path, std::string method = "POST",
+                                                 const nlohmann::json & obj = {}, std::string host = "");
 
     permission perms()
     {
@@ -252,7 +252,7 @@ public:
     AEGIS_DECL const snowflake get_owner() const noexcept;
 
     /// Create a new guild
-    /**
+    /**\todo
      * @param ec Indicates what error occurred, if any
      * 
      * @returns std::future<rest_reply>
@@ -260,7 +260,7 @@ public:
     AEGIS_DECL rest_api create_guild(std::error_code & ec);
 
     /// Create a new guild
-    /**
+    /**\todo
      * @returns std::future<rest_reply>
      */
     AEGIS_DECL rest_api create_guild()

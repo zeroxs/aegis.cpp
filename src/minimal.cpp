@@ -79,11 +79,11 @@ int main(int argc, char * argv[])
         {
             std::unique_lock<std::mutex> lk(m_ping_test);
             checktime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-            auto apireply = _channel.create_message("Pong").get();
-            if (apireply.reply_code == 200)
+            
+            if (auto apireply = _channel.create_message("Pong").get(); apireply)
             {
-                bot.log->info(apireply.content);
-                message msg = json::parse(apireply.content);
+                bot.log->info(apireply.reply_data.content);
+                message msg = json::parse(apireply.reply_data.content);
                 msg.init(obj._shard);
                 std::string to_edit = fmt::format("Ping reply: REST [{}ms]", (duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count() - checktime));
                 msg.edit(to_edit);

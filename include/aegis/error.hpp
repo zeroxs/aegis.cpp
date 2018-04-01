@@ -91,6 +91,30 @@ enum value
     /// Malformed Redis request
     bad_redis_request,
 
+    /// HTTP error codes for exceptions
+    http_ok = 200,
+    http_no_content = 204,
+    http_bad_request = 400,
+    http_unauthorized = 401,
+    http_forbidden = 403,
+    http_not_found = 404,
+    http_method_not_allowed = 405,
+    http_request_timeout = 408,
+    http_too_many_requests = 429,
+    http_internal_server_error = 500,
+    http_bad_gateway = 502,
+    http_gateway_timeout = 504,
+    
+    /// Cloudflare specific
+    http_unknown_error= 520,
+    http_server_down = 521,
+    http_timed_out = 522,
+    http_origin_unreachable = 523,
+    http_timeout_occurred = 524,
+    http_ssl_handshake_failed = 525,
+    http_invalid_ssl_certificate = 526,
+    http_railgun_error = 527,
+
     max_errors
 
 };
@@ -163,11 +187,6 @@ inline std::error_code make_error_code(aegiscpp::value e)
 {
     return std::error_code(static_cast<int>(e), get_category());
 }
-
-}
-
-namespace aegiscpp
-{
 
 /**\todo Needs documentation
 */

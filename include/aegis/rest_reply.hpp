@@ -32,18 +32,18 @@
 #include <nlohmann/json.hpp>
 #include <stdint.h>
 #include <string>
-
+#include "error.hpp"
 
 namespace aegiscpp
 {
 
 /**\todo Needs documentation
 */
-struct rest_reply
+struct rest_response
 {
-    rest_reply() = default;
-    rest_reply(bool p) { permissions = p; }
-    rest_reply(websocketpp::http::status_code::value reply_code, bool global, int32_t limit, int32_t remaining, int64_t reset, int32_t retry, std::string content)
+    rest_response() = default;
+    rest_response(bool p) { permissions = p; }
+    rest_response(websocketpp::http::status_code::value reply_code, bool global, int32_t limit, int32_t remaining, int64_t reset, int32_t retry, std::string content)
         : reply_code(reply_code)
         , global(global)
         , limit(limit)
@@ -61,6 +61,54 @@ struct rest_reply
     int32_t retry = 0; /**< Rate limit retry time */
     std::string content; /**< REST call's reply body */
     bool permissions = true; /**< Whether the call had proper permissions */
+};
+
+class rest_reply : public std::exception
+{
+public:
+    rest_reply(std::string const & msg, std::error_code ec = make_error_code(value::general), rest_response r_data = {})
+        : _msg(msg.empty() ? ec.message() : msg)
+        , _code(ec)
+        , reply_data(r_data)
+    {
+    }
+
+    explicit rest_reply(std::error_code ec)
+        : _msg(ec.message())
+        , _code(ec)
+    {
+    }
+
+    rest_reply()
+        : _msg("")
+    {
+
+    }
+
+    operator bool()
+    {
+        if (reply_data.reply_code == 200 || reply_data.reply_code == 201 || reply_data.reply_code == 204)
+            return true;
+        return false;
+    }
+
+    ~rest_reply() = default;
+
+    virtual char const * what() const noexcept override
+    {
+        return _msg.c_str();
+    }
+
+    std::error_code code() const noexcept
+    {
+        return _code;
+    }
+
+private:
+    std::string _msg;
+    std::error_code _code;
+public:
+    rest_response reply_data;
 };
 
 }

@@ -47,7 +47,7 @@ class aegis;
 namespace rest_limits
 {
 
-using rest_call = std::function<std::optional<rest_reply>(std::string path, std::string content, std::string method)>;
+using rest_call = std::function<rest_reply(std::string path, std::string content, std::string method, std::string host)>;
 using namespace std::chrono;
 
 /**
@@ -108,7 +108,7 @@ public:
     bucket_factory(bucket_factory &&) = delete;
     bucket_factory & operator=(const bucket_factory &) = delete;
 
-    AEGIS_DECL rest_reply do_async(int64_t id, std::string path, std::string content, std::string method);
+    AEGIS_DECL rest_reply do_async(int64_t id, std::string path, std::string content, std::string method, std::string host = "");
 
 private:
     std::map<int64_t, std::unique_ptr<bucket>> _buckets;

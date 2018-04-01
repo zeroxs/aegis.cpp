@@ -61,12 +61,12 @@ AEGIS_DECL permission channel::perms()
 }
 
 
-AEGIS_DECL std::future<rest_reply> channel::post_task(std::string path, std::string method, const nlohmann::json & obj)
+AEGIS_DECL std::future<rest_reply> channel::post_task(std::string path, std::string method, const nlohmann::json & obj, std::string host)
 {
     try
     {
         auto task(std::make_shared<std::packaged_task<rest_reply()>>(
-            std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, channel_id, path, obj.dump(), method)));
+            std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, channel_id, path, obj.dump(), method, host)));
 
         auto fut = task->get_future();
 
@@ -85,10 +85,10 @@ AEGIS_DECL std::future<rest_reply> channel::post_task(std::string path, std::str
     return {};
 }
 
-AEGIS_DECL std::future<rest_reply> channel::post_emoji_task(std::string path, std::string method, const nlohmann::json & obj)
+AEGIS_DECL std::future<rest_reply> channel::post_emoji_task(std::string path, std::string method, const nlohmann::json & obj, std::string host)
 {
     auto task(std::make_shared<std::packaged_task<rest_reply()>>(
-        std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &emojilimit, channel_id, path, obj.dump(), method)));
+        std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &emojilimit, channel_id, path, obj.dump(), method, host)));
 
     auto fut = task->get_future();
 

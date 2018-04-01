@@ -189,23 +189,31 @@ AEGIS_DECL void aegis::create_websocket(std::error_code & ec)
         return;
     }
 
-    std::optional<rest_reply> res;
+    /*if (!selfbot)*/
+        rest_reply res = get("/gateway/bot");
+    /*else
+        res = get("/gateway");*/
 
-    if (!selfbot)
-        res = get("/gateway/bot");
-    else
-        res = get("/gateway");
-
-    if (!res.has_value() || res->content.size() == 0)
+    if (res.reply_data.content.empty())
     {
         ec = make_error_code(aegiscpp::get_gateway);
         return;
     }
 
-    if (res->reply_code == 401)
+    if (res.reply_data.reply_code == 401)
     {
         ec = make_error_code(aegiscpp::invalid_token);
         return;
+    }
+
+    json ret = json::parse(res.reply_data.content);
+    if (ret.count("message"))
+    {
+        if (ret["message"] == "401: Unauthorized")
+        {
+            ec = make_error_code(aegiscpp::invalid_token);
+            return;
+        }
     }
 
     ws_handlers.emplace("PRESENCE_UPDATE",          std::bind(&aegis::ws_presence_update, this, std::placeholders::_1, std::placeholders::_2));
@@ -236,17 +244,7 @@ AEGIS_DECL void aegis::create_websocket(std::error_code & ec)
     ws_handlers.emplace("VOICE_STATE_UPDATE",       std::bind(&aegis::ws_voice_state_update, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("VOICE_SERVER_UPDATE",      std::bind(&aegis::ws_voice_server_update, this, std::placeholders::_1, std::placeholders::_2));
 
-    json ret = json::parse(res->content);
-    if (ret.count("message"))
-    {
-        if (ret["message"] == "401: Unauthorized")
-        {
-            ec = make_error_code(aegiscpp::invalid_token);
-            return;
-        }
-    }
-
-    if (!selfbot)
+    /*if (!selfbot)*/
     {
         if (force_shard_count)
         {
@@ -259,8 +257,8 @@ AEGIS_DECL void aegis::create_websocket(std::error_code & ec)
             log->info("Shard count: {}", shard_max_count);
         }
     }
-    else
-        shard_max_count = 1;
+    /*else
+        shard_max_count = 1;*/
 
     ws_gateway = ret["url"];
     gateway_url = ws_gateway + "/?encoding=json&v=6";
@@ -402,28 +400,36 @@ AEGIS_DECL void aegis::keep_alive(const asio::error_code & ec, const int32_t ms,
     }
 }
 
-AEGIS_DECL std::optional<rest_reply> aegis::get(std::string_view path)
+AEGIS_DECL rest_reply aegis::get(std::string_view path, std::string_view host)
 {
-    return call(path, "", "GET");
+    return call(path, "", "GET", host);
 }
 
-AEGIS_DECL std::optional<rest_reply> aegis::get(std::string_view path, std::string_view content)
+AEGIS_DECL rest_reply aegis::get(std::string_view path, std::string_view content, std::string_view host)
 {
-    return call(path, content, "GET");
+    return call(path, content, "GET", host);
 }
 
-AEGIS_DECL std::optional<rest_reply> aegis::post(std::string_view path, std::string_view content)
+AEGIS_DECL rest_reply aegis::post(std::string_view path, std::string_view content, std::string_view host)
 {
-    return call(path, content, "POST");
+    return call(path, content, "POST", host);
 }
 
-AEGIS_DECL std::optional<rest_reply> aegis::call(std::string_view path, std::string_view content, std::string_view method)
+AEGIS_DECL rest_reply aegis::call(std::string_view path, std::string_view content, std::string_view method, std::string_view host)
 {
+    websocketpp::http::parser::response hresponse;
+
+    int32_t limit = 0;
+    int32_t remaining = 0;
+    int64_t reset = 0;
+    int32_t retry = 0;
+    bool global = false;
+    int32_t status_code = 0;
+  
     try
     {
         asio::ip::tcp::resolver resolver(io_service());
-        asio::ip::tcp::resolver::query query("discordapp.com", "443");
-        asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+        asio::ip::tcp::resolver::query query((host.empty() ? "discordapp.com" : host.data()), "443");
         asio::ssl::context ctx(asio::ssl::context::tlsv12);
 
         ctx.set_options(
@@ -432,22 +438,22 @@ AEGIS_DECL std::optional<rest_reply> aegis::call(std::string_view path, std::str
             | asio::ssl::context::no_sslv3);
 
         asio::ssl::stream<asio::ip::tcp::socket> socket(io_service(), ctx);
-        SSL_set_tlsext_host_name(socket.native_handle(), "discordapp.com");
+        SSL_set_tlsext_host_name(socket.native_handle(), (host.empty() ? "discordapp.com" : host.data()));
 
-        asio::connect(socket.lowest_layer(), endpoint_iterator);
+        asio::connect(socket.lowest_layer(), resolver.resolve(query));
 
         asio::error_code handshake_ec;
         socket.handshake(asio::ssl::stream_base::client, handshake_ec);
 
         asio::streambuf request;
         std::ostream request_stream(&request);
-        request_stream << method << " " << "/api/v6" << path << " HTTP/1.0\r\n";
-        request_stream << "Host: discordapp.com\r\n";
+        request_stream << method << " " << (host.empty() ? "/api/v6" : "") << path << " HTTP/1.0\r\n";
+        request_stream << "Host: " << (host.empty() ? "discordapp.com" : host.data()) << "\r\n";
         request_stream << "Accept: */*\r\n";
-        if (!selfbot)
+        /*if (!selfbot)*/
             request_stream << "Authorization: Bot " << token << "\r\n";
-        else
-            request_stream << "Authorization: " << token << "\r\n";
+        /*else
+            request_stream << "Authorization: " << token << "\r\n";*/
 
         request_stream << "User-Agent: DiscordBot (https://github.com/zeroxs/aegis.cpp " << AEGIS_VERSION_LONG << ")\r\n";
         request_stream << "Content-Length: " << content.size() << "\r\n";
@@ -467,13 +473,10 @@ AEGIS_DECL std::optional<rest_reply> aegis::call(std::string_view path, std::str
 
         std::istream response_stream(&response);
         std::istringstream istrm(response_content.str());
-        websocketpp::http::parser::response hresponse;
         hresponse.consume(istrm);
 
-        int32_t limit = 0;
-        int32_t remaining = 0;
-        int64_t reset = 0;
-        int32_t retry = 0;
+        status_code = hresponse.get_status_code();
+
         if (auto test = hresponse.get_header("X-RateLimit-Limit"); !test.empty())
             limit = std::stoul(test);
         if (auto test = hresponse.get_header("X-RateLimit-Remaining"); !test.empty())
@@ -483,21 +486,24 @@ AEGIS_DECL std::optional<rest_reply> aegis::call(std::string_view path, std::str
         if (auto test = hresponse.get_header("Retry-After"); !test.empty())
             retry = std::stoul(test);
 
-        log->debug("status: {} limit: {} remaining: {} reset: {}", hresponse.get_status_code(), limit, remaining, reset);
+        log->debug("status: {} limit: {} remaining: {} reset: {}", status_code, limit, remaining, reset);
 
-        bool global = !(hresponse.get_header("X-RateLimit-Global").empty());
+        global = !(hresponse.get_header("X-RateLimit-Global").empty());
 
         //TODO: check this with OpenSSL 1.1.0+ 
         if (error != asio::error::eof && error != asio::ssl::error::stream_truncated)
             throw asio::system_error(error);
-        return { { hresponse.get_status_code(), global, limit, remaining, reset, retry
-            , hresponse.get_body() } };
+        return { rest_reply{ "", make_error_code(static_cast<aegiscpp::value>(status_code)),
+        { hresponse.get_status_code(), global, limit, remaining, reset, retry, hresponse.get_body() } } };
     }
     catch (std::exception& e)
     {
         std::cout << "Exception: " << e.what() << "\n";
+
+        return { rest_reply{ e.what(),
+            make_error_code(status_code ? static_cast<aegiscpp::value>(status_code) : value::general),
+        { hresponse.get_status_code(), global, limit, remaining, reset, retry, hresponse.get_body() } } };
     }
-    return {};
 }
 
 AEGIS_DECL void aegis::on_message(websocketpp::connection_hdl hdl, message_ptr msg, shard * _shard)
@@ -681,7 +687,7 @@ AEGIS_DECL void aegis::on_connect(websocketpp::connection_hdl hdl, shard * _shar
 
     try
     {
-        if (!selfbot)
+        /*if (!selfbot)*/
         {
             json obj;
             if (_shard->session_id.empty())
@@ -737,7 +743,7 @@ AEGIS_DECL void aegis::on_connect(websocketpp::connection_hdl hdl, shard * _shar
             if (_shard->connection)
                 _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
         }
-        else
+        /*else
         {
             json obj = {
                 { "op", 2 },
@@ -773,7 +779,7 @@ AEGIS_DECL void aegis::on_connect(websocketpp::connection_hdl hdl, shard * _shar
             //log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
             if (_shard->connection)
                 _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
-        }
+        }*/
     }
     catch (...)
     {

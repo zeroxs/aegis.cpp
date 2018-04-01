@@ -124,7 +124,7 @@ AEGIS_DECL void guild::load(const json & obj, shard * _shard) noexcept
 
         if (obj.count("roles"))
         {
-            json roles = obj["roles"];
+            const json & roles = obj["roles"];
 
             for (auto & role : roles)
             {
@@ -134,7 +134,7 @@ AEGIS_DECL void guild::load(const json & obj, shard * _shard) noexcept
 
         if (obj.count("members"))
         {
-            json members = obj["members"];
+            const json & members = obj["members"];
 
             for (auto & member : members)
             {
@@ -147,7 +147,7 @@ AEGIS_DECL void guild::load(const json & obj, shard * _shard) noexcept
 
         if (obj.count("channels"))
         {
-            json channels = obj["channels"];
+            const json & channels = obj["channels"];
 
             for (auto & channel_obj : channels)
             {
@@ -159,7 +159,7 @@ AEGIS_DECL void guild::load(const json & obj, shard * _shard) noexcept
 
         if (obj.count("presences"))
         {
-            json presences = obj["presences"];
+            const json & presences = obj["presences"];
 
             for (auto & presence : presences)
             {
@@ -169,7 +169,7 @@ AEGIS_DECL void guild::load(const json & obj, shard * _shard) noexcept
 
         if (obj.count("emojis"))
         {
-            json emojis = obj["emojis"];
+            const json & emojis = obj["emojis"];
 
             /*for (auto & emoji : emojis)
             {
@@ -179,7 +179,7 @@ AEGIS_DECL void guild::load(const json & obj, shard * _shard) noexcept
 
         if (obj.count("features"))
         {
-            json features = obj["features"];
+            const json & features = obj["features"];
 
         }
 
@@ -389,12 +389,12 @@ AEGIS_DECL int32_t guild::get_member_count() const noexcept
     return static_cast<int32_t>(members.size());
 }
 
-AEGIS_DECL std::future<rest_reply> guild::post_task(std::string path, std::string method, const nlohmann::json & obj)
+AEGIS_DECL std::future<rest_reply> guild::post_task(std::string path, std::string method, const nlohmann::json & obj, std::string host)
 {
     try
     {
         auto task(std::make_shared<std::packaged_task<rest_reply()>>(
-            std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, guild_id, path, obj.dump(), method)));
+            std::bind(&aegiscpp::rest_limits::bucket_factory::do_async, &ratelimit, guild_id, path, obj.dump(), method, host)));
 
         auto fut = task->get_future();
 

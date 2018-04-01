@@ -140,7 +140,7 @@ void example::MessageCreate(message_create obj)
         auto kick_member = [&](snowflake member_id)
         {
             auto reply = obj._channel->get_guild().remove_guild_member(member_id).get();
-            if (reply.reply_code != 204)
+            if (!reply)
                 _channel.create_message(fmt::format("Unable to kick: {}", member_id));
             else
                 _channel.create_message(fmt::format("Kicked: {}", obj.bot->get_member(member_id)->get_full_name()));

@@ -37,7 +37,7 @@ class aegis;
 namespace rest_limits
 {
 
-using rest_call = std::function<std::optional<rest_reply>(std::string path, std::string content, std::string method)>;
+using rest_call = std::function<rest_reply(std::string path, std::string content, std::string method, std::string host)>;
 using namespace std::chrono;
 
 AEGIS_DECL const bool bucket::can_async() const noexcept
@@ -52,7 +52,7 @@ AEGIS_DECL const bool bucket::can_async() const noexcept
     return true;
 }
 
-AEGIS_DECL rest_reply bucket_factory::do_async(int64_t id, std::string path, std::string content, std::string method)
+AEGIS_DECL rest_reply bucket_factory::do_async(int64_t id, std::string path, std::string content, std::string method, std::string host)
 {
     static bucket & use_bucket = [&]() -> bucket & {
         auto bkt = _buckets.find(id);
@@ -71,12 +71,12 @@ AEGIS_DECL rest_reply bucket_factory::do_async(int64_t id, std::string path, std
             time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             std::this_thread::sleep_for(std::chrono::seconds((use_bucket.reset - time) + 1));
         }
-        std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_reply)>>> query;
-        std::optional<rest_reply> reply(_call(path, content, method));
-        use_bucket.limit = reply->limit;
-        use_bucket.remaining = reply->remaining;
-        use_bucket.reset = reply->reset;
-        return reply.value_or(rest_reply());
+        //std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_response)>>> query;
+        rest_reply reply(_call(path, content, method, host));
+        use_bucket.limit = reply.reply_data.limit;
+        use_bucket.remaining = reply.reply_data.remaining;
+        use_bucket.reset = reply.reply_data.reset;
+        return reply;
     }
 }
 

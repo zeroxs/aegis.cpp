@@ -155,14 +155,14 @@ public:
         : shard_max_count(0)
         , force_shard_count(0)
         , log(spdlog::stdout_color_mt("aegis"))
-        , selfbot(false)
+        /*, selfbot(false)*/
         , debugmode(false)
         , member_id(0)
         , mfa_enabled(false)
         , discriminator(0)
         , token{ _token }
         , status{ Uninitialized }
-        , ratelimit_o{ std::bind(&aegis::call, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3) }
+        , ratelimit_o{ std::bind(&aegis::call, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4) }
     {
         log->set_pattern("%Y-%m-%d %H:%M:%S.%e [%L] [th#%t] : %v");
         log->set_level(spdlog::level::level_enum::trace);
@@ -322,9 +322,11 @@ public:
     * @see rest_reply
     * @param path A string of the uri path to get
     * 
+    * @param host Provide only if the call should go to a different host
+    *
     * @returns Response object
     */
-    AEGIS_DECL std::optional<rest_reply> get(std::string_view path);
+    AEGIS_DECL rest_reply get(std::string_view path, std::string_view host = "");
 
     /// Performs a GET request on the path with content as the request body
     /**
@@ -333,9 +335,11 @@ public:
     * 
     * @param content JSON formatted string to send as the body
     *
+    * @param host Provide only if the call should go to a different host
+    *
     * @returns Response object
     */
-    AEGIS_DECL std::optional<rest_reply> get(std::string_view path, std::string_view content);
+    AEGIS_DECL rest_reply get(std::string_view path, std::string_view content, std::string_view host = "");
 
     /// Performs a GET request on the path with content as the request body
     /**
@@ -344,9 +348,11 @@ public:
     *
     * @param content JSON formatted string to send as the body
     *
+    * @param host Provide only if the call should go to a different host
+    *
     * @returns Response object
     */
-    AEGIS_DECL std::optional<rest_reply> post(std::string_view path, std::string_view content);
+    AEGIS_DECL rest_reply post(std::string_view path, std::string_view content, std::string_view host = "");
 
     /// Performs an HTTP request on the path with content as the request body using the method method
     /**
@@ -356,10 +362,12 @@ public:
     * @param content JSON formatted string to send as the body
     *
     * @param method The HTTP method of the request
+    * 
+    * @param host Provide only if the call should go to a different host
     *
     * @returns Response object
     */
-    AEGIS_DECL std::optional<rest_reply> call(std::string_view path, std::string_view content, std::string_view method);
+    AEGIS_DECL rest_reply call(std::string_view path, std::string_view content, std::string_view method, std::string_view host = "");
 
     /// Spawns specified amount of threads and starts running the io_service or default hardware hinted contexts
     /**
@@ -429,7 +437,7 @@ public:
 
     json self_presence;
     int16_t force_shard_count;
-    bool selfbot;
+    /*bool selfbot;*/
     bool debugmode;
     std::string mention;
     callbacks _callbacks;
