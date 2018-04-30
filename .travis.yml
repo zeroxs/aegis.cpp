@@ -7,7 +7,7 @@ matrix:
 addons:
   apt:
     packages:
-      - g++-7
+      - g++-7 g++-5
     sources: &sources
       - ubuntu-toolchain-r-test
 
@@ -17,14 +17,13 @@ matrix:
   include:
     # GCC 7
     - os: linux
-      env: COMPILER=g++-7 COMPILERGCC=gcc-7 CC=gcc-7 CXX=g++-7
       compiler: gcc
       packages: libcrypto++-dev
 
 script:
   - mkdir build
   - cd build
-  - cmake -DBUILD_EXAMPLES=1 ..
+  - cmake -DBUILD_EXAMPLES=1 -DCMAKE_CXX_COMPILER=g++-5 -DCXX_STANDARD=14 ..
   - make
   - rm -rf *
   - cmake -DBUILD_EXAMPLES=1 -DCMAKE_CXX_COMPILER=g++-7 -DCXX_STANDARD=17 ..
