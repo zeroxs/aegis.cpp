@@ -227,11 +227,11 @@ target_compile_definitions(aegis_minimal PRIVATE -DAEGIS_DYN_LINK)
 add_executable(aegis_headeronly_no_cache src/minimal.cpp)
 target_compile_definitions(aegis_headeronly_no_cache PRIVATE -DAEGIS_DISABLE_ALL_CACHE)
 
-set_property(TARGET aegis_example PROPERTY CXX_STANDARD 17)
+set_property(TARGET aegis_example PROPERTY CXX_STANDARD 14)
 set_property(TARGET aegis_example PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET aegis_minimal PROPERTY CXX_STANDARD 17)
+set_property(TARGET aegis_minimal PROPERTY CXX_STANDARD 14)
 set_property(TARGET aegis_minimal PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET aegis_headeronly_no_cache PROPERTY CXX_STANDARD 17)
+set_property(TARGET aegis_headeronly_no_cache PROPERTY CXX_STANDARD 14)
 set_property(TARGET aegis_headeronly_no_cache PROPERTY CXX_STANDARD_REQUIRED ON)
 
 
