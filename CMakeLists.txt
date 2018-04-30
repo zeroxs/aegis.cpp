@@ -33,7 +33,7 @@ find_package(ZStr REQUIRED MODULE)
 find_package(JSON 3.1.2 REQUIRED MODULE)
 find_package(Spdlog 0.16.4 REQUIRED MODULE)
 find_package(Websocketpp 0.7.0 REQUIRED MODULE)
-find_package(OpenSSL 1.0.2 REQUIRED MODULE)
+find_package(OpenSSL 1.0.1 REQUIRED MODULE)
 find_package(ZLIB REQUIRED MODULE)
 
 #option(BUILD_STATIC_LIBS "Build the static library" ON)
