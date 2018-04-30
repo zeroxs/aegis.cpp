@@ -26,8 +26,7 @@ int main(int argc, char * argv[])
         int64_t ws_checktime = 0;
 
         // These callbacks are what the lib calls when messages come in
-        aegis::callbacks cbs;
-        cbs.i_message_create = [&](aegis::gateway::events::message_create obj)
+        bot.i_message_create = [&](aegis::gateway::events::message_create obj)
         {
             try
             {
@@ -208,7 +207,6 @@ int main(int argc, char * argv[])
             }
             return;
         };
-        bot._callbacks = cbs;
 
         // start the bot. the function passed is executed after the internal logger is set up and the
         // websocket gateway information is collected.
