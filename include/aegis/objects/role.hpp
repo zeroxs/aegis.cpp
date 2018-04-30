@@ -1,62 +1,78 @@
 //
 // role.hpp
-// aegis.cpp
+// ********
 //
-// Copyright (c) 2017 Sara W (sara at xandium dot net)
+// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
 //
-// This file is part of aegis.cpp .
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of
-// this software and associated documentation files (the "Software"), to deal in
-// the Software without restriction, including without limitation the rights to
-// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-// the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
+// Distributed under the MIT License. (See accompanying file LICENSE)
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-
-#include "../config.hpp"
-#include "../snowflake.hpp"
+#include "aegis/config.hpp"
+#include "aegis/snowflake.hpp"
+#include "aegis/permission.hpp"
 #include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 
-
-
-namespace aegiscpp
+namespace aegis
 {
 
-/**\todo Incomplete. Needs documentation
-*/
-struct role_gw
+namespace gateway
 {
 
+namespace objects
+{
+
+/// Stores info pertaining to guild roles
+struct role
+{
+    uint32_t color = 0;
+    snowflake role_id;
+    std::string name;
+    permission _permission;
+    uint16_t position = 0;
+    bool hoist = false;
+    bool managed = false;
+    bool mentionable = false;
 };
 
 /**\todo Incomplete. Needs documentation
-*/
-inline void from_json(const nlohmann::json& j, role_gw& m)
+ */
+inline void from_json(const nlohmann::json& j, role& m)
 {
-
+    if (j.count("color") && !j["color"].is_null())
+        m.color = j["color"];
+    if (j.count("id") && !j["id"].is_null())
+        m.role_id = j["id"];
+    if (j.count("name") && !j["name"].is_null())
+        m.name = j["name"];
+    if (j.count("permissions") && !j["permissions"].is_null())
+        m._permission = j["permissions"];
+    if (j.count("position") && !j["position"].is_null())
+        m.position = j["position"];
+    if (j.count("hoist") && !j["hoist"].is_null())
+        m.hoist = j["hoist"];
+    if (j.count("mentionable") && !j["mentionable"].is_null())
+        m.mentionable = j["mentionable"];
 }
 
 /**\todo Incomplete. Needs documentation
-*/
-inline void to_json(nlohmann::json& j, const role_gw& m)
+ */
+inline void to_json(nlohmann::json& j, const role& m)
 {
-
+    j["color"] = m.color;
+    j["id"] = m.role_id;
+    j["name"] = m.name;
+    j["permissions"] = m._permission;
+    j["position"] = m.position;
+    j["hoist"] = m.hoist;
+    j["mentionable"] = m.mentionable;
 }
 
 }
 
+}
+
+}

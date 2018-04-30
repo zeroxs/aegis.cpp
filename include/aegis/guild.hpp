@@ -1,70 +1,61 @@
 //
 // guild.hpp
-// aegis.cpp
+// *********
 //
-// Copyright (c) 2017 Sara W (sara at xandium dot net)
+// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
 //
-// This file is part of aegis.cpp .
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of
-// this software and associated documentation files (the "Software"), to deal in
-// the Software without restriction, including without limitation the rights to
-// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-// the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
+// Distributed under the MIT License. (See accompanying file LICENSE)
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
 #include "aegis/config.hpp"
-#include "aegis/role.hpp"
+#include "aegis/objects/role.hpp"
 #include "aegis/snowflake.hpp"
-#include "aegis/ratelimit.hpp"
+#include "aegis/rest_reply.hpp"
 #include "aegis/objects/permission_overwrite.hpp"
 #include <future>
+#include <asio.hpp>
+#include <shared_mutex>
+#if defined(AEGIS_HAS_STD_OPTIONAL)
+#include <optional>
+#else
+#include "aegis/optional.hpp"
+namespace std
+{
+using std::experimental::optional;
+}
+#endif
 
-
-namespace aegiscpp
+namespace aegis
 {
 
-using rest_api = std::future<rest_reply>;
+#if (AEGIS_HAS_STD_SHARED_MUTEX == 1)
+using shared_mutex = std::shared_mutex;
+#else
+using shared_mutex = std::shared_timed_mutex;
+#endif
 
-using rest_limits::bucket_factory;
 using json = nlohmann::json;
 
-class channel;
-class member;
-class shard;
-
+/// Class for performing actions pertaining to a specified guild
 class guild
 {
 public:
     /// Create a new guild
     /**
      * @param shard_id Shard id this guild belongs to
-     *
      * @param state Pointer to state struct holding bot data
-     *
-     * @param id Snowflake of this guild id
-     *
+     * @param id Snowflake of this guild
      * @param ratelimit Reference to the bucket factory that handles the ratelimits for this guild
      */
-    explicit guild(int16_t shard_id, snowflake id, aegis * b, bucket_factory & ratelimit)
-        : shard_id(shard_id)
-        , guild_id(id)
-        , ratelimit(ratelimit)
-        , _bot(b)
+    explicit guild(int32_t _shard_id, snowflake _id, core * _bot, rest::ratelimiter & _ratelimit, asio::io_context & _io)
+        : shard_id(_shard_id)
+        , guild_id(_id)
+        , _bot(_bot)
+        , _ratelimit(_ratelimit)
+        , _io_context(_io)
     {
-        unavailable = false;
     }
 
     AEGIS_DECL ~guild();
@@ -73,14 +64,27 @@ public:
     guild(guild &&) = delete;
     guild & operator=(const guild &) = delete;
 
-    int16_t shard_id;
-    snowflake guild_id;
-    bucket_factory & ratelimit;
+    int32_t shard_id; /*< shard that receives this guild's messages */
+    snowflake guild_id; /*< snowflake of this guild */
 
+    /// Creates a task to make a REST call - preferable to use specific functions
+    /// for interactions. This function is public for the case of any functionality
+    /// not implemented.
+    /**
+     * @param path String of the destination path
+     * @param method One of POST/GET/PUT/PATCH/DELETE Defaults to POST
+     * @param obj String of json to send as body
+     * @param host String of remote host. Defaults to discordapp.com
+     * @returns std::future<rest::rest_reply>
+     */
+    AEGIS_DECL std::future<rest::rest_reply> post_task(const std::string path, const std::string method = "POST",
+                                                       const std::string obj = "", const std::string host = "");
 
-    AEGIS_DECL std::future<rest_reply> post_task(std::string path, std::string method = "POST",
-                                                 const nlohmann::json & obj = {}, std::string host = "");
-
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    /// Get bot's current permissions for this guild
+    /**
+    * @returns Bitmask of current permissions for this guild contained within `permission` object
+    */
     permission perms()
     {
         return permission(base_permissions(self()));
@@ -96,7 +100,7 @@ public:
     /**
      * @returns String of guild name
      */
-    std::string get_name() const noexcept
+    std::string get_name() const AEGIS_NOEXCEPT
     {
         return name;
     }
@@ -105,7 +109,7 @@ public:
     /**
      * @returns String of region guild is in
      */
-    std::string get_region() const noexcept
+    std::string get_region() const AEGIS_NOEXCEPT
     {
         return region;
     }
@@ -113,102 +117,38 @@ public:
     /// Check if member has role
     /**
      * @param member_id Snowflake of member
-     *
      * @param role_id Snowflake of role
-     *
      * @returns true if member has role
      */
-    AEGIS_DECL bool member_has_role(snowflake member_id, snowflake role_id) const noexcept;
-
-    /// Add new member to guild
-    /**
-     * @param _member Pointer of member object to add to guild
-     */
-    AEGIS_DECL void add_member(member * _member) noexcept;
-
-    /// Remove member from guild
-    /**
-     * @param member_id Snowflake of member to remove from guild
-     */
-    AEGIS_DECL void remove_member(snowflake member_id) noexcept;
-
-    /// Create and return new channel internally
-    /**
-     * @param id Snowflake of channel to add
-     *
-     * @param _shard Pointer to shard guild belongs to
-     *
-     * @returns Pointer to channel object created
-     */
-    AEGIS_DECL channel * get_channel_create(snowflake id, shard * _shard) noexcept;
-
-    /// Load guild from json object
-    /**
-     * @param obj Const json object containing guild structure
-     *
-     * @param _shard Pointer to shard guild belongs to
-     */
-    AEGIS_DECL void load(const json & obj, shard * _shard) noexcept;
-
-    /// Load member presence data
-    /**
-     * @param obj Const json object containing array of presence data
-     */
-    AEGIS_DECL void load_presence(const json & obj) noexcept;
-
-    /// Load role
-    /**
-     * @param obj Const json object containing array of guild roles
-     */
-    AEGIS_DECL void load_role(const json & obj) noexcept;
-
-    /// Get channel internally
-    /**
-     * @param id Snowflake of channel
-     *
-     * @returns Pointer to channel object created
-     */
-    AEGIS_DECL channel * get_channel(snowflake id) const noexcept;
-
-    /// Get member internally
-    /**
-     * @param member_id Snowflake of member
-     *
-     * @returns Pointer to member object created
-     */
-    AEGIS_DECL member * get_member(snowflake member_id) const noexcept;
+    AEGIS_DECL bool member_has_role(snowflake member_id, snowflake role_id) const AEGIS_NOEXCEPT;
 
     /// Get count of members in guild (potentially inaccurate)
     /**
      * @returns Count of members in guild
      */
-    AEGIS_DECL int32_t get_member_count() const noexcept;
+    AEGIS_DECL int32_t get_member_count() const AEGIS_NOEXCEPT;
 
     /// Get guild permissions for member in channel
     /**
      * @param member_id Snowflake of member
-     *
      * @param channel_id Snowflake of channel
-     *
      * @returns Permission object of channel
      */
-    AEGIS_DECL permission get_permissions(snowflake member_id, snowflake channel_id) noexcept;
+    AEGIS_DECL permission get_permissions(snowflake member_id, snowflake channel_id) AEGIS_NOEXCEPT;
 
     /// Get guild permissions for member in channel
     /**
-     * @param _member Reference to member object
-     *
-     * @param _channel Reference to channel object
-     *
+     * @param _member Pointer to member object
+     * @param _channel Pointer to channel object
      * @returns Permission object of channel
      */
-    AEGIS_DECL permission get_permissions(member & _member, channel & _channel) noexcept;
+    AEGIS_DECL permission get_permissions(member * _member, channel * _channel) AEGIS_NOEXCEPT;
 
     /// Get base guild permissions for member
     /**
      * @param _member Pointer to member object
      */
-    int64_t base_permissions(member * _member) const noexcept
+    int64_t base_permissions(member * _member) const AEGIS_NOEXCEPT
     {
         return base_permissions(*_member);
     }
@@ -217,55 +157,60 @@ public:
     /**
      * @param _member Reference to member object
      */
-    AEGIS_DECL int64_t base_permissions(member & _member) const noexcept;
+    AEGIS_DECL int64_t base_permissions(member & _member) const AEGIS_NOEXCEPT;
 
     /// Calculate permission overrides for member in channel
     /**
      * @param _base_permissions Base guild permissions for member in guild
-     *
      * @param _member Reference to member object
-     *
      * @param _channel Reference to channel object
-     *
      * @returns true on successful request, false for no permissions
      */
-    AEGIS_DECL int64_t compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const noexcept;
+    AEGIS_DECL int64_t compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const AEGIS_NOEXCEPT;
 
     /// Get role
     /**
      * @param r Snowflake of role
-     *
      * @returns Reference to role object
      */
-    AEGIS_DECL const role & get_role(int64_t r) const;
-
-    /// Remove role from guild
-    /**
-     * @param role_id Snowflake of role to remove
-     */
-    AEGIS_DECL void remove_role(snowflake role_id);
+    AEGIS_DECL const gateway::objects::role & get_role(int64_t r) const;
 
     /// Get owner of guild
     /**
      * @returns Snowflake of owner
      */
-    AEGIS_DECL const snowflake get_owner() const noexcept;
+    AEGIS_DECL const snowflake get_owner() const AEGIS_NOEXCEPT;
+#endif
+
+    /// Get the snowflake of this guild
+    /**
+    * @returns A snowflake of this guild
+    */
+    const snowflake get_id() const AEGIS_NOEXCEPT
+    {
+        return guild_id;
+    }
+
+    /// Get channel internally
+    /**
+     * @param id Snowflake of channel
+     * @returns Pointer to channel object created
+     */
+    AEGIS_DECL channel * get_channel(snowflake id) const AEGIS_NOEXCEPT;
 
     /// Get guild information
     /**
      * @param ec Indicates what error occurred, if any
-     * 
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api get_guild(std::error_code & ec);
+    AEGIS_DECL std::future<rest::rest_reply> get_guild(std::error_code & ec);
 
     /// Get guild information
     /**
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api get_guild()
+    AEGIS_DECL std::future<rest::rest_reply> get_guild()
     {
         std::error_code ec;
         auto res = get_guild(ec);
@@ -277,32 +222,21 @@ public:
     /// Modify guild information
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param name Set name of guild
-     * 
      * @param voice_region Set region for voice
-     * 
      * @param verification_level Set verification level from unrestricted level to verified phone level
      * (NONE=0, LOW(verified email)=1, MEDIUM(registered >5m)=2, HIGH(member of server >10m)=3 VERY_HIGH(verified phone)=4
-     *
      * @param default_message_notifications Set default notification level for new members
-     * 
      * @param explicit_content_filter Set filter level for new content
      * (DISABLED=0, MEMBERS_WITHOUT_ROLES=1, ALL_MEMBERS=2)
-     * 
      * @param afk_channel_id Set channel for idle voice connections to be moved to
-     * 
      * @param afk_timeout Set time where voice connections are considered to be idle
-     * 
      * @param icon Set icon \todo
-     * 
      * @param owner_id Transfer owner to someone else
-     * 
      * @param splash \todo
-     * 
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_guild(
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild(
         std::error_code & ec, std::optional<std::string> name = {},
         std::optional<std::string> voice_region = {}, std::optional<int> verification_level = {},
         std::optional<int> default_message_notifications = {}, std::optional<int> explicit_content_filter = {},
@@ -315,32 +249,22 @@ public:
     /// Modify guild information
     /**
      * @param name Set name of guild
-     * 
      * @param voice_region Set region for voice
-     * 
      * @param verification_level Set verification level from unrestricted level to verified phone level
      * (NONE=0, LOW(verified email)=1, MEDIUM(registered >5m)=2, HIGH(member of server >10m)=3 VERY_HIGH(verified phone)=4
-     *
      * @param default_message_notifications Set default notification level for new members
      * (ALL_MESSAGES=0, ONLY_MENTIONS=1)
-     * 
      * @param explicit_content_filter Set filter level for new content
      * (DISABLED=0, MEMBERS_WITHOUT_ROLES=1, ALL_MEMBERS=2)
-     * 
      * @param afk_channel_id Set channel for idle voice connections to be moved to
-     * 
      * @param afk_timeout Set time where voice connections are considered to be idle
-     * 
      * @param icon Set icon \todo
-     * 
      * @param owner_id Transfer owner to someone else
-     * 
      * @param splash \todo
-     * 
-     * @throws aegiscpp::exception Thrown on failure.
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_guild(
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild(
         std::optional<std::string> name = {},
         std::optional<std::string> voice_region = {}, std::optional<int> verification_level = {},
         std::optional<int> default_message_notifications = {}, std::optional<int> explicit_content_filter = {},
@@ -360,18 +284,16 @@ public:
     /// Delete a guild
     /**
      * @param ec Indicates what error occurred, if any
-     * 
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api delete_guild(std::error_code & ec);
+    AEGIS_DECL std::future<rest::rest_reply> delete_guild(std::error_code & ec);
 
     /// Delete a guild
     /**
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api delete_guild()
+    AEGIS_DECL std::future<rest::rest_reply> delete_guild()
     {
         std::error_code ec;
         auto res = delete_guild(ec);
@@ -383,35 +305,26 @@ public:
     /// Create a text channel
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param name String of the name for the channel
-     *
      * @param parent_id The channel or category to place this channel below
-     *
      * @param nsfw Whether the channel will be labeled as not safe for work
-     *
      * @param permission_overwrites Array of permission overwrites to apply to the channel
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api create_text_channel(std::error_code & ec, std::string name, int64_t parent_id = 0, bool nsfw = false,
-                                            std::vector<permission_overwrite> permission_overwrites = {});
+    AEGIS_DECL std::future<rest::rest_reply> create_text_channel(std::error_code & ec, std::string name, int64_t parent_id = 0, bool nsfw = false,
+                                            std::vector<gateway::objects::permission_overwrite> permission_overwrites = {});
 
     /// Create a text channel
     /**
      * @param name String of the name for the channel
-     *
      * @param parent_id The channel or category to place this channel below
-     *
      * @param nsfw Whether the channel will be labeled as not safe for work
-     *
      * @param permission_overwrites Array of permission overwrites to apply to the channel
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api create_text_channel(std::string name, int64_t parent_id = 0, bool nsfw = false ,
-                                            std::vector<permission_overwrite> permission_overwrites = {})
+    AEGIS_DECL std::future<rest::rest_reply> create_text_channel(std::string name, int64_t parent_id = 0, bool nsfw = false ,
+                                            std::vector<gateway::objects::permission_overwrite> permission_overwrites = {})
     {
         std::error_code ec;
         auto res = create_text_channel(ec, name, parent_id, nsfw, permission_overwrites);
@@ -423,43 +336,30 @@ public:
     /// Create a voice channel
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param name String of the name for the channel
-     *
      * @param bitrate The bitrate count of the channel
-     *
      * @param user_limit The max amount of members that may join the channel
-     *
      * @param parent_id The channel or category to place this channel below
-     *
      * @param nsfw Whether the channel will be labeled as not safe for work
-     *
      * @param permission_overwrites Array of permission overwrites to apply to the channel
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api create_voice_channel(std::error_code & ec, std::string name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
-                                             std::vector<permission_overwrite> permission_overwrites = {});
+    AEGIS_DECL std::future<rest::rest_reply> create_voice_channel(std::error_code & ec, std::string name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
+                                             std::vector<gateway::objects::permission_overwrite> permission_overwrites = {});
 
     /// Create a voice channel
     /**
      * @param name String of the name for the channel
-     *
      * @param bitrate The bitrate count of the channel
-     *
      * @param user_limit The max amount of members that may join the channel
-     *
      * @param parent_id The channel or category to place this channel below
-     *
      * @param nsfw Whether the channel will be labelled as not safe for work
-     *
      * @param permission_overwrites Array of permission overwrites to apply to the channel
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api create_voice_channel(std::string name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
-                                             std::vector<permission_overwrite> permission_overwrites = {})
+    AEGIS_DECL std::future<rest::rest_reply> create_voice_channel(std::string name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
+                                             std::vector<gateway::objects::permission_overwrite> permission_overwrites = {})
     {
         std::error_code ec;
         auto res = create_voice_channel(ec, name, bitrate, user_limit, parent_id, permission_overwrites);
@@ -471,31 +371,24 @@ public:
     /// Create a category
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param name String of the name for the channel
-     *
      * @param parent_id The channel or category to place this channel below
-     *
      * @param permission_overwrites Array of permission overwrites to apply to the channel
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api create_category_channel(std::error_code & ec, std::string name, int64_t parent_id,
-                                                std::vector<permission_overwrite> permission_overwrites);
+    AEGIS_DECL std::future<rest::rest_reply> create_category_channel(std::error_code & ec, std::string name, int64_t parent_id,
+                                                std::vector<gateway::objects::permission_overwrite> permission_overwrites);
 
     /// Create a category
     /**
      * @param name String of the name for the channel
-     *
      * @param parent_id The channel or category to place this channel below
-     *
      * @param permission_overwrites Array of permission overwrites to apply to the channel
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api create_category_channel(std::string name, int64_t parent_id,
-                                                std::vector<permission_overwrite> permission_overwrites)
+    AEGIS_DECL std::future<rest::rest_reply> create_category_channel(std::string name, int64_t parent_id,
+                                                std::vector<gateway::objects::permission_overwrite> permission_overwrites)
     {
         std::error_code ec;
         auto res = create_category_channel(ec, name, parent_id, permission_overwrites);
@@ -507,18 +400,16 @@ public:
     /// Modify positions of channels
     /**
      * @param ec Indicates what error occurred, if any
-     * 
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_channel_positions(std::error_code & ec);
+    AEGIS_DECL std::future<rest::rest_reply> modify_channel_positions(std::error_code & ec);
 
     /// Modify positions of channels
     /**
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_channel_positions()
+    AEGIS_DECL std::future<rest::rest_reply> modify_channel_positions()
     {
         std::error_code ec;
         auto res = modify_channel_positions(ec);
@@ -531,22 +422,15 @@ public:
     /// All fields are optional
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param user_id The snowflake of the user to edit
-     *
      * @param nick String of nickname to change to
-     *
      * @param mute Whether or not to voice mute the member
-     *
      * @param deaf Whether or not to voice deafen the member
-     *
      * @param roles Array of roles to apply to the member
-     *
      * @param channel_id Snowflake of the channel to move user to
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_guild_member(std::error_code & ec, snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild_member(std::error_code & ec, snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
                                             std::optional<bool> deaf, std::optional<std::vector<snowflake>> roles,
                                             std::optional<snowflake> channel_id);
 
@@ -554,21 +438,15 @@ public:
     /// All fields are optional
     /**
      * @param user_id The snowflake of the user to edit
-     *
      * @param nick String of nickname to change to
-     *
      * @param mute Whether or not to voice mute the member
-     *
      * @param deaf Whether or not to voice deafen the member
-     *
      * @param roles Array of roles to apply to the member
-     *
      * @param channel_id Snowflake of the channel to move user to
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_guild_member(snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild_member(snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
                                             std::optional<bool> deaf, std::optional<std::vector<snowflake>> roles,
                                             std::optional<snowflake> channel_id)
     {
@@ -582,22 +460,18 @@ public:
     /// Modify own nickname
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param newname String of the new nickname to apply
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_my_nick(std::error_code & ec, std::string newname);
+    AEGIS_DECL std::future<rest::rest_reply> modify_my_nick(std::error_code & ec, std::string newname);
 
     /// Modify own nickname
     /**
      * @param newname String of the new nickname to apply
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_my_nick(std::string newname)
+    AEGIS_DECL std::future<rest::rest_reply> modify_my_nick(std::string newname)
     {
         std::error_code ec;
         auto res = modify_my_nick(ec, newname);
@@ -609,598 +483,534 @@ public:
     /// Add a role to guild member
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param user_id The snowflake of the user to add new role
-     *
      * @param role_id The snowflake of the role to add to member
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api add_guild_member_role(std::error_code & ec, snowflake user_id, snowflake role_id);
+    AEGIS_DECL std::future<rest::rest_reply> add_guild_member_role(std::error_code & ec, snowflake user_id, snowflake role_id);
 
     /// Add a role to guild member
     /**
      * @param user_id The snowflake of the user to add new role
-     *
      * @param role_id The snowflake of the role to add to member
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api add_guild_member_role(snowflake user_id, snowflake role_id)
+    AEGIS_DECL std::future<rest::rest_reply> add_guild_member_role(snowflake user_id, snowflake role_id)
     {
         std::error_code ec;
         auto res = add_guild_member_role(ec, user_id, role_id);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Remove a role from guild member
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param user_id The snowflake of the user to remove role
-     *
      * @param role_id The snowflake of the role to remove from member
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api remove_guild_member_role(std::error_code & ec, snowflake user_id, snowflake role_id);
+    AEGIS_DECL std::future<rest::rest_reply> remove_guild_member_role(std::error_code & ec, snowflake user_id, snowflake role_id);
 
     /// Remove a role from guild member
     /**
      * @param user_id The snowflake of the user to remove role
-     *
      * @param role_id The snowflake of the role to remove from member
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api remove_guild_member_role(snowflake user_id, snowflake role_id)
+    AEGIS_DECL std::future<rest::rest_reply> remove_guild_member_role(snowflake user_id, snowflake role_id)
     {
         std::error_code ec;
         auto res = remove_guild_member_role(ec, user_id, role_id);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Remove guild member (kick)
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param user_id The snowflake of the member to kick
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api remove_guild_member(std::error_code & ec, snowflake user_id);
+    AEGIS_DECL std::future<rest::rest_reply> remove_guild_member(std::error_code & ec, snowflake user_id);
 
     /// Remove guild member (kick)
     /**
      * @param user_id The snowflake of the member to kick
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api remove_guild_member(snowflake user_id)
+    AEGIS_DECL std::future<rest::rest_reply> remove_guild_member(snowflake user_id)
     {
         std::error_code ec;
         auto res = remove_guild_member(ec, user_id);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Create a new guild ban
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param user_id The snowflake of the member to ban
-     *
      * @param delete_message_days How many days to delete member message history (0-7)
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api create_guild_ban(std::error_code & ec, snowflake user_id, int8_t delete_message_days, std::string reason = "");
+    AEGIS_DECL std::future<rest::rest_reply> create_guild_ban(std::error_code & ec, snowflake user_id, int8_t delete_message_days, std::string reason = "");
 
     /// Create a new guild ban
     /**
      * @param user_id The snowflake of the member to ban
-     *
      * @param delete_message_days How many days to delete member message history (0-7)
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api create_guild_ban(snowflake user_id, int8_t delete_message_days, std::string reason = "")
+    AEGIS_DECL std::future<rest::rest_reply> create_guild_ban(snowflake user_id, int8_t delete_message_days, std::string reason = "")
     {
         std::error_code ec;
         auto res = create_guild_ban(ec, user_id, delete_message_days, reason);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Remove a guild ban
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param user_id The snowflake of the member to unban
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api remove_guild_ban(std::error_code & ec, snowflake user_id);
+    AEGIS_DECL std::future<rest::rest_reply> remove_guild_ban(std::error_code & ec, snowflake user_id);
 
     /// Remove a guild ban
     /**
      * @param user_id The snowflake of the member to unban
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api remove_guild_ban(snowflake user_id)
+    AEGIS_DECL std::future<rest::rest_reply> remove_guild_ban(snowflake user_id)
     {
         std::error_code ec;
         auto res = remove_guild_ban(ec, user_id);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Create a guild role
     /**
-     * @see aegiscpp::permission
-     *
+     * @see aegis::permission
      * @param ec Indicates what error occurred, if any
-     *
      * @param name The name of the role to create
-     *
      * @param _perms The permissions to set
-     *
      * @param color 32bit integer of the color
-     *
      * @param hoist Whether the role should be separated from other roles
-     *
      * @param mentionable Whether the role can be specifically mentioned
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api create_guild_role(std::error_code & ec, std::string name, permission _perms, int32_t color, bool hoist, bool mentionable);
+    AEGIS_DECL std::future<rest::rest_reply> create_guild_role(std::error_code & ec, std::string name, permission _perms, int32_t color, bool hoist, bool mentionable);
 
     /// Create a guild role
     /**
-     * @see aegiscpp::permission
-     *
+     * @see aegis::permission
      * @param name The name of the role to create
-     *
      * @param _perms The permissions to set
-     *
      * @param color 32bit integer of the color
-     *
      * @param hoist Whether the role should be separated from other roles
-     *
      * @param mentionable Whether the role can be specifically mentioned
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api create_guild_role(std::string name, permission _perms, int32_t color, bool hoist, bool mentionable)
+    AEGIS_DECL std::future<rest::rest_reply> create_guild_role(std::string name, permission _perms, int32_t color, bool hoist, bool mentionable)
     {
         std::error_code ec;
         auto res = create_guild_role(ec, name, _perms, color, hoist, mentionable);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Modify the guild role positions
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param role_id Snowflake of role to change position
-     * 
      * @param position Index of position to change role to
-     * 
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_guild_role_positions(std::error_code & ec, snowflake role_id, int16_t position);
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild_role_positions(std::error_code & ec, snowflake role_id, int16_t position);
 
     /// Modify the guild role positions
     /**
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
      * @param role_id Snowflake of role to change position
-     *
      * @param position Index of position to change role to
-     *
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_guild_role_positions(snowflake role_id, int16_t position)
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild_role_positions(snowflake role_id, int16_t position)
     {
         std::error_code ec;
         auto res = modify_guild_role_positions(ec, role_id, position);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Modify a guild role
     /**
-     * @see aegiscpp::permission
-     *
+     * @see aegis::permission
      * @param ec Indicates what error occurred, if any
-     *
      * @param id The snowflake of the role to modify
-     *
      * @param name The name to set the role to
-     *
      * @param _perms The permissions to set
-     *
      * @param color 32bit integer of the color
-     *
      * @param hoist Whether the role should be separated from other roles
-     *
      * @param mentionable Whether the role can be specifically mentioned
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_guild_role(std::error_code & ec, snowflake id, std::string name, permission _perms, int32_t color,
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild_role(std::error_code & ec, snowflake id, std::string name, permission _perms, int32_t color,
                                           bool hoist, bool mentionable);
 
     /// Modify a guild role
     /**
-     * @see aegiscpp::permission
-     *
+     * @see aegis::permission
      * @param id The snowflake of the role to modify
-     *
      * @param name The name to set the role to
-     *
      * @param _perms The permissions to set
-     *
      * @param color 32bit integer of the color
-     *
      * @param hoist Whether the role should be separated from other roles
-     *
      * @param mentionable Whether the role can be specifically mentioned
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_guild_role(snowflake id, std::string name, permission _perms, int32_t color,
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild_role(snowflake id, std::string name, permission _perms, int32_t color,
                                           bool hoist, bool mentionable)
     {
         std::error_code ec;
         auto res = modify_guild_role(ec, id, name, _perms, color, hoist, mentionable);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Delete a guild role
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param role_id The snowflake of the role to delete
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api delete_guild_role(std::error_code & ec, snowflake role_id);
+    AEGIS_DECL std::future<rest::rest_reply> delete_guild_role(std::error_code & ec, snowflake role_id);
 
     /// Delete a guild role
     /**
      * @param role_id The snowflake of the role to delete
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api delete_guild_role(snowflake role_id)
+    AEGIS_DECL std::future<rest::rest_reply> delete_guild_role(snowflake role_id)
     {
         std::error_code ec;
         auto res = delete_guild_role(ec, role_id);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Get a count of members that would be pruned
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param days The days of inactivity to prune the member
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api get_guild_prune_count(std::error_code & ec, int16_t days);
+    AEGIS_DECL std::future<rest::rest_reply> get_guild_prune_count(std::error_code & ec, int16_t days);
 
     /// Get a count of members that would be pruned
     /**
      * @param days The days of inactivity to prune the member
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api get_guild_prune_count(int16_t days)
+    AEGIS_DECL std::future<rest::rest_reply> get_guild_prune_count(int16_t days)
     {
         std::error_code ec;
         auto res = get_guild_prune_count(ec, days);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Perform a guild prune
     /**
      * @param ec Indicates what error occurred, if any
-     * 
      * @param days The days of inactivity to prune the member
-     *
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api begin_guild_prune(std::error_code & ec, int16_t days);
+    AEGIS_DECL std::future<rest::rest_reply> begin_guild_prune(std::error_code & ec, int16_t days);
 
     /// Perform a guild prune
     /**
      * @param days The days of inactivity to prune the member
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api begin_guild_prune(int16_t days)
+    AEGIS_DECL std::future<rest::rest_reply> begin_guild_prune(int16_t days)
     {
         std::error_code ec;
         auto res = begin_guild_prune(ec, days);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Get active guild invites
     /**
      * @param ec Indicates what error occurred, if any
-     * 
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api get_guild_invites(std::error_code & ec);
+    AEGIS_DECL std::future<rest::rest_reply> get_guild_invites(std::error_code & ec);
 
     /// Get active guild invites
     /**
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api get_guild_invites()
+    AEGIS_DECL std::future<rest::rest_reply> get_guild_invites()
     {
         std::error_code ec;
         auto res = get_guild_invites(ec);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Get guild integrations
     /**
      * @param ec Indicates what error occurred, if any
-     * 
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api get_guild_integrations(std::error_code & ec);
+    AEGIS_DECL std::future<rest::rest_reply> get_guild_integrations(std::error_code & ec);
 
     /// Get guild integrations
     /**
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api get_guild_integrations()
+    AEGIS_DECL std::future<rest::rest_reply> get_guild_integrations()
     {
         std::error_code ec;
         auto res = get_guild_integrations(ec);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Create a new guild integration
     /**
      * @param ec Indicates what error occurred, if any
-     * 
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api create_guild_integration(std::error_code & ec);
+    AEGIS_DECL std::future<rest::rest_reply> create_guild_integration(std::error_code & ec);
 
     /// Create a new guild integration
     /**
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api create_guild_integration()
+    AEGIS_DECL std::future<rest::rest_reply> create_guild_integration()
     {
         std::error_code ec;
         auto res = create_guild_integration(ec);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Modify a guild integration
     /**
      * @param ec Indicates what error occurred, if any
-     * 
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_guild_integration(std::error_code & ec);
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild_integration(std::error_code & ec);
 
     /// Modify a guild integration
     /**
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_guild_integration()
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild_integration()
     {
         std::error_code ec;
         auto res = modify_guild_integration(ec);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Delete a guild integration
     /**
      * @param ec Indicates what error occurred, if any
-     * 
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api delete_guild_integration(std::error_code & ec);
+    AEGIS_DECL std::future<rest::rest_reply> delete_guild_integration(std::error_code & ec);
 
     /// Delete a guild integration
     /**
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api delete_guild_integration()
+    AEGIS_DECL std::future<rest::rest_reply> delete_guild_integration()
     {
         std::error_code ec;
         auto res = delete_guild_integration(ec);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Get the guild integrations
     /**
      * @param ec Indicates what error occurred, if any
-     * 
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api sync_guild_integration(std::error_code & ec);
+    AEGIS_DECL std::future<rest::rest_reply> sync_guild_integration(std::error_code & ec);
 
     /// Get the guild integrations
     /**
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api sync_guild_integration()
+    AEGIS_DECL std::future<rest::rest_reply> sync_guild_integration()
     {
         std::error_code ec;
         auto res = sync_guild_integration(ec);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Get the guild embed settings
     /**
      * @param ec Indicates what error occurred, if any
-     * 
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api get_guild_embed(std::error_code & ec);
+    AEGIS_DECL std::future<rest::rest_reply> get_guild_embed(std::error_code & ec);
 
     /// Get the guild embed settings
     /**
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api get_guild_embed()
+    AEGIS_DECL std::future<rest::rest_reply> get_guild_embed()
     {
         std::error_code ec;
         auto res = get_guild_embed(ec);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Modify the guild embed settings
     /**
      * @param ec Indicates what error occurred, if any
-     * 
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_guild_embed(std::error_code & ec);
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild_embed(std::error_code & ec);
 
     /// Modify the guild embed settings
     /**
-     * @throws aegiscpp::exception Thrown on failure.
-
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api modify_guild_embed()
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild_embed()
     {
         std::error_code ec;
         auto res = modify_guild_embed(ec);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Leave the guild this object is associated with
     /**
      * @param ec Indicates what error occurred, if any
-     * 
-     * @returns std::future<rest_reply>
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api leave(std::error_code & ec);
+    AEGIS_DECL std::future<rest::rest_reply> leave(std::error_code & ec);
 
     /// Leave the guild this object is associated with
     /**
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
-     * @returns std::future<rest_reply>
+     * @throws aegis::exception Thrown on failure.
+     * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL rest_api leave()
+    AEGIS_DECL std::future<rest::rest_reply> leave()
     {
         std::error_code ec;
         auto res = leave(ec);
         if (ec)
-            throw ec;
+            throw exception(ec);
         return res;
     }
 
     /// Gets the Bot object
     /**
      * @see aegis
-     *
-     * @throws aegiscpp::exception Thrown on failure.
-     * 
+     * @throws aegis::exception Thrown on failure.
      * @returns Aegis main object
      */
-    AEGIS_DECL aegis & get_bot() const noexcept;
+    AEGIS_DECL core & get_bot() const AEGIS_NOEXCEPT;
 
-    /// Get the snowflake of this guild
+    /// Obtain a pointer to a member by snowflake
     /**
-     * @returns A snowflake of this guild
+     * @param member_id Snowflake of member to search for
+     * @returns Pointer to member or nullptr
      */
-    const snowflake get_id() const noexcept
-    {
-        return guild_id;
-    }
+    AEGIS_DECL member * find_member(snowflake member_id) const AEGIS_NOEXCEPT;
+
+    /// Obtain a pointer to a channel by snowflake
+    /**
+     * @param channel_id Snowflake of channel to search for
+     * @returns Pointer to channel or nullptr
+     */
+    AEGIS_DECL channel * find_channel(snowflake channel_id) const AEGIS_NOEXCEPT;
 
     std::map<snowflake, channel*> channels; /**< Map of snowflakes to channel objects */
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
     std::map<snowflake, member*> members; /**< Map of snowflakes to member objects */
-    std::map<snowflake, role> roles; /**< Map of snowflakes to role objects */
+    std::map<snowflake, gateway::objects::role> roles; /**< Map of snowflakes to role objects */
+#endif
 
 private:
-    friend class aegis;
-    friend class channel;
+    friend class core;
     friend class member;
-    friend class message;
 
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    AEGIS_DECL void add_member(member * _member) AEGIS_NOEXCEPT;
+
+    AEGIS_DECL void remove_member(snowflake member_id) AEGIS_NOEXCEPT;
+
+    AEGIS_DECL void load_presence(const json & obj) AEGIS_NOEXCEPT;
+
+    AEGIS_DECL void load_role(const json & obj) AEGIS_NOEXCEPT;
+
+    AEGIS_DECL void remove_role(snowflake role_id);
+#endif
+
+    AEGIS_DECL void load(const json & obj, shard * _shard) AEGIS_NOEXCEPT;
+
+    AEGIS_DECL shared_mutex & mtx() { return _m; }
+
+    /// non-locking version for internal use
+    AEGIS_DECL member * _find_member(snowflake member_id) const AEGIS_NOEXCEPT;
+    
+    /// non-locking version for internal use
+    AEGIS_DECL channel * _find_channel(snowflake channel_id) const AEGIS_NOEXCEPT;
+
+    AEGIS_DECL void remove_channel(snowflake channel_id) AEGIS_NOEXCEPT;
+
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
     std::string name;
     std::string icon;
     std::string splash;
@@ -1219,11 +1029,11 @@ private:
     uint32_t member_count = 0;
     //std::string m_voice_states;//this is really an array
     bool is_init = true;
-    aegis * _bot;
+#endif
+    core * _bot;
+    rest::ratelimiter & _ratelimit;
+    asio::io_context & _io_context;
+    mutable shared_mutex _m;
 };
 
 }
-
-#if defined(AEGIS_HEADER_ONLY)
-# include "aegis/guild.cpp"
-#endif // defined(AEGIS_HEADER_ONLY)

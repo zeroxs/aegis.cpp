@@ -1,0 +1,21 @@
+get_filename_component(Aegis_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include(CMakeFindDependencyMacro)
+
+list(APPEND CMAKE_MODULE_PATH ${Aegis_CMAKE_DIR})
+
+find_dependency(Threads REQUIRED)
+find_dependency(Asio 1.12.0 REQUIRED MODULE)
+find_dependency(ZStr REQUIRED MODULE)
+find_dependency(JSON 3.1.2 REQUIRED MODULE)
+find_dependency(Spdlog 0.16.4 REQUIRED MODULE)
+find_dependency(Websocketpp 0.7.0 REQUIRED MODULE)
+find_dependency(OpenSSL 1.0.2 REQUIRED MODULE)
+find_dependency(ZLIB REQUIRED MODULE)
+
+list(REMOVE_AT CMAKE_MODULE_PATH -1)
+
+if(NOT TARGET Aegis::Aegis)
+    include("${Aegis_CMAKE_DIR}/AegisTargets.cmake")
+endif()
+
+set(Aegis_LIBRARIES Aegis::Aegis)

@@ -1,33 +1,16 @@
 //
 // embed.hpp
-// aegis.cpp
+// *********
 //
-// Copyright (c) 2017 Sara W (sara at xandium dot net)
+// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
 //
-// This file is part of aegis.cpp .
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of
-// this software and associated documentation files (the "Software"), to deal in
-// the Software without restriction, including without limitation the rights to
-// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-// the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
+// Distributed under the MIT License. (See accompanying file LICENSE)
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-
-#include "../config.hpp"
-#include "../snowflake.hpp"
+#include "aegis/config.hpp"
+#include "aegis/snowflake.hpp"
 #include "field.hpp"
 #include "footer.hpp"
 #include "image.hpp"
@@ -38,13 +21,17 @@
 #include <string>
 #include <vector>
 
+namespace aegis
+{
 
+namespace gateway
+{
 
-namespace aegiscpp
+namespace objects
 {
 
 /**\todo Needs documentation
-*/
+ */
 class embed
 {
 public:
@@ -54,47 +41,55 @@ public:
      * @param value Text to be shown within field
      * @param is_inline Sets whether the field is inline
      */
-    void add_field(std::string name, std::string value, bool is_inline = false)
+    void add_field(const std::string & name, const std::string & value, bool is_inline = false)
     {
         fields.emplace_back(name, value, is_inline);
     }
     /// Sets the title of the embed
     /**
-    * @param str Title to set
-    */
-    void set_title(std::string str)
+     * @param str Title to set
+     */
+    void set_title(const std::string & str)
     {
         title = str;
     }
+    /// Sets the footer of the embed
+    /**
+     * @param str Footer to set
+     */
+    void set_footer(const footer ftr)
+    {
+        footer_ = ftr;
+    }
     /// Sets the description of the embed
     /**
-    * @param str Description to set
-    */
-    void set_description(std::string str)
+     * @param str Description to set
+     */
+    void set_description(const std::string & str)
     {
         description = str;
     }
     /// Sets the url of the embed
     /**
-    * @param str Url to set
-    */
-    void set_url(std::string str)
+     * @param str Url to set
+     */
+    void set_url(const std::string & str)
     {
         url = str;
     }
     /// Sets the timestamp of the embed
     /**
-    * @param str Timestamp to set
-    */
-    void set_timestamp(std::string str)
+     * @param str Timestamp to set
+     */
+    void set_timestamp(const std::string & str)
     {
         timestamp = str;
     }
     /// Sets the color of the embed
     /**
-    * @param clr Color to set
-    */
-    void set_color(int32_t clr)
+     * @param clr Color to set
+     */
+    void set_color(const int32_t clr)
     {
         color = clr;
     }
@@ -114,7 +109,7 @@ public:
 };
 
 /**\todo Needs documentation
-*/
+ */
 inline void from_json(const nlohmann::json& j, embed& m)
 {
     if (j.count("title") && !j["title"].is_null())
@@ -145,7 +140,7 @@ inline void from_json(const nlohmann::json& j, embed& m)
 }
 
 /**\todo Needs documentation
-*/
+ */
 inline void to_json(nlohmann::json& j, const embed& m)
 {
     j["title"] = m.title;
@@ -165,3 +160,6 @@ inline void to_json(nlohmann::json& j, const embed& m)
 
 }
 
+}
+
+}

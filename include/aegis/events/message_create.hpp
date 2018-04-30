@@ -1,57 +1,75 @@
 //
 // message_create.hpp
-// aegis.cpp
+// ******************
 //
-// Copyright (c) 2017 Sara W (sara at xandium dot net)
+// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
 //
-// This file is part of aegis.cpp .
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of
-// this software and associated documentation files (the "Software"), to deal in
-// the Software without restriction, including without limitation the rights to
-// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-// the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
+// Distributed under the MIT License. (See accompanying file LICENSE)
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "../config.hpp"
-#include "../snowflake.hpp"
-#include "../objects/message.hpp"
-#include "../error.hpp"
+#include "aegis/config.hpp"
+#include "aegis/snowflake.hpp"
+#include "aegis/objects/message.hpp"
+#include "aegis/error.hpp"
 #include "base_event.hpp"
 #include <string>
 #include <vector>
 
-namespace aegiscpp
+namespace aegis
 {
 
-class member;
-class channel;
+namespace gateway
+{
+
+namespace events
+{
 
 /**\todo Needs documentation
-*/
+ */
 struct message_create : public base_event
 {
-    message_create(const json & j, channel * c, member * m) : msg(j), _channel(c), _member(m) {};
-    bool has_member() { return (_member != nullptr); }
-    bool has_channel() { return (_channel != nullptr); }
-    member & get_member() { if (_member == nullptr) throw aegiscpp::exception("Member not set", make_error_code(aegiscpp::member_not_found)); return *_member; }
-    channel & get_channel() { if (_channel == nullptr) throw aegiscpp::exception("Channel not set", make_error_code(aegiscpp::channel_not_found)); return *_channel; }
-    message msg; /**<\todo Needs documentation */
+    ::aegis::gateway::objects::message msg; /**<\todo Needs documentation */
     channel * const _channel; /**<\todo Needs documentation */
+    
+    bool has_channel()
+    {
+        return (_channel != nullptr);
+    }
+
+    channel & get_channel()
+    {
+        if (_channel == nullptr)
+            throw exception(make_error_code(error::channel_not_found));
+        return *_channel;
+    }
+
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
     member * const _member; /**<\todo Needs documentation */
+
+    bool has_member()
+    {
+        return (_member != nullptr);
+    }
+
+    member & get_member()
+    {
+        if (_member == nullptr)
+            throw exception(make_error_code(error::member_not_found));
+        return *_member;
+    }
+
+    message_create(const json & j, channel * c, member * m) : msg(j), _channel(c), _member(m) { msg.set_channel(c); };
+    message_create(const json & j, guild * g, channel * c, member * m) : msg(j), _channel(c), _member(m) { msg.set_channel(c); msg.set_guild(g); };
+#else
+    message_create(const json & j, channel * c) : msg(j), _channel(c) { msg.set_channel(c); };
+    message_create(const json & j, guild * g, channel * c) : msg(j), _channel(c) { msg.set_channel(c); msg.set_guild(g); };
+#endif
 };
 
 }
 
+}
+
+}

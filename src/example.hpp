@@ -1,30 +1,14 @@
 //
 // example.hpp
-// aegis.cpp
+// ***********
 //
-// Copyright (c) 2017 Sara W (sara at xandium dot net)
+// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
 //
-// This file is part of aegis.cpp .
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of
-// this software and associated documentation files (the "Software"), to deal in
-// the Software without restriction, including without limitation the rights to
-// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-// the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
+// Distributed under the MIT License. (See accompanying file LICENSE)
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
-#include <aegis/config.hpp>
+
 #include <aegis.hpp>
 #include <string>
 #include <stdint.h>
@@ -33,10 +17,10 @@
 namespace example_bot
 {
 
-using aegiscpp::shard;
 using json = nlohmann::json;
-using namespace std::placeholders;
-using namespace aegiscpp;
+using namespace aegis;
+using namespace aegis::gateway::objects;
+using namespace aegis::gateway::events;
 
 class example
 {
@@ -65,23 +49,69 @@ public:
     }
 
     // Messages you want to process
-    void inject(aegis & bot)
+    void inject(core & bot)
     {
         callbacks cbs;
-        cbs.i_message_create = std::bind(&example::MessageCreate, this, _1);
-        cbs.i_message_create_dm = std::bind(&example::MessageCreateDM, this, _1);
+        cbs.i_message_create = std::bind(&example::MessageCreate, this, std::placeholders::_1);
         bot._callbacks = cbs;
+    }
+
+    snowflake get_snowflake(const std::string name, const guild & _guild) const noexcept
+    {
+        if (name.empty())
+            return { 0 };
+        try
+        {
+            if (name[0] == '<')
+            {
+                //mention param
+                std::string res;
+                if (name[2] == '!')//mobile mention. strip <@!
+                    return std::stoull(std::string{ name.substr(3, name.size() - 1) });
+                else  if (name[2] == '&')//role mention. strip <@&
+                    return std::stoull(std::string{ name.substr(3, name.size() - 1) });
+                else  if (name[1] == '#')//channel mention. strip <#
+                    return std::stoull(std::string{ name.substr(3, name.size() - 1) });
+                else//regular mention. strip <@
+                    return std::stoull(std::string{ name.substr(2, name.size() - 1) });
+            }
+            else if (std::isdigit(name[0]))
+            {
+                //snowflake param
+                return std::stoull(std::string{ name });
+            }
+            else
+            {
+                //most likely username#discriminator param
+                std::string::size_type n = name.find('#');
+                if (n != std::string::npos)
+                {
+                    //found # separator
+                    for (auto & m : _guild.members)
+                        if (m.second->get_full_name() == name)
+                            return { m.second->member_id };
+                    return { 0 };
+                }
+                return { 0 };//# not found. unknown parameter. unicode may trigger this.
+            }
+        }
+        catch (std::invalid_argument &)
+        {
+            return { 0 };
+        }
     }
 
     const snowflake bot_owner_id = 171000788183678976LL;
 
-    // All the hooks into the websocket stream
+    std::string prefix = "?";
+
+    // All the hooks in the websocket stream
     void TypingStart(typing_start obj);
 
     void MessageCreate(message_create msg);
 
     void MessageCreateDM(message_create msg);
-    
+
     void MessageUpdate(message_update obj);
 
     void MessageDelete(message_delete obj);
@@ -121,7 +151,7 @@ public:
     void GuildMemberUpdate(guild_member_update obj);
 
     void GuildMemberChunk(guild_members_chunk obj);
-    
+
     void GuildRoleCreate(guild_role_create obj);
 
     void GuildRoleUpdate(guild_role_update obj);
@@ -134,7 +164,7 @@ public:
 
     void VoiceServerUpdate(voice_server_update obj);
 
-    json make_info_obj(shard * _shard, aegis * bot);
+    json make_info_obj(shard * _shard, core * bot);
 };
 
 }

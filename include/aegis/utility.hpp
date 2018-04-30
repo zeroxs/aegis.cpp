@@ -1,43 +1,19 @@
 //
 // utility.hpp
-// aegis.cpp
+// ***********
 //
-// Copyright (c) 2017 Sara W (sara at xandium dot net)
+// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
 //
-// This file is part of aegis.cpp .
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of
-// this software and associated documentation files (the "Software"), to deal in
-// the Software without restriction, including without limitation the rights to
-// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-// the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
+// Distributed under the MIT License. (See accompanying file LICENSE)
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 
 #pragma once
 
-
-
 #include "aegis/config.hpp"
-#include <websocketpp/common/random.hpp>
-#include <websocketpp/common/thread.hpp>
-#include <websocketpp/common/connection_hdl.hpp>
-#include <websocketpp/config/asio_client.hpp>
-#include <websocketpp/roles/client_endpoint.hpp>
-#include <websocketpp/client.hpp>
-
+#include <string>
 
 #if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <psapi.h>
 #elif defined(__unix__) || defined(__unix) || defined(unix) || (defined(__APPLE__) && defined(__MACH__))
@@ -55,12 +31,11 @@
 #error "Cannot define getPeakRSS( ) or getCurrentRSS( ) for an unknown OS."
 #endif
 
-namespace aegiscpp
+namespace aegis
 {
-using namespace std::string_view_literals;
 
 /**\todo Needs documentation
-*/
+ */
 enum bot_status
 {
     Uninitialized = 0,
@@ -78,7 +53,7 @@ namespace platform
 {
 
 /**\todo Needs documentation
-*/
+ */
 enum class OS
 {
     Linux,
@@ -90,36 +65,51 @@ enum class OS
     undefined
 };
 
+#if defined(__clang__) || defined(__GNUC__)
+# if (__cplusplus >= 201703)
+#  define CXX_VERSION 17
+# else
+#  define CXX_VERSION 14
+# endif
+#elif defined(AEGIS_MSVC)
+# if _MSVC_LANG == 201703L ||  _HAS_CXX17 == 1
+#  define CXX_VERSION 17
+# else
+#  define CXX_VERSION 14
+# endif
+#endif
+
+
 #if defined(_WIN64)
-constexpr std::string_view m_platform = "Windows x64"sv;
+constexpr const char * m_platform = "Windows x64";
 constexpr OS m_os = OS::Windows64;
 #elif defined(_WIN32)
-constexpr std::string_view m_platform = "Windows x86"sv;
+constexpr const char * m_platform = "Windows x86";
 constexpr OS m_os = OS::Windows32;
 #elif defined(__CYGWIN__) && !defined(_WIN32)
-const std::string_view m_platform = "Windows (Cygwin)"sv;
+constexpr const char * m_platform = "Windows (Cygwin)";
 constexpr OS m_os = OS::undefined;
 #elif defined(__linux__)
-constexpr std::string_view m_platform = "Linux"sv;
+constexpr const char * m_platform = "Linux";
 constexpr OS m_os = OS::Linux;
 #elif defined(__unix__) || defined(__APPLE__) && defined(__MACH__)
 #include <sys/param.h>
 #if defined(BSD)
-constexpr std::string_view m_platform = "*BSD"sv;
+constexpr const char * m_platform = "*BSD";
 constexpr OS m_os = OS::BSD;
 #endif
 #elif defined(__APPLE__) && defined(__MACH__) // Apple OSX and iOS (Darwin)
 #include <TargetConditionals.h>
-constexpr std::string_view m_platform = "OSX"sv;
+constexpr const char * m_platform = "OSX";
 constexpr OS m_os = OS::Mac;
 #else
-constexpr std::string_view m_platform = "undefined"sv;
+constexpr const char * m_platform = "undefined";
 constexpr OS m_os = OS::undefined;
 #endif
 
 
 /**\todo Needs documentation
-*/
+ */
 inline const std::string get_platform()
 {
     return std::string(m_platform);
@@ -167,9 +157,9 @@ inline size_t getPeakRSS()
 }
 
 /**
-* Returns the current resident set size (physical memory use) measured
-* in bytes, or zero if the value cannot be determined on this OS.
-*/
+ * Returns the current resident set size (physical memory use) measured
+ * in bytes, or zero if the value cannot be determined on this OS.
+ */
 inline size_t getCurrentRSS()
 {
 #if defined(_WIN32)
@@ -208,7 +198,7 @@ inline size_t getCurrentRSS()
 }
 //////////////////////////////////////////////////////////////////////////
 
-} //utility
+}
 
 
-} //aegis
+}

@@ -1,106 +1,71 @@
 //
 // shard.hpp
-// aegis.cpp
+// *********
 //
-// Copyright (c) 2017 Sara W (sara at xandium dot net)
+// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
 //
-// This file is part of aegis.cpp .
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of
-// this software and associated documentation files (the "Software"), to deal in
-// the Software without restriction, including without limitation the rights to
-// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-// the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
+// Distributed under the MIT License. (See accompanying file LICENSE)
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-
 #include "aegis/config.hpp"
+#include "aegis/utility.hpp"
 #include <memory>
 #include <map>
 #include <string>
 #include <chrono>
 #include <stdint.h>
+#include "aegis/push.hpp"
 #include <websocketpp/config/asio_client.hpp>
 #include <websocketpp/common/connection_hdl.hpp>
 #include <websocketpp/client.hpp>
+#include "aegis/pop.hpp"
 
-namespace aegiscpp
+namespace aegis
 {
 
-class aegis;
-class member;
-
-
+/// Tracks websocket shards and their connections
 class shard
 {
 public:
     /// Constructs a shard object for connecting to the websocket gateway and tracking timers
-    /// 
-    shard(aegis * b)
-        : heartbeattime(0)
-        , heartbeat_ack(0)
-        , lastheartbeat(0)
-        , lastwsevent(0)
-        , last_status_time(0)
-        , sequence(0)
-        , connection_state(bot_status::Uninitialized)
-        , _bot(b)
-    {
-    }
+    AEGIS_DECL shard(asio::io_context & _io);
 
     /// Resets connection, heartbeat, and timer related objects to allow reconnection
-    /// 
-    AEGIS_DECL void do_reset() noexcept;
-
-    AEGIS_DECL void start_reconnect() noexcept;
+    AEGIS_DECL void do_reset() AEGIS_NOEXCEPT;
 
     /// Get this shard's websocket message sequence counter
     /**
-    * @returns Sequence counter specific to this shard
-    */
-    const int64_t get_sequence() const noexcept
+     * @returns Sequence counter specific to this shard
+     */
+    const int64_t get_sequence() const AEGIS_NOEXCEPT
     {
         return sequence;
     }
 
     /// Gets the id of the shard in the master list
     /**
-    * @see aegis::shards
-    *
-    * @returns Shard id
-    */
-    const int16_t get_id() const noexcept
+     * @see core::shards
+     * @returns Shard id
+     */
+    const int32_t get_id() const AEGIS_NOEXCEPT
     {
         return shardid;
     }
 
-    /// Gets the Bot object
+    /// Check if this shard has an active connection
     /**
-    * @see aegis
-    *
-    * @returns Aegis main object
-    */
-    AEGIS_DECL aegis & get_bot() const noexcept;
+     * @returns bool
+     */
+    AEGIS_DECL bool is_connected() const AEGIS_NOEXCEPT;
 
-    /// Gets the member object representing the bot
+    /// Send a thread-safe message to this shard's websocket connection
     /**
-    * @see member
-    *
-    * @returns The bot's own member object
-    */
-    AEGIS_DECL member * get_bot_user() const noexcept;
+     * @param payload String of the payload to send
+     * @param op opcode to send the message
+     */
+    AEGIS_DECL void send(std::string const & payload, websocketpp::frame::opcode::value op);
 
     /// Contains counters of valued objects and events
     struct
@@ -109,10 +74,11 @@ public:
         int64_t presence_changes;
     } counters = { 0,0 };
 
-    websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr connection;
+    /// Actual websocket connection
+    websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr _connection;
 
 private:
-    friend aegis;
+    friend class core;
 
     std::string session_id;
     std::map<int64_t, std::string> debug_messages;
@@ -128,11 +94,8 @@ private:
     bot_status connection_state;
     // Websocket++ socket connection
     websocketpp::connection_hdl hdl;
-    aegis * _bot;
+    asio::io_context::strand ws_write;
+    asio::io_context & _io_context;
 };
 
 }
-
-#if defined(AEGIS_HEADER_ONLY)
-# include "aegis/shard.cpp"
-#endif // defined(AEGIS_HEADER_ONLY)

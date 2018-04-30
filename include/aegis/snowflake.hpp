@@ -1,50 +1,30 @@
 //
 // snowflake.hpp
-// aegis.cpp
+// *************
 //
-// Copyright (c) 2017 Sara W (sara at xandium dot net)
+// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
 //
-// This file is part of aegis.cpp .
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of
-// this software and associated documentation files (the "Software"), to deal in
-// the Software without restriction, including without limitation the rights to
-// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-// the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
+// Distributed under the MIT License. (See accompanying file LICENSE)
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 
 #pragma once
-
 
 #include "aegis/config.hpp"
 #include <nlohmann/json.hpp>
 #include <stdint.h>
 #include <string>
 
-
-namespace aegiscpp
+namespace aegis
 {
 
-/**\todo Needs documentation
-*/
+/// Stores creation time and extra data specific to Discord for entities
 class snowflake
 {
 public:
-    snowflake() : snowflake_id(0) {}
-    snowflake(int64_t _snowflake) : snowflake_id(_snowflake) {}
+    constexpr snowflake() : snowflake_id(0) {}
+    constexpr snowflake(int64_t _snowflake) : snowflake_id(_snowflake) {}
 
-    operator int64_t() const noexcept
+    constexpr operator int64_t() const noexcept
     {
         return snowflake_id;
     }
@@ -56,7 +36,7 @@ public:
 
     constexpr std::tuple<int64_t, int8_t, int8_t, int16_t> get_all() const noexcept
     {
-        return { get_timestamp(), get_worker(), get_process(), get_count() };
+        return std::tuple<int64_t, int8_t, int8_t, int16_t>{ get_timestamp(), get_worker(), get_process(), get_count() };
     };
 
     constexpr int16_t get_count() const noexcept
@@ -81,7 +61,7 @@ public:
 
     static constexpr std::tuple<int64_t, int8_t, int8_t, int16_t> c_get_all(int64_t snowflake)
     {
-        return { c_get_timestamp(snowflake), c_get_worker(snowflake), c_get_process(snowflake), c_get_count(snowflake) };
+        return std::tuple<int64_t, int8_t, int8_t, int16_t>{ c_get_timestamp(snowflake), c_get_worker(snowflake), c_get_process(snowflake), c_get_count(snowflake) };
     };
 
     static constexpr int16_t c_get_count(int64_t snowflake)
@@ -124,7 +104,7 @@ private:
 };
 
 /**\todo Needs documentation
-*/
+ */
 inline void from_json(const nlohmann::json& j, snowflake& s)
 {
     if (j.is_string())
@@ -134,7 +114,7 @@ inline void from_json(const nlohmann::json& j, snowflake& s)
 }
 
 /**\todo Needs documentation
-*/
+ */
 inline void to_json(nlohmann::json& j, const snowflake& s)
 {
     j = nlohmann::json{ static_cast<int64_t>(s) };

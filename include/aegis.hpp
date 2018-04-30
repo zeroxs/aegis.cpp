@@ -1,49 +1,53 @@
 //
 // aegis.hpp
-// aegis.cpp
+// *********
 //
-// Copyright (c) 2017 Sara W (sara at xandium dot net)
+// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
 //
-// This file is part of aegis.cpp .
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of
-// this software and associated documentation files (the "Software"), to deal in
-// the Software without restriction, including without limitation the rights to
-// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-// the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
+// Distributed under the MIT License. (See accompanying file LICENSE)
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
+
+#include "aegis/push.hpp"
 
 #include "aegis/config.hpp"
 #include "aegis/utility.hpp"
 
 #include "aegis/snowflake.hpp"
-#include "aegis/role.hpp"
-#include "aegis/ratelimit.hpp"
+#include "aegis/objects/role.hpp"
 #include "aegis/error.hpp"
+#include "aegis/rest_reply.hpp"
+#include "aegis/permission.hpp"
 
-#include "aegis/aegis.hpp"
+#if defined(AEGIS_HEADER_ONLY)
+
+#include "aegis/ratelimit.hpp"
+#include "aegis/rest_controller.hpp"
 #include "aegis/shard.hpp"
 #include "aegis/member.hpp"
 #include "aegis/channel.hpp"
 #include "aegis/guild.hpp"
+#include "aegis/core.hpp"
 
-#include "aegis/events/ready.hpp"
-#include "aegis/events/resumed.hpp"
-#include "aegis/events/typing_start.hpp"
-#include "aegis/events/message_create.hpp"
-#include "aegis/events/presence_update.hpp"
+#include "aegis/ratelimit.cpp"
+#include "aegis/rest_controller.cpp"
+#include "aegis/core.cpp"
+#include "aegis/shard.cpp"
+#include "aegis/member.cpp"
+#include "aegis/channel.cpp"
+#include "aegis/guild.cpp"
+
+#else
+
+#include "aegis/ratelimit.hpp"
+#include "aegis/rest_controller.hpp"
+#include "aegis/shard.hpp"
+#include "aegis/member.hpp"
+#include "aegis/channel.hpp"
+#include "aegis/guild.hpp"
+#include "aegis/core.hpp"
+
 #include "aegis/events/channel_create.hpp"
 #include "aegis/events/channel_delete.hpp"
 #include "aegis/events/channel_pins_update.hpp"
@@ -62,13 +66,22 @@
 #include "aegis/events/guild_role_delete.hpp"
 #include "aegis/events/guild_role_update.hpp"
 #include "aegis/events/guild_update.hpp"
+#include "aegis/events/message_create.hpp"
 #include "aegis/events/message_delete.hpp"
 #include "aegis/events/message_delete_bulk.hpp"
 #include "aegis/events/message_reaction_add.hpp"
 #include "aegis/events/message_reaction_remove.hpp"
 #include "aegis/events/message_reaction_remove_all.hpp"
 #include "aegis/events/message_update.hpp"
+#include "aegis/events/presence_update.hpp"
+#include "aegis/events/ready.hpp"
+#include "aegis/events/resumed.hpp"
+#include "aegis/events/typing_start.hpp"
 #include "aegis/events/user_update.hpp"
 #include "aegis/events/voice_server_update.hpp"
 #include "aegis/events/voice_state_update.hpp"
 #include "aegis/events/webhooks_update.hpp"
+
+#endif
+
+#include "aegis/pop.hpp"

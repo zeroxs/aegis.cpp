@@ -1,45 +1,31 @@
 //
 // emoji.hpp
-// aegis.cpp
+// *********
 //
-// Copyright (c) 2017 Sara W (sara at xandium dot net)
+// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
 //
-// This file is part of aegis.cpp .
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of
-// this software and associated documentation files (the "Software"), to deal in
-// the Software without restriction, including without limitation the rights to
-// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-// the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
+// Distributed under the MIT License. (See accompanying file LICENSE)
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-
-#include "../config.hpp"
-#include "../snowflake.hpp"
+#include "aegis/config.hpp"
+#include "aegis/snowflake.hpp"
 #include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 
-
-
-namespace aegiscpp
+namespace aegis
 {
 
+namespace gateway
+{
+
+namespace objects
+{
 
 /**\todo Needs documentation
-*/
+ */
 struct emoji
 {
     snowflake emoji_id; /**<\todo Needs documentation */
@@ -51,7 +37,7 @@ struct emoji
 };
 
 /**\todo Needs documentation
-*/
+ */
 inline void from_json(const nlohmann::json& j, emoji& m)
 {
     m.emoji_id = j["id"];
@@ -64,12 +50,12 @@ inline void from_json(const nlohmann::json& j, emoji& m)
     if (j.count("managed") && !j["managed"].is_null())
         m.managed = j["managed"];
     if (j.count("roles") && !j["roles"].is_null())
-        for (auto i : j["roles"])
+        for (const auto & i : j["roles"])
             m.roles.push_back(i);
 }
 
 /**\todo Needs documentation
-*/
+ */
 inline void to_json(nlohmann::json& j, const emoji& m)
 {
     j["id"] = m.emoji_id;
@@ -77,9 +63,12 @@ inline void to_json(nlohmann::json& j, const emoji& m)
     j["user"] = m.user;
     j["require_colons"] = m.require_colons;
     j["managed"] = m.managed;
-    for (auto i : m.roles)
+    for (const auto & i : m.roles)
         j["roles"].push_back(i);
 }
 
 }
 
+}
+
+}

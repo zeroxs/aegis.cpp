@@ -1,28 +1,11 @@
 //
 // error.hpp
-// aegis.cpp
+// *********
 //
-// Copyright (c) 2017 Sara W (sara at xandium dot net)
+// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
 //
-// This file is part of aegis.cpp .
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of
-// this software and associated documentation files (the "Software"), to deal in
-// the Software without restriction, including without limitation the rights to
-// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-// the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
+// Distributed under the MIT License. (See accompanying file LICENSE)
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 
 #pragma once
 
@@ -32,16 +15,15 @@
 #include <utility>
 #include <system_error>
 
-
-namespace aegiscpp
+namespace aegis
 {
 using err_str_pair = std::pair<std::error_code, std::string>;
 
 using error_code = std::error_code;
 
 /**\todo Needs documentation
-*/
-enum value
+ */
+enum error
 {
     /// Catch-all library error
     general = 1,
@@ -120,7 +102,7 @@ enum value
 };
 
 /**\todo Needs documentation
-*/
+ */
 class category : public std::error_category
 {
 public:
@@ -135,37 +117,37 @@ public:
     {
         switch (val)
         {
-            case value::general:
+            case error::general:
                 return "Generic error";
-            case value::invalid_token:
+            case error::invalid_token:
                 return "Token invalid";
-            case value::invalid_state:
+            case error::invalid_state:
                 return "Invalid state";
-            case value::get_gateway:
+            case error::get_gateway:
                 return "Unable to retrieve Gateway data";
-            case value::no_permission:
+            case error::no_permission:
                 return "No permission for this action";
-            case value::not_implemented:
+            case error::not_implemented:
                 return "Feature not yet implemented";
-            case value::member_not_found:
+            case error::member_not_found:
                 return "Member not found";
-            case value::channel_not_found:
+            case error::channel_not_found:
                 return "Channel not found";
-            case value::guild_not_found:
+            case error::guild_not_found:
                 return "Guild not found";
-            case value::rate_limited:
+            case error::rate_limited:
                 return "Rate Limited";
-            case value::global_rate_limited:
+            case error::global_rate_limited:
                 return "Globally Rate Limited";
-            case value::member_error:
+            case error::member_error:
                 return "Member related error";
-            case value::channel_error:
+            case error::channel_error:
                 return "Channel related error";
-            case value::guild_error:
+            case error::guild_error:
                 return "Guild related error";
-            case value::shard_error:
+            case error::shard_error:
                 return "Shard related error";
-            case value::bad_redis_request:
+            case error::bad_redis_request:
                 return "Bad Redis request";
             default:
                 return "Unknown";
@@ -174,7 +156,7 @@ public:
 };
 
 /**\todo Needs documentation
-*/
+ */
 inline const std::error_category & get_category()
 {
     static category instance;
@@ -182,18 +164,18 @@ inline const std::error_category & get_category()
 }
 
 /**\todo Needs documentation
-*/
-inline std::error_code make_error_code(aegiscpp::value e)
+ */
+inline std::error_code make_error_code(error e)
 {
     return std::error_code(static_cast<int>(e), get_category());
 }
 
 /**\todo Needs documentation
-*/
+ */
 class exception : public std::exception
 {
 public:
-    exception(std::string const & msg, std::error_code ec = make_error_code(value::general))
+    exception(std::string const & msg, std::error_code ec = make_error_code(error::general))
         : _msg(msg.empty() ? ec.message() : msg)
         , _code(ec)
     {
@@ -221,4 +203,12 @@ public:
     std::error_code _code;
 };
 
+}
+
+namespace std
+{
+template<> struct is_error_code_enum<aegis::error>
+{
+    static const bool value = true;
+};
 }

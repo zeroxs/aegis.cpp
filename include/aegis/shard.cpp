@@ -1,45 +1,37 @@
 //
 // shard.cpp
-// aegis.cpp
+// *********
 //
-// Copyright (c) 2017 Sara W (sara at xandium dot net)
+// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
 //
-// This file is part of aegis.cpp .
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of
-// this software and associated documentation files (the "Software"), to deal in
-// the Software without restriction, including without limitation the rights to
-// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-// the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
+// Distributed under the MIT License. (See accompanying file LICENSE)
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#pragma once
+#include "aegis/config.hpp"
+#include "aegis/shard.hpp"
 
-#include "shard.hpp"
-#include "aegis.hpp"
-#include "utility.hpp"
-
-
-
-namespace aegiscpp
+namespace aegis
 {
 
-AEGIS_DECL void shard::do_reset() noexcept
+AEGIS_DECL shard::shard(asio::io_context & _io)
+    : heartbeattime(0)
+    , heartbeat_ack(0)
+    , lastheartbeat(0)
+    , lastwsevent(0)
+    , last_status_time(0)
+    , sequence(0)
+    , connection_state(bot_status::Uninitialized)
+    , ws_write(_io)
+    , _io_context(_io)
+{
+}
+
+AEGIS_DECL void shard::do_reset() AEGIS_NOEXCEPT
 {
     heartbeat_ack = 0;
     lastheartbeat = 0;
-    if (connection != nullptr)
-        connection.reset();
+    if (_connection != nullptr)
+        _connection.reset();
     if (keepalivetimer != nullptr)
     {
         keepalivetimer->cancel();
@@ -47,28 +39,23 @@ AEGIS_DECL void shard::do_reset() noexcept
     }
 }
 
-AEGIS_DECL void shard::start_reconnect() noexcept
+AEGIS_DECL bool shard::is_connected() const AEGIS_NOEXCEPT
 {
-    reconnect_timer = get_bot().websocket_o.set_timer(10000, [this](const asio::error_code & ec)
+    if (_connection == nullptr)
+        return false;
+
+    if (_connection->get_state() == websocketpp::session::state::value::open || _connection->get_state() == websocketpp::session::state::value::connecting)
+        return true;
+
+    return false;
+}
+
+AEGIS_DECL void shard::send(std::string const & payload, websocketpp::frame::opcode::value op)
+{
+    asio::post(asio::bind_executor(ws_write, [payload, op, this]()
     {
-        if (ec == asio::error::operation_aborted)
-            return;
-        connection_state = Connecting;
-        asio::error_code wsec;
-        connection = get_bot().websocket_o.get_connection(get_bot().gateway_url, wsec);
-        get_bot().setup_callbacks(this);
-        get_bot().websocket_o.connect(connection);
-    });
-}
-
-AEGIS_DECL member * shard::get_bot_user() const noexcept
-{
-    return get_bot().self();
-}
-
-AEGIS_DECL aegis & shard::get_bot() const noexcept
-{
-    return *_bot;
+        _connection->send(payload, op);
+    }));
 }
 
 }
