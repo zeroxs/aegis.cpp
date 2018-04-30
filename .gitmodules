@@ -10,3 +10,6 @@
 [submodule "lib/zstr"]
 	path = lib/zstr
 	url = https://github.com/mateidavid/zstr
+[submodule "lib/websocketpp"]
+	path = lib/websocketpp
+	url = https://github.com/zeroxs/websocketpp
