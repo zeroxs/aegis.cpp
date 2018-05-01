@@ -4,7 +4,7 @@
 Aegis Library
 =======
 
-C++14 library for interfacing with the [Discord API](https://discordapp.com/developers/docs/intro)
+C++14/17 library for interfacing with the [Discord API](https://discordapp.com/developers/docs/intro)
 
 # License #
 
@@ -75,23 +75,23 @@ You can pass these flags to CMake to change what it builds</br>
 `-DCMAKE_CXX_COMPILER=g++-7` will let you select the compiler used</br>
 `-DCXX_STANDARD=17` will let you select C++14 (default) or C++17
 
-You can pass these flags to your compiler to alter how the library is built</br>
+You can pass these flags to your compiler to alter how the library is built (eg `-DCMAKE_CXX_FLAGS="-DAEGIS_PROFILING"`)</br>
 `-DAEGIS_DYN_LINK` used when linking the library as a shared object</br>
-`-DAEGIS_SEPARATE_COMPILATION` used when linking the library as static or separate cpp file within project</br>
+`-DAEGIS_SEPARATE_COMPILATION` used when linking the library as static or separate cpp file within your project</br>
 `-DAEGIS_DISABLE_ALL_CACHE` will disable the internal caching of most objects such as member data reducing memory usage by a significant amount</br>
-`-DAEGIS_DEBUG_HISTORY` enables the saving of 30 seconds of websocket message history. In the event of an exception, the last 5 messages on that shard are dumped to console.</br>
-`-DAEGIS_PROFILING` by setting up to 3 specific functions within the main class
+`-DAEGIS_DEBUG_HISTORY` enables the saving of 30 seconds of websocket message history. In the event of an uncaught exception, the last 5 messages on that shard are dumped to console.</br>
+`-DAEGIS_PROFILING` by setting up to 3 specific functions within the main class:
 ```cpp
 bot.message_end = std::bind(&AegisBot::message_end, this, std::placeholders::_1, std::placeholders::_2);
 bot.js_end = std::bind(&AegisBot::js_end, this, std::placeholders::_1, std::placeholders::_2);
 bot.call_end = std::bind(&AegisBot::call_end, this, std::placeholders::_1);
 ```
-your callbacks will be executed
+your callbacks will be executed:
 - when a whole message is done being processed including your own callback time but not including js decode time (message_end)
-- when a js decoding is complete (js_end)
-- when a rest call is complete (call_end)
+- when a js decoding is completed (js_end)
+- when a rest call function is completed (call_end)
 
-`message_end` and `call_end` both are passed 2 parameters ``(std::chrono::system_clock::time_point, const std::string &)`` while `js_end` is only passed `(std::chrono::system_clock::time_point)`. The time_point being passed is the time the action started.
+`message_end` and `js_end` both are passed 2 parameters ``(std::chrono::system_clock::time_point, const std::string &)`` while `call_end` is only passed `(std::chrono::system_clock::time_point)`. The time_point being passed is the time the action started. The string being the websocket event name being processed.
 </br>
 
 

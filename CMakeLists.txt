@@ -36,8 +36,8 @@ find_package(Websocketpp 0.7.0 REQUIRED MODULE)
 find_package(OpenSSL 1.0.1 REQUIRED MODULE)
 find_package(ZLIB REQUIRED MODULE)
 
-#option(BUILD_STATIC_LIBS "Build the static library" ON)
-#option(BUILD_SHARED_LIBS "Build the shared library" ON)
+option(BUILD_STATIC_LIBS "Build the static library" ON)
+option(BUILD_SHARED_LIBS "Build the shared library" ON)
 option(BUILD_EXAMPLES "Build example programs" OFF)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
