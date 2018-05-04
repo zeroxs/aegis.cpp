@@ -44,11 +44,11 @@ AEGIS_DECL rest_reply bucket_factory::do_async(int64_t id, const std::string pat
 
     {
         std::lock_guard<std::mutex> lock(use_bucket.m);
-        int64_t time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        int64_t time = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
         while (!use_bucket.can_async())
         {
-            time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            std::this_thread::sleep_for(std::chrono::seconds((use_bucket.reset - time) + 1));
+            time = std::chrono::duration_cast<seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            std::this_thread::sleep_for(seconds((use_bucket.reset - time) + 1));
         }
         //std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_response)>>> query;
         rest_reply reply(_call(path, content, method, host));

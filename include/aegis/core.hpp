@@ -284,9 +284,6 @@ public:
             throw std::system_error(ec);
     }
 
-    /// Initiate websocket connection
-    AEGIS_DECL void connect() AEGIS_NOEXCEPT;
-
     /// Assign the message, connect, and close callbacks to the websocket object
     /**
      * @param _shard The shard object this websocket belong to
@@ -295,7 +292,7 @@ public:
 
     /// Outputs the last 5 messages received from the gateway
     ///
-    AEGIS_DECL void debug_trace(shard * _shard);
+    AEGIS_DECL void debug_trace(shard * _shard, bool extended = false);
 
     /// Get the internal (or external) io_service object
     asio::io_context & io_service()
@@ -557,9 +554,9 @@ public:
     std::shared_ptr<spdlog::logger> log;
 
 #ifdef AEGIS_PROFILING
-    std::function<void(std::chrono::system_clock::time_point, const std::string&)> message_end;
-    std::function<void(std::chrono::system_clock::time_point)> call_end;
-    std::function<void(std::chrono::system_clock::time_point, const std::string&)> js_end;
+    std::function<void(std::chrono::steady_clock::time_point, const std::string&)> message_end;
+    std::function<void(std::chrono::steady_clock::time_point)> call_end;
+    std::function<void(std::chrono::steady_clock::time_point, const std::string&)> js_end;
 #endif
 
     std::function<void(gateway::events::typing_start obj)> i_typing_start;/**< TYPING_START callback */
@@ -592,27 +589,25 @@ public:
     std::function<void(gateway::events::voice_state_update obj)> i_voice_state_update;/**<\todo VOICE_STATE_UPDATE callback */
     std::function<void(gateway::events::voice_server_update obj)> i_voice_server_update;/**<\todo VOICE_SERVER_UPDATE callback */
 
+    /// Send a websocket message to a single shard
+    /**
+    * @param msg JSON encoded message to be sent
+    */
+    AEGIS_DECL void send_all_shards(std::string & msg) AEGIS_NOEXCEPT;
+
+    /// Send a websocket message to a single shard
+    /**
+    * @param msg JSON encoded message to be sent
+    */
+    AEGIS_DECL void send_all_shards(const json & msg) AEGIS_NOEXCEPT;
+
 private:
 
     AEGIS_DECL void _init();
     AEGIS_DECL void _run(std::size_t count = 0, std::function<void(void)> f = {});
     AEGIS_DECL void setup_gateway(std::error_code & ec);
 
-    void connect_one()
-    {
-        if (!ws_connect_timer)
-        {
-            if (!_ws_connecting)
-                asio::post(asio::bind_executor(*ws_open_strand, std::bind(&core::connect, this)));
-            else
-                ws_connect_timer = websocket_o.set_timer(7000, asio::bind_executor(*ws_open_strand, std::bind(&core::connect, this)));
-        }
-        else
-        {
-            log->error("connect_one() timer exists");
-        }
-    }
-
+    AEGIS_DECL void reset_shard(shard * _shard);
 
     friend class guild;
     friend class channel;
@@ -654,13 +649,13 @@ private:
     AEGIS_DECL void keep_alive(const asio::error_code & error, const int32_t ms, shard * _shard);
     AEGIS_DECL void ws_status(const asio::error_code & ec);
 
-    AEGIS_DECL void reset_shard(shard * _shard);
-
     AEGIS_DECL void load_config();
 
     AEGIS_DECL void remove_channel(snowflake channel_id) AEGIS_NOEXCEPT;
 
     AEGIS_DECL void remove_member(snowflake member_id) AEGIS_NOEXCEPT;
+
+    AEGIS_DECL void queue_reconnect(shard * _shard);
 
     std::chrono::steady_clock::time_point starttime;
 
@@ -696,8 +691,7 @@ private:
     spdlog::level::level_enum _loglevel;
     std::chrono::time_point<std::chrono::steady_clock> _last_ready;
     std::chrono::time_point<std::chrono::steady_clock> _connect_time;
-    std::queue<shard*> _shards_to_connect;
-    bool _ws_connecting = false;
+    std::deque<shard*> _shards_to_connect;
     shard * _connecting_shard;
     mutable shared_mutex _shard_m;
     mutable shared_mutex _guild_m;

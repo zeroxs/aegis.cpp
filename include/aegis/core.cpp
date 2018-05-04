@@ -100,12 +100,17 @@ AEGIS_DECL core::~core()
         _io_context->stop();
     for (auto & s : shards)
     {
-        if (s->reconnect_timer)
-            s->reconnect_timer->cancel();
-        if (s->keepalivetimer)
+        if (s->keepalivetimer != nullptr)
+        {
             s->keepalivetimer->cancel();
+            s->keepalivetimer.reset();
+        }
         s->connection_state = Shutdown;
-        s->_connection = nullptr;
+        if (s->_connection != nullptr)
+        {
+            s->_connection->close(1001, "");
+            s->_connection.reset();
+        }
     }
 }
 
@@ -255,7 +260,7 @@ AEGIS_DECL void core::_run(std::size_t count, std::function<void(void)> f)
         for (uint32_t k = 0; k < shard_max_count; ++k)
         {
             std::error_code ec;
-            auto _shard = std::make_unique<shard>(*_io_context);
+            auto _shard = std::make_unique<shard>(*_io_context, websocket_o);
             _shard->_connection = websocket_o.get_connection(gateway_url, ec);
             _shard->shardid = k;
 
@@ -267,8 +272,8 @@ AEGIS_DECL void core::_run(std::size_t count, std::function<void(void)> f)
 
             setup_callbacks(_shard.get());
 
-            //websocket_o.connect(_shard->connection);
-            _shards_to_connect.push(_shard.get());
+            log->trace("Shard#{}: added to connect list", _shard->get_id());
+            _shards_to_connect.push_back(_shard.get());
             shards.push_back(std::move(_shard));
         }
 
@@ -490,9 +495,6 @@ AEGIS_DECL void core::process_ready(const json & d, shard * _shard)
 {
     _shard->session_id = d["session_id"].get<std::string>();
 
-    _last_ready = std::chrono::steady_clock::now();
-    _ws_connecting = false;
-
     const json & guilds = d["guilds"];
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
@@ -624,39 +626,45 @@ AEGIS_DECL channel * core::dm_channel_create(const json & obj, shard * _shard)
 
 AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const int32_t ms, shard * _shard)
 {
-    if (ec != asio::error::operation_aborted)
+    if (ec == asio::error::operation_aborted)
+        return;
+    try
     {
-        try
-        {
-            if (_shard->connection_state == Shutdown || _shard->_connection == nullptr)
-                return;
+        if (_shard->connection_state == bot_status::Shutdown || _shard->_connection == nullptr)
+            return;
 
-            if (_shard->heartbeat_ack != 0 && _shard->lastheartbeat - _shard->heartbeat_ack > ms*2)
-            {
-                log->error("Heartbeat ack not received. Reconnecting. {} {}", _shard->heartbeat_ack, _shard->lastheartbeat);
-                websocket_o.close(_shard->_connection, 1001, "");
-                _shard->connection_state = Reconnecting;
-                reset_shard(_shard);
-                return;
-            }
-            json obj;
-            obj["d"] = _shard->sequence;
-            obj["op"] = 1;
-            _shard->send(obj.dump(), websocketpp::frame::opcode::text);
-            _shard->lastheartbeat = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            _shard->keepalivetimer = websocket_o.set_timer(
-                ms,
-                std::bind(&core::keep_alive, this, std::placeholders::_1, ms, _shard)
-            );
-        }
-        catch (websocketpp::exception & e)
+        auto now = std::chrono::steady_clock::now();
+
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(_shard->heartbeat_ack.time_since_epoch()).count() > 0
+            && std::chrono::duration_cast<std::chrono::milliseconds>(now - _shard->lastheartbeat) >= std::chrono::milliseconds(int32_t(ms * 1.5)))
         {
-            log->error("Websocket exception : {0}", e.what());
+            log->error("Shard#{}: Heartbeat ack timeout. Reconnecting. Last Ack:{}ms Last Sent:{}ms Timeout:{}ms",
+                        _shard->get_id(),
+                        std::chrono::duration_cast<std::chrono::milliseconds>(now - _shard->heartbeat_ack).count(),
+                        std::chrono::duration_cast<std::chrono::milliseconds>(now - _shard->lastheartbeat).count(),
+                        int32_t(ms * 1.5));
+            websocket_o.close(_shard->_connection, 1001, "");
+            reset_shard(_shard);
+            queue_reconnect(_shard);
+            return;
         }
-        catch (...)
-        {
-            log->critical("Uncaught websocket exception");
-        }
+        json obj;
+        obj["d"] = _shard->sequence;
+        obj["op"] = 1;
+        _shard->send_now(obj.dump());
+        _shard->lastheartbeat = std::chrono::steady_clock::now();
+        _shard->keepalivetimer = websocket_o.set_timer(
+            ms,
+            std::bind(&core::keep_alive, this, std::placeholders::_1, ms, _shard)
+        );
+    }
+    catch (websocketpp::exception & e)
+    {
+        log->error("Websocket exception : {0}", e.what());
+    }
+    catch (...)
+    {
+        log->critical("Uncaught websocket exception");
     }
 }
 
@@ -664,8 +672,11 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
 {
     std::string payload = msg->get_payload();
 
+    _shard->transfer_bytes += msg->get_header().size() + msg->get_payload().size();
+    _shard->transfer_bytes_u += msg->get_header().size();
+
 #ifdef AEGIS_PROFILING
-    auto s_t = std::chrono::system_clock::now();
+    auto s_t = std::chrono::steady_clock::now();
 #endif
 
     try
@@ -682,6 +693,8 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
             ss << '\0';
             payload = ss.str();
         }
+
+        _shard->transfer_bytes_u += payload.size();
 
        const json result = json::parse(payload);
 
@@ -702,21 +715,19 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
                    if (js_end)
                        js_end(s_t, result["t"]);
 
-           s_t = std::chrono::system_clock::now();
+           s_t = std::chrono::steady_clock::now();
 #endif
         
-           int64_t t_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+           int64_t t_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
-           _shard->lastwsevent = t_time;
+           _shard->lastwsevent = std::chrono::steady_clock::now();
 
 #if defined(AEGIS_DEBUG_HISTORY)
             //////////////////////////////////////////////////////////////////////////
-            _shard->debug_messages[t_time] = payload;
+           _shard->debug_messages.push_front({ t_time, payload });
 
-            ///check old messages and remove
-            for (auto iter = _shard->debug_messages.begin(); iter != _shard->debug_messages.end(); ++iter)
-                if (iter->first < t_time - 30)
-                    _shard->debug_messages.erase(iter++);
+           if (_shard->debug_messages.size() >= 5)
+               _shard->debug_messages.pop_back();
             //////////////////////////////////////////////////////////////////////////
 #endif
         
@@ -749,19 +760,32 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
                             {
                                 log->error("Failed to process object: {0}", e.what());
                                 log->error(res.dump());
-
-                                //debug_trace(_shard);
+                                debug_trace(_shard);
                             }
                             catch (...)
                             {
                                 log->error("Failed to process object: Unknown error");
-                                //debug_trace(_shard);
+                                debug_trace(_shard);
                             }
                         });
 #else
                         asio::post(io_service(), [this, it, res = std::move(result), _shard, cmd]()
                         {
-                            (it->second)(res, _shard);
+                            try
+                            {
+                                (it->second)(res, _shard);
+                            }
+                            catch (std::exception& e)
+                            {
+                                log->error("Failed to process object: {0}", e.what());
+                                log->error(res.dump());
+                                debug_trace(_shard);
+                            }
+                            catch (...)
+                            {
+                                log->error("Failed to process object: Unknown error");
+                                debug_trace(_shard);
+                            }
                         });
 #endif
                     }
@@ -779,6 +803,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
                     {
                         _shard->sequence = 0;
                         log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->shardid);
+                        _shard->session_id.clear();
                         std::this_thread::sleep_for(std::chrono::seconds(6));
                         json obj = {
                             { "op", 2 },
@@ -804,7 +829,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
                                                     { "type", 0 }
                                                 }
                                             },
-                                            { "_status", "online" },
+                                            { "status", "online" },
                                             { "since", 1 },
                                             { "afk", false }
                                         }
@@ -813,17 +838,17 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
                             }
                         };
                         //log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
-                        if (_shard->connection_state == Connecting && _shard->_connection != nullptr)
+                        if (_shard->_connection != nullptr)
                         {
-                            _shard->send(obj.dump(), websocketpp::frame::opcode::text);
+                            _shard->send(obj.dump());
                         }
                         else
                         {
                             //debug?
-                            log->error("Shard#{} : Invalid session received with an invalid connection state state: {} connection exists: {}", _shard->shardid, static_cast<int32_t>(_shard->connection_state), _shard->_connection != nullptr);
+                            log->error("Shard#{} : Invalid session received with an invalid connection state state: {}", _shard->shardid, static_cast<int32_t>(_shard->connection_state));
                             websocket_o.close(_shard->_connection, 1001, "");
-                            _shard->connection_state = Reconnecting;
-                            _shard->do_reset();
+                            reset_shard(_shard);
+                            _shard->session_id.clear();
                         }
                     }
                     else
@@ -839,7 +864,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
                     obj["d"] = _shard->sequence;
                     obj["op"] = 1;
 
-                    _shard->send(obj.dump(), websocketpp::frame::opcode::text);
+                    _shard->send(obj.dump());
                 }
                 if (result["op"] == 10)
                 {
@@ -853,7 +878,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
                 if (result["op"] == 11)
                 {
                     //heartbeat ACK
-                    _shard->heartbeat_ack = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                    _shard->lastheartbeat = _shard->heartbeat_ack = std::chrono::steady_clock::now();
                 }
         
             }
@@ -876,70 +901,35 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
 
 AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shard * _shard)
 {
-    log->info("Connection established");
-    _shard->connection_state = Connecting;
+    log->info("Shard#{}: connection established", _shard->shardid);
+    _shard->set_connected();
+    if (_shards_to_connect.empty())
+    {
+        log->error("Shard#{}: _shards_to_connect empty", _shard->shardid);
+    }
+    else
+    {
+        auto * _s = _shards_to_connect.front();
+        assert(_s != nullptr);
+        if (_s != _shard)
+            log->error("Shard#{}: _shards_to_connect.front wrong shard id:{} status:{}",
+                       _shard->shardid,
+                       _s->shardid,
+                       _s->is_connected()?"connected":"not connected");
+        if (_s != _connecting_shard)
+            log->error("Shard#{}: _connecting_shard wrong shard id:{} status:{}",
+                       _shard->shardid,
+                       _s->shardid,
+                       _s->is_connected() ? "connected" : "not connected");
+        _shards_to_connect.pop_front();
+    }
 
     try
     {
-        /*if (!selfbot)*/
+        json obj;
+        if (_shard->session_id.empty())
         {
-            json obj;
-            if (_shard->session_id.empty())
-            {
-                obj = {
-                    { "op", 2 },
-                    {
-                        "d",
-                        {
-                            { "token", token },
-                            { "properties",
-                                {
-                                    { "$os", utility::platform::get_platform() },
-                                    { "$browser", "aegis.cpp" },
-                                    { "$device", "aegis.cpp" }
-                                }
-                            },
-                            { "shard", json::array({ _shard->shardid, shard_max_count }) },
-                            { "compress", true },
-                            { "large_threshhold", 250 },
-                            { "presence",
-                                {
-                                    { "game",
-                                        {
-                                            { "name", self_presence },
-                                            { "type", 0 }
-                                        }
-                                    },
-                                    { "_status", "online" },
-                                    { "since", 1 },
-                                    { "afk", false }
-                                }
-                            }
-                        }
-                    }
-                };
-            }
-            else
-            {
-                log->info("Attemping RESUME with id : {}", _shard->session_id);
-                obj = {
-                    { "op", 6 },
-                    { "d",
-                        {
-                            { "token", token },
-                            { "session_id", _shard->session_id },
-                            { "seq", _shard->sequence }
-                        }
-                    }
-                };
-            }
-            //log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
-            if (_shard->is_connected())
-                _shard->send(obj.dump(), websocketpp::frame::opcode::text);
-        }
-        /*else
-        {
-            json obj = {
+            obj = {
                 { "op", 2 },
                 {
                     "d",
@@ -952,6 +942,7 @@ AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shard * _shard
                                 { "$device", "aegis.cpp" }
                             }
                         },
+                        { "shard", json::array({ _shard->shardid, shard_max_count }) },
                         { "compress", true },
                         { "large_threshhold", 250 },
                         { "presence",
@@ -962,7 +953,7 @@ AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shard * _shard
                                         { "type", 0 }
                                     }
                                 },
-                                { "_status", "online" },
+                                { "status", "online" },
                                 { "since", 1 },
                                 { "afk", false }
                             }
@@ -970,90 +961,90 @@ AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shard * _shard
                     }
                 }
             };
-            //log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
-            if (_shard->connection)
-                _shard->connection->send(obj.dump(), websocketpp::frame::opcode::text);
-        }*/
+        }
+        else
+        {
+            log->info("Attempting RESUME with id : {}", _shard->session_id);
+            obj = {
+                { "op", 6 },
+                { "d",
+                    {
+                        { "token", token },
+                        { "session_id", _shard->session_id },
+                        { "seq", _shard->sequence }
+                    }
+                }
+            };
+        }
+        _shard->send(obj.dump());
+    }
+    catch (std::exception & e)
+    {
+        log->error("Shard#{}: on_connect exception : {}", e.what());
     }
     catch (...)
     {
-        log->critical("Uncaught on_connect exception");
+        log->error("Shard#{}: Uncaught on_connect exception");
     }
+}
+
+AEGIS_DECL void core::send_all_shards(std::string & msg) AEGIS_NOEXCEPT
+{
+    for (auto & s : shards)
+        s->send(msg);
+}
+
+AEGIS_DECL void core::send_all_shards(const json & msg) AEGIS_NOEXCEPT
+{
+    for (auto & s : shards)
+        s->send(msg.dump());
 }
 
 AEGIS_DECL void core::on_close(websocketpp::connection_hdl hdl, shard * _shard)
 {
-    log->info("Connection closed");
+    log->error("Shard#{} disconnected.", _shard->get_id());
     if (_status == Shutdown)
         return;
     reset_shard(_shard);
-    _shards_to_connect.push(_shard);
+    //TODO debug only auto reconnect 50 times per session
+    if (_shard->counters.reconnects < 50)
+        queue_reconnect(_shard);
 }
 
 AEGIS_DECL void core::reset_shard(shard * _shard)
 {
     _shard->do_reset();
-    _shard->connection_state = Reconnecting;
+    _shard->connection_state = bot_status::Reconnecting;
     asio::error_code wsec;
     _shard->_connection = websocket_o.get_connection(gateway_url, wsec);
     setup_callbacks(_shard);
-    _shards_to_connect.push(_shard);
 }
 
 AEGIS_DECL void core::ws_status(const asio::error_code & ec)
 {
-    if (ec == asio::error::operation_aborted)
+    if ((ec == asio::error::operation_aborted) || (_status == Shutdown))
         return;
-    using namespace std::chrono_literals;
-    int64_t checktime;
-    if (_status != Shutdown)
-    {
-        try
-        {
-            if (!_ws_connecting)
-            {
-                if (!_shards_to_connect.empty())
-                {
-                    auto t = std::chrono::steady_clock::now() - _last_ready;
-                    if (std::chrono::duration_cast<std::chrono::seconds>(t) >= 6s)
-                    {
-                        log->info("Shards to connect : {}", _shards_to_connect.size());
-                        auto _shard = _shards_to_connect.front();
-                        _shards_to_connect.pop();
 
-                        if (!_shard->_connection->get_socket().lowest_layer().is_open())
-                        {
-                            log->info("Shard#{} connecting", _shard->get_id());
-                            _ws_connecting = true;
-                            _connecting_shard = _shard;
-                            _connect_time = std::chrono::steady_clock::now();
-                            websocket_o.connect(_shard->_connection);
-                        }
-                        else
-                        {
-                            log->info("Shard#{} magically connected {} {} {} {}", _shard->get_id(), _shard->_connection->get_state(), _shard->connection_state, _shard->lastwsevent, _shard->last_status_time);
-                        }
-                    }
-                }
-            }
-            else
+    using namespace std::chrono_literals;
+
+    try
+    {
+        auto now = std::chrono::steady_clock::now();
+
+        // do basic shard timer actions such as timing out potential ghost sockets
+        for (auto & _shard : shards)
+        {
+            if (_shard == nullptr)
+                continue;
+
+            if (_shard->is_connected())
             {
-                auto t = std::chrono::steady_clock::now() - _connect_time;
-                if (std::chrono::duration_cast<std::chrono::seconds>(t) >= 20s)
+                if (std::chrono::duration_cast<std::chrono::milliseconds>(_shard->lastwsevent.time_since_epoch()).count() > 0)
                 {
-                    log->error("Shard#{} timeout while connecting", _connecting_shard->get_id());
-                    reset_shard(_connecting_shard);
-                    _ws_connecting = false;
-                }
-            }
-            checktime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            for (auto & _shard : shards)
-            {
-                if (_shard && _shard->_connection)
-                {
-                    if (_shard->lastwsevent && (_shard->lastwsevent < (checktime - 90)))
+                    // heartbeat system should typically pick up any dead sockets. this is sort of redundant at the moment
+                    if (_shard->lastwsevent < (now - 90s))
                     {
-                        log->error("Shard#{} : Websocket had no events in last 90s", _shard->shardid);
+                        log->error("Shard#{}: Websocket had no events in last 90s - reconnecting", _shard->shardid);
                         debug_trace(_shard.get());
                         if (_shard->_connection->get_state() < websocketpp::session::state::closing)
                             websocket_o.close(_shard->_connection, 1001, "");
@@ -1061,90 +1052,110 @@ AEGIS_DECL void core::ws_status(const asio::error_code & ec)
                             reset_shard(_shard.get());
                     }
                 }
-                _shard->last_status_time = checktime;
+            }
+            _shard->last_status_time = now;
+        }
 
-                //find a prettier way to do this
-                if (_shard && !_shard->is_connected() && !_shard->reconnect_timer)
+        // check if not all shards connected
+        if (!_shards_to_connect.empty())
+        {
+            if (std::chrono::duration_cast<std::chrono::seconds>(now - _last_ready) >= 6s)
+            {
+                if (_connect_time != std::chrono::steady_clock::time_point())
                 {
-                    reset_shard(_shard.get());
+                    if (std::chrono::duration_cast<std::chrono::seconds>(now - _connect_time) >= 10s)
+                    {
+                        log->error("Shard#{}: timeout while connecting (10s)", _connecting_shard->get_id());
+                        _shards_to_connect.pop_front();
+                        reset_shard(_connecting_shard);
+                        queue_reconnect(_connecting_shard);
+                        _connecting_shard = nullptr;
+                        _connect_time = std::chrono::steady_clock::time_point();
+                    }
+                }
+                else
+                {
+                    log->info("Shards to connect : {}", _shards_to_connect.size());
+                    auto * _shard = _shards_to_connect.front();
+
+                    if (!_shard->is_connected())
+                    {
+                        log->info("Shard#{}: connecting", _shard->get_id());
+                        _connecting_shard = _shard;
+                        _connect_time = now;
+                        _shard->connect();
+                        _shard->connection_state = bot_status::Connecting;
+                    }
+                    else
+                    {
+                        log->debug("Shard#{}: already connected {} {} {} {}",
+                                    _shard->get_id(),
+                                    _shard->_connection->get_state(),
+                                    _shard->connection_state,
+                                    std::chrono::duration_cast<std::chrono::milliseconds>(now - _shard->lastwsevent).count(),
+                                    std::chrono::duration_cast<std::chrono::milliseconds>(now - _shard->last_status_time).count());
+                        _shards_to_connect.pop_front();
+                    }
                 }
             }
         }
-        catch (std::exception & e)
-        {
-            log->error("ws_status() error : {}", e.what());
-        }
-        catch (...)
-        {
-            log->error("ws_status() error : unknown");
-        }
+    }
+    catch (std::exception & e)
+    {
+        log->error("ws_status() error : {}", e.what());
+    }
+    catch (...)
+    {
+        log->error("ws_status() error : unknown");
     }
     ws_timer = websocket_o.set_timer(1000, std::bind(&core::ws_status, this, std::placeholders::_1));
 }
 
-AEGIS_DECL void core::debug_trace(shard * _shard)
+AEGIS_DECL void core::queue_reconnect(shard * _shard)
 {
-    if (_shard->debug_messages.empty())//no messages even received yet
+    auto it = std::find(_shards_to_connect.cbegin(), _shards_to_connect.cend(), _shard);
+    if (it != _shards_to_connect.cend())
+    {
+        log->error("Shard#{}: shard to be connected already on connect list", _shard->shardid);
         return;
+    }
+    log->trace("Shard#{}: added to connect list", _shard->get_id());
+    _shards_to_connect.push_back(_shard);
+}
 
+AEGIS_DECL void core::debug_trace(shard * _shard, bool extended)
+{
     fmt::MemoryWriter w;
 
-    w << "\n==========<Start Error Trace>==========\n"
+    w << "~~ERROR~~ extended(" << extended << ")"
+        << "\n==========<Start Error Trace>==========\n"
         << "Shard: " << _shard->shardid << '\n'
         << "Seq: " << _shard->sequence << '\n';
     int i = 0;
 
-    for (auto iter = _shard->debug_messages.rbegin(); (i < 5 && iter != _shard->debug_messages.rend()); ++i, ++iter)
-        w << (*iter).second << '\n';
+    for (auto & msg : _shard->debug_messages)
+        w << std::get<1>(msg) << '\n';
 
+    /// in most cases the entire shard list shouldn't be dumped
+    if (extended)
     for (auto & c : shards)
     {
         if (c == nullptr)
-            w << fmt::format("Shard#{} shard:{:p}\n",
-                             _shard->shardid,
-                             static_cast<void*>(c.get()));
+            w << fmt::format("Shard#{} INVALID OBJECT\n",
+                             _shard->shardid);
 
         else
+        {
             if (c->_connection == nullptr)
-                w << fmt::format("Shard#{} shardid:{:p} connection:empty\n",
-                                 _shard->shardid,
-                                 static_cast<void*>(c.get()));
+                w << fmt::format("Shard#{} not connected\n",
+                                 c->shardid);
             else
-                w << fmt::format("Shard#{} shardid:{:p} connection:{:p}\n",
-                                 _shard->shardid,
-                                 static_cast<void*>(c.get()),
-                                 static_cast<void*>(c->_connection.get()));
+                w << fmt::format("Shard#{} connected Seq:{} LastWS:{}ms ago Total Xfer:{}\n",
+                                 c->shardid, c->sequence, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - c->lastwsevent).count());
+        }
     }
     w << "==========<End Error Trace>==========";
     log->error(w.str());
-}
-
-AEGIS_DECL void core::connect() AEGIS_NOEXCEPT
-{
-//     ws_connect_timer.reset();
-//     for (auto & s : shards)
-//     {
-//         if (!s->is_connected())
-//         {
-//             if (s->_connection != nullptr)
-//             {
-//                 websocket_o.connect(s->_connection);
-//                 return;
-//             }
-//             else
-//                 log->debug("core::connect() - s->_connection == nullptr");
-//         }
-//     }
-// 
-//     for (auto & s : shards)
-//     {
-//         if (!s->is_connected())
-//         {
-//             log->debug("Requeuing reconnect timer");
-//             ws_connect_timer = websocket_o.set_timer(6000, std::bind(&core::connect, this));
-//             return;
-//         }
-//     }
 }
 
 AEGIS_DECL void core::ws_presence_update(const json & result, shard * _shard)
@@ -1287,7 +1298,7 @@ AEGIS_DECL void core::ws_guild_create(const json & result, shard * _shard)
     chunk["d"]["query"] = "";
     chunk["d"]["limit"] = 0;
     chunk["op"] = 8;
-    _shard->send(chunk.dump(), websocketpp::frame::opcode::text);
+    _shard->send(chunk.dump());
 #endif
 
     gateway::events::guild_create obj;
@@ -1437,8 +1448,11 @@ AEGIS_DECL void core::ws_voice_state_update(const json & result, shard * _shard)
 
 AEGIS_DECL void core::ws_resumed(const json & result, shard * _shard)
 {
-    _shard->connection_state = Online;
-    log->info("Shard#[{}] RESUMED Processed", _shard->shardid);
+    _connecting_shard = nullptr;
+    _shard->connection_state = bot_status::Online;
+    _connect_time = std::chrono::steady_clock::time_point();
+    _shard->_ready_time = _last_ready = std::chrono::steady_clock::now();
+    log->info("Shard#{} RESUMED Processed", _shard->shardid);
     if (_shard->keepalivetimer)
         _shard->keepalivetimer->cancel();
     _shard->keepalivetimer = websocket_o.set_timer(
@@ -1457,9 +1471,12 @@ AEGIS_DECL void core::ws_resumed(const json & result, shard * _shard)
 
 AEGIS_DECL void core::ws_ready(const json & result, shard * _shard)
 {
+    _connecting_shard = nullptr;
+    _shard->connection_state = bot_status::Online;
+    _connect_time = std::chrono::steady_clock::time_point();
+    _shard->_ready_time = _last_ready = std::chrono::steady_clock::now();
     process_ready(result["d"], _shard);
-    _shard->connection_state = Online;
-    log->info("Shard#[{}] READY Processed", _shard->shardid);
+    log->info("Shard#{} READY Processed", _shard->shardid);
 
     gateway::events::ready obj;
     obj = result["d"];

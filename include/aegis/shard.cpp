@@ -13,23 +13,22 @@
 namespace aegis
 {
 
-AEGIS_DECL shard::shard(asio::io_context & _io)
-    : heartbeattime(0)
-    , heartbeat_ack(0)
-    , lastheartbeat(0)
-    , lastwsevent(0)
-    , last_status_time(0)
+AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp::config::asio_tls_client> & _ws)
+    : write_timer(_io)
+    , heartbeattime(0)
     , sequence(0)
     , connection_state(bot_status::Uninitialized)
     , ws_write(_io)
     , _io_context(_io)
+    , transfer_bytes(0)
+    , transfer_bytes_u(0)
+    , _websocket(_ws)
 {
 }
 
 AEGIS_DECL void shard::do_reset() AEGIS_NOEXCEPT
 {
-    heartbeat_ack = 0;
-    lastheartbeat = 0;
+    heartbeat_ack = lastheartbeat = std::chrono::steady_clock::time_point();
     if (_connection != nullptr)
         _connection.reset();
     if (keepalivetimer != nullptr)
@@ -37,6 +36,16 @@ AEGIS_DECL void shard::do_reset() AEGIS_NOEXCEPT
         keepalivetimer->cancel();
         keepalivetimer.reset();
     }
+    write_timer.cancel();
+    ++counters.reconnects;
+}
+
+AEGIS_DECL void shard::set_connected()
+{
+    using namespace std::chrono_literals;
+    write_timer.expires_after(600ms);
+    write_timer.async_wait(asio::bind_executor(ws_write, std::bind(&shard::process_writes, this, std::placeholders::_1)));
+    connection_state = bot_status::Online;
 }
 
 AEGIS_DECL bool shard::is_connected() const AEGIS_NOEXCEPT
@@ -44,7 +53,7 @@ AEGIS_DECL bool shard::is_connected() const AEGIS_NOEXCEPT
     if (_connection == nullptr)
         return false;
 
-    if (_connection->get_state() == websocketpp::session::state::value::open || _connection->get_state() == websocketpp::session::state::value::connecting)
+    if ((connection_state == bot_status::Connecting) || (connection_state == bot_status::Online))
         return true;
 
     return false;
@@ -52,10 +61,43 @@ AEGIS_DECL bool shard::is_connected() const AEGIS_NOEXCEPT
 
 AEGIS_DECL void shard::send(std::string const & payload, websocketpp::frame::opcode::value op)
 {
-    asio::post(asio::bind_executor(ws_write, [payload, op, this]()
+    if (!is_connected())
+        return;
+    asio::post(asio::bind_executor(ws_write, [_payload = payload, op, this]()
     {
-        _connection->send(payload, op);
+        write_queue.push({ _payload, op });
     }));
+}
+
+AEGIS_DECL void shard::send_now(std::string const & payload, websocketpp::frame::opcode::value op)
+{
+    if (!is_connected())
+        return;
+    asio::post(asio::bind_executor(ws_write, [_payload = payload, op, this]()
+    {
+        last_ws_write = std::chrono::steady_clock::now();
+        _connection->send(_payload, op);
+    }));
+}
+
+AEGIS_DECL void shard::process_writes(const asio::error_code & ec)
+{
+    if (ec == asio::error::operation_aborted)
+        return;
+    using namespace std::chrono_literals;
+    if ((connection_state == bot_status::Online
+         || connection_state == bot_status::Connecting) && !write_queue.empty())
+    {
+        last_ws_write = std::chrono::steady_clock::now();
+
+        auto msg = write_queue.front();
+        write_queue.pop();
+
+        _connection->send(std::get<0>(msg), std::get<1>(msg));
+    }
+
+    write_timer.expires_after(600ms);
+    write_timer.async_wait(asio::bind_executor(ws_write, std::bind(&shard::process_writes, this, std::placeholders::_1)));
 }
 
 }
