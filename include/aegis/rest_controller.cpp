@@ -73,14 +73,18 @@ AEGIS_DECL rest_reply rest_controller::call(const std::string & path, const std:
     try
     {
 #ifdef AEGIS_PROFILING
-        auto start_time = std::chrono::system_clock::now();
+        auto start_time = std::chrono::steady_clock::now();
 #endif
         asio::ip::basic_resolver<asio::ip::tcp>::results_type r;
-        auto it = resolver_cache.find(host.empty() ? "discordapp.com" : host);
+
+        const std::string tar_host = host.empty() ? "discordapp.com" : host;
+
+        auto it = resolver_cache.find(tar_host);
         if (it == resolver_cache.end())
         {
             asio::ip::tcp::resolver resolver(_io_context);
-            r = resolver.resolve(host.empty() ? "discordapp.com" : host, "443");
+            r = resolver.resolve(tar_host, "443");
+            resolver_cache.emplace(tar_host, r);
         }
         else
             r = it->second;
@@ -94,7 +98,7 @@ AEGIS_DECL rest_reply rest_controller::call(const std::string & path, const std:
             | asio::ssl::context::no_sslv3);
 
         asio::ssl::stream<asio::ip::tcp::socket> socket(_io_context, ctx);
-        SSL_set_tlsext_host_name(socket.native_handle(), (host.empty() ? "discordapp.com" : host.data()));
+        SSL_set_tlsext_host_name(socket.native_handle(), tar_host.data());
 
         asio::connect(socket.lowest_layer(), r);
 
@@ -104,7 +108,7 @@ AEGIS_DECL rest_reply rest_controller::call(const std::string & path, const std:
         asio::streambuf request;
         std::ostream request_stream(&request);
         request_stream << method << " " << prefix << path << " HTTP/1.0\r\n";
-        request_stream << "Host: " << (host.empty() ? "discordapp.com" : host.data()) << "\r\n";
+        request_stream << "Host: " << tar_host << "\r\n";
         request_stream << "Accept: */*\r\n";
         request_stream << "Authorization: Bot " << token << "\r\n";
         request_stream << "User-Agent: DiscordBot (https://github.com/zeroxs/aegis.cpp " << AEGIS_VERSION_LONG << ")\r\n";
