@@ -162,7 +162,7 @@ public:
 
     void VoiceServerUpdate(voice_server_update obj);
 
-    json make_info_obj(shard * _shard, core * bot);
+    const json make_info_obj(shard * _shard, core * bot);
 };
 
 }

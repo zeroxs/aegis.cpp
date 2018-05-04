@@ -74,6 +74,9 @@
 # endif // defined(_MSC_VER) && defined(__INTELLISENSE__)
         //|| (!defined(__MWERKS__) && !defined(__EDG_VERSION__)))
 #endif // defined(AEGIS_MSVC)
+#if defined(AEGIS_MSVC)
+# include <ciso646> // Needed for _HAS_CXX17.
+#endif // defined(AEGIS_MSVC)
 
 // Workaround for Microsoft Visual C++ __cplusplus value
 #if defined(AEGIS_MSVC)

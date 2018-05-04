@@ -50,7 +50,7 @@ int main(int argc, char * argv[])
                     if (obj.msg.nonce == checktime)
                     {
                         // Record time and notify original thread that ping came through
-                        ws_checktime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - checktime;
+                        ws_checktime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() - checktime;
                         cv_ping_test.notify_all();
                         return;
                     }
@@ -109,13 +109,13 @@ int main(int argc, char * argv[])
                 else if (content == "~ping")
                 {
                     std::unique_lock<std::mutex> lk(m_ping_test);
-                    checktime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                    checktime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
                     auto apireply = _channel.create_message("Pong", checktime).get();
                     if (apireply)
                     {
                         aegis::gateway::objects::message msg = json::parse(apireply.content);
-                        std::string to_edit = fmt::format("Ping reply: REST [{}ms]", (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - checktime));
+                        std::string to_edit = fmt::format("Ping reply: REST [{}ms]", (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() - checktime));
                         // edit message to show REST reply time
                         msg.edit(to_edit);
                         if (cv_ping_test.wait_for(lk, 20s) == std::cv_status::no_timeout)

@@ -40,12 +40,12 @@ Including the helper header will automatically include all other files.
 
 int main()
 {
-    aegis::core bot(spdlog::level::trace);
-    bot.i_message_create = [&](auto obj)
+    aegis::core bot;
+    bot.i_message_create = [](auto obj)
     {
         if (obj.msg.get_content() == "Hi")
             obj.msg.get_channel().create_message(fmt::format("Hello {}", obj.msg.author.username));
-    }
+    };
     bot.run();
 }
 ```
@@ -69,17 +69,16 @@ You can also add `-DBUILD_EXAMPLES=1` and it will build 3 examples within the ./
 `minimal.cpp` will build two versions, one (aegis_minimal) will be with the shared/static library. The other (aegis_headeronly_no_cache) will be header-only but the lib will store no internal cache.
 
 
-## Library Flags ##
+## Compiler Options ##
 You can pass these flags to CMake to change what it builds</br>
 `-DBUILD_EXAMPLES=1` will build the examples</br>
 `-DCMAKE_CXX_COMPILER=g++-7` will let you select the compiler used</br>
 `-DCXX_STANDARD=17` will let you select C++14 (default) or C++17
 
-You can pass these flags to your compiler to alter how the library is built (eg `-DCMAKE_CXX_FLAGS="-DAEGIS_PROFILING"`)</br>
-`-DAEGIS_DYN_LINK` used when linking the library as a shared object</br>
-`-DAEGIS_SEPARATE_COMPILATION` used when linking the library as static or separate cpp file within your project</br>
+##### Library #####
+You can pass these flags to your compiler to alter how the library is built</br>
 `-DAEGIS_DISABLE_ALL_CACHE` will disable the internal caching of most objects such as member data reducing memory usage by a significant amount</br>
-`-DAEGIS_DEBUG_HISTORY` enables the saving of 30 seconds of websocket message history. In the event of an uncaught exception, the last 5 messages on that shard are dumped to console.</br>
+`-DAEGIS_DEBUG_HISTORY` enables the saving of the last 5 messages sent on the shard's websocket. In the event of an uncaught exception, they are dumped to console.</br>
 `-DAEGIS_PROFILING` by setting up to 3 specific functions within the main class:
 ```cpp
 bot.message_end = std::bind(&AegisBot::message_end, this, std::placeholders::_1, std::placeholders::_2);
@@ -87,13 +86,18 @@ bot.js_end = std::bind(&AegisBot::js_end, this, std::placeholders::_1, std::plac
 bot.call_end = std::bind(&AegisBot::call_end, this, std::placeholders::_1);
 ```
 your callbacks will be executed:
-- when a whole message is done being processed including your own callback time but not including js decode time (message_end)
-- when a js decoding is completed (js_end)
-- when a rest call function is completed (call_end)
+- `message_end`: when a whole message is done being processed including your own callback time but not including js decode time
+- `js_end`: when a js decoding is completed
+- `call_end`: when a rest call function is completed
 
-`message_end` and `js_end` both are passed 2 parameters ``(std::chrono::system_clock::time_point, const std::string &)`` while `call_end` is only passed `(std::chrono::system_clock::time_point)`. The time_point being passed is the time the action started. The string being the websocket event name being processed.
-</br>
+</br></br>
+`message_end` and `js_end` both are passed 2 parameters ``(std::chrono::steady_clock::time_point, const std::string &)`` while `call_end` is only passed `(std::chrono::steady_clock::time_point)`. The time_point being passed is the time the action started. The string being the websocket event name being processed.
 
+##### Your project #####
+Options above, as well as:
+`-DAEGIS_DYN_LINK` used when linking the library as a shared object</br>
+`-DAEGIS_HEADER_ONLY` to make library header-only (default option)</br>
+`-DAEGIS_SEPARATE_COMPILATION` used when linking the library as static or separate cpp file within your project</br>
 
 ## CMake misc ##
 If configured with CMake, it will create a pkg-config file that may help with compiling your own project.</br>
@@ -104,11 +108,14 @@ to link to the shared object
 `g++ -std=c++14 minimal.cpp $(pkg-config --cflags --libs aegis_static)`</br>
 to link to the static object</br>
 
+You can also use this library within your own CMake project by adding `find_package(Aegis REQUIRED)` to your `CMakeLists.txt`.
+
 
 ## Config ##
 You can change basic configuration options within the `config.json` file that should be in the same directory as the executable when built.
 ```
 {
-	"token": "BOTTOKENHERE"
+	"token": "BOTTOKENHERE",
+	"force-shard-count": 10
 }
 ```
