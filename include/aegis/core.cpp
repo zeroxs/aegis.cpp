@@ -365,7 +365,55 @@ AEGIS_DECL void core::load_config()
 
     json cfg = json::parse(buffer.data());
 
-    token = cfg["token"].get<std::string>();
+    if (!cfg["token"].is_null())
+        token = cfg["token"].get<std::string>();
+    else
+        throw std::runtime_error("\"token\" not set in config.json");
+
+    if (!cfg["force-shard-count"].is_null())
+        force_shard_count = cfg["force-shard-count"].get<int16_t>();
+
+    if (!cfg["log-level"].is_null())
+    {
+        if (cfg["log-level"].is_number_integer())
+        {
+            auto l = static_cast<spdlog::level::level_enum>(cfg["log-level"].get<int32_t>());
+            std::string s;
+            switch (cfg["log-level"].get<int32_t>())
+            {
+                case 0: s = "trace"; break;
+                case 1: s = "debug"; break;
+                case 2: s = "info"; break;
+                case 3: s = "warn"; break;
+                case 4: s = "err"; break;
+                case 5: s = "critical"; break;
+                case 6: s = "off"; break;
+                default: s = "info"; l = spdlog::level::level_enum::info; break;
+            }
+            log->set_level(l);
+            log->info("Logging level set to {}", s);
+        }
+        else if (cfg["log-level"].is_string())
+        {
+            std::string s = cfg["log-level"].get<std::string>();
+            if (s == "trace")
+                log->set_level(spdlog::level::level_enum::trace);
+            else if (s == "debug")
+                log->set_level(spdlog::level::level_enum::debug);
+            else if (s == "info")
+                log->set_level(spdlog::level::level_enum::info);
+            else if (s == "warn")
+                log->set_level(spdlog::level::level_enum::warn);
+            else if (s == "err")
+                log->set_level(spdlog::level::level_enum::err);
+            else if (s == "critical")
+                log->set_level(spdlog::level::level_enum::critical);
+            else if (s == "off")
+                log->set_level(spdlog::level::level_enum::off);
+
+            log->info("Logging level set to {}", s);
+        }
+    }
 
 #if defined(REDIS)
     redis_address = cfg["redis-address"].get<std::string>();
