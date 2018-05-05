@@ -6,8 +6,6 @@ matrix:
 
 addons:
   apt:
-    packages:
-      - g++-7 g++-5
     sources: &sources
       - ubuntu-toolchain-r-test
 
@@ -15,16 +13,19 @@ matrix:
   exclude:
     - env: TRAVIS_EMPTY_JOB_WORKAROUND=true
   include:
-    # GCC 7
+    # GCC 7 C++17
     - os: linux
       compiler: gcc
-      packages: libcrypto++-dev
+      packages: libcrypto++-dev g++-7
+      env: CXX=g++-7 CXX_STANDARD=17
+    # GCC 5 C++14
+    - os: linux
+      compiler: gcc
+      packages: libcrypto++-dev g++-5
+      env: CXX=g++-5 CXX_STANDARD=14
 
 script:
-  - mkdir build
+  - mkdir -p build
   - cd build
-  - cmake -DBUILD_EXAMPLES=1 -DCMAKE_CXX_COMPILER=g++-5 -DCXX_STANDARD=14 ..
-  - make
-  - rm -rf *
-  - cmake -DBUILD_EXAMPLES=1 -DCMAKE_CXX_COMPILER=g++-7 -DCXX_STANDARD=17 ..
+  - cmake -DBUILD_EXAMPLES=1 -DCMAKE_CXX_COMPILER=$CXX -DCXX_STANDARD=$CXX_STANDARD ..
   - make
