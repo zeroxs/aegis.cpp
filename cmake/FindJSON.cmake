@@ -1,16 +1,16 @@
 find_package(PkgConfig)
 pkg_check_modules(PC_JSON QUIET JSON)
 
-#set(JSON_LIB_POSSIBLE_PATHS ${CMAKE_SOURCE_DIR}/lib/json/single_include ${CMAKE_SOURCE_DIR}/lib/json/include)
+find_path(JSON_INCLUDE_DIR
+    NAMES json.hpp
+    PATHS ${PC_JSON_INCLUDE_DIRS}
+    PATH_SUFFIXES nlohmann
+)
 
-#find_path(JSON_INCLUDE_DIR
-#    NAMES json.hpp
-#    PATHS ${PC_JSON_INCLUDE_DIRS}
-#    PATH_SUFFIXES nlohmann
-#)
-
-set(JSON_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/json/single_include)
-set(JSON_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/lib/json/single_include)
+if (JSON_INCLUDE_DIR STREQUAL "JSON_INCLUDE_DIR-NOTFOUND")
+  message(WARNING "Using git-module path for JSON")
+  set(JSON_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/json/single_include)
+endif ()
 
 file(READ ${JSON_INCLUDE_DIR}/nlohmann/json.hpp json_hpp)
 if (NOT json_hpp MATCHES "version ([0-9]+)\\.([0-9]+)\\.([0-9]+)")

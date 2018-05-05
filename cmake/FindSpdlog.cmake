@@ -1,16 +1,16 @@
 find_package(PkgConfig)
 pkg_check_modules(PC_Spdlog QUIET Spdlog)
 
-#set(Spdlog_LIB_POSSIBLE_PATHS ${CMAKE_SOURCE_DIR}/lib/spdlog/include)
+find_path(Spdlog_INCLUDE_DIR
+    NAMES spdlog.h
+    PATHS ${PC_Spdlog_INCLUDE_DIRS}
+    PATH_SUFFIXES spdlog
+)
 
-#find_path(Spdlog_INCLUDE_DIR
-#    NAMES spdlog.h
-#    PATHS ${PC_Spdlog_INCLUDE_DIRS}
-#    PATH_SUFFIXES spdlog
-#)
-
-set(Spdlog_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/spdlog/include)
-set(Spdlog_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/lib/spdlog/include)
+if (Spdlog_INCLUDE_DIR STREQUAL "Spdlog_INCLUDE_DIR-NOTFOUND")
+  message(WARNING "Using git-module path for Spdlog")
+  set(Spdlog_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/spdlog/include)
+endif ()
 
 file(READ ${Spdlog_INCLUDE_DIR}/spdlog/common.h common_h)
 if (NOT common_h MATCHES "SPDLOG_VERSION \"([0-9]+)\\.([0-9]+)\\.([0-9]+)-?(.*)\"")

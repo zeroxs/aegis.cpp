@@ -1,17 +1,16 @@
 find_package(PkgConfig)
 pkg_check_modules(PC_ZStr QUIET ZStr)
 
-#set(ZStr_LIB_POSSIBLE_PATHS ${CMAKE_SOURCE_DIR}/lib/zstr)
+find_path(ZStr_INCLUDE_DIR
+    NAMES zstr.hpp
+    PATHS ${PC_ZStr_INCLUDE_DIRS}
+    PATH_SUFFIXES zstr
+)
 
-#find_path(ZStr_INCLUDE_DIR
-#    NAMES zstr.hpp
-#    PATHS ${PC_ZStr_INCLUDE_DIRS}
-#    PATH_SUFFIXES src
-#)
-
-
-set(ZStr_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/zstr/src)
-set(ZStr_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/lib/zstr/src)
+if (ZStr_INCLUDE_DIR STREQUAL "ZStr_INCLUDE_DIR-NOTFOUND")
+  message(WARNING "Using git-module path for ZStr")
+  set(ZStr_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/zstr/src)
+endif ()
 
 mark_as_advanced(ZStr_FOUND ZStr_INCLUDE_DIR)
 

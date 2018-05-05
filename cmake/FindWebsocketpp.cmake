@@ -1,18 +1,22 @@
 find_package(PkgConfig)
 pkg_check_modules(PC_Websocketpp QUIET Websocketpp)
 
-#set(Websocketpp_LIB_POSSIBLE_PATHS ${CMAKE_SOURCE_DIR}/lib/websocketpp)
+find_path(Websocketpp_INCLUDE_DIR
+    NAMES endpoint_base.hpp
+    PATHS ${PC_Websocketpp_INCLUDE_DIRS}
+    PATH_SUFFIXES websocketpp
+)
 
-#find_path(Websocketpp_INCLUDE_DIR
-#    NAMES endpoint_base.hpp
-#    PATHS ${PC_Websocketpp_INCLUDE_DIRS}
-#    PATH_SUFFIXES websocketpp
-#)
-
-set(Websocketpp_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/websocketpp)
-set(Websocketpp_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/lib/websocketpp)
+if (Websocketpp_INCLUDE_DIR STREQUAL "Websocketpp_INCLUDE_DIR-NOTFOUND")
+  message(WARNING "Using git-module path for Websocketpp")
+  set(Websocketpp_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/websocketpp)
+endif ()
 
 file(READ ${Websocketpp_INCLUDE_DIR}/websocketpp/version.hpp version_hpp)
+
+if (NOT version_hpp MATCHES "FOR_AEGIS")
+  message(FATAL_ERROR "Using official Websocket++ source. Not compatible with libaegis due to missing features and Asio deprecation")
+endif ()
 
 if (NOT version_hpp MATCHES "static int const major_version = ([0-9]+);")
   message(FATAL_ERROR "Cannot get Websocketpp version from version.hpp.")
