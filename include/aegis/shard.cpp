@@ -65,7 +65,7 @@ AEGIS_DECL void shard::send(std::string const & payload, websocketpp::frame::opc
         return;
     asio::post(asio::bind_executor(ws_write, [_payload = payload, op, this]()
     {
-        write_queue.push({ _payload, op });
+        write_queue.push(std::make_tuple(_payload, op));
     }));
 }
 
