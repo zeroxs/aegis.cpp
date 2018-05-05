@@ -27,5 +27,5 @@ matrix:
 script:
   - mkdir -p build
   - cd build
-  - cmake -DBUILD_EXAMPLES=1 -DCMAKE_CXX_COMPILER=$CXX -DCXX_STANDARD=$CXX_STANDARD ..
+  - cmake -DBUILD_EXAMPLES=1 -DCMAKE_CXX_COMPILER=${CXX} -DCXX_STANDARD=${CXX_STANDARD} ..
   - make
