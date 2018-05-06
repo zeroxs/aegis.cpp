@@ -77,13 +77,13 @@ target_link_libraries(aegis PUBLIC ssl crypto z dl Threads::Threads)
 target_link_libraries(aegis_static INTERFACE ssl crypto z dl Threads::Threads)
 
 set(AEGIS_PACKAGE_INCLUDE_DIRS
-    ${Asio_INCLUDE_DIR}
-    ${ZStr_INCLUDE_DIR}
-    ${JSON_INCLUDE_DIR}
-    ${Spdlog_INCLUDE_DIR}
-    ${Websocketpp_INCLUDE_DIR}
-    ${OpenSSL_INCLUDE_DIR}
-    ${ZLIB_INCLUDE_DIR}
+    $<BUILD_INTERFACE:${Asio_INCLUDE_DIR}>
+    $<BUILD_INTERFACE:${ZStr_INCLUDE_DIR}>
+    $<BUILD_INTERFACE:${JSON_INCLUDE_DIR}>
+    $<BUILD_INTERFACE:${Spdlog_INCLUDE_DIR}>
+    $<BUILD_INTERFACE:${Websocketpp_INCLUDE_DIR}>
+    $<BUILD_INTERFACE:${OpenSSL_INCLUDE_DIR}>
+    $<BUILD_INTERFACE:${ZLIB_INCLUDE_DIR}>
 )
 target_include_directories(aegis
   PUBLIC
