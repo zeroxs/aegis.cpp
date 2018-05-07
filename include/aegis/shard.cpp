@@ -23,6 +23,7 @@ AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp:
     , transfer_bytes(0)
     , transfer_bytes_u(0)
     , _websocket(_ws)
+    , zlib_ctx(ws_buffer)
 {
 }
 

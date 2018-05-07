@@ -526,7 +526,7 @@ AEGIS_DECL void core::setup_gateway(std::error_code & ec)
     }
 
     ws_gateway = ret["url"].get<std::string>();
-    gateway_url = ws_gateway + "/?encoding=json&v=6";
+    gateway_url = ws_gateway + "/?compress=zlib-stream&encoding=json&v=6";
 
     websocket_o.clear_access_channels(websocketpp::log::alevel::all);
 
@@ -718,7 +718,7 @@ AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const int32_t ms, 
 
 AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr msg, shard * _shard)
 {
-    std::string payload = msg->get_payload();
+    std::string payload;
 
     _shard->transfer_bytes += msg->get_header().size() + msg->get_payload().size();
     _shard->transfer_bytes_u += msg->get_header().size();
@@ -730,18 +730,24 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
     try
     {
         //zlib detection and decoding
-        if (payload[0] == (char)0x78 && (payload[1] == (char)0x01 || payload[1] == (char)0x9C || payload[1] == (char)0xDA))
+        _shard->ws_buffer << msg->get_payload();
+
+        const std::string & pld = msg->get_payload();
+        if (std::strcmp((pld.data() + pld.size() - 4), "\x00\x00\xff\xff"))
         {
-            std::stringstream origin(msg->get_payload());
-            zstr::istream is(origin);
-            std::stringstream ss;
-            std::string s;
-            while (getline(is, s))
-                ss << s;
-            ss << '\0';
-            payload = ss.str();
+            log->trace("Shard#{}: zlib-stream incomplete", _shard->shardid);
+            return;
         }
 
+        std::stringstream ss;
+        std::string s;
+        while (getline(_shard->zlib_ctx, s))
+            ss << s;
+        ss << '\0';
+        _shard->zlib_ctx.seekg(0, std::ios::beg);
+        _shard->zlib_ctx.clear();
+        payload = ss.str();
+        _shard->ws_buffer.str("");
         _shard->transfer_bytes_u += payload.size();
 
        const json result = json::parse(payload);

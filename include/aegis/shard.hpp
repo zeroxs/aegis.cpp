@@ -22,6 +22,7 @@
 #include <websocketpp/client.hpp>
 #include "aegis/pop.hpp"
 #include <spdlog/fmt/fmt.h>
+#include <zstr.hpp>
 
 namespace aegis
 {
@@ -197,6 +198,9 @@ private:
     uint64_t transfer_bytes_u;
 
     websocketpp::client<websocketpp::config::asio_tls_client> & _websocket;
+
+    std::stringstream ws_buffer;
+    zstr::istream zlib_ctx;
 };
 
 }
