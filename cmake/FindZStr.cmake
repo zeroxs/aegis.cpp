@@ -10,6 +10,8 @@ find_path(ZStr_INCLUDE_DIR
 if (ZStr_INCLUDE_DIR STREQUAL "ZStr_INCLUDE_DIR-NOTFOUND")
   message(WARNING "Using git-module path for ZStr")
   set(ZStr_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/zstr/src)
+else ()
+  get_filename_component(ZStr_INCLUDE_DIR ${ZStr_INCLUDE_DIR} DIRECTORY)
 endif ()
 
 mark_as_advanced(ZStr_FOUND ZStr_INCLUDE_DIR)

@@ -10,6 +10,8 @@ find_path(Websocketpp_INCLUDE_DIR
 if (Websocketpp_INCLUDE_DIR STREQUAL "Websocketpp_INCLUDE_DIR-NOTFOUND")
   message(WARNING "Using git-module path for Websocketpp")
   set(Websocketpp_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/websocketpp)
+else ()
+  get_filename_component(Websocketpp_INCLUDE_DIR ${Websocketpp_INCLUDE_DIR} DIRECTORY)
 endif ()
 
 file(READ ${Websocketpp_INCLUDE_DIR}/websocketpp/version.hpp version_hpp)
