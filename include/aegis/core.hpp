@@ -687,7 +687,7 @@ private:
 
     std::shared_ptr<asio::steady_timer> ws_timer;
     std::shared_ptr<asio::steady_timer> ws_connect_timer;
-    std::map<std::string, std::function<void(const json &, shard *)>> ws_handlers;
+    std::unordered_map<std::string, std::function<void(const json &, shard *)>> ws_handlers;
     spdlog::level::level_enum _loglevel;
     std::chrono::time_point<std::chrono::steady_clock> _last_ready;
     std::chrono::time_point<std::chrono::steady_clock> _connect_time;

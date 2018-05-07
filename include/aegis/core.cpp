@@ -858,7 +858,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
                         _shard->sequence = 0;
                         log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->shardid);
                         _shard->session_id.clear();
-                        std::this_thread::sleep_for(std::chrono::seconds(6));
+                        std::this_thread::sleep_for(std::chrono::milliseconds((rand() % 4000) + 1000));
                         json obj = {
                             { "op", 2 },
                             {
@@ -1056,9 +1056,13 @@ AEGIS_DECL void core::send_all_shards(const json & msg) AEGIS_NOEXCEPT
 
 AEGIS_DECL void core::on_close(websocketpp::connection_hdl hdl, shard * _shard)
 {
-    log->error("Shard#{} disconnected.", _shard->get_id());
     if (_status == Shutdown)
         return;
+    log->error("Shard#{}: disconnected. lastheartbeat({}) lastwsevent({}) lastheartbeatack({})",
+               _shard->get_id(),
+               std::chrono::duration_cast<std::chrono::milliseconds>(_shard->lastheartbeat.time_since_epoch()).count(),
+               std::chrono::duration_cast<std::chrono::milliseconds>(_shard->lastwsevent.time_since_epoch()).count(),
+               std::chrono::duration_cast<std::chrono::milliseconds>(_shard->heartbeat_ack.time_since_epoch()).count());
     reset_shard(_shard);
     //TODO debug only auto reconnect 50 times per session
     if (_shard->counters.reconnects < 50)
@@ -1101,7 +1105,10 @@ AEGIS_DECL void core::ws_status(const asio::error_code & ec)
                         log->error("Shard#{}: Websocket had no events in last 90s - reconnecting", _shard->shardid);
                         debug_trace(_shard.get());
                         if (_shard->_connection->get_state() < websocketpp::session::state::closing)
+                        {
                             websocket_o.close(_shard->_connection, 1001, "");
+                            _shard->connection_state = bot_status::Reconnecting;
+                        }
                         else
                             reset_shard(_shard.get());
                     }
@@ -1188,7 +1195,7 @@ AEGIS_DECL void core::debug_trace(shard * _shard, bool extended)
     int i = 0;
 
     for (auto & msg : _shard->debug_messages)
-        w << std::get<1>(msg) << '\n';
+        w << std::get<0>(msg) << " - " << std::get<1>(msg) << '\n';
 
     /// in most cases the entire shard list shouldn't be dumped
     if (extended)
