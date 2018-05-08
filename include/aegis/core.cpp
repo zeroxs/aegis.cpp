@@ -16,7 +16,7 @@
 #include "aegis/member.hpp"
 
 #include "aegis/push.hpp"
-#include <zstr.hpp>
+#include "aegis/zstr/zstr.hpp"
 #include "aegis/pop.hpp"
 
 #include <nlohmann/json.hpp>

@@ -20,7 +20,6 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 find_package(Asio 1.12.0 REQUIRED MODULE)
-find_package(ZStr REQUIRED MODULE)
 find_package(JSON 3.1.2 REQUIRED MODULE)
 find_package(Spdlog 0.16.4 REQUIRED MODULE)
 find_package(Websocketpp 0.7.0 REQUIRED MODULE)
@@ -78,7 +77,6 @@ target_link_libraries(aegis_static INTERFACE ssl crypto z dl Threads::Threads)
 
 set(AEGIS_PACKAGE_INCLUDE_DIRS
     $<BUILD_INTERFACE:${Asio_INCLUDE_DIR}>
-    $<BUILD_INTERFACE:${ZStr_INCLUDE_DIR}>
     $<BUILD_INTERFACE:${JSON_INCLUDE_DIR}>
     $<BUILD_INTERFACE:${Spdlog_INCLUDE_DIR}>
     $<BUILD_INTERFACE:${Websocketpp_INCLUDE_DIR}>
@@ -149,7 +147,6 @@ install(FILES
     ${CMAKE_CURRENT_LIST_DIR}/cmake/FindJSON.cmake
     ${CMAKE_CURRENT_LIST_DIR}/cmake/FindSpdlog.cmake
     ${CMAKE_CURRENT_LIST_DIR}/cmake/FindWebsocketpp.cmake
-    ${CMAKE_CURRENT_LIST_DIR}/cmake/FindZStr.cmake
     DESTINATION ${INSTALL_CONFIGDIR}
 )
 
@@ -173,10 +170,10 @@ SET(PKG_CONFIG_STATIC_LIBS
     "-L\${libdir} -l:libaegis.a -lssl -lcrypto -lpthread -lz -ldl"
 )
 SET(PKG_CONFIG_CFLAGS
-    "-I/usr/include -I\${includedir} -I${Asio_INCLUDE_DIR} -I${ZStr_INCLUDE_DIR} -I${JSON_INCLUDE_DIR} -I${Spdlog_INCLUDE_DIR} -I${Websocketpp_INCLUDE_DIR} -I${ZLIB_INCLUDE_DIR} -DAEGIS_DYN_LINK"
+    "-I/usr/include -I\${includedir} -I${Asio_INCLUDE_DIR} -I${JSON_INCLUDE_DIR} -I${Spdlog_INCLUDE_DIR} -I${Websocketpp_INCLUDE_DIR} -I${ZLIB_INCLUDE_DIR} -DAEGIS_DYN_LINK"
 )
 SET(PKG_CONFIG_STATIC_CFLAGS
-    "-I/usr/include -I\${includedir} -I${Asio_INCLUDE_DIR} -I${ZStr_INCLUDE_DIR} -I${JSON_INCLUDE_DIR} -I${Spdlog_INCLUDE_DIR} -I${Websocketpp_INCLUDE_DIR} -I${ZLIB_INCLUDE_DIR} -DAEGIS_SEPARATE_COMPILATION"
+    "-I/usr/include -I\${includedir} -I${Asio_INCLUDE_DIR} -I${JSON_INCLUDE_DIR} -I${Spdlog_INCLUDE_DIR} -I${Websocketpp_INCLUDE_DIR} -I${ZLIB_INCLUDE_DIR} -DAEGIS_SEPARATE_COMPILATION"
 )
    
 CONFIGURE_FILE(

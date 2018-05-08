@@ -22,7 +22,7 @@
 #include <websocketpp/client.hpp>
 #include "aegis/pop.hpp"
 #include <spdlog/fmt/fmt.h>
-#include <zstr.hpp>
+#include "aegis/zstr/zstr.hpp"
 
 namespace aegis
 {
