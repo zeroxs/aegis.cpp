@@ -144,6 +144,7 @@ public:
     /// Close websocket connection
     AEGIS_DECL void close(int32_t code = 1001, std::string reason = "") AEGIS_NOEXCEPT
     {
+        connection_state = bot_status::Reconnecting;
         if (_connection != nullptr)
         {
             _connection->close(code, reason);
@@ -200,7 +201,7 @@ private:
     websocketpp::client<websocketpp::config::asio_tls_client> & _websocket;
 
     std::stringstream ws_buffer;
-    zstr::istream zlib_ctx;
+    std::unique_ptr<zstr::istream> zlib_ctx;
 };
 
 }

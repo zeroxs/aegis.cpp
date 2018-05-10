@@ -23,7 +23,6 @@ AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp:
     , transfer_bytes(0)
     , transfer_bytes_u(0)
     , _websocket(_ws)
-    , zlib_ctx(ws_buffer)
 {
 }
 
@@ -38,12 +37,16 @@ AEGIS_DECL void shard::do_reset() AEGIS_NOEXCEPT
         keepalivetimer.reset();
     }
     write_timer.cancel();
+    ws_buffer.str("");
+    zlib_ctx.reset();
     ++counters.reconnects;
 }
 
 AEGIS_DECL void shard::set_connected()
 {
     using namespace std::chrono_literals;
+    ws_buffer.str("");
+    zlib_ctx = std::make_unique<zstr::istream>(ws_buffer);
     write_timer.expires_after(600ms);
     write_timer.async_wait(asio::bind_executor(ws_write, std::bind(&shard::process_writes, this, std::placeholders::_1)));
     connection_state = bot_status::Online;

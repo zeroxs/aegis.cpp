@@ -730,6 +730,8 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
     try
     {
         //zlib detection and decoding
+        _shard->ws_buffer.clear();
+        _shard->ws_buffer.str("");
         _shard->ws_buffer << msg->get_payload();
 
         const std::string & pld = msg->get_payload();
@@ -739,16 +741,23 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
             return;
         }
 
-        std::stringstream ss;
-        std::string s;
-        while (getline(_shard->zlib_ctx, s))
-            ss << s;
-        ss << '\0';
-        _shard->zlib_ctx.seekg(0, std::ios::beg);
-        _shard->zlib_ctx.clear();
-        payload = ss.str();
-        _shard->ws_buffer.str("");
-        _shard->transfer_bytes_u += payload.size();
+        try
+        {
+            std::stringstream ss;
+            std::string s;
+            _shard->zlib_ctx->clear();
+            while (getline(*_shard->zlib_ctx, s))
+                ss << s;
+            ss << '\0';
+            payload = ss.str();
+            _shard->transfer_bytes_u += payload.size();
+        }
+        catch (std::exception & e)
+        {
+            log->error("Shard#{}: zlib failure. Context invalid.", _shard->shardid);
+            _shard->close();
+            return;
+        }
 
        const json result = json::parse(payload);
 
@@ -873,7 +882,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
                                         }
                                     },
                                     { "shard", json::array({ _shard->shardid, shard_max_count }) },
-                                    { "compress", true },
+                                    { "compress", false },
                                     { "large_threshhold", 250 },
                                     { "presence",
                                         {
@@ -997,7 +1006,7 @@ AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shard * _shard
                             }
                         },
                         { "shard", json::array({ _shard->shardid, shard_max_count }) },
-                        { "compress", true },
+                        { "compress", false },
                         { "large_threshhold", 250 },
                         { "presence",
                             {
