@@ -308,6 +308,9 @@ AEGIS_DECL void core::run(std::function<void(void)> f)
 
 AEGIS_DECL void core::_init()
 {
+    load_config();
+
+
     // DEBUG CODE ONLY
     std::vector<spdlog::sink_ptr> sinks;
 #ifdef _WIN32
@@ -322,6 +325,14 @@ AEGIS_DECL void core::_init()
     auto redis_sink = std::make_shared<redis_sink>(io_service(), *redis);
     sinks.push_back(redis_sink);
 #endif
+
+    if (file_logging)
+    {
+        // 5MB max filesize and 10 max log files
+        auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt>("log/aegis.log", 1024 * 1024 * 5, 10);
+        sinks.push_back(rotating);
+    }
+
     // Add more sinks here, if needed.
     log = std::make_shared<spdlog::logger>("aegis", begin(sinks), end(sinks));
     spdlog::register_logger(log);
@@ -329,7 +340,6 @@ AEGIS_DECL void core::_init()
     log->set_pattern("%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v");
     log->set_level(_loglevel);
 
-    load_config();
 
 #ifdef REDIS
     std::string errmsg;
@@ -390,30 +400,30 @@ AEGIS_DECL void core::load_config()
                 case 6: s = "off"; break;
                 default: s = "info"; l = spdlog::level::level_enum::info; break;
             }
-            log->set_level(l);
-            log->info("Logging level set to {}", s);
+            _loglevel = l;
         }
         else if (cfg["log-level"].is_string())
         {
             std::string s = cfg["log-level"].get<std::string>();
             if (s == "trace")
-                log->set_level(spdlog::level::level_enum::trace);
+                _loglevel = spdlog::level::level_enum::trace;
             else if (s == "debug")
-                log->set_level(spdlog::level::level_enum::debug);
+                _loglevel = spdlog::level::level_enum::debug;
             else if (s == "info")
-                log->set_level(spdlog::level::level_enum::info);
+                _loglevel = spdlog::level::level_enum::info;
             else if (s == "warn")
-                log->set_level(spdlog::level::level_enum::warn);
+                _loglevel = spdlog::level::level_enum::warn;
             else if (s == "err")
-                log->set_level(spdlog::level::level_enum::err);
+                _loglevel = spdlog::level::level_enum::err;
             else if (s == "critical")
-                log->set_level(spdlog::level::level_enum::critical);
+                _loglevel = spdlog::level::level_enum::critical;
             else if (s == "off")
-                log->set_level(spdlog::level::level_enum::off);
-
-            log->info("Logging level set to {}", s);
+                _loglevel = spdlog::level::level_enum::off;
         }
     }
+
+    if (!cfg["file-logging"].is_null())
+        file_logging = cfg["file-logging"].get<bool>();
 
 #if defined(REDIS)
     redis_address = cfg["redis-address"].get<std::string>();

@@ -688,7 +688,7 @@ private:
     std::shared_ptr<asio::steady_timer> ws_timer;
     std::shared_ptr<asio::steady_timer> ws_connect_timer;
     std::unordered_map<std::string, std::function<void(const json &, shard *)>> ws_handlers;
-    spdlog::level::level_enum _loglevel;
+    spdlog::level::level_enum _loglevel = spdlog::level::level_enum::info;
     std::chrono::time_point<std::chrono::steady_clock> _last_ready;
     std::chrono::time_point<std::chrono::steady_clock> _connect_time;
     std::deque<shard*> _shards_to_connect;
@@ -702,6 +702,7 @@ private:
     std::string redis_address;
     uint16_t redis_port;
 #endif
+    bool file_logging = false;
 };
 
 }
