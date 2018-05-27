@@ -7,6 +7,7 @@
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
 
+#include "aegis/config.hpp"
 #include "aegis/core.hpp"
 #include <string>
 #include <asio/streambuf.hpp>
@@ -866,6 +867,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
                     {
                         //message id exists but not found
                     }
+                    return;
                 }
         
                 //no message. check opcodes
@@ -914,6 +916,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
                         if (_shard->_connection != nullptr)
                         {
                             _shard->send(obj.dump());
+                            return;
                         }
                         else
                         {
@@ -922,13 +925,15 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
                             websocket_o.close(_shard->_connection, 1001, "");
                             reset_shard(_shard);
                             _shard->session_id.clear();
+                            return;
                         }
                     }
                     else
                     {
         
                     }
-                    debug_trace(_shard);
+                    //debug_trace(_shard);
+                    return;
                 }
                 if (result["op"] == 1)
                 {
@@ -938,6 +943,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
                     obj["op"] = 1;
 
                     _shard->send(obj.dump());
+                    return;
                 }
                 if (result["op"] == 10)
                 {
@@ -947,13 +953,18 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
                         std::bind(&core::keep_alive, this, std::placeholders::_1, heartbeat, _shard)
                     );
                     _shard->heartbeattime = heartbeat;
+                    return;
                 }
                 if (result["op"] == 11)
                 {
                     //heartbeat ACK
                     _shard->lastheartbeat = _shard->heartbeat_ack = std::chrono::steady_clock::now();
+                    return;
                 }
         
+                log->error("unhandled op({})", result["op"].get<int>());
+                debug_trace(_shard);
+                return;
             }
         }
     }
@@ -969,7 +980,6 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, message_ptr ms
         log->error("Failed to process object: Unknown error");
         debug_trace(_shard);
     }
-
 }
 
 AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shard * _shard)
