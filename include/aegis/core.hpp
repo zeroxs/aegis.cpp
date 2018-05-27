@@ -593,13 +593,13 @@ public:
     /**
     * @param msg JSON encoded message to be sent
     */
-    AEGIS_DECL void send_all_shards(std::string & msg) AEGIS_NOEXCEPT;
+    AEGIS_DECL void send_all_shards(const std::string & msg);
 
     /// Send a websocket message to a single shard
     /**
     * @param msg JSON encoded message to be sent
     */
-    AEGIS_DECL void send_all_shards(const json & msg) AEGIS_NOEXCEPT;
+    AEGIS_DECL void send_all_shards(const json & msg);
 
 private:
 

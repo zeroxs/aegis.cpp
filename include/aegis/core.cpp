@@ -1061,13 +1061,13 @@ AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shard * _shard
     }
 }
 
-AEGIS_DECL void core::send_all_shards(std::string & msg) AEGIS_NOEXCEPT
+AEGIS_DECL void core::send_all_shards(const std::string & msg)
 {
     for (auto & s : shards)
         s->send(msg);
 }
 
-AEGIS_DECL void core::send_all_shards(const json & msg) AEGIS_NOEXCEPT
+AEGIS_DECL void core::send_all_shards(const json & msg)
 {
     for (auto & s : shards)
         s->send(msg.dump());
