@@ -20,17 +20,6 @@
 #define ASIO_STANDALONE
 #endif
 
-#if !defined(_WEBSOCKETPP_CPP11_STL_)
-#define _WEBSOCKETPP_CPP11_STL_
-#endif
-
-#if !defined(BOOST_DATE_TIME_NO_LIB) 
-#define BOOST_DATE_TIME_NO_LIB 
-#endif 
-#if !defined(BOOST_REGEX_NO_LIB) 
-#define BOOST_REGEX_NO_LIB 
-#endif 
-
 // Shamelessly make use of ASIO's config-style
 
 // Default to a header-only implementation. The user must specifically request
