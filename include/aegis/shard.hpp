@@ -157,6 +157,21 @@ public:
         _websocket.connect(_connection);
     }
 
+    /// Return shard uptime as {days hours minutes seconds}
+    /**
+    * @returns std::string of `##h ##m ##s` formatted time
+    */
+    AEGIS_DECL std::string uptime_str() const AEGIS_NOEXCEPT;
+
+    /// Return shard uptime as {days hours minutes seconds}
+    /**
+    * @returns Time in milliseconds since shard received ready
+    */
+    AEGIS_DECL int64_t uptime() const AEGIS_NOEXCEPT
+    {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _ready_time).count();
+    }
+
 private:
     friend class core;
 
