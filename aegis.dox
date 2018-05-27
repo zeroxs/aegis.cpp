@@ -24,29 +24,28 @@ int main(int argc, char * argv[])
         // Create bot object with a minimum log level of trace
         aegis::core bot(spdlog::level::trace);
 
-		bot.log->trace("Bot object created");
+        bot.log->trace("Bot object created");
 
-		// With min log level set to tracce and wsdbg (websocket debug) set to true
-		// the bot will dump all websocket messages to console
-		bot.wsdbg = true;
+        // With min log level set to trace and wsdbg (websocket debug) set to true
+        // the bot will dump all websocket messages to console
+        bot.wsdbg = true;
  
         // These callbacks are what are called when websocket events occur
-        aegis::callbacks cbs;
-        cbs.i_message_create = [&](aegis::gateway::events::message_create obj)
+        bot.i_message_create = [&](aegis::gateway::events::message_create obj)
         {
-		    std::string content{ obj.msg.get_content() };
+            std::string content{ obj.msg.get_content() };
             
-			auto & _channel = obj.msg.get_channel();
+            auto & _channel = obj.msg.get_channel();
 
             // Simple Hi response
             if (content == "~Hi")
             {
                 _channel.create_message("Hello back");
             }
-			else if (content == "~React")
-			{
-				// use an emoji your bot has access to here
-				auto response = obj.msg.create_reaction("success:429554838083207169").get();
+            else if (content == "~React")
+            {
+                // use an emoji your bot has access to here
+                auto response = obj.msg.create_reaction("success:429554838083207169").get();
                 if (response)
                 {
                     // reaction was a success. maybe chain another?
@@ -62,14 +61,11 @@ int main(int argc, char * argv[])
                             _channel.create_message("React failed");
                     });
                 }
-			}
-		}
-
-		// Assign callbacks
-        bot._callbacks = cbs;
+            }
+        }
 
         // start the bot with 3 async threads. the function passed is executed after
-		// the internal logger is set up and the websocket gateway information is collected.
+        // the internal logger is set up and the websocket gateway information is collected.
         bot.run(3, [&]
         {
             bot.log->info("Gateway says we need to use {} shards", bot.shard_max_count);

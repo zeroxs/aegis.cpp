@@ -102,7 +102,7 @@ Options above, as well as:
 ## CMake misc ##
 If configured with CMake, it will create a pkg-config file that may help with compiling your own project.</br>
 It can be used as such:</br>
-`g++ -std=c++14 myfile.cpp $(pkg-config --cflags --libs aegis)</br>
+`g++ -std=c++14 myfile.cpp $(pkg-config --cflags --libs aegis)`</br>
 to link to the shared object
 
 `g++ -std=c++14 minimal.cpp $(pkg-config --cflags --libs aegis_static)`</br>
