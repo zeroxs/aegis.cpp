@@ -1283,9 +1283,9 @@ AEGIS_DECL void core::ws_presence_update(const json & result, shard * _shard)
 #endif
 
     gateway::events::presence_update obj;
+    obj._user = result["d"]["user"];
     obj.bot = this;
     obj._shard = _shard;
-    obj._user = result["d"]["user"];
 
     if (i_presence_update)
         i_presence_update(obj);
@@ -1392,8 +1392,8 @@ AEGIS_DECL void core::ws_guild_create(const json & result, shard * _shard)
 #endif
 
     gateway::events::guild_create obj;
-    obj.bot = this;
     obj._guild = result["d"];
+    obj.bot = this;
     obj._shard = _shard;
 
     if (i_guild_create)
@@ -1416,9 +1416,9 @@ AEGIS_DECL void core::ws_guild_update(const json & result, shard * _shard)
     _guild->load(result["d"], _shard);
 
     gateway::events::guild_update obj;
+    obj._guild = result["d"];
     obj.bot = this;
     obj._shard = _shard;
-    obj._guild = result["d"];
 
     if (i_guild_update)
         i_guild_update(obj);
@@ -1517,9 +1517,9 @@ AEGIS_DECL void core::ws_user_update(const json & result, shard * _shard)
     gateway::events::user_update obj;
 #endif
 
+    obj._user = result["d"];
     obj.bot = this;
     obj._shard = _shard;
-    obj._user = result["d"];
 
     if (i_user_update)
         i_user_update(obj);
@@ -1528,9 +1528,9 @@ AEGIS_DECL void core::ws_user_update(const json & result, shard * _shard)
 AEGIS_DECL void core::ws_voice_state_update(const json & result, shard * _shard)
 {
     gateway::events::voice_state_update obj;
+    obj = result["d"];
     obj.bot = this;
     obj._shard = _shard;
-    obj = result["d"];
     
     if (i_voice_state_update)
         i_voice_state_update(obj);
@@ -1551,9 +1551,9 @@ AEGIS_DECL void core::ws_resumed(const json & result, shard * _shard)
     );
 
     gateway::events::resumed obj;
+    obj = result["d"];
     obj.bot = this;
     obj._shard = _shard;
-    obj = result["d"];
 
     if (i_resumed)
         i_resumed(obj);
