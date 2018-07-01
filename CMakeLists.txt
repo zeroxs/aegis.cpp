@@ -40,9 +40,9 @@ include/aegis/channel.cpp
 include/aegis/core.cpp
 include/aegis/guild.cpp
 include/aegis/member.cpp
-include/aegis/ratelimit.cpp
-include/aegis/rest_controller.cpp
-include/aegis/shard.cpp)
+include/aegis/rest/rest_controller.cpp
+include/aegis/shards/shard.cpp
+include/aegis/shards/shard_mgr.cpp)
 
 if (AEGIS_DEBUG_HISTORY)
 set(AEGIS_FLAGS ${AEGIS_FLAGS} AEGIS_DEBUG_HISTORY)
@@ -61,13 +61,15 @@ add_library(aegis_static STATIC ${AEGIS_FILES})
 add_library(Aegis::aegis ALIAS aegis)
 
 set_target_properties(aegis PROPERTIES POSITION_INDEPENDENT_CODE 1)
-set_target_properties(aegis PROPERTIES SOVERSION 1)
+set_target_properties(aegis PROPERTIES SOVERSION 2)
 set_target_properties(aegis PROPERTIES CXX_STANDARD 14)
 set_target_properties(aegis PROPERTIES CXX_STANDARD_REQUIRED ON)
+set_target_properties(aegis PROPERTIES LINKER_LANGUAGE CXX)
 
 set_target_properties(aegis_static PROPERTIES OUTPUT_NAME "aegis")
 set_target_properties(aegis_static PROPERTIES CXX_STANDARD 14)
 set_target_properties(aegis_static PROPERTIES CXX_STANDARD_REQUIRED ON)
+set_target_properties(aegis_static PROPERTIES LINKER_LANGUAGE CXX)
 
 target_compile_definitions(aegis PUBLIC -DAEGIS_DYN_LINK ${AEGIS_FLAGS})
 target_compile_definitions(aegis_static PUBLIC -DAEGIS_SEPARATE_COMPILATION ${AEGIS_FLAGS})

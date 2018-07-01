@@ -11,7 +11,7 @@
 
 #include "aegis/config.hpp"
 #include <future>
-#include "aegis/ratelimit.hpp"
+#include "aegis/ratelimit/ratelimit.hpp"
 #include "aegis/permission.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/objects/permission_overwrite.hpp"
@@ -49,15 +49,7 @@ public:
      * @param ratelimit Reference to bucket factory that manages ratelimits for this channel
      * @param emoji Reference to bucket factory that manages ratelimits for emoji messages
      */
-    explicit channel(snowflake channel_id, snowflake guild_id, rest::ratelimiter & ratelimit, asio::io_context & _io)
-        : channel_id(channel_id)
-        , guild_id(guild_id)
-        , ratelimit(ratelimit)
-        , _guild(nullptr)
-        , _io_context(_io)
-    {
-
-    }
+    AEGIS_DECL explicit channel(const snowflake channel_id, const snowflake guild_id, core * _bot, asio::io_context & _io);
 
     /// Get a reference to the guild object this channel belongs to
     /**
@@ -108,7 +100,7 @@ public:
     * @param host String of remote host. Defaults to discordapp.com
     * @returns std::future<rest::rest_reply>
     */
-    AEGIS_DECL std::future<rest::rest_reply> post_task(const std::string path, const std::string method = "POST", const std::string obj = "", const std::string host = "");
+    AEGIS_DECL std::future<rest::rest_reply> post_task(const std::string & path, const std::string & method = "POST", const std::string & obj = "", const std::string & host = "");
 
     /// Creates a task to make a REST call - preferable to use specific functions
     /// for interactions. This function is public for the case of any functionality
@@ -120,7 +112,7 @@ public:
     * @param host String of remote host. Defaults to discordapp.com
     * @returns std::future<rest::rest_reply>
     */
-    AEGIS_DECL std::future<rest::rest_reply> post_emoji_task(const std::string path, const std::string method = "POST", const std::string obj = "", const std::string host = "");
+    AEGIS_DECL std::future<rest::rest_reply> post_emoji_task(const std::string & path, const std::string & method = "POST", const std::string & obj = "", const std::string & host = "");
 
     /// Send message to this channel
     /**
@@ -128,7 +120,7 @@ public:
      * @param content A string of the message to send
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_message(std::error_code & ec, std::string content, int64_t nonce = 0);
+    AEGIS_DECL std::future<rest::rest_reply> create_message(std::error_code & ec, const std::string & content, int64_t nonce = 0);
 
     /// Send message to this channel
     /**
@@ -136,7 +128,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_message(std::string content, int64_t nonce = 0)
+    AEGIS_DECL std::future<rest::rest_reply> create_message(const std::string & content, int64_t nonce = 0)
     {
         std::error_code ec;
         auto res = create_message(ec, content, nonce);
@@ -152,7 +144,7 @@ public:
      * @param embed A json object of the embed object itself
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_message_embed(std::error_code & ec, std::string content, const json embed, int64_t nonce = 0);
+    AEGIS_DECL std::future<rest::rest_reply> create_message_embed(std::error_code & ec, const std::string & content, const json & embed, int64_t nonce = 0);
 
     /// Send an embed message to this channel
     /**
@@ -161,7 +153,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_message_embed(std::string content, const json embed, int64_t nonce = 0)
+    AEGIS_DECL std::future<rest::rest_reply> create_message_embed(const std::string & content, const json & embed, int64_t nonce = 0)
     {
         std::error_code ec;
         auto res = create_message_embed(ec, content, embed, nonce);
@@ -177,7 +169,7 @@ public:
      * @param content A string of the message to set
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> edit_message(std::error_code & ec, snowflake message_id, std::string content);
+    AEGIS_DECL std::future<rest::rest_reply> edit_message(std::error_code & ec, snowflake message_id, const std::string & content);
 
     /// Edit a message in this channel
     /**
@@ -186,7 +178,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> edit_message(snowflake message_id, std::string content)
+    AEGIS_DECL std::future<rest::rest_reply> edit_message(snowflake message_id, const std::string & content)
     {
         std::error_code ec;
         auto res = edit_message(ec, message_id, content);
@@ -203,7 +195,7 @@ public:
      * @param embed A json object of the embed object itself
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> edit_message_embed(std::error_code & ec, snowflake message_id, std::string content, json embed);
+    AEGIS_DECL std::future<rest::rest_reply> edit_message_embed(std::error_code & ec, snowflake message_id, const std::string & content, const json & embed);
 
     /// Edit an embed message in this channel
     /**
@@ -213,7 +205,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> edit_message_embed(snowflake message_id, std::string content, json embed)
+    AEGIS_DECL std::future<rest::rest_reply> edit_message_embed(snowflake message_id, const std::string & content, const json & embed)
     {
         std::error_code ec;
         auto res = edit_message_embed(ec, message_id, content, embed);
@@ -251,7 +243,7 @@ public:
      * @param message Vector of up to 100 message snowflakes to delete
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> bulk_delete_message(std::error_code & ec, std::vector<int64_t> messages);
+    AEGIS_DECL std::future<rest::rest_reply> bulk_delete_message(std::error_code & ec, const std::vector<int64_t> & messages);
 
     /// Delete up to 100 messages at once
     /**
@@ -259,7 +251,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> bulk_delete_message(std::vector<int64_t> messages)
+    AEGIS_DECL std::future<rest::rest_reply> bulk_delete_message(const std::vector<int64_t> & messages)
     {
         std::error_code ec;
         auto res = bulk_delete_message(ec, messages);
@@ -300,7 +292,7 @@ public:
      */
     AEGIS_DECL std::future<rest::rest_reply> modify_channel(std::optional<std::string> _name = {}, std::optional<int> _position = {}, std::optional<std::string> _topic = {},
                         std::optional<bool> _nsfw = {}, std::optional<int> _bitrate = {}, std::optional<int> _user_limit = {},
-                                       std::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, std::optional<snowflake> _parent_id = {})
+                        std::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, std::optional<snowflake> _parent_id = {})
     {
         std::error_code ec;
         auto res = modify_channel(ec, _name, _position, _topic, _nsfw, _bitrate, _user_limit, _permission_overwrites, _parent_id);
@@ -337,7 +329,7 @@ public:
      * @param emoji_text Text of emoji being added `name:snowflake`
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_reaction(std::error_code & ec, snowflake message_id, std::string emoji_text);
+    AEGIS_DECL std::future<rest::rest_reply> create_reaction(std::error_code & ec, snowflake message_id, const std::string & emoji_text);
 
     /// Add new reaction on message
     /**
@@ -346,7 +338,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_reaction(snowflake message_id, std::string emoji_text)
+    AEGIS_DECL std::future<rest::rest_reply> create_reaction(snowflake message_id, const std::string & emoji_text)
     {
         std::error_code ec;
         auto res = create_reaction(ec, message_id, emoji_text);
@@ -362,7 +354,7 @@ public:
      * @param emoji_text Text of emoji being added `name:snowflake`
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> delete_own_reaction(std::error_code & ec, snowflake message_id, std::string emoji_text);
+    AEGIS_DECL std::future<rest::rest_reply> delete_own_reaction(std::error_code & ec, snowflake message_id, const std::string & emoji_text);
 
     /// Delete own reaction on message
     /**
@@ -371,7 +363,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> delete_own_reaction(snowflake message_id, std::string emoji_text)
+    AEGIS_DECL std::future<rest::rest_reply> delete_own_reaction(snowflake message_id, const std::string & emoji_text)
     {
         std::error_code ec;
         auto res = delete_own_reaction(ec, message_id, emoji_text);
@@ -388,7 +380,7 @@ public:
      * @param member_id Snowflake of member to remove emoji from
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> delete_user_reaction(std::error_code & ec, snowflake message_id, std::string emoji_text, snowflake member_id);
+    AEGIS_DECL std::future<rest::rest_reply> delete_user_reaction(std::error_code & ec, snowflake message_id, const std::string & emoji_text, snowflake member_id);
 
     /// Delete specified member reaction on message
     /**
@@ -398,7 +390,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> delete_user_reaction(snowflake message_id, std::string emoji_text, snowflake member_id)
+    AEGIS_DECL std::future<rest::rest_reply> delete_user_reaction(snowflake message_id, const std::string & emoji_text, snowflake member_id)
     {
         std::error_code ec;
         auto res = delete_user_reaction(ec, message_id, emoji_text, member_id);
@@ -414,7 +406,7 @@ public:
      * @param emoji_text Text of emoji being added `name:snowflake`
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> get_reactions(std::error_code & ec, snowflake message_id, std::string emoji_text);
+    AEGIS_DECL std::future<rest::rest_reply> get_reactions(std::error_code & ec, snowflake message_id, const std::string & emoji_text);
 
     /// Get all reactions for this message
     /**
@@ -423,7 +415,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> get_reactions(snowflake message_id, std::string emoji_text)
+    AEGIS_DECL std::future<rest::rest_reply> get_reactions(snowflake message_id, const std::string & emoji_text)
     {
         std::error_code ec;
         auto res = get_reactions(ec, message_id, emoji_text);
@@ -464,7 +456,7 @@ public:
      * @param _type Type of override (role/user)
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> edit_channel_permissions(std::error_code & ec, snowflake _overwrite_id, int64_t _allow, int64_t _deny, std::string _type);
+    AEGIS_DECL std::future<rest::rest_reply> edit_channel_permissions(std::error_code & ec, snowflake _overwrite_id, int64_t _allow, int64_t _deny, const std::string & _type);
 
     /// Edit channel permission override
     /**
@@ -475,7 +467,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> edit_channel_permissions(snowflake _overwrite_id, int64_t _allow, int64_t _deny, std::string _type)
+    AEGIS_DECL std::future<rest::rest_reply> edit_channel_permissions(snowflake _overwrite_id, int64_t _allow, int64_t _deny, const std::string & _type)
     {
         std::error_code ec;
         auto res = edit_channel_permissions(ec, _overwrite_id, _allow, _deny, _type);
@@ -514,7 +506,7 @@ public:
      * @param unique Is this invite code a unique one-use
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_channel_invite(std::error_code & ec, std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique);
+    AEGIS_DECL std::future<rest::rest_reply> create_channel_invite(std::error_code & ec, const std::optional<int> max_age, const std::optional<int> max_uses, const std::optional<bool> temporary, const std::optional<bool> unique);
 
     /// Create a new channel invite
     /**
@@ -525,7 +517,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique)
+    AEGIS_DECL std::future<rest::rest_reply> create_channel_invite(const std::optional<int> max_age, const std::optional<int> max_uses, const std::optional<bool> temporary, const std::optional<bool> unique)
     {
         std::error_code ec;
         auto res = create_channel_invite(ec, max_age, max_uses, temporary, unique);
@@ -715,12 +707,13 @@ private:
     friend class core;
 
     /// requires the caller to handle locking
-    AEGIS_DECL void load_with_guild(guild & _guild, const json & obj, shard * _shard);
+    AEGIS_DECL void load_with_guild(guild & _guild, const json & obj, shards::shard * _shard);
     AEGIS_DECL shared_mutex & mtx() { return _m; }
 
     snowflake channel_id; /**< snowflake of this channel */
     snowflake guild_id; /**< snowflake of the guild this channel belongs to */
-    rest::ratelimiter & ratelimit;
+    ratelimit::bucket<rest_call, aegis::rest::rest_reply> & channel_bucket;
+    ratelimit::bucket<rest_call, aegis::rest::rest_reply> & emoji_bucket;
     guild * _guild; /**< Pointer to the guild this channel belongs to */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     snowflake last_message_id = 0; /**< Snowflake of the last message sent in this channel */
@@ -734,6 +727,7 @@ private:
 #endif
     asio::io_context & _io_context;
     mutable shared_mutex _m;
+    core * _bot = nullptr;
 };
 
 }

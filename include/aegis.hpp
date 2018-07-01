@@ -17,32 +17,32 @@
 #include "aegis/snowflake.hpp"
 #include "aegis/objects/role.hpp"
 #include "aegis/error.hpp"
-#include "aegis/rest_reply.hpp"
+#include "aegis/rest/rest_reply.hpp"
 #include "aegis/permission.hpp"
 
 #if defined(AEGIS_HEADER_ONLY)
 
-#include "aegis/ratelimit.hpp"
-#include "aegis/rest_controller.hpp"
-#include "aegis/shard.hpp"
+#include "aegis/ratelimit/ratelimit.hpp"
+#include "aegis/rest/rest_controller.hpp"
+#include "aegis/shards/shard_mgr.hpp"
 #include "aegis/member.hpp"
 #include "aegis/channel.hpp"
 #include "aegis/guild.hpp"
 #include "aegis/core.hpp"
 
-#include "aegis/ratelimit.cpp"
-#include "aegis/rest_controller.cpp"
+#include "aegis/rest/rest_controller.cpp"
 #include "aegis/core.cpp"
-#include "aegis/shard.cpp"
+#include "aegis/shards/shard_mgr.cpp"
+#include "aegis/shards/shard.cpp"
 #include "aegis/member.cpp"
 #include "aegis/channel.cpp"
 #include "aegis/guild.cpp"
 
 #else
 
-#include "aegis/ratelimit.hpp"
-#include "aegis/rest_controller.hpp"
-#include "aegis/shard.hpp"
+#include "aegis/ratelimit/ratelimit.hpp"
+#include "aegis/rest/rest_controller.hpp"
+#include "aegis/shards/shard_mgr.hpp"
 #include "aegis/member.hpp"
 #include "aegis/channel.hpp"
 #include "aegis/guild.hpp"

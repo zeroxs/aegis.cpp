@@ -10,46 +10,39 @@
 #include "aegis/channel.hpp"
 #include <spdlog/spdlog.h>
 #include <asio.hpp>
+#include "aegis/core.hpp"
 #include "aegis/error.hpp"
 #include "aegis/guild.hpp"
-#include "aegis/shard.hpp"
+#include "aegis/shards/shard.hpp"
 #include "aegis/member.hpp"
-#include "aegis/rest_reply.hpp"
-#include "aegis/ratelimit.hpp"
+#include "aegis/rest/rest_reply.hpp"
+#include "aegis/ratelimit/ratelimit.hpp"
 
 namespace aegis
 {
 
 using json = nlohmann::json;
 
-AEGIS_DECL std::future<rest::rest_reply> channel::post_task(const std::string path, const std::string method, const std::string obj, const std::string host)
+AEGIS_DECL channel::channel(const snowflake channel_id, const snowflake guild_id, core * _bot, asio::io_context & _io)
+    : channel_id(channel_id)
+    , guild_id(guild_id)
+    , channel_bucket(_bot->get_ratelimit().get_bucket(ratelimit::Channel, channel_id))
+    , emoji_bucket(_bot->get_ratelimit().get_bucket(ratelimit::Emoji, guild_id))
+    , _guild(nullptr)
+    , _io_context(_io)
+    , _bot(_bot)
 {
-    using result = asio::async_result<asio::use_future_t<>, void(rest::rest_reply)>;
-    using handler = typename result::completion_handler_type;
-
-    handler exec(std::forward<decltype(asio::use_future)>(asio::use_future));
-    result ret(exec);
-
-    asio::post(_io_context, [exec, this, path = path, obj = obj, method = method, host = host]() mutable
-    {
-        exec(ratelimit.get(rest::bucket_type::CHANNEL).do_async(guild_id, path, obj, method, host));
-    });
-    return ret.get();
+    emoji_bucket.ignore_rates = true;
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::post_emoji_task(const std::string path, const std::string method, const std::string obj, const std::string host)
+AEGIS_DECL std::future<rest::rest_reply> channel::post_task(const std::string & path, const std::string & method, const std::string & obj, const std::string & host)
 {
-    using result = asio::async_result<asio::use_future_t<>, void(rest::rest_reply)>;
-    using handler = typename result::completion_handler_type;
+    return channel_bucket.post_task(path, method, obj, host);
+}
 
-    handler exec(std::forward<decltype(asio::use_future)>(asio::use_future));
-    result ret(exec);
-
-    asio::post(_io_context, [exec, this, path, obj, method, host]() mutable
-    {
-        exec(ratelimit.get(rest::bucket_type::EMOJI).do_async(guild_id, path, obj, method, host));
-    });
-    return ret.get();
+AEGIS_DECL std::future<rest::rest_reply> channel::post_emoji_task(const std::string & path, const std::string & method, const std::string & obj, const std::string & host)
+{
+    return emoji_bucket.post_task(path, method, obj, host);
 }
 
 AEGIS_DECL guild & channel::get_guild() const
@@ -74,7 +67,7 @@ AEGIS_DECL permission channel::perms()
     return permission(_guild->get_permissions(_guild->self(), this));
 }
 
-AEGIS_DECL void channel::load_with_guild(guild & _guild, const json & obj, shard * _shard)
+AEGIS_DECL void channel::load_with_guild(guild & _guild, const json & obj, shards::shard * _shard)
 {
     channel_id = obj["id"];
     guild_id = _guild.get_id();
@@ -133,7 +126,7 @@ AEGIS_DECL void channel::load_with_guild(guild & _guild, const json & obj, shard
 }
 #endif
 
-AEGIS_DECL std::future<rest::rest_reply> channel::create_message(std::error_code & ec, std::string content, int64_t nonce)
+AEGIS_DECL std::future<rest::rest_reply> channel::create_message(std::error_code & ec, const std::string & content, int64_t nonce)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild != nullptr)//probably a DM
@@ -154,7 +147,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::create_message(std::error_code
     return post_task(fmt::format("/channels/{}/messages", channel_id), "POST", obj.dump());
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::create_message_embed(std::error_code & ec,std::string content, const json embed, int64_t nonce)
+AEGIS_DECL std::future<rest::rest_reply> channel::create_message_embed(std::error_code & ec, const std::string & content, const json & embed, int64_t nonce)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild != nullptr)//probably a DM
@@ -177,7 +170,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::create_message_embed(std::erro
     return post_task(fmt::format("/channels/{}/messages", channel_id), "POST", obj.dump());
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::edit_message(std::error_code & ec, snowflake message_id, std::string content)
+AEGIS_DECL std::future<rest::rest_reply> channel::edit_message(std::error_code & ec, snowflake message_id, const std::string & content)
 {
     json obj;
     obj["content"] = content;
@@ -186,7 +179,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::edit_message(std::error_code &
     return post_task(fmt::format("/channels/{}/messages/{}", channel_id, message_id), "PATCH", obj.dump());
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::edit_message_embed(std::error_code & ec, snowflake message_id, std::string content, json embed)
+AEGIS_DECL std::future<rest::rest_reply> channel::edit_message_embed(std::error_code & ec, snowflake message_id, const std::string & content, const json & embed)
 {
     json obj;
     if (!content.empty())
@@ -214,7 +207,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::delete_message(std::error_code
     return post_task(fmt::format("/channels/{}/messages/{}", guild_id, message_id), "DELETE");
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::bulk_delete_message(std::error_code & ec, std::vector<int64_t> messages)
+AEGIS_DECL std::future<rest::rest_reply> channel::bulk_delete_message(std::error_code & ec, const std::vector<int64_t> & messages)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if ((!perms().can_manage_messages()) || (messages.size() < 2 || messages.size() > 100))
@@ -291,7 +284,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::delete_channel(std::error_code
     return post_task(fmt::format("/channels/{}", channel_id), "DELETE");
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::create_reaction(std::error_code & ec, snowflake message_id, std::string emoji_text)
+AEGIS_DECL std::future<rest::rest_reply> channel::create_reaction(std::error_code & ec, snowflake message_id, const std::string & emoji_text)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_add_reactions())
@@ -305,7 +298,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::create_reaction(std::error_cod
     return post_task(fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "PUT");
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::delete_own_reaction(std::error_code & ec, snowflake message_id, std::string emoji_text)
+AEGIS_DECL std::future<rest::rest_reply> channel::delete_own_reaction(std::error_code & ec, snowflake message_id, const std::string & emoji_text)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_add_reactions())
@@ -319,7 +312,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::delete_own_reaction(std::error
     return post_task(fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "DELETE");
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::delete_user_reaction(std::error_code & ec, snowflake message_id, std::string emoji_text, snowflake member_id)
+AEGIS_DECL std::future<rest::rest_reply> channel::delete_user_reaction(std::error_code & ec, snowflake message_id, const std::string & emoji_text, snowflake member_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_messages())
@@ -336,7 +329,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::delete_user_reaction(std::erro
 /**\todo Support query parameters
  *  \todo before[snowflake], after[snowflake], limit[int]
  */
-AEGIS_DECL std::future<rest::rest_reply> channel::get_reactions(std::error_code & ec, snowflake message_id, std::string emoji_text)
+AEGIS_DECL std::future<rest::rest_reply> channel::get_reactions(std::error_code & ec, snowflake message_id, const std::string & emoji_text)
 {
     ec = error_code();
     return post_task(fmt::format("/channels/{}/messages/{}/reactions/{}", channel_id, message_id, emoji_text), "GET");
@@ -356,7 +349,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::delete_all_reactions(std::erro
     return post_task(fmt::format("/channels/{}/messages/{}/reactions", channel_id, message_id), "DELETE");
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::edit_channel_permissions(std::error_code & ec, snowflake _overwrite_id, int64_t _allow, int64_t _deny, std::string _type)
+AEGIS_DECL std::future<rest::rest_reply> channel::edit_channel_permissions(std::error_code & ec, snowflake _overwrite_id, int64_t _allow, int64_t _deny, const std::string & _type)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_roles())

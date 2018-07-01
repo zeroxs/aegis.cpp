@@ -12,7 +12,8 @@
 #include "aegis/config.hpp"
 #include "aegis/objects/role.hpp"
 #include "aegis/snowflake.hpp"
-#include "aegis/rest_reply.hpp"
+#include "aegis/rest/rest_reply.hpp"
+#include "aegis/ratelimit/ratelimit.hpp"
 #include "aegis/objects/permission_overwrite.hpp"
 #include <future>
 #include <asio.hpp>
@@ -47,16 +48,9 @@ public:
      * @param shard_id Shard id this guild belongs to
      * @param state Pointer to state struct holding bot data
      * @param id Snowflake of this guild
-     * @param ratelimit Reference to the bucket factory that handles the ratelimits for this guild
+     * @param _ratelimit Reference to the bucket factory that handles the ratelimits for this guild
      */
-    explicit guild(int32_t _shard_id, snowflake _id, core * _bot, rest::ratelimiter & _ratelimit, asio::io_context & _io)
-        : shard_id(_shard_id)
-        , guild_id(_id)
-        , _bot(_bot)
-        , _ratelimit(_ratelimit)
-        , _io_context(_io)
-    {
-    }
+    AEGIS_DECL explicit guild(const int32_t _shard_id, const snowflake _id, core * _bot, asio::io_context & _io);
 
     AEGIS_DECL ~guild();
 
@@ -77,8 +71,8 @@ public:
      * @param host String of remote host. Defaults to discordapp.com
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> post_task(const std::string path, const std::string method = "POST",
-                                                       const std::string obj = "", const std::string host = "");
+    AEGIS_DECL std::future<rest::rest_reply> post_task(const std::string & path, const std::string & method = "POST",
+                                                       const std::string & obj = "", const std::string & host = "");
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     /// Get bot's current permissions for this guild
@@ -311,8 +305,8 @@ public:
      * @param permission_overwrites Array of permission overwrites to apply to the channel
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_text_channel(std::error_code & ec, std::string name, int64_t parent_id = 0, bool nsfw = false,
-                                            std::vector<gateway::objects::permission_overwrite> permission_overwrites = {});
+    AEGIS_DECL std::future<rest::rest_reply> create_text_channel(std::error_code & ec, const std::string & name, int64_t parent_id = 0, bool nsfw = false,
+                                            const std::vector<gateway::objects::permission_overwrite> & permission_overwrites = {});
 
     /// Create a text channel
     /**
@@ -323,8 +317,8 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_text_channel(std::string name, int64_t parent_id = 0, bool nsfw = false ,
-                                            std::vector<gateway::objects::permission_overwrite> permission_overwrites = {})
+    AEGIS_DECL std::future<rest::rest_reply> create_text_channel(const std::string & name, int64_t parent_id = 0, bool nsfw = false ,
+                                            const std::vector<gateway::objects::permission_overwrite> & permission_overwrites = {})
     {
         std::error_code ec;
         auto res = create_text_channel(ec, name, parent_id, nsfw, permission_overwrites);
@@ -344,8 +338,8 @@ public:
      * @param permission_overwrites Array of permission overwrites to apply to the channel
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_voice_channel(std::error_code & ec, std::string name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
-                                             std::vector<gateway::objects::permission_overwrite> permission_overwrites = {});
+    AEGIS_DECL std::future<rest::rest_reply> create_voice_channel(std::error_code & ec, const std::string & name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
+                                             const std::vector<gateway::objects::permission_overwrite> & permission_overwrites = {});
 
     /// Create a voice channel
     /**
@@ -358,8 +352,8 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_voice_channel(std::string name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
-                                             std::vector<gateway::objects::permission_overwrite> permission_overwrites = {})
+    AEGIS_DECL std::future<rest::rest_reply> create_voice_channel(const std::string & name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
+                                             const std::vector<gateway::objects::permission_overwrite> & permission_overwrites = {})
     {
         std::error_code ec;
         auto res = create_voice_channel(ec, name, bitrate, user_limit, parent_id, permission_overwrites);
@@ -376,8 +370,8 @@ public:
      * @param permission_overwrites Array of permission overwrites to apply to the channel
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_category_channel(std::error_code & ec, std::string name, int64_t parent_id,
-                                                std::vector<gateway::objects::permission_overwrite> permission_overwrites);
+    AEGIS_DECL std::future<rest::rest_reply> create_category_channel(std::error_code & ec, const std::string & name, int64_t parent_id,
+                                                const std::vector<gateway::objects::permission_overwrite> & permission_overwrites);
 
     /// Create a category
     /**
@@ -387,8 +381,8 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_category_channel(std::string name, int64_t parent_id,
-                                                std::vector<gateway::objects::permission_overwrite> permission_overwrites)
+    AEGIS_DECL std::future<rest::rest_reply> create_category_channel(const std::string & name, int64_t parent_id,
+                                                const std::vector<gateway::objects::permission_overwrite> & permission_overwrites)
     {
         std::error_code ec;
         auto res = create_category_channel(ec, name, parent_id, permission_overwrites);
@@ -463,7 +457,7 @@ public:
      * @param newname String of the new nickname to apply
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> modify_my_nick(std::error_code & ec, std::string newname);
+    AEGIS_DECL std::future<rest::rest_reply> modify_my_nick(std::error_code & ec, const std::string & newname);
 
     /// Modify own nickname
     /**
@@ -471,7 +465,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> modify_my_nick(std::string newname)
+    AEGIS_DECL std::future<rest::rest_reply> modify_my_nick(const std::string & newname)
     {
         std::error_code ec;
         auto res = modify_my_nick(ec, newname);
@@ -560,7 +554,7 @@ public:
      * @param delete_message_days How many days to delete member message history (0-7)
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_guild_ban(std::error_code & ec, snowflake user_id, int8_t delete_message_days, std::string reason = "");
+    AEGIS_DECL std::future<rest::rest_reply> create_guild_ban(std::error_code & ec, snowflake user_id, int8_t delete_message_days, const std::string & reason = "");
 
     /// Create a new guild ban
     /**
@@ -569,7 +563,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_guild_ban(snowflake user_id, int8_t delete_message_days, std::string reason = "")
+    AEGIS_DECL std::future<rest::rest_reply> create_guild_ban(snowflake user_id, int8_t delete_message_days, const std::string & reason = "")
     {
         std::error_code ec;
         auto res = create_guild_ban(ec, user_id, delete_message_days, reason);
@@ -612,7 +606,7 @@ public:
      * @param mentionable Whether the role can be specifically mentioned
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_guild_role(std::error_code & ec, std::string name, permission _perms, int32_t color, bool hoist, bool mentionable);
+    AEGIS_DECL std::future<rest::rest_reply> create_guild_role(std::error_code & ec, const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable);
 
     /// Create a guild role
     /**
@@ -625,7 +619,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_guild_role(std::string name, permission _perms, int32_t color, bool hoist, bool mentionable)
+    AEGIS_DECL std::future<rest::rest_reply> create_guild_role(const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable)
     {
         std::error_code ec;
         auto res = create_guild_role(ec, name, _perms, color, hoist, mentionable);
@@ -671,7 +665,7 @@ public:
      * @param mentionable Whether the role can be specifically mentioned
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> modify_guild_role(std::error_code & ec, snowflake id, std::string name, permission _perms, int32_t color,
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild_role(std::error_code & ec, snowflake id, const std::string & name, permission _perms, int32_t color,
                                           bool hoist, bool mentionable);
 
     /// Modify a guild role
@@ -686,7 +680,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> modify_guild_role(snowflake id, std::string name, permission _perms, int32_t color,
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild_role(snowflake id, const std::string & name, permission _perms, int32_t color,
                                           bool hoist, bool mentionable)
     {
         std::error_code ec;
@@ -998,7 +992,7 @@ private:
     AEGIS_DECL void remove_role(snowflake role_id);
 #endif
 
-    AEGIS_DECL void load(const json & obj, shard * _shard) AEGIS_NOEXCEPT;
+    AEGIS_DECL void load(const json & obj, shards::shard * _shard) AEGIS_NOEXCEPT;
 
     AEGIS_DECL shared_mutex & mtx() { return _m; }
 
@@ -1031,7 +1025,7 @@ private:
     bool is_init = true;
 #endif
     core * _bot;
-    rest::ratelimiter & _ratelimit;
+    ratelimit::bucket<rest_call, aegis::rest::rest_reply> & guild_bucket;
     asio::io_context & _io_context;
     mutable shared_mutex _m;
 };

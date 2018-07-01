@@ -12,13 +12,12 @@
 #include "aegis/config.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/channel.hpp"
-#include "aegis/shard.hpp"
-#include "aegis/rest_reply.hpp"
+#include "aegis/shards/shard.hpp"
+#include "aegis/rest/rest_reply.hpp"
 #include "attachment.hpp"
 #include "embed.hpp"
 #include "reaction.hpp"
 #include "user.hpp"
-#include "aegis/shard.hpp"
 #include <nlohmann/json.hpp>
 #include <string>
 #include <vector>

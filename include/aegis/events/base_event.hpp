@@ -11,16 +11,7 @@
 
 #include "aegis/config.hpp"
 #include <nlohmann/json.hpp>
-
-namespace aegis
-{
-
-class member;
-class channel;
-class shard;
-class core;
-
-}
+#include "aegis/fwd.hpp"
 
 namespace aegis
 {
@@ -35,7 +26,7 @@ namespace events
  */
 struct base_event
 {
-    shard * _shard; /**< Pointer to shard object this message came from */
+    shards::shard * _shard; /**< Pointer to shard object this message came from */
     core * bot; /**< Pointer to the main bot object */
 };
 

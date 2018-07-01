@@ -20,6 +20,14 @@
 #define ASIO_STANDALONE
 #endif
 
+#if !defined(ASIO_HEADER_ONLY)
+#define ASIO_HEADER_ONLY
+#endif
+
+#if !defined(_WEBSOCKETPP_CPP11_STL_)
+#define _WEBSOCKETPP_CPP11_STL_
+#endif
+
 // Shamelessly make use of ASIO's config-style
 
 // Default to a header-only implementation. The user must specifically request
@@ -145,7 +153,7 @@
 # endif // !defined(AEGIS_HAS_STD_SHARED_MUTEX)
 #endif // !defined(AEGIS_HAS_STD_SHARED_MUTEX)
 
-#if (__cplusplus >= 201703) || (_MSVC_LANG >= 201703) || defined(_HAS_CXX17)
+#if (__cplusplus >= 201703) || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703) || (defined(_HAS_CXX17) && _HAS_CXX17 != 0)
 # define AEGIS_CXX17
 #endif // (__cplusplus >= 201703) || (_MSVC_LANG >= 201703)
 

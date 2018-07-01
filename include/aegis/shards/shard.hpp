@@ -27,12 +27,15 @@
 namespace aegis
 {
 
+namespace shards
+{
+
 /// Tracks websocket shards and their connections
 class shard
 {
 public:
     /// Constructs a shard object for connecting to the websocket gateway and tracking timers
-    AEGIS_DECL shard(asio::io_context & _io, websocketpp::client<websocketpp::config::asio_tls_client> & _ws);
+    AEGIS_DECL shard(asio::io_context & _io, websocketpp::client<websocketpp::config::asio_tls_client> & _ws, int32_t id);
 
     /// Resets connection, heartbeat, and timer related objects to allow reconnection
     AEGIS_DECL void do_reset() AEGIS_NOEXCEPT;
@@ -142,14 +145,7 @@ public:
     } counters = { 0,0,0 };
 
     /// Close websocket connection
-    AEGIS_DECL void close(int32_t code = 1001, std::string reason = "") AEGIS_NOEXCEPT
-    {
-        connection_state = bot_status::Reconnecting;
-        if (_connection != nullptr)
-        {
-            _connection->close(code, reason);
-        }
-    }
+    AEGIS_DECL void close(int32_t code = 1001, std::string reason = "") AEGIS_NOEXCEPT;
 
     /// Open websocket connection
     AEGIS_DECL void connect()
@@ -172,8 +168,10 @@ public:
         return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _ready_time).count();
     }
 
-private:
-    friend class core;
+    AEGIS_DECL void cleanup();
+
+//private:
+    friend class shard_mgr;
 
     /// Actual websocket connection
     websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr _connection;
@@ -204,7 +202,6 @@ private:
     bot_status connection_state;
     // Websocket++ socket connection
     websocketpp::connection_hdl hdl;
-    asio::io_context::strand ws_write;
     asio::io_context & _io_context;
 
     /// bytes transferred
@@ -218,5 +215,7 @@ private:
     std::stringstream ws_buffer;
     std::unique_ptr<zstr::istream> zlib_ctx;
 };
+
+}
 
 }

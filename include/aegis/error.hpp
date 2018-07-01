@@ -37,6 +37,9 @@ enum error
     /// REST did not return websocket gateway url
     get_gateway,
 
+    /// No gateway url set
+    no_gateway,
+
     /// Does not have permission to perform this action
     no_permission,
 
@@ -73,32 +76,7 @@ enum error
     /// Malformed Redis request
     bad_redis_request,
 
-    /// HTTP error codes for exceptions
-    http_ok = 200,
-    http_no_content = 204,
-    http_bad_request = 400,
-    http_unauthorized = 401,
-    http_forbidden = 403,
-    http_not_found = 404,
-    http_method_not_allowed = 405,
-    http_request_timeout = 408,
-    http_too_many_requests = 429,
-    http_internal_server_error = 500,
-    http_bad_gateway = 502,
-    http_gateway_timeout = 504,
-    
-    /// Cloudflare specific
-    http_unknown_error= 520,
-    http_server_down = 521,
-    http_timed_out = 522,
-    http_origin_unreachable = 523,
-    http_timeout_occurred = 524,
-    http_ssl_handshake_failed = 525,
-    http_invalid_ssl_certificate = 526,
-    http_railgun_error = 527,
-
     max_errors
-
 };
 
 /**\todo Needs documentation
@@ -124,7 +102,9 @@ public:
             case error::invalid_state:
                 return "Invalid state";
             case error::get_gateway:
-                return "Unable to retrieve Gateway data";
+                return "Unable to retrieve gateway data";
+            case error::no_gateway:
+                return "No gateway url set";
             case error::no_permission:
                 return "No permission for this action";
             case error::not_implemented:
@@ -136,9 +116,9 @@ public:
             case error::guild_not_found:
                 return "Guild not found";
             case error::rate_limited:
-                return "Rate Limited";
+                return "Rate limited";
             case error::global_rate_limited:
-                return "Globally Rate Limited";
+                return "Globally rate limited";
             case error::member_error:
                 return "Member related error";
             case error::channel_error:
@@ -207,8 +187,10 @@ public:
 
 namespace std
 {
+
 template<> struct is_error_code_enum<aegis::error>
 {
     static const bool value = true;
 };
+
 }

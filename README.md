@@ -79,19 +79,6 @@ You can pass these flags to CMake to change what it builds</br>
 You can pass these flags to your compiler to alter how the library is built</br>
 `-DAEGIS_DISABLE_ALL_CACHE` will disable the internal caching of most objects such as member data reducing memory usage by a significant amount</br>
 `-DAEGIS_DEBUG_HISTORY` enables the saving of the last 5 messages sent on the shard's websocket. In the event of an uncaught exception, they are dumped to console.</br>
-`-DAEGIS_PROFILING` by setting up to 3 specific functions within the main class:
-```cpp
-bot.message_end = std::bind(&AegisBot::message_end, this, std::placeholders::_1, std::placeholders::_2);
-bot.js_end = std::bind(&AegisBot::js_end, this, std::placeholders::_1, std::placeholders::_2);
-bot.call_end = std::bind(&AegisBot::call_end, this, std::placeholders::_1);
-```
-your callbacks will be executed:
-- `message_end`: when a whole message is done being processed including your own callback time but not including js decode time
-- `js_end`: when a js decoding is completed
-- `call_end`: when a rest call function is completed
-
-</br></br>
-`message_end` and `js_end` both are passed 2 parameters ``(std::chrono::steady_clock::time_point, const std::string &)`` while `call_end` is only passed `(std::chrono::steady_clock::time_point)`. The time_point being passed is the time the action started. The string being the websocket event name being processed.
 
 ##### Your project #####
 Options above, as well as:
@@ -116,6 +103,7 @@ You can change basic configuration options within the `config.json` file that sh
 ```
 {
 	"token": "BOTTOKENHERE",
-	"force-shard-count": 10
+	"force-shard-count": 10,
+	"file-logging": false
 }
 ```

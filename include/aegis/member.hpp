@@ -12,6 +12,7 @@
 #include "aegis/config.hpp"
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 #include "aegis/snowflake.hpp"
+#include "aegis/fwd.hpp"
 #include <nlohmann/json.hpp>
 #include <string>
 #include <queue>
@@ -111,7 +112,7 @@ private:
     friend class guild;
 
     /// requires the caller to handle locking
-    AEGIS_DECL void load(guild * _guild, const json & obj, shard * _shard);
+    AEGIS_DECL void load(guild * _guild, const json & obj, shards::shard * _shard);
 
     /// requires the caller to handle locking
     AEGIS_DECL guild_info & join(snowflake guild_id);

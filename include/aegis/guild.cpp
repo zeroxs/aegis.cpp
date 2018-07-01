@@ -14,13 +14,23 @@
 #include "aegis/member.hpp"
 #include "aegis/channel.hpp"
 #include "aegis/error.hpp"
-#include "aegis/shard.hpp"
+#include "aegis/shards/shard.hpp"
+#include "aegis/ratelimit/ratelimit.hpp"
 
 namespace aegis
 {
 
 using json = nlohmann::json;
 
+AEGIS_DECL guild::guild(const int32_t _shard_id, const snowflake _id, core * _bot, asio::io_context & _io)
+    : shard_id(_shard_id)
+    , guild_id(_id)
+    , _bot(_bot)
+    , guild_bucket(_bot->get_ratelimit().get_bucket(ratelimit::Guild, _id))
+    , _io_context(_io)
+{
+
+}
 
 AEGIS_DECL guild::~guild()
 {
@@ -197,6 +207,16 @@ AEGIS_DECL int64_t guild::base_permissions(member & _member) const AEGIS_NOEXCEP
     {
         return 0;
     }
+    catch (std::exception & e)
+    {
+        _bot->log->error(fmt::format("guild::base_permissions() [{}]", e.what()));
+        return 0;
+    }
+    catch (...)
+    {
+        _bot->log->error("guild::base_permissions uncaught");
+        return 0;
+    }
 }
 
 AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const AEGIS_NOEXCEPT
@@ -287,7 +307,7 @@ AEGIS_DECL int32_t guild::get_member_count() const AEGIS_NOEXCEPT
     return static_cast<int32_t>(members.size());
 }
 
-AEGIS_DECL void guild::load(const json & obj, shard * _shard) AEGIS_NOEXCEPT
+AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) AEGIS_NOEXCEPT
 {
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
     snowflake g_id = obj["id"];
@@ -458,19 +478,9 @@ AEGIS_DECL channel * guild::get_channel(snowflake id) const AEGIS_NOEXCEPT
     return it->second;
 }
 
-AEGIS_DECL std::future<rest::rest_reply> guild::post_task(const std::string path, const std::string method, const std::string obj, const std::string host)
+AEGIS_DECL std::future<rest::rest_reply> guild::post_task(const std::string & path, const std::string & method, const std::string & obj, const std::string & host)
 {
-    using result = asio::async_result<asio::use_future_t<>, void(rest::rest_reply)>;
-    using handler = typename result::completion_handler_type;
-
-    handler exec(std::forward<decltype(asio::use_future)>(asio::use_future));
-    result ret(exec);
-
-    asio::post(_io_context, [exec, this, path, obj, method, host]() mutable
-    {
-        exec(_ratelimit.get(rest::bucket_type::GUILD).do_async(guild_id, path, obj, method, host));
-    });
-    return ret.get();
+    return guild_bucket.post_task(path, method, obj, host);
 }
 
 /**\todo Incomplete. Signature may change. Location may change.
@@ -533,7 +543,8 @@ AEGIS_DECL std::future<rest::rest_reply> guild::delete_guild(std::error_code & e
     return post_task(fmt::format("/guilds/{}", guild_id), "DELETE");
 }
 
-AEGIS_DECL std::future<rest::rest_reply> guild::create_text_channel(std::error_code & ec, std::string name, int64_t parent_id, bool nsfw, std::vector<gateway::objects::permission_overwrite> permission_overwrites)
+AEGIS_DECL std::future<rest::rest_reply> guild::create_text_channel(std::error_code & ec, const std::string & name,
+                int64_t parent_id, bool nsfw, const std::vector<gateway::objects::permission_overwrite> & permission_overwrites)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     //requires MANAGE_CHANNELS
@@ -558,7 +569,9 @@ AEGIS_DECL std::future<rest::rest_reply> guild::create_text_channel(std::error_c
     return post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj.dump());
 }
 
-AEGIS_DECL std::future<rest::rest_reply> guild::create_voice_channel(std::error_code & ec, std::string name, int32_t bitrate, int32_t user_limit, int64_t parent_id, std::vector<gateway::objects::permission_overwrite> permission_overwrites)
+AEGIS_DECL std::future<rest::rest_reply> guild::create_voice_channel(std::error_code & ec, const std::string & name,
+                int32_t bitrate, int32_t user_limit, int64_t parent_id,
+                const std::vector<gateway::objects::permission_overwrite> & permission_overwrites)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_channels())
@@ -584,7 +597,8 @@ AEGIS_DECL std::future<rest::rest_reply> guild::create_voice_channel(std::error_
     return post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj.dump());
 }
 
-AEGIS_DECL std::future<rest::rest_reply> guild::create_category_channel(std::error_code & ec, std::string name, int64_t parent_id, std::vector<gateway::objects::permission_overwrite> permission_overwrites)
+AEGIS_DECL std::future<rest::rest_reply> guild::create_category_channel(std::error_code & ec, const std::string & name,
+                int64_t parent_id, const std::vector<gateway::objects::permission_overwrite> & permission_overwrites)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_channels())
@@ -692,7 +706,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild_member(std::error_c
     return post_task(fmt::format("/guilds/{}/members/{}", guild_id, user_id), "PATCH", obj.dump());
 }
 
-AEGIS_DECL std::future<rest::rest_reply> guild::modify_my_nick(std::error_code & ec, std::string newname)
+AEGIS_DECL std::future<rest::rest_reply> guild::modify_my_nick(std::error_code & ec, const std::string & newname)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_change_name())
@@ -749,7 +763,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::remove_guild_member(std::error_c
     return post_task(fmt::format("/guilds/{}/members/{}", guild_id, user_id), "DELETE");
 }
 
-AEGIS_DECL std::future<rest::rest_reply> guild::create_guild_ban(std::error_code & ec, snowflake user_id, int8_t delete_message_days, std::string reason)
+AEGIS_DECL std::future<rest::rest_reply> guild::create_guild_ban(std::error_code & ec, snowflake user_id, int8_t delete_message_days, const std::string & reason)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_ban())
@@ -783,7 +797,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::remove_guild_ban(std::error_code
     return post_task(fmt::format("/guilds/{}/bans/{}", guild_id, user_id), "DELETE");
 }
 
-AEGIS_DECL std::future<rest::rest_reply> guild::create_guild_role(std::error_code & ec, std::string name, permission _perms, int32_t color, bool hoist, bool mentionable)
+AEGIS_DECL std::future<rest::rest_reply> guild::create_guild_role(std::error_code & ec, const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_roles())
@@ -813,7 +827,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild_role_positions(std:
     return post_task(fmt::format("/guilds/{}/roles", guild_id), "PATCH", obj.dump());
 }
 
-AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild_role(std::error_code & ec, snowflake role_id, std::string name, permission _perms, int32_t color, bool hoist, bool mentionable)
+AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild_role(std::error_code & ec, snowflake role_id, const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_roles())

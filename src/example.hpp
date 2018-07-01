@@ -51,7 +51,7 @@ public:
     // Messages you want to process
     void inject(core & bot)
     {
-        bot.i_message_create = std::bind(&example::MessageCreate, this, std::placeholders::_1);
+        bot.set_on_message_create(std::bind(&example::MessageCreate, this, std::placeholders::_1));
     }
 
     snowflake get_snowflake(const std::string name, const guild & _guild) const noexcept

@@ -12,7 +12,6 @@
 #include "aegis/channel.hpp"
 #include "aegis/core.hpp"
 #include "aegis/guild.hpp"
-#include "aegis/shard.hpp"
 #include "aegis/error.hpp"
 #include <string>
 #include <queue>
@@ -28,7 +27,7 @@ AEGIS_DECL std::string member::get_full_name() const AEGIS_NOEXCEPT
     return fmt::format("{}#{:0=4}", name, discriminator);
 }
 
-AEGIS_DECL void member::load(guild * _guild, const json & obj, shard * _shard)
+AEGIS_DECL void member::load(guild * _guild, const json & obj, shards::shard * _shard)
 {
     const json & user = obj["user"];
     snowflake member_id = user["id"];
@@ -89,7 +88,7 @@ AEGIS_DECL void member::load(guild * _guild, const json & obj, shard * _shard)
 
 AEGIS_DECL member::guild_info & member::get_guild_info(snowflake guild_id) AEGIS_NOEXCEPT
 {
-    std::unique_lock<shared_mutex> l(_m);
+    std::shared_lock<shared_mutex> l(_m);
     auto g = guilds.find(guild_id);
     if (g == guilds.end())
     {
