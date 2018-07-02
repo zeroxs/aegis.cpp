@@ -142,11 +142,12 @@ public:
      * @see guild
      * @see channel
      * @see member
-     * @param token A string of the authentication token
+     * @see spdlog::level::level_enum
+     * @param loglevel The level of logging to use
      */
     AEGIS_DECL explicit core(spdlog::level::level_enum loglevel = spdlog::level::level_enum::warn);
 
-    /// Destroys the shards, stops the asio::work object, destroys the websocket object, and attempts to join the rest_thread thread
+    /// Destroys the shards, stops the asio::work object, destroys the websocket object
     AEGIS_DECL ~core();
 
     core(const core &) = delete;
@@ -154,7 +155,9 @@ public:
     core & operator=(const core &) = delete;
 
     /// Outputs the last 5 messages received from the gateway
-    ///
+    /**
+     * @param _shard Pointer to the shard object to dump recent messages
+     */
     AEGIS_DECL void debug_trace(shards::shard * _shard);
 
     /// Get the internal (or external) io_service object
@@ -211,7 +214,7 @@ public:
      * @param roles vector of roles to create
      * @param channels vector of channels to create
      * @throws aegiscpp::exception Thrown on failure.
-     * @returns rest_reply
+     * @returns rest::rest_reply
      */
     AEGIS_DECL rest::rest_reply create_guild(
         std::string name,
@@ -222,7 +225,6 @@ public:
     );
 
     /// Spawns and starts the specified amount of threads on the io_context
-    /// Will automatically run core::initialize() if it has not been executed
     /**
      * @param count Spawn `count` threads and run all on io_context object
      */
@@ -230,17 +232,16 @@ public:
 
     /// Spawns and starts the default hardware hinted threads on the io_context
     /// and executes the provided functor prior to connecting the gateway
-    /// Will automatically run core::initialize() if it has not been executed
     /**
-     * @param count Spawn `count` threads and run io_service object
+     * @param f Run f() after gateway information is obtained but before connection
      */
     AEGIS_DECL void run(std::function<void(void)> f);
 
     /// Spawns and starts the specified amount of threads on the io_context
     /// and executes the provided functor prior to connecting the gateways
-    /// Will automatically run core::initialize() if it has not been executed
     /**
      * @param count Spawn `count` threads and run io_service object
+     * @param f Run f() after gateway information is obtained but before connection
      */
     AEGIS_DECL void run(std::size_t count, std::function<void(void)> f);
 

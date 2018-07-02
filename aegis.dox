@@ -31,7 +31,7 @@ int main(int argc, char * argv[])
         bot.wsdbg = true;
  
         // These callbacks are what are called when websocket events occur
-        bot.i_message_create = [&](aegis::gateway::events::message_create obj)
+        bot.set_on_message_create([&](aegis::gateway::events::message_create obj)
         {
             std::string content{ obj.msg.get_content() };
             
@@ -62,10 +62,11 @@ int main(int argc, char * argv[])
                     });
                 }
             }
-        }
+        });
 
         // start the bot with 3 async threads. the function passed is executed after
-        // the internal logger is set up and the websocket gateway information is collected.
+        // websocket gateway information is collected but before the websocket is connected
+        // allowing you to change any options such as shard count
         bot.run(3, [&]
         {
             bot.log->info("Gateway says we need to use {} shards", bot.shard_max_count);
