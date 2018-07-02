@@ -44,7 +44,7 @@ int main(int argc, char * argv[])
                 static int64_t checktime(0);
 
                 // Is message author myself?
-                if (obj.msg.author.user_id == obj.bot->get_id())
+                if (obj.msg.author.user_id == obj.bot->self()->get_id())
                 {
                     // Does nonce of message match previous ping attempt?
                     if (obj.msg.nonce == checktime)

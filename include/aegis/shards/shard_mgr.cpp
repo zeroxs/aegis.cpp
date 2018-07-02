@@ -44,9 +44,7 @@ AEGIS_DECL shard_mgr::shard_mgr(std::string token, asio::io_context & _io, std::
 AEGIS_DECL shard_mgr::~shard_mgr()
 {
     for (auto & _shard : _shards)
-    {
         _shard->cleanup();
-    }
 }
 
 AEGIS_DECL void shard_mgr::start(std::size_t count)
@@ -419,7 +417,6 @@ AEGIS_DECL void shard_mgr::debug_trace(shard * _shard, bool extended)
         << "\n==========<Start Error Trace>==========\n"
         << "Shard: " << _shard->shardid << '\n'
         << "Seq: " << _shard->sequence << '\n';
-    int i = 0;
 
     for (auto & msg : _shard->debug_messages)
         w << std::get<0>(msg) << " - " << std::get<1>(msg) << '\n';

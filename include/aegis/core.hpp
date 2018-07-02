@@ -341,16 +341,6 @@ public:
      */
     AEGIS_DECL std::string uptime() const AEGIS_NOEXCEPT;
 
-    snowflake get_id() const AEGIS_NOEXCEPT
-    {
-        return member_id;
-    }
-
-    int16_t get_discriminator() const AEGIS_NOEXCEPT
-    {
-        return discriminator;
-    }
-
     /// Performs a GET request on the path
     /**
      * @see rest_reply

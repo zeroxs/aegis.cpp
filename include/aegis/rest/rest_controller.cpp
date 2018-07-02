@@ -164,7 +164,6 @@ AEGIS_DECL rest_reply rest_controller::execute(const std::string & path, const s
         while (asio::read(socket, response, asio::transfer_at_least(1), error))
             response_content << &response;
 
-        std::istream response_stream(&response);
         std::istringstream istrm(response_content.str());
         hresponse.consume(istrm);
 
