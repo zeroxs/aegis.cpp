@@ -97,18 +97,20 @@ enum http_code
 class rest_reply
 {
 public:
-    rest_reply(std::string const & msg)
+    explicit rest_reply(std::string const & msg)
         : _msg{ msg }
+        , reply_code(http_code::unknown)
     {
     }
 
     rest_reply()
         : _msg("")
+        , reply_code(http_code::unknown)
     {
 
     }
 
-    rest_reply(http_code reply_code, bool global, int32_t limit, int32_t remaining, int64_t reset, int32_t retry, std::string content, std::chrono::steady_clock::duration exec_time = 0ms)
+    rest_reply(http_code reply_code, bool global, int32_t limit, int32_t remaining, int64_t reset, int32_t retry, const std::string & content, std::chrono::steady_clock::duration exec_time = 0ms)
         : reply_code(reply_code)
         , global(global)
         , limit(limit)
