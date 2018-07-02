@@ -153,9 +153,6 @@ public:
     core(core &&) = delete;
     core & operator=(const core &) = delete;
 
-    /// Assign the message, connect, and close callbacks to the websocket object
-    AEGIS_DECL void setup_callbacks();
-
     /// Outputs the last 5 messages received from the gateway
     ///
     AEGIS_DECL void debug_trace(shards::shard * _shard);
@@ -545,6 +542,9 @@ private:
     AEGIS_DECL void keep_alive(const asio::error_code & error, const int32_t ms, shards::shard * _shard);
 
     AEGIS_DECL void reset_shard(shards::shard * _shard);
+
+    /// Assign the message, connect, and close callbacks to the websocket object
+    AEGIS_DECL void setup_callbacks();
 
     friend class guild;
     friend class channel;
