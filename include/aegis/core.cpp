@@ -784,19 +784,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
 
 AEGIS_DECL void core::debug_trace(shards::shard * _shard)
 {
-    fmt::MemoryWriter w;
-
-    w << "~~ERROR~~"
-        << "\n==========<Start Error Trace>==========\n"
-        << "Shard: " << _shard->shardid << '\n'
-        << "Seq: " << _shard->sequence << '\n';
-    int i = 0;
-
-    for (auto & msg : _shard->debug_messages)
-        w << std::get<0>(msg) << " - " << std::get<1>(msg) << '\n';
-
-    w << "==========<End Error Trace>==========";
-    log->error(w.str());
+    _shard_mgr->debug_trace(_shard);
 }
 
 AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const int32_t ms, shards::shard * _shard)
