@@ -20,11 +20,6 @@ int main(int argc, char * argv[])
         // Create bot object
         aegis::core bot(spdlog::level::trace);
 
-        // Some pieces of the ping test
-        std::mutex m_ping_test;
-        std::condition_variable cv_ping_test;
-        int64_t ws_checktime = 0;
-
         // These callbacks are what the lib calls when messages come in
         bot.set_on_message_create([&](aegis::gateway::events::message_create obj)
         {
@@ -39,23 +34,10 @@ int main(int argc, char * argv[])
                 const aegis::snowflake message_id = std::get<2>(rets);
                 const aegis::snowflake member_id = std::get<3>(rets);
 
-                //ping test
-                static aegis::snowflake ping_check(0);
-                static int64_t checktime(0);
-
                 // Is message author myself?
-                if (obj.msg.author.user_id == obj.bot->self()->get_id())
-                {
-                    // Does nonce of message match previous ping attempt?
-                    if (obj.msg.nonce == checktime)
-                    {
-                        // Record time and notify original thread that ping came through
-                        ws_checktime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() - checktime;
-                        cv_ping_test.notify_all();
-                        return;
-                    }
-                }
-
+                if (obj.msg.author.user_id == obj.bot->get_id())
+                    return;
+     
                 // Ignore bot messages and DMs
                 if (obj.msg.is_bot() || !obj.msg.has_guild())
                     return;
@@ -102,97 +84,6 @@ int main(int argc, char * argv[])
                         // add a reaction to that new message
                         msg.create_reaction("success:429554838083207169");
                     }
-                }
-                // Complex ping reply. Edits bot's message to display REST response time.
-                // Then when the Websocket receives the message, edits it again to show the time
-                // the message took to come over the websocket
-                else if (content == "~ping")
-                {
-                    std::unique_lock<std::mutex> lk(m_ping_test);
-                    checktime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-
-                    auto apireply = _channel.create_message("Pong", checktime).get();
-                    if (apireply)
-                    {
-                        aegis::gateway::objects::message msg = json::parse(apireply.content);
-                        std::string to_edit = fmt::format("Ping reply: REST [{}ms]", (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() - checktime));
-                        // edit message to show REST reply time
-                        msg.edit(to_edit);
-                        if (cv_ping_test.wait_for(lk, 20s) == std::cv_status::no_timeout)
-                        {
-                            // edit message to show REST and websocket reply times
-                            msg.edit(fmt::format("{} WS [{}ms]", to_edit, ws_checktime));
-                            return;
-                        }
-                        else
-                        {
-                            msg.edit(fmt::format("{} WS [timeout20s]", to_edit));
-                            return;
-                        }
-                    }
-                }
-                else if (content == "~info")
-                {
-                    fmt::MemoryWriter w;
-                    w << "[Latest bot source](https://github.com/zeroxs/aegis.cpp)\n[Official Bot Server](https://discord.gg/Kv7aP5K)\n\nMemory usage: "
-                        << double(aegis::utility::getCurrentRSS()) / (1024 * 1024) << "MB\nMax Memory: "
-                        << double(aegis::utility::getPeakRSS()) / (1024 * 1024) << "MB";
-                    std::string stats = w.str();
-                    int64_t eventsseen = 0;
-                    for (auto & e : bot.message_count)
-                        eventsseen += e.second;
-
-    #if defined(DEBUG) || defined(_DEBUG)
-                    std::string build_mode = "DEBUG";
-    #else
-                    std::string build_mode = "RELEASE";
-    #endif
-                    std::string misc = fmt::format("I am shard {} of {} running on `{}` in `{}` mode", obj._shard->get_id() + 1, bot.shard_max_count, aegis::utility::platform::get_platform(), build_mode);
-
-    #if !defined(AEGIS_DISABLE_ALL_CACHE)
-                    json t = {
-                        { "title", "AegisBot" },
-                        { "description", stats },
-                        { "color", rand() % 0xFFFFFF },
-                        { "fields",
-                        json::array(
-                            {
-                                { { "name", "Members" },{ "value", bot.members.size() },{ "inline", true } },
-                                { { "name", "Channels" },{ "value", bot.channels.size() },{ "inline", true } },
-                                { { "name", "Uptime" },{ "value", bot.uptime() },{ "inline", true } },
-                                { { "name", "Guilds" },{ "value", bot.guilds.size() },{ "inline", true } },
-                                { { "name", "Events Seen" },{ "value", fmt::format("{}", eventsseen) },{ "inline", true } },
-                                { { "name", u8"\u200b" },{ "value", u8"\u200b" },{ "inline", true } },
-                                { { "name", "misc" },{ "value", misc },{ "inline", false } }
-                            }
-                            )
-                        },
-                        { "footer",{ { "icon_url", "https://cdn.discordapp.com/emojis/289276304564420608.png" },{ "text", fmt::format("Made in C++{} running {}", CXX_VERSION, AEGIS_VERSION_TEXT) } } }
-                    };
-    #else
-                    json t = {
-                        { "title", "AegisBot" },
-                        { "description", stats },
-                        { "color", rand() % 0xFFFFFF },
-                        { "fields",
-                        json::array(
-                            {
-                                { { "name", "Channels" },{ "value", bot.channels.size() },{ "inline", true } },
-                                { { "name", "Guilds" },{ "value", bot.guilds.size() },{ "inline", true } },
-                                { { "name", "Uptime" },{ "value", bot.uptime() },{ "inline", true } },
-                                { { "name", "Events Seen" },{ "value", fmt::format("{}", eventsseen) },{ "inline", true } },
-                                { { "name", u8"\u200b" },{ "value", u8"\u200b" },{ "inline", true } },
-                                { { "name", u8"\u200b" },{ "value", u8"\u200b" },{ "inline", true } },
-                                { { "name", "misc" },{ "value", misc },{ "inline", false } }
-                            }
-                            )
-                        },
-                        { "footer",{ { "icon_url", "https://cdn.discordapp.com/emojis/289276304564420608.png" },{ "text", fmt::format("Made in C++{} running {}", CXX_VERSION, AEGIS_VERSION_TEXT) } } }
-                    };
-    #endif
-
-                    _channel.create_message_embed({}, t);
-                    return;
                 }
                 else if (content == "~exit")
                 {

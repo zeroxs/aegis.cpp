@@ -265,7 +265,7 @@ public:
      * @param f A callable to execute within asio - signature should be void(void)
      */
     template<typename T>
-    AEGIS_DECL void async(T f)
+    void async(T f)
     {
         asio::post(*_io_context, std::move(f));
     }
@@ -295,6 +295,15 @@ public:
      */
     AEGIS_DECL member * member_create(snowflake id) AEGIS_NOEXCEPT;
 #endif
+
+    /// Get the snowflake of the bot
+    /**
+    * @returns A snowflake of the bot
+    */
+    const snowflake get_id() const AEGIS_NOEXCEPT
+    {
+        return member_id;
+    }
 
     /// Obtain a pointer to a channel by snowflake
     /**
