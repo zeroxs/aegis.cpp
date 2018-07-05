@@ -148,7 +148,7 @@ AEGIS_DECL rest_reply rest_controller::execute(const std::string & path, const s
             request_stream << "Authorization: Bot " << _token << "\r\n";
         else
             request_stream << "Authorization: " << _token << "\r\n";
-        request_stream << "User-Agent: DiscordBot (https://github.com/zeroxs/aegis.cpp " << AEGIS_VERSION_LONG << ")\r\n";
+        request_stream << "User-Agent: DiscordBot (https://github.com/zeroxs/aegis.cpp, " << AEGIS_VERSION_LONG << ")\r\n";
         request_stream << "Content-Length: " << content.size() << "\r\n";
         request_stream << "Content-Type: application/json\r\n";
         request_stream << "Connection: close\r\n\r\n";
