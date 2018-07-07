@@ -269,6 +269,7 @@ AEGIS_DECL void shard_mgr::_on_close(websocketpp::connection_hdl hdl, shard * _s
     reset_shard(_shard);
 
     //TODO debug only auto reconnect 50 times per session
+    //instead, check how quickly reconnects are happening to identify a connect loop
     if (_shard->counters.reconnects < 50)
         queue_reconnect(_shard);
 
@@ -317,6 +318,7 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
                     // heartbeat system should typically pick up any dead sockets. this is sort of redundant at the moment
                     if (_shard->lastwsevent < (now - 90s))
                     {
+                        _shard->lastwsevent = now;
                         log->error("Shard#{}: Websocket had no events in last 90s - reconnecting", _shard->shardid);
                         debug_trace(_shard.get());
                         if (_shard->_connection->get_state() < websocketpp::session::state::closing)
@@ -410,6 +412,7 @@ AEGIS_DECL void shard_mgr::queue_reconnect(shard * _shard)
 
 AEGIS_DECL void shard_mgr::debug_trace(shard * _shard, bool extended)
 {
+#if defined(AEGIS_DEBUG_HISTORY)
     fmt::MemoryWriter w;
 
     w << "~~ERROR~~ extended(" << extended << ")"
@@ -440,6 +443,7 @@ AEGIS_DECL void shard_mgr::debug_trace(shard * _shard, bool extended)
     }
     w << "==========<End Error Trace>==========";
     log->error(w.str());
+#endif
 }
 
 AEGIS_DECL shard & shard_mgr::get_shard(uint16_t shard_id)

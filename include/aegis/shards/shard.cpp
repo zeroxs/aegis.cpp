@@ -38,6 +38,7 @@ AEGIS_DECL void shard::do_reset(bot_status _status) AEGIS_NOEXCEPT
         try
         {
             connection_state = _status;
+            last_status_time = lastwsevent = std::chrono::steady_clock::now();
             heartbeat_ack = lastheartbeat = std::chrono::steady_clock::time_point();
             if (_connection != nullptr)
             {

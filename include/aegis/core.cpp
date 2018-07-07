@@ -682,7 +682,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                         _shard->sequence = 0;
                         log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->shardid);
                         _shard->session_id.clear();
-                        std::this_thread::sleep_for(std::chrono::milliseconds((rand() % 4000) + 1000));
+                        std::this_thread::sleep_for(std::chrono::milliseconds((rand() % 2000) + 5000));
                         json obj = {
                             { "op", 2 },
                             {
@@ -913,16 +913,6 @@ AEGIS_DECL void core::on_close(websocketpp::connection_hdl hdl, shards::shard * 
 {
     if (_status == Shutdown)
         return;
-    auto now = std::chrono::steady_clock::now();
-    log->error("Shard#{}: disconnected. lastheartbeat({}) lastwsevent({}) lastheartbeatack({}) ms ago",
-               _shard->get_id(),
-               std::chrono::duration_cast<std::chrono::milliseconds>(now - _shard->lastheartbeat).count(),
-               std::chrono::duration_cast<std::chrono::milliseconds>(now - _shard->lastwsevent).count(),
-               std::chrono::duration_cast<std::chrono::milliseconds>(now - _shard->heartbeat_ack).count());
-    reset_shard(_shard);
-    //TODO debug only auto reconnect 50 times per session
-    if (_shard->counters.reconnects < 50)
-        _shard_mgr->queue_reconnect(_shard);
 }
 
 AEGIS_DECL void core::reset_shard(shards::shard * _shard)
