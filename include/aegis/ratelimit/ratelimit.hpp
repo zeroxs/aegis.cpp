@@ -97,7 +97,7 @@ public:
             return *bkt_type->second.emplace(id, std::make_unique<bucket<Callable, Result>>(_call, _io_context, global_limit)).first->second;
         }
 
-        using bkt_map = std::map<aegis::snowflake, std::unique_ptr<aegis::ratelimit::bucket<rest_call, aegis::rest::rest_reply>>>;
+        using bkt_map = std::unordered_map<aegis::snowflake, std::unique_ptr<aegis::ratelimit::bucket<rest_call, aegis::rest::rest_reply>>>;
         // create new bucket set
         auto & bkt = _buckets.emplace(type, bkt_map()).first->second;
         // create new bucket and return
@@ -110,7 +110,7 @@ private:
     std::atomic<int64_t> global_limit; /**< Timestamp in seconds when global ratelimit expires */
 
     // <bucket_type, bucket_factory>
-    std::map<bucket_type, std::map<snowflake, std::unique_ptr<bucket<Callable, Result>>>> _buckets;
+    std::unordered_map<bucket_type, std::unordered_map<snowflake, std::unique_ptr<bucket<Callable, Result>>>> _buckets;
     Callable _call;
     asio::io_context & _io_context;
 };

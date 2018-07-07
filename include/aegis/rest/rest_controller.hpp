@@ -114,7 +114,7 @@ private:
     std::string _token;
     std::string _prefix;
     std::string _host;
-    std::map<std::string, asio::ip::basic_resolver<asio::ip::tcp>::results_type> _resolver_cache;
+    std::unordered_map<std::string, asio::ip::basic_resolver<asio::ip::tcp>::results_type> _resolver_cache;
     asio::io_context _io_context;
 #if defined(AEGIS_PROFILING)
     core * _bot;

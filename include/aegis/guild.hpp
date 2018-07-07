@@ -970,10 +970,10 @@ public:
      */
     AEGIS_DECL channel * find_channel(snowflake channel_id) const AEGIS_NOEXCEPT;
 
-    std::map<snowflake, channel*> channels; /**< Map of snowflakes to channel objects */
+    std::unordered_map<snowflake, channel*> channels; /**< Map of snowflakes to channel objects */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    std::map<snowflake, member*> members; /**< Map of snowflakes to member objects */
-    std::map<snowflake, gateway::objects::role> roles; /**< Map of snowflakes to role objects */
+    std::unordered_map<snowflake, member*> members; /**< Map of snowflakes to member objects */
+    std::unordered_map<snowflake, gateway::objects::role> roles; /**< Map of snowflakes to role objects */
 #endif
 
 private:

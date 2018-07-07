@@ -391,10 +391,10 @@ public:
     std::condition_variable cv;
     std::shared_ptr<asio::io_context> _io_context;
 
-    std::map<snowflake, std::unique_ptr<channel>> channels;
-    std::map<snowflake, std::unique_ptr<guild>> guilds;
+    std::unordered_map<snowflake, std::unique_ptr<channel>> channels;
+    std::unordered_map<snowflake, std::unique_ptr<guild>> guilds;
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    std::map<snowflake, std::unique_ptr<member>> members;
+    std::unordered_map<snowflake, std::unique_ptr<member>> members;
 #endif
     std::map<std::string, uint64_t> message_count;
 

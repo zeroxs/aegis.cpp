@@ -723,7 +723,7 @@ private:
     gateway::objects::channel_type type = gateway::objects::channel_type::Text; /**< Type of channel */
     uint16_t bitrate = 0; /**< Bit rate of voice channel */
     uint16_t user_limit = 0; /**< User limit of voice channel */
-    std::map<int64_t, gateway::objects::permission_overwrite> overrides; /**< Snowflake map of user/role to permission overrides */
+    std::unordered_map<int64_t, gateway::objects::permission_overwrite> overrides; /**< Snowflake map of user/role to permission overrides */
 #endif
     asio::io_context & _io_context;
     mutable shared_mutex _m;

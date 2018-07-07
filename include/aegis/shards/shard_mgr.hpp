@@ -123,7 +123,7 @@ public:
 
     std::string ws_gateway;
 
-    std::map<std::string, uint64_t> message_count;
+    std::unordered_map<std::string, uint64_t> message_count;
 
     std::string self_presence;
     uint32_t force_shard_count;
