@@ -607,8 +607,6 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
             if (!result["t"].is_null())
                 if (js_end)
                     js_end(s_t, result["t"]);
-
-        s_t = std::chrono::steady_clock::now();
 #endif
 
         if (!result.is_null())
@@ -646,10 +644,13 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                         {
                             try
                             {
-                                (it->second)(res, _shard);
 #if defined(AEGIS_PROFILING)
+                                auto s_t = std::chrono::steady_clock::now();
+                                (it->second)(res, _shard);
                                 if (message_end)
                                     message_end(s_t, cmd);
+#else
+                                (it->second)(res, _shard);
 #endif
                             }
                             catch (std::exception& e)
