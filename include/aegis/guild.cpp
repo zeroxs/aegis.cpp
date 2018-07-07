@@ -55,7 +55,7 @@ AEGIS_DECL member * guild::self() const
 
 AEGIS_DECL void guild::add_member(member * _member) AEGIS_NOEXCEPT
 {
-    members.emplace(_member->member_id, _member);
+    members.emplace(_member->_member_id, _member);
 }
 
 AEGIS_DECL void guild::remove_member(snowflake member_id) AEGIS_NOEXCEPT
@@ -102,7 +102,7 @@ AEGIS_DECL void guild::load_presence(const json & obj) AEGIS_NOEXCEPT
         //_status->core->log->error("User doesn't exist {}", user["id"].get<std::string>());
         return;
     }
-    _member->status = status;
+    _member->_status = status;
 }
 
 AEGIS_DECL void guild::load_role(const json & obj) AEGIS_NOEXCEPT
@@ -187,7 +187,7 @@ AEGIS_DECL int64_t guild::base_permissions(member & _member) const AEGIS_NOEXCEP
 {
     try
     {
-        if (owner_id == _member.member_id)
+        if (owner_id == _member._member_id)
             return ~0;
 
         auto & role_everyone = get_role(guild_id);
@@ -248,9 +248,9 @@ AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, member &
             }
         }
 
-        if (overwrites.count(_member.member_id))
+        if (overwrites.count(_member._member_id))
         {
-            auto & ow_role = overwrites[_member.member_id];
+            auto & ow_role = overwrites[_member._member_id];
             allow |= ow_role.allow;
             deny |= ow_role.deny;
         }
@@ -496,7 +496,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild(std::error_code & e
                     std::optional<std::string> icon, std::optional<snowflake> owner_id, std::optional<std::string> splash)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if ((!perms().can_manage_guild()) || (owner_id.has_value() && owner_id != self()->member_id))
+    if ((!perms().can_manage_guild()) || (owner_id.has_value() && owner_id != self()->_member_id))
     {
         ec = make_error_code(error::no_permission);
         return {};
@@ -533,7 +533,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::delete_guild(std::error_code & e
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     //requires OWNER
-    if (owner_id != self()->member_id)
+    if (owner_id != self()->_member_id)
     {
         ec = make_error_code(error::no_permission);
         return {};

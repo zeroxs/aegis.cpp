@@ -87,7 +87,7 @@ public:
                     //found # separator
                     for (auto & m : _guild.members)
                         if (m.second->get_full_name() == name)
-                            return { m.second->member_id };
+                            return { m.second->get_id() };
                     return { 0 };
                 }
                 return { 0 };//# not found. unknown parameter. unicode may trigger this.

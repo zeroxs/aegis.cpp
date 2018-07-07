@@ -24,21 +24,21 @@ namespace aegis
 
 AEGIS_DECL std::string member::get_full_name() const AEGIS_NOEXCEPT
 {
-    return fmt::format("{}#{:0=4}", name, discriminator);
+    return fmt::format("{}#{:0=4}", std::string(_name), _discriminator);
 }
 
 AEGIS_DECL void member::load(guild * _guild, const json & obj, shards::shard * _shard)
 {
     const json & user = obj["user"];
-    snowflake member_id = user["id"];
+    _member_id = user["id"];
 
     try
     {
-        if (user.count("username") && !user["username"].is_null()) name = user["username"].get<std::string>();
-        if (user.count("avatar") && !user["avatar"].is_null()) avatar = user["avatar"].get<std::string>();
-        if (user.count("discriminator") && !user["discriminator"].is_null()) discriminator = static_cast<uint16_t>(std::stoi(user["discriminator"].get<std::string>()));
+        if (user.count("username") && !user["username"].is_null()) _name = user["username"].get<std::string>();
+        if (user.count("avatar") && !user["avatar"].is_null()) _avatar = user["avatar"].get<std::string>();
+        if (user.count("discriminator") && !user["discriminator"].is_null()) _discriminator = static_cast<uint16_t>(std::stoi(user["discriminator"].get<std::string>()));
         if (user.count("bot"))
-            is_bot = user["bot"].is_null() ? false : true;
+            _is_bot = user["bot"].is_null() ? false : true;
 
         if (_guild == nullptr)
             return;
@@ -80,9 +80,9 @@ AEGIS_DECL void member::load(guild * _guild, const json & obj, shards::shard * _
     catch (std::exception & e)
     {
         if (_guild != nullptr)
-            spdlog::get("aegis")->error("Shard#{} : Error processing member[{}] of guild[{}] {}", _shard->get_id(), member_id, _guild->get_id(), e.what());
+            spdlog::get("aegis")->error("Shard#{} : Error processing member[{}] of guild[{}] {}", _shard->get_id(), _member_id, _guild->get_id(), e.what());
         else
-            throw exception(fmt::format("Shard#{} : Error processing member[{}] {}", _shard->get_id(), member_id, e.what()), make_error_code(error::member_error));
+            throw exception(fmt::format("Shard#{} : Error processing member[{}] {}", _shard->get_id(), _member_id, e.what()), make_error_code(error::member_error));
     }
 }
 

@@ -45,15 +45,7 @@ using json = nlohmann::json;
 class member
 {
 public:
-    explicit member(snowflake id) : member_id(id) {}
-    snowflake member_id = 0;
-
-    std::string name; /**< Username of member */
-    uint16_t discriminator = 0; /**< 4 digit discriminator (1-9999) */
-    std::string avatar; /**< Hash of member avatar */
-    bool is_bot = false; /**< true if member is a bot */
-    bool mfa_enabled = false; /**< true if member has Two-factor authentication enabled */
-    mutable shared_mutex _m;
+    explicit member(snowflake id) : _member_id(id) {}
 
     /// Member owned guild information
     struct guild_info
@@ -75,14 +67,57 @@ public:
         DoNotDisturb
     };
 
-    member_status status = member_status::Offline; /**< Member _status */
-
     /// Get the nickname of this user
     /**
      * @param guild_id The snowflake for the guild to check if nickname is set
-     * @returns A string of the nickname or empty if no nickname is set
+     * @returns string of the nickname or empty if no nickname is set
      */
     AEGIS_DECL std::string get_name(snowflake guild_id) AEGIS_NOEXCEPT;
+
+    /// Get the nickname of this user
+    /**
+    * @returns string of the username
+    */
+    AEGIS_DECL std::string get_username() const AEGIS_NOEXCEPT
+    {
+        return std::string(_name);
+    }
+
+    /// Get the discriminator of this user
+    /**
+    * @returns string of the discriminator
+    */
+    AEGIS_DECL uint16_t get_discriminator() const AEGIS_NOEXCEPT
+    {
+        return _discriminator;
+    }
+
+    /// Get the discriminator of this user
+    /**
+    * @returns string of the discriminator
+    */
+    AEGIS_DECL std::string get_avatar() const AEGIS_NOEXCEPT
+    {
+        return std::string(_avatar);
+    }
+
+    /// Check whether user is a bot
+    /**
+    * @returns bool of bot status
+    */
+    AEGIS_DECL bool is_bot() const AEGIS_NOEXCEPT
+    {
+        return _is_bot;
+    }
+
+    /// Get the status of multi factor authentication
+    /**
+    * @returns bool of mfa status
+    */
+    AEGIS_DECL bool is_mfa_enabled() const AEGIS_NOEXCEPT
+    {
+        return _mfa_enabled;
+    }
 
     /// Get the member owned guild information object
     /**
@@ -93,23 +128,33 @@ public:
 
     /// Get the full name (username#discriminator) of this user
     /**
-     * @returns A string of the full username and discriminator
+     * @returns string of the full username and discriminator
      */
     AEGIS_DECL std::string get_full_name() const AEGIS_NOEXCEPT;
 
-    std::map<int64_t, guild_info> guilds; /**< Map of snowflakes to member owned guild information */
-
     /// Get the snowflake of this user
     /**
-     * @returns A snowflake of the user
+     * @returns snowflake of the user
      */
-    const snowflake get_id() const AEGIS_NOEXCEPT
+    snowflake get_id() const AEGIS_NOEXCEPT
     {
-        return member_id;
+        return _member_id;
     }
+
+
 private:
     friend class core;
     friend class guild;
+
+    snowflake _member_id = 0;
+    member_status _status = member_status::Offline; /**< Member _status */
+    std::string _name; /**< Username of member */
+    uint16_t _discriminator = 0; /**< 4 digit discriminator (1-9999) */
+    std::string _avatar; /**< Hash of member avatar */
+    bool _is_bot = false; /**< true if member is a bot */
+    bool _mfa_enabled = false; /**< true if member has Two-factor authentication enabled */
+    std::unordered_map<int64_t, guild_info> guilds; /**< Map of snowflakes to member owned guild information */
+    mutable shared_mutex _m;
 
     /// requires the caller to handle locking
     AEGIS_DECL void load(guild * _guild, const json & obj, shards::shard * _shard);

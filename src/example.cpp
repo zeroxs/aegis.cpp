@@ -28,7 +28,7 @@ void example::MessageCreate(message_create obj)
     auto & _channel = obj.get_channel();
     auto & _guild = _channel.get_guild();
 
-    auto & username = _member.name;
+    auto username = _member.get_username();
 
     std::string content{ obj.msg.get_content() };
 
@@ -57,7 +57,7 @@ void example::MessageCreate(message_create obj)
 
         if (toks[0] == "exit")
         {
-            if (_member.member_id != bot_owner_id)
+            if (_member.get_id() != bot_owner_id)
             {
                 _channel.create_message("No perms `exit`");
                 return;

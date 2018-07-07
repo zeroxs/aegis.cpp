@@ -484,11 +484,11 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
         auto m = std::make_unique<member>(member_id);
         _self = m.get();
         members.emplace(member_id, std::move(m));
-        _self->member_id = member_id;
-        _self->is_bot = true;
-        _self->name = username;
-        _self->discriminator = discriminator;
-        _self->status = member::Online;
+        _self->_member_id = member_id;
+        _self->_is_bot = true;
+        _self->_name = username;
+        _self->_discriminator = discriminator;
+        _self->_status = member::Online;
     }
 #else
     const json & userdata = d["user"];
@@ -961,7 +961,7 @@ AEGIS_DECL void core::ws_presence_update(const json & result, shards::shard * _s
     std::unique_lock<shared_mutex> l2(_guild->mtx(), std::defer_lock);
     std::lock(l, l2);
     _member->load(_guild, result["d"], _shard);
-    _member->status = status;
+    _member->_status = status;
 #endif
 
     gateway::events::presence_update obj;
@@ -1183,15 +1183,15 @@ AEGIS_DECL void core::ws_user_update(const json & result, shards::shard * _shard
 
     const json & user = result["d"]["user"];
     if (user.count("username") && !user["username"].is_null())
-        _member->name = user["username"].get<std::string>();
+        _member->_name = user["username"].get<std::string>();
     if (user.count("avatar") && !user["avatar"].is_null())
-        _member->avatar = user["avatar"].get<std::string>();
+        _member->_avatar = user["avatar"].get<std::string>();
     if (user.count("discriminator") && !user["discriminator"].is_null())
-        _member->discriminator = static_cast<uint16_t>(std::stoi(user["discriminator"].get<std::string>()));
+        _member->_discriminator = static_cast<uint16_t>(std::stoi(user["discriminator"].get<std::string>()));
     if (user.count("mfa_enabled") && !user["mfa_enabled"].is_null())
-        _member->mfa_enabled = user["mfa_enabled"];
+        _member->_mfa_enabled = user["mfa_enabled"];
     if (user.count("bot") && !user["bot"].is_null())
-        _member->is_bot = user["bot"];
+        _member->_is_bot = user["bot"];
     //if (!user["verified"].is_null()) _member.m_verified = user["verified"];
     //if (!user["email"].is_null()) _member.m_email = user["email"];
     gateway::events::user_update obj(_member);
