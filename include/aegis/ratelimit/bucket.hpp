@@ -156,3 +156,17 @@ private:
 }
 
 }
+
+namespace std
+{
+
+template <>
+struct hash<aegis::ratelimit::bucket_type>
+{
+    std::size_t operator()(const aegis::ratelimit::bucket_type& k) const
+    {
+        return hash<int64_t>()(k);
+    }
+};
+
+}
