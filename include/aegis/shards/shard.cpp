@@ -21,7 +21,7 @@ AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp:
     , heartbeattime(0)
     , sequence(0)
     , shardid(id)
-    , connection_state(bot_status::Uninitialized)
+    , connection_state(Uninitialized)
     , _io_context(_io)
     , transfer_bytes(0)
     , transfer_bytes_u(0)
@@ -29,15 +29,15 @@ AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp:
 {
 }
 
-AEGIS_DECL void shard::do_reset() AEGIS_NOEXCEPT
+AEGIS_DECL void shard::do_reset(bot_status _status) AEGIS_NOEXCEPT
 {
     if (_connection == nullptr)
         return;
-    asio::post(asio::bind_executor(*_connection->get_strand(), [this]()
+    asio::post(asio::bind_executor(*_connection->get_strand(), [this, _status]()
     {
         try
         {
-            connection_state = Shutdown;
+            connection_state = _status;
             heartbeat_ack = lastheartbeat = std::chrono::steady_clock::time_point();
             if (_connection != nullptr)
             {
@@ -101,7 +101,7 @@ AEGIS_DECL void shard::set_connected()
     write_timer.cancel();
     write_timer.expires_after(600ms);
     write_timer.async_wait(asio::bind_executor(*_connection->get_strand(), std::bind(&shard::process_writes, this, std::placeholders::_1)));
-    connection_state = bot_status::Online;
+    connection_state = Online;
 }
 
 AEGIS_DECL bool shard::is_connected() const AEGIS_NOEXCEPT
@@ -109,7 +109,7 @@ AEGIS_DECL bool shard::is_connected() const AEGIS_NOEXCEPT
     if (_connection == nullptr)
         return false;
 
-    if ((connection_state == bot_status::Connecting) || (connection_state == bot_status::Online))
+    if ((connection_state == Connecting) || (connection_state == Online))
         return true;
 
     return false;
@@ -145,8 +145,7 @@ AEGIS_DECL void shard::process_writes(const asio::error_code & ec)
         return;
 
     using namespace std::chrono_literals;
-    if ((connection_state == bot_status::Online
-         || connection_state == bot_status::Connecting) && !write_queue.empty())
+    if ((connection_state == Online || connection_state == Connecting) && !write_queue.empty())
     {
         last_ws_write = std::chrono::steady_clock::now();
 
@@ -191,7 +190,7 @@ AEGIS_DECL std::string shard::uptime_str() const AEGIS_NOEXCEPT
 
 AEGIS_DECL void shard::close(int32_t code, std::string reason) AEGIS_NOEXCEPT
 {
-    connection_state = bot_status::Reconnecting;
+    connection_state = Shutdown;
     if (_connection != nullptr)
     {
         _connection->close(code, reason);

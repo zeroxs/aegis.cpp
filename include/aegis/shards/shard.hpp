@@ -38,7 +38,7 @@ public:
     AEGIS_DECL shard(asio::io_context & _io, websocketpp::client<websocketpp::config::asio_tls_client> & _ws, int32_t id);
 
     /// Resets connection, heartbeat, and timer related objects to allow reconnection
-    AEGIS_DECL void do_reset() AEGIS_NOEXCEPT;
+    AEGIS_DECL void do_reset(bot_status _status = Reconnecting) AEGIS_NOEXCEPT;
 
     /// Get this shard's websocket message sequence counter
     /**

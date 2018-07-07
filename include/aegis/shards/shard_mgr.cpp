@@ -126,7 +126,7 @@ AEGIS_DECL void shard_mgr::shutdown()
         _shard->connection_state = Shutdown;
         if (_shard->_connection && _shard->_connection->get_socket().lowest_layer().is_open())
             _shard->_connection->close(1001, "");
-        _shard->do_reset();
+        _shard->do_reset(Shutdown);
     }
 }
 
@@ -291,7 +291,6 @@ AEGIS_DECL void shard_mgr::send_all_shards(const json & msg)
 AEGIS_DECL void shard_mgr::reset_shard(shard * _shard)
 {
     _shard->do_reset();
-    _shard->connection_state = bot_status::Reconnecting;
 }
 
 AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
@@ -323,7 +322,7 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
                         if (_shard->_connection->get_state() < websocketpp::session::state::closing)
                         {
                             websocket_o.close(_shard->_connection, 1001, "");
-                            _shard->connection_state = bot_status::Reconnecting;
+                            _shard->connection_state = Reconnecting;
                         }
                         else
                             reset_shard(_shard.get());
@@ -370,7 +369,7 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
 
                         _shard->connect();
                         setup_callbacks(_shard);
-                        _shard->connection_state = bot_status::Connecting;
+                        _shard->connection_state = Connecting;
                     }
                     else
                     {

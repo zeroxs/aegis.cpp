@@ -795,7 +795,7 @@ AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const int32_t ms, 
         return;
     try
     {
-        if (_shard->connection_state == bot_status::Shutdown || _shard->_connection == nullptr)
+        if (_shard->connection_state == Shutdown || _shard->_connection == nullptr)
             return;
 
         auto now = std::chrono::steady_clock::now();
@@ -928,7 +928,6 @@ AEGIS_DECL void core::on_close(websocketpp::connection_hdl hdl, shards::shard * 
 AEGIS_DECL void core::reset_shard(shards::shard * _shard)
 {
     _shard->do_reset();
-    _shard->connection_state = bot_status::Reconnecting;
 }
 
 AEGIS_DECL void core::ws_presence_update(const json & result, shards::shard * _shard)
@@ -1222,7 +1221,7 @@ AEGIS_DECL void core::ws_voice_state_update(const json & result, shards::shard *
 AEGIS_DECL void core::ws_resumed(const json & result, shards::shard * _shard)
 {
     _shard_mgr->_connecting_shard = nullptr;
-    _shard->connection_state = bot_status::Online;
+    _shard->connection_state = Online;
     _shard_mgr->_connect_time = std::chrono::steady_clock::time_point();
     _shard->_ready_time = _shard_mgr->_last_ready = std::chrono::steady_clock::now();
     log->info("Shard#{} RESUMED Processed", _shard->shardid);
@@ -1245,7 +1244,7 @@ AEGIS_DECL void core::ws_resumed(const json & result, shards::shard * _shard)
 AEGIS_DECL void core::ws_ready(const json & result, shards::shard * _shard)
 {
     _shard_mgr->_connecting_shard = nullptr;
-    _shard->connection_state = bot_status::Online;
+    _shard->connection_state = Online;
     _shard_mgr->_connect_time = std::chrono::steady_clock::time_point();
     _shard->_ready_time = _shard_mgr->_last_ready = std::chrono::steady_clock::now();
     process_ready(result["d"], _shard);
