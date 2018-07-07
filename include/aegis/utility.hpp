@@ -11,6 +11,13 @@
 
 #include "aegis/config.hpp"
 #include <string>
+#include <atomic>
+#include <map>
+#include <unordered_map>
+#include <vector>
+#include <string>
+#include <iostream>
+#include <chrono>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -33,6 +40,20 @@
 
 namespace aegis
 {
+
+
+template<class Func>
+void perf_run(const std::string & name, Func f)
+{
+    std::cout << "Running [" << name << "]\n";
+    auto n = std::chrono::steady_clock::now();
+
+    f();
+
+    auto n_end = std::chrono::steady_clock::now();
+
+    std::cout << "Time: [" << std::chrono::duration_cast<std::chrono::microseconds>(n_end - n).count() << "us]\n";
+}
 
 /**\todo Needs documentation
  */
@@ -199,6 +220,5 @@ inline size_t getCurrentRSS()
 //////////////////////////////////////////////////////////////////////////
 
 }
-
 
 }

@@ -10,6 +10,7 @@
 #pragma once
 
 #include "aegis/config.hpp"
+#include "aegis/utility.hpp"
 #include "aegis/error.hpp"
 #include <stdint.h>
 #include <string>

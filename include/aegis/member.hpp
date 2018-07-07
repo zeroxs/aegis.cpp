@@ -10,6 +10,7 @@
 #pragma once
 
 #include "aegis/config.hpp"
+#include "aegis/utility.hpp"
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 #include "aegis/snowflake.hpp"
 #include "aegis/fwd.hpp"

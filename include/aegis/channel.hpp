@@ -11,6 +11,7 @@
 
 #include "aegis/config.hpp"
 #include <future>
+#include "aegis/utility.hpp"
 #include "aegis/ratelimit/ratelimit.hpp"
 #include "aegis/permission.hpp"
 #include "aegis/snowflake.hpp"

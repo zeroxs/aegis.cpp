@@ -10,6 +10,7 @@
 #pragma once
 
 #include "aegis/config.hpp"
+#include "aegis/utility.hpp"
 #include "aegis/objects/role.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/rest/rest_reply.hpp"

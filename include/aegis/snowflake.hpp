@@ -122,3 +122,16 @@ inline void to_json(nlohmann::json& j, const snowflake& s)
 
 }
 
+namespace std
+{
+
+template <>
+struct hash<aegis::snowflake>
+{
+    std::size_t operator()(const aegis::snowflake& k) const
+    {
+        return hash<int64_t>()(k.get());
+    }
+};
+
+}
