@@ -18,6 +18,7 @@
 #include <string>
 #include <iostream>
 #include <chrono>
+#include <sstream>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -41,20 +42,6 @@
 namespace aegis
 {
 
-
-template<class Func>
-void perf_run(const std::string & name, Func f)
-{
-    std::cout << "Running [" << name << "]\n";
-    auto n = std::chrono::steady_clock::now();
-
-    f();
-
-    auto n_end = std::chrono::steady_clock::now();
-
-    std::cout << "Time: [" << std::chrono::duration_cast<std::chrono::microseconds>(n_end - n).count() << "us]\n";
-}
-
 /**\todo Needs documentation
  */
 enum bot_status
@@ -69,6 +56,21 @@ enum bot_status
 
 namespace utility
 {
+
+template<class Func>
+std::string perf_run(const std::string & name, Func f)
+{
+    std::stringstream ss;
+    ss << "Running [" << name << "]\n";
+    auto n = std::chrono::steady_clock::now();
+
+    f();
+
+    auto n_end = std::chrono::steady_clock::now();
+
+    ss << "Time: [" << std::chrono::duration_cast<std::chrono::microseconds>(n_end - n).count() << "us]\n";
+    return ss.str();
+}
 
 namespace platform
 {
