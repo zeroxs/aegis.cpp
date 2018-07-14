@@ -145,7 +145,6 @@ public:
     AEGIS_DECL void send_all_shards(const json & msg);
 
     AEGIS_DECL void start(std::size_t count = 0);
-    AEGIS_DECL void stop();
 
     using t_on_message = std::function<void(websocketpp::connection_hdl hdl, std::string msg, shard * _shard)>;
     using t_on_connect = std::function<void(websocketpp::connection_hdl hdl, shard * _shard)>;

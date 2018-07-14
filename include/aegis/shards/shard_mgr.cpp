@@ -43,8 +43,7 @@ AEGIS_DECL shard_mgr::shard_mgr(std::string token, asio::io_context & _io, std::
 
 AEGIS_DECL shard_mgr::~shard_mgr()
 {
-    for (auto & _shard : _shards)
-        _shard->cleanup();
+    shutdown();
 }
 
 AEGIS_DECL void shard_mgr::start(std::size_t count)
@@ -97,14 +96,6 @@ AEGIS_DECL void shard_mgr::start(std::size_t count)
     }
 }
 
-AEGIS_DECL void shard_mgr::stop()
-{
-    wrk.reset();
-    _io_context.stop();
-    for (auto & t : threads)
-        t.join();
-}
-
 AEGIS_DECL void shard_mgr::setup_callbacks(shard * _shard)
 {
     _shard->_connection->set_message_handler(
@@ -121,13 +112,11 @@ AEGIS_DECL void shard_mgr::shutdown()
     websocket_o.stop();
     cv.notify_all();
     for (auto & _shard : _shards)
-    {
-        _shard->cleanup();
-        _shard->connection_state = Shutdown;
-        if (_shard->_connection && _shard->_connection->get_socket().lowest_layer().is_open())
-            _shard->_connection->close(1001, "");
         _shard->do_reset(Shutdown);
-    }
+    wrk.reset();
+    _io_context.stop();
+    for (auto & t : threads)
+        t.join();
 }
 
 AEGIS_DECL std::string shard_mgr::uptime() const AEGIS_NOEXCEPT
@@ -258,6 +247,12 @@ AEGIS_DECL void shard_mgr::_on_close(websocketpp::connection_hdl hdl, shard * _s
     if (_status == Shutdown)
     {
         reset_shard(_shard);
+        return;
+    }
+    if (_shard->connection_state == Shutdown)
+    {
+        if (i_on_close)
+            i_on_close(hdl, _shard);
         return;
     }
     auto now = std::chrono::steady_clock::now();

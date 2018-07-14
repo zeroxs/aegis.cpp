@@ -42,10 +42,9 @@ AEGIS_DECL void shard::do_reset(bot_status _status) AEGIS_NOEXCEPT
             heartbeat_ack = lastheartbeat = std::chrono::steady_clock::time_point();
             if (_connection != nullptr)
             {
-                if ((_connection->get_state() == websocketpp::session::state::value::connecting)
-                    || (_connection->get_state() == websocketpp::session::state::value::open))
+                if (_connection->get_state() == websocketpp::session::state::open)
                     _connection->close(1001, "");
-                _connection.reset();
+                //_connection.reset();
             }
             if (keepalivetimer != nullptr)
             {
@@ -78,13 +77,10 @@ AEGIS_DECL void shard::cleanup()
             keepalivetimer.reset();
         }
         connection_state = Shutdown;
-        if (_connection != nullptr)
-        {
-            if ((_connection->get_state() == websocketpp::session::state::value::connecting)
-                || (_connection->get_state() == websocketpp::session::state::value::open))
-                _connection->close(1001, "");
-            _connection.reset();
-        }
+        if ((_connection->get_state() == websocketpp::session::state::value::connecting)
+            || (_connection->get_state() == websocketpp::session::state::value::open))
+            _connection->close(1001, "");
+        //_connection.reset();
     }));
 }
 
