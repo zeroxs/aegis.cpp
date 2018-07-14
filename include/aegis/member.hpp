@@ -146,6 +146,9 @@ public:
 private:
     friend class core;
     friend class guild;
+    friend class gateway::objects::message;
+
+    AEGIS_DECL void load_data(gateway::objects::user mbr);
 
     snowflake _member_id = 0;
     member_status _status = member_status::Offline; /**< Member _status */
