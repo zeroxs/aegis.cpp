@@ -151,18 +151,18 @@ public:
 
     bool has_guild()
     {
-        return _guild != nullptr;
+        return _guild != nullptr || _guild_id != 0;
     }
 
     bool has_channel()
     {
-        return _channel != nullptr;
+        return _channel != nullptr || _channel_id != 0;
     }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     bool has_member()
     {
-        return _member != nullptr;
+        return _member != nullptr || _author_id != 0;
     }
 #endif
 
@@ -203,9 +203,18 @@ public:
 #else
             _member = BOT::bot->find_member(_author_id);
 #endif
-        assert(_member != nullptr);
         if (_member == nullptr)
-            throw exception("message::get_member() _member == nullptr", make_error_code(error::channel_not_found));
+        {
+            if (_author_id == 0)
+                throw exception("message::get_member() _member|_author_id == nullptr", make_error_code(error::member_not_found));
+
+#if defined(AEGIS_CXX17)
+            _member = bot->member_create(_author_id);
+#else
+            _member = BOT::bot->member_create(_author_id);
+#endif
+            _member->load_data(author);
+        }
         return *_member;
     }
 #endif
