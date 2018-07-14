@@ -135,6 +135,8 @@ AEGIS_DECL core::core(spdlog::level::level_enum loglevel)
 
 AEGIS_DECL core::~core()
 {
+    if (_shard_mgr)
+        _shard_mgr->shutdown();
     if (_io_context)
         _io_context->stop();
 }
