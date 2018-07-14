@@ -303,27 +303,57 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
         // do basic shard timer actions such as timing out potential ghost sockets
         for (auto & _shard : _shards)
         {
-            if (_shard == nullptr)
+            if (_shard == nullptr || _shard->connection_state == Uninitialized)
                 continue;
 
             if (_shard->is_connected())
             {
-                if (std::chrono::duration_cast<std::chrono::milliseconds>(_shard->lastwsevent.time_since_epoch()).count() > 0)
+                //a try should the 'worst' happen
+                try
                 {
-                    // heartbeat system should typically pick up any dead sockets. this is sort of redundant at the moment
-                    if (_shard->lastwsevent < (now - 90s))
+
+                    if (std::chrono::duration_cast<std::chrono::milliseconds>(_shard->lastwsevent.time_since_epoch()).count() > 0)
                     {
-                        _shard->lastwsevent = now;
-                        log->error("Shard#{}: Websocket had no events in last 90s - reconnecting", _shard->shardid);
-                        debug_trace(_shard.get());
-                        if (_shard->_connection->get_state() < websocketpp::session::state::closing)
+                        // heartbeat system should typically pick up any dead sockets. this is sort of redundant at the moment
+                        if (_shard->lastwsevent < (now - 90s))
                         {
-                            websocket_o.close(_shard->_connection, 1001, "");
-                            _shard->connection_state = Reconnecting;
-                        }
-                        else
+                            _shard->lastwsevent = now;
+                            log->error("Shard#{}: Websocket had no events in last 90s - reconnecting", _shard->shardid);
+                            debug_trace(_shard.get());
                             reset_shard(_shard.get());
+                        }
                     }
+
+                }
+                catch (std::exception & e)
+                {
+                    log->error("Shard#{}: worst happened std::exception {}", _shard->shardid, e.what());
+                    reset_shard(_shard.get());
+                }
+                catch (asio::error_code & e)
+                {
+                    log->error("Shard#{}: worst happened asio::error_code {}:{}", _shard->shardid, e.value(), e.message());
+                    reset_shard(_shard.get());
+                }
+            }
+            else
+            {
+                //shard is not connected. do a check if shard is in connection queue or if it needs adding to it
+                if (_shard->connection_state != Shutdown)
+                {
+                    _shard->connection_state = Reconnecting;
+                    _shard->last_status_time = _shard->lastwsevent = std::chrono::steady_clock::now();
+                    _shard->heartbeat_ack = _shard->lastheartbeat = std::chrono::steady_clock::time_point();
+                    if (_shard->keepalivetimer != nullptr)
+                    {
+                        _shard->keepalivetimer->cancel();
+                        _shard->keepalivetimer.reset();
+                    }
+                    _shard->write_timer.cancel();
+                    _shard->ws_buffer.str("");
+                    _shard->zlib_ctx.reset();
+                    ++_shard->counters.reconnects;
+                    queue_reconnect(_shard.get());
                 }
             }
             _shard->last_status_time = now;
@@ -357,15 +387,16 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
                         _connecting_shard = _shard;
                         _connect_time = now;
 
-                        asio::error_code ec;
-                        _shard->_connection = websocket_o.get_connection(gateway_url, ec);
-                        if (ec)
+                        if (_shard->_connection == nullptr)
                         {
-                            throw ec;
+                            asio::error_code ec;
+                            _shard->_connection = websocket_o.get_connection(gateway_url, ec);
+                            if (ec)
+                                throw ec;
                         }
 
-                        _shard->connect();
                         setup_callbacks(_shard);
+                        _shard->connect();
                         _shard->connection_state = Connecting;
                     }
                     else
