@@ -515,6 +515,12 @@ public:
         return count;
     }
 
+    void queue_reconnect(shards::shard * _shard)
+    {
+        if (_shard_mgr)
+            _shard_mgr->queue_reconnect(_shard);
+    }
+
 private:
 
     typing_start_t i_typing_start;
