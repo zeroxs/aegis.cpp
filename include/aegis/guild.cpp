@@ -360,6 +360,7 @@ AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) AEGIS_NOEX
             {
                 snowflake member_id = member["user"]["id"];
                 auto _member = bot.member_create(member_id);
+                std::unique_lock<shared_mutex> l(_member->mtx());
                 _member->load(this, member, _shard);
                 this->members.emplace(member_id, _member);
             }
