@@ -10,7 +10,7 @@ C++14/17 library for interfacing with the [Discord API](https://discordapp.com/d
 
 This project is licensed under the MIT license. See [LICENSE](https://github.com/zeroxs/aegis.cpp/blob/master/LICENSE)
 
-Libraries used (all are header-only with the exception of zlib):
+Libraries used (all are header-only with the exception of zlib and openssl):
 - [Asio](https://github.com/chriskohlhoff/asio)
 - [Websocketpp](https://github.com/zaphoyd/websocketpp)
 - [JSON for Modern C++](https://github.com/nlohmann/json)
@@ -41,11 +41,11 @@ Including the helper header will automatically include all other files.
 int main()
 {
     aegis::core bot;
-    bot.i_message_create = [](auto obj)
+    bot.set_on_message_create([](auto obj)
     {
         if (obj.msg.get_content() == "Hi")
             obj.msg.get_channel().create_message(fmt::format("Hello {}", obj.msg.author.username));
-    };
+    });
     bot.run();
 }
 ```
