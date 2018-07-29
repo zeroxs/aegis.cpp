@@ -44,14 +44,22 @@ namespace aegis
 
 /**\todo Needs documentation
  */
-enum bot_status
+enum class bot_status
 {
     Uninitialized = 0,
-    Ready = 1,
-    Connecting = 2,
-    Online = 3,
-    Reconnecting = 4,
-    Shutdown = 5
+    Running,
+    Shutdown
+};
+
+enum class shard_status
+{
+    Uninitialized = 0,
+    Connecting,
+    PreReady,
+    Online,
+    Reconnecting,
+    Closed,
+    Shutdown
 };
 
 namespace utility

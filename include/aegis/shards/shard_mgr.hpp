@@ -116,22 +116,6 @@ public:
      */
     AEGIS_DECL std::string uptime() const AEGIS_NOEXCEPT;
 
-    std::mutex m;
-    std::condition_variable cv;
-    asio::io_context & _io_context;
-
-
-    std::string ws_gateway;
-
-    std::unordered_map<std::string, uint64_t> message_count;
-
-    std::string self_presence;
-    uint32_t force_shard_count;
-    uint32_t shard_max_count;
-    bool wsdbg = false;
-    std::unique_ptr<asio::io_context::strand> ws_open_strand;
-    std::shared_ptr<spdlog::logger> log;
-
     /// Send a websocket message to a single shard
     /**
     * @param msg JSON encoded message to be sent
@@ -179,14 +163,43 @@ public:
 
     AEGIS_DECL void queue_reconnect(shard * _shard);
 
+    AEGIS_DECL void connect(shard * _shard);
+
+    void queue_reconnect(shard & _shard)
+    {
+        queue_reconnect(&_shard);
+    }
+
     AEGIS_DECL shard & get_shard(uint16_t shard_id);
+
+    AEGIS_DECL void close(shard * _shard, int32_t code = 1001, const std::string & reason = "", shard_status connection_state = shard_status::Closed);
+
+    void close(shard & _shard, int32_t code = 1001, const std::string & reason = "", shard_status connection_state = shard_status::Closed)
+    {
+        close(&_shard, code, reason, connection_state);
+    }
+
+    std::mutex m;
+    std::condition_variable cv;
+    asio::io_context & _io_context;
+
+    std::string ws_gateway;
+
+    std::unordered_map<std::string, uint64_t> message_count;
+
+    std::string self_presence;
+    uint32_t force_shard_count;
+    uint32_t shard_max_count;
+    bool wsdbg = false;
+    //std::unique_ptr<asio::io_context::strand> ws_open_strand;
+    std::shared_ptr<spdlog::logger> log;
+
+private:
+    friend core;
 
     std::chrono::time_point<std::chrono::steady_clock> _last_ready;
     std::chrono::time_point<std::chrono::steady_clock> _connect_time;
     shard * _connecting_shard;
-
-private:
-    friend core;
 
     std::vector<std::unique_ptr<shard>> _shards;
   

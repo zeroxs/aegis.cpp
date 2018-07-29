@@ -59,11 +59,23 @@ public:
         return shardid;
     }
 
-    /// Check if this shard has an active connection
+    /// Check if this shard has an active connection or is a connecting state
     /**
      * @returns bool
      */
     AEGIS_DECL bool is_connected() const AEGIS_NOEXCEPT;
+
+    /// Check if this shard is ready to interact with the gateway
+    /**
+    * @returns bool
+    */
+    AEGIS_DECL bool is_online() const AEGIS_NOEXCEPT;
+
+    /// Check if this shard's socket has an active connection
+    /**
+    * @returns bool
+    */
+    AEGIS_DECL bool is_socket_connected() const AEGIS_NOEXCEPT;
 
     /// Send a message to this shard's websocket connection
     /**
@@ -144,14 +156,8 @@ public:
         int64_t reconnects;
     } counters = { 0,0,0 };
 
-    /// Close websocket connection
-    AEGIS_DECL void close(int32_t code = 1001, std::string reason = "") AEGIS_NOEXCEPT;
-
     /// Open websocket connection
-    AEGIS_DECL void connect()
-    {
-        _websocket.connect(_connection);
-    }
+    AEGIS_DECL void connect();
 
     /// Return shard uptime as {days hours minutes seconds}
     /**
@@ -168,10 +174,10 @@ public:
         return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _ready_time).count();
     }
 
-    AEGIS_DECL void cleanup();
-
 //private:
     friend class shard_mgr;
+
+    AEGIS_DECL void _reset();
 
     /// Actual websocket connection
     websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr _connection;
@@ -199,7 +205,7 @@ public:
     std::chrono::time_point<std::chrono::steady_clock> last_ws_write;
     int64_t sequence;
     int32_t shardid;
-    bot_status connection_state;
+    shard_status connection_state;
     // Websocket++ socket connection
     websocketpp::connection_hdl hdl;
     asio::io_context & _io_context;

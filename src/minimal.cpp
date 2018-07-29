@@ -53,12 +53,18 @@ int main(int argc, char * argv[])
                 {
                     _channel.create_message("Hello back");
                 }
+                else if (content == "?close")
+                {
+                    bot.get_shard_mgr().close(obj._shard, 1003);
+                }
                 else if (content == "~React")
                 {
                     auto response = obj.msg.create_reaction("success:429554838083207169").get();
                     if (response)
                     {
                         // reaction was a success. maybe chain another?
+                        // without any sleep/wait, an instant reaction may fail due to ratelimits
+                        std::this_thread::sleep_for(250ms);
                         auto response = obj.msg.create_reaction("fail:429554869611921408");
 
                         // perhaps you'd like to leverage asio to respond

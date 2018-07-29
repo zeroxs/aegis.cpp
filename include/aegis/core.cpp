@@ -67,7 +67,7 @@ AEGIS_DECL core::core(spdlog::level::level_enum loglevel)
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     , mfa_enabled(false)
 #endif
-    , _status{ Uninitialized }
+    , _status{ bot_status::Uninitialized }
     , _loglevel(loglevel)
 {
 #if !defined(AEGIS_CXX17)
@@ -121,7 +121,7 @@ AEGIS_DECL core::core(spdlog::level::level_enum loglevel)
     _rest = std::make_unique<rest::rest_controller>(_token, "/api/v6", "discordapp.com");
 #endif
 
-    ratelimit_o = std::make_unique<ratelimit_mgr_t>(
+    _ratelimit = std::make_unique<ratelimit_mgr_t>(
         std::bind(&aegis::rest::rest_controller::execute,
                   _rest.get(),
                   std::placeholders::_1,
@@ -256,7 +256,7 @@ AEGIS_DECL void core::_run(std::size_t count, std::function<void(void)> f)
     if (count == 1)
         count = 2;
 
-    set_state(Ready);
+    set_state(bot_status::Running);
 
     starttime = std::chrono::steady_clock::now();
     
@@ -375,7 +375,7 @@ AEGIS_DECL void core::setup_callbacks()
 
 AEGIS_DECL void core::shutdown()
 {
-    set_state(Shutdown);
+    set_state(bot_status::Shutdown);
     _shard_mgr->shutdown();
     cv.notify_all();
 }
@@ -797,7 +797,7 @@ AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const int32_t ms, 
         return;
     try
     {
-        if (_shard->connection_state == Shutdown || _shard->_connection == nullptr)
+        if (_shard->connection_state == shard_status::Shutdown || _shard->_connection == nullptr)
             return;
 
         auto now = std::chrono::steady_clock::now();
@@ -810,7 +810,7 @@ AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const int32_t ms, 
                        std::chrono::duration_cast<std::chrono::milliseconds>(now - _shard->heartbeat_ack).count(),
                        std::chrono::duration_cast<std::chrono::milliseconds>(now - _shard->lastheartbeat).count(),
                        int32_t(ms * 1.5));
-            _shard_mgr->get_websocket().close(_shard->_connection, 1001, "");
+            _shard_mgr->close(_shard, 1001, "");
             _shard_mgr->reset_shard(_shard);
             _shard_mgr->queue_reconnect(_shard);
             return;
@@ -913,7 +913,7 @@ AEGIS_DECL void core::send_all_shards(const json & msg)
 
 AEGIS_DECL void core::on_close(websocketpp::connection_hdl hdl, shards::shard * _shard)
 {
-    if (_status == Shutdown)
+    if (_status == bot_status::Shutdown)
         return;
 }
 
@@ -1213,7 +1213,7 @@ AEGIS_DECL void core::ws_voice_state_update(const json & result, shards::shard *
 AEGIS_DECL void core::ws_resumed(const json & result, shards::shard * _shard)
 {
     _shard_mgr->_connecting_shard = nullptr;
-    _shard->connection_state = Online;
+    _shard->connection_state = shard_status::Online;
     _shard_mgr->_connect_time = std::chrono::steady_clock::time_point();
     _shard->_ready_time = _shard_mgr->_last_ready = std::chrono::steady_clock::now();
     log->info("Shard#{} RESUMED Processed", _shard->shardid);
@@ -1236,7 +1236,7 @@ AEGIS_DECL void core::ws_resumed(const json & result, shards::shard * _shard)
 AEGIS_DECL void core::ws_ready(const json & result, shards::shard * _shard)
 {
     _shard_mgr->_connecting_shard = nullptr;
-    _shard->connection_state = Online;
+    _shard->connection_state = shard_status::Online;
     _shard_mgr->_connect_time = std::chrono::steady_clock::time_point();
     _shard->_ready_time = _shard_mgr->_last_ready = std::chrono::steady_clock::now();
     process_ready(result["d"], _shard);

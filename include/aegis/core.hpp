@@ -250,13 +250,15 @@ public:
      */
     void yield() const AEGIS_NOEXCEPT
     {
-        while (_status != Shutdown)
+        while (_status != bot_status::Shutdown)
         {
             std::this_thread::yield();
         }
     }
 
-    ratelimit::ratelimit_mgr<rest_call, aegis::rest::rest_reply> & get_ratelimit() AEGIS_NOEXCEPT { return *ratelimit_o; }
+    rest::rest_controller & get_rest_controller() AEGIS_NOEXCEPT { return *_rest; }
+    ratelimit_mgr_t & get_ratelimit() AEGIS_NOEXCEPT { return *_ratelimit; }
+    shards::shard_mgr & get_shard_mgr() AEGIS_NOEXCEPT { return *_shard_mgr; }
     bot_status get_state() const AEGIS_NOEXCEPT { return _status; }
     void set_state(bot_status s) AEGIS_NOEXCEPT { _status = s; }
 
@@ -515,12 +517,6 @@ public:
         return count;
     }
 
-    void queue_reconnect(shards::shard * _shard)
-    {
-        if (_shard_mgr)
-            _shard_mgr->queue_reconnect(_shard);
-    }
-
 private:
 
     typing_start_t i_typing_start;
@@ -621,8 +617,7 @@ private:
     bot_status _status;
 
     std::unique_ptr<rest::rest_controller> _rest;
-
-    std::unique_ptr<ratelimit::ratelimit_mgr<rest_call, aegis::rest::rest_reply>> ratelimit_o;
+    std::unique_ptr<ratelimit_mgr_t > _ratelimit;
     std::unique_ptr<shards::shard_mgr> _shard_mgr;
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
