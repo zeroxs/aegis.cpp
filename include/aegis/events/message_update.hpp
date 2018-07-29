@@ -12,7 +12,7 @@
 #include "aegis/config.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/objects/message.hpp"
-#include "base_event.hpp"
+#include "aegis/fwd.hpp"
 #include <string>
 #include <vector>
 
@@ -27,15 +27,17 @@ namespace events
 
 /**\todo Needs documentation
  */
-struct message_update : public base_event
+struct message_update
 {
     objects::message msg; /**<\todo Needs documentation */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     message_update(const json & j, channel * c, member * m) : msg(j), _channel(c), _member(m) {};
+    shards::shard * _shard; /**< Pointer to shard object this message came from */
+    core * bot; /**< Pointer to the main bot object */
     channel * const _channel; /**<\todo Needs documentation */
     member * const _member; /**<\todo Needs documentation */
 #else
-    message_update(const json & j) : msg(j) {};
+    message_update(shards::shard * _s, const json & j) : base_event(_s), msg(j) {};
 #endif
 };
 

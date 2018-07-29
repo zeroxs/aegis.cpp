@@ -12,7 +12,7 @@
 #include "aegis/config.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/objects/guild_member.hpp"
-#include "base_event.hpp"
+#include "aegis/fwd.hpp"
 #include <string>
 #include <vector>
 
@@ -27,8 +27,10 @@ namespace events
 
 /**\todo Needs documentation
  */
-struct guild_member_add : public base_event
+struct guild_member_add
 {
+    shards::shard * _shard; /**< Pointer to shard object this message came from */
+    core * bot; /**< Pointer to the main bot object */
     objects::guild_member _member_data; /**<\todo Needs documentation */
 };
 

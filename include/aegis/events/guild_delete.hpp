@@ -11,7 +11,7 @@
 
 #include "aegis/config.hpp"
 #include "aegis/snowflake.hpp"
-#include "base_event.hpp"
+#include "aegis/fwd.hpp"
 #include <string>
 #include <vector>
 
@@ -26,8 +26,10 @@ namespace events
 
 /**\todo Needs documentation
  */
-struct guild_delete : public base_event
+struct guild_delete
 {
+    shards::shard * _shard; /**< Pointer to shard object this message came from */
+    core * bot; /**< Pointer to the main bot object */
     snowflake guild_id; /**<\todo Needs documentation */
     bool unavailable; /**<\todo Needs documentation */
 };

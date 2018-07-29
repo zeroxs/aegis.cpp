@@ -12,7 +12,6 @@
 #include "aegis/config.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/objects/message.hpp"
-#include "base_event.hpp"
 #include <string>
 #include <vector>
 
@@ -27,7 +26,7 @@ namespace events
 
 /**\todo Needs documentation
  */
-struct message_delete : public base_event
+struct message_delete
 {
     snowflake message_id; /**<\todo Needs documentation */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
@@ -36,6 +35,8 @@ struct message_delete : public base_event
 #else
     message_delete(snowflake m) : message_id(m) {}
 #endif
+    shards::shard * _shard; /**< Pointer to shard object this message came from */
+    core * bot; /**< Pointer to the main bot object */
 };
 
 }

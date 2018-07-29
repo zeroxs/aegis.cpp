@@ -12,7 +12,7 @@
 #include "aegis/config.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/objects/channel.hpp"
-#include "base_event.hpp"
+#include "aegis/fwd.hpp"
 #include <string>
 #include <vector>
 
@@ -27,8 +27,10 @@ namespace events
 
 /**\todo Needs documentation
  */
-struct channel_create : public base_event
+struct channel_create
 {
+    shards::shard * _shard; /**< Pointer to shard object this message came from */
+    core * bot; /**< Pointer to the main bot object */
     objects::channel_gw _channel; /**<\todo Needs documentation */
 };
 

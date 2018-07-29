@@ -15,7 +15,7 @@
 #include "aegis/objects/user.hpp"
 #include "aegis/objects/channel.hpp"
 #include "aegis/objects/guild.hpp"
-#include "base_event.hpp"
+#include "aegis/fwd.hpp"
 #include <string>
 #include <vector>
 
@@ -30,8 +30,10 @@ namespace events
 
 /**\todo Needs documentation
  */
-struct ready : public base_event
+struct ready 
 {
+    shards::shard * _shard; /**< Pointer to shard object this message came from */
+    core * bot; /**< Pointer to the main bot object */
     int8_t v; /**<\todo Needs documentation */
     objects::user _user; /**<\todo Needs documentation */
     std::vector<objects::channel_gw> private_channels; /**<\todo Needs documentation */

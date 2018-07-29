@@ -10,7 +10,7 @@
 #pragma once
 
 #include "aegis/config.hpp"
-#include "base_event.hpp"
+#include "aegis/fwd.hpp"
 
 namespace aegis
 {
@@ -23,8 +23,10 @@ namespace events
 
 /**\todo Needs documentation
  */
-struct message_delete_bulk : public base_event
+struct message_delete_bulk
 {
+    shards::shard * _shard; /**< Pointer to shard object this message came from */
+    core * bot; /**< Pointer to the main bot object */
 };
 
 /**\todo Needs documentation
