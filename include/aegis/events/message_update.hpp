@@ -37,7 +37,7 @@ struct message_update
     channel * const _channel; /**<\todo Needs documentation */
     member * const _member; /**<\todo Needs documentation */
 #else
-    message_update(shards::shard * _s, const json & j) : base_event(_s), msg(j) {};
+    message_update(const json & j) : msg(j) {};
 #endif
 };
 
