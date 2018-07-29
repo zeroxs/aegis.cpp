@@ -38,13 +38,13 @@ public:
     AEGIS_DECL shard(asio::io_context & _io, websocketpp::client<websocketpp::config::asio_tls_client> & _ws, int32_t id);
 
     /// Resets connection, heartbeat, and timer related objects to allow reconnection
-    AEGIS_DECL void do_reset(bot_status _status = Reconnecting) AEGIS_NOEXCEPT;
+    AEGIS_DECL void do_reset(shard_status _status = shard_status::Reconnecting) AEGIS_NOEXCEPT;
 
     /// Get this shard's websocket message sequence counter
     /**
      * @returns Sequence counter specific to this shard
      */
-    AEGIS_DECL const int64_t get_sequence() const AEGIS_NOEXCEPT
+    const int64_t get_sequence() const AEGIS_NOEXCEPT
     {
         return sequence;
     }
@@ -54,7 +54,7 @@ public:
      * @see core::shards
      * @returns Shard id
      */
-    AEGIS_DECL const int32_t get_id() const AEGIS_NOEXCEPT
+    const int32_t get_id() const AEGIS_NOEXCEPT
     {
         return shardid;
     }
@@ -76,7 +76,7 @@ public:
     /**
      * @returns std::string of the current bytes received since start
      */
-    AEGIS_DECL std::string get_transfer_str() const AEGIS_NOEXCEPT
+    std::string get_transfer_str() const AEGIS_NOEXCEPT
     {
         if ((transfer_bytes > 1024ull * 5) && (transfer_bytes < 1024ull * 1024 * 5))// over 5KB and up to 5MB show KB
         {
@@ -99,7 +99,7 @@ public:
      * transferred without compression. To be compared with get_transfer_str() for a compression ratio.
      * @returns std::string of the current bytes received since start
      */
-    AEGIS_DECL std::string get_transfer_u_str() const AEGIS_NOEXCEPT
+    std::string get_transfer_u_str() const AEGIS_NOEXCEPT
     {
         if ((transfer_bytes_u > 1024ull * 5) && (transfer_bytes_u < 1024ull * 1024 * 5))// over 5KB and up to 5MB show KB
         {
@@ -121,7 +121,7 @@ public:
     /**
      * @returns uint64_t of the current bytes received since start
      */
-    AEGIS_DECL uint64_t get_transfer() const AEGIS_NOEXCEPT
+    uint64_t get_transfer() const AEGIS_NOEXCEPT
     {
         return transfer_bytes;
     }
@@ -131,7 +131,7 @@ public:
     /**
      * @returns uint64_t of the current bytes received since start
      */
-    AEGIS_DECL uint64_t get_transfer_u() const AEGIS_NOEXCEPT
+    uint64_t get_transfer_u() const AEGIS_NOEXCEPT
     {
         return transfer_bytes_u;
     }
@@ -163,7 +163,7 @@ public:
     /**
     * @returns Time in milliseconds since shard received ready
     */
-    AEGIS_DECL int64_t uptime() const AEGIS_NOEXCEPT
+    int64_t uptime() const AEGIS_NOEXCEPT
     {
         return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _ready_time).count();
     }

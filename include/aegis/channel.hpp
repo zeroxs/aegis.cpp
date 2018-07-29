@@ -70,7 +70,7 @@ public:
     /**
      * @returns String of channel name
      */
-    AEGIS_DECL std::string get_name() const AEGIS_NOEXCEPT
+    std::string get_name() const AEGIS_NOEXCEPT
     {
         return name;
     }
@@ -129,7 +129,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_message(const std::string & content, int64_t nonce = 0)
+    std::future<rest::rest_reply> create_message(const std::string & content, int64_t nonce = 0)
     {
         std::error_code ec;
         auto res = create_message(ec, content, nonce);
@@ -154,7 +154,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_message_embed(const std::string & content, const json & embed, int64_t nonce = 0)
+    std::future<rest::rest_reply> create_message_embed(const std::string & content, const json & embed, int64_t nonce = 0)
     {
         std::error_code ec;
         auto res = create_message_embed(ec, content, embed, nonce);
@@ -179,7 +179,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> edit_message(snowflake message_id, const std::string & content)
+    std::future<rest::rest_reply> edit_message(snowflake message_id, const std::string & content)
     {
         std::error_code ec;
         auto res = edit_message(ec, message_id, content);
@@ -206,7 +206,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> edit_message_embed(snowflake message_id, const std::string & content, const json & embed)
+    std::future<rest::rest_reply> edit_message_embed(snowflake message_id, const std::string & content, const json & embed)
     {
         std::error_code ec;
         auto res = edit_message_embed(ec, message_id, content, embed);
@@ -229,7 +229,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> delete_message(snowflake message_id)
+    std::future<rest::rest_reply> delete_message(snowflake message_id)
     {
         std::error_code ec;
         auto res = delete_message(ec, message_id);
@@ -252,7 +252,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> bulk_delete_message(const std::vector<int64_t> & messages)
+    std::future<rest::rest_reply> bulk_delete_message(const std::vector<int64_t> & messages)
     {
         std::error_code ec;
         auto res = bulk_delete_message(ec, messages);
@@ -291,7 +291,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> modify_channel(std::optional<std::string> _name = {}, std::optional<int> _position = {}, std::optional<std::string> _topic = {},
+    std::future<rest::rest_reply> modify_channel(std::optional<std::string> _name = {}, std::optional<int> _position = {}, std::optional<std::string> _topic = {},
                         std::optional<bool> _nsfw = {}, std::optional<int> _bitrate = {}, std::optional<int> _user_limit = {},
                         std::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, std::optional<snowflake> _parent_id = {})
     {
@@ -314,7 +314,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> delete_channel()
+    std::future<rest::rest_reply> delete_channel()
     {
         std::error_code ec;
         auto res = delete_channel(ec);
@@ -339,7 +339,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_reaction(snowflake message_id, const std::string & emoji_text)
+    std::future<rest::rest_reply> create_reaction(snowflake message_id, const std::string & emoji_text)
     {
         std::error_code ec;
         auto res = create_reaction(ec, message_id, emoji_text);
@@ -364,7 +364,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> delete_own_reaction(snowflake message_id, const std::string & emoji_text)
+    std::future<rest::rest_reply> delete_own_reaction(snowflake message_id, const std::string & emoji_text)
     {
         std::error_code ec;
         auto res = delete_own_reaction(ec, message_id, emoji_text);
@@ -391,7 +391,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> delete_user_reaction(snowflake message_id, const std::string & emoji_text, snowflake member_id)
+    std::future<rest::rest_reply> delete_user_reaction(snowflake message_id, const std::string & emoji_text, snowflake member_id)
     {
         std::error_code ec;
         auto res = delete_user_reaction(ec, message_id, emoji_text, member_id);
@@ -416,7 +416,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> get_reactions(snowflake message_id, const std::string & emoji_text)
+    std::future<rest::rest_reply> get_reactions(snowflake message_id, const std::string & emoji_text)
     {
         std::error_code ec;
         auto res = get_reactions(ec, message_id, emoji_text);
@@ -439,7 +439,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> delete_all_reactions(snowflake message_id)
+    std::future<rest::rest_reply> delete_all_reactions(snowflake message_id)
     {
         std::error_code ec;
         auto res = delete_all_reactions(ec, message_id);
@@ -468,7 +468,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> edit_channel_permissions(snowflake _overwrite_id, int64_t _allow, int64_t _deny, const std::string & _type)
+    std::future<rest::rest_reply> edit_channel_permissions(snowflake _overwrite_id, int64_t _allow, int64_t _deny, const std::string & _type)
     {
         std::error_code ec;
         auto res = edit_channel_permissions(ec, _overwrite_id, _allow, _deny, _type);
@@ -489,7 +489,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> get_channel_invites()
+    std::future<rest::rest_reply> get_channel_invites()
     {
         std::error_code ec;
         auto res = get_channel_invites(ec);
@@ -518,7 +518,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_channel_invite(const std::optional<int> max_age, const std::optional<int> max_uses, const std::optional<bool> temporary, const std::optional<bool> unique)
+    std::future<rest::rest_reply> create_channel_invite(const std::optional<int> max_age, const std::optional<int> max_uses, const std::optional<bool> temporary, const std::optional<bool> unique)
     {
         std::error_code ec;
         auto res = create_channel_invite(ec, max_age, max_uses, temporary, unique);
@@ -541,7 +541,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> delete_channel_permission(snowflake overwrite_id)
+    std::future<rest::rest_reply> delete_channel_permission(snowflake overwrite_id)
     {
         std::error_code ec;
         auto res = delete_channel_permission(ec, overwrite_id);
@@ -562,7 +562,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> trigger_typing_indicator()
+    std::future<rest::rest_reply> trigger_typing_indicator()
     {
         std::error_code ec;
         auto res = trigger_typing_indicator(ec);
@@ -583,7 +583,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> get_pinned_messages()
+    std::future<rest::rest_reply> get_pinned_messages()
     {
         std::error_code ec;
         auto res = get_pinned_messages(ec);
@@ -604,7 +604,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> add_pinned_channel_message()
+    std::future<rest::rest_reply> add_pinned_channel_message()
     {
         std::error_code ec;
         auto res = add_pinned_channel_message(ec);
@@ -625,7 +625,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> delete_pinned_channel_message()
+    std::future<rest::rest_reply> delete_pinned_channel_message()
     {
         std::error_code ec;
         auto res = delete_pinned_channel_message(ec);
@@ -646,7 +646,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> group_dm_add_recipient()
+    std::future<rest::rest_reply> group_dm_add_recipient()
     {
         std::error_code ec;
         auto res = group_dm_add_recipient(ec);
@@ -667,7 +667,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> group_dm_remove_recipient()
+    std::future<rest::rest_reply> group_dm_remove_recipient()
     {
         std::error_code ec;
         auto res = group_dm_remove_recipient(ec);
@@ -709,7 +709,7 @@ private:
 
     /// requires the caller to handle locking
     AEGIS_DECL void load_with_guild(guild & _guild, const json & obj, shards::shard * _shard);
-    AEGIS_DECL shared_mutex & mtx() { return _m; }
+    shared_mutex & mtx() { return _m; }
 
     snowflake channel_id; /**< snowflake of this channel */
     snowflake guild_id; /**< snowflake of the guild this channel belongs to */

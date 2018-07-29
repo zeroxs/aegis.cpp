@@ -79,7 +79,7 @@ public:
     /**
     * @returns string of the username
     */
-    AEGIS_DECL std::string get_username() const AEGIS_NOEXCEPT
+    std::string get_username() const AEGIS_NOEXCEPT
     {
         return std::string(_name);
     }
@@ -88,7 +88,7 @@ public:
     /**
     * @returns string of the discriminator
     */
-    AEGIS_DECL uint16_t get_discriminator() const AEGIS_NOEXCEPT
+    uint16_t get_discriminator() const AEGIS_NOEXCEPT
     {
         return _discriminator;
     }
@@ -97,7 +97,7 @@ public:
     /**
     * @returns string of the discriminator
     */
-    AEGIS_DECL std::string get_avatar() const AEGIS_NOEXCEPT
+    std::string get_avatar() const AEGIS_NOEXCEPT
     {
         return std::string(_avatar);
     }
@@ -106,7 +106,7 @@ public:
     /**
     * @returns bool of bot status
     */
-    AEGIS_DECL bool is_bot() const AEGIS_NOEXCEPT
+    bool is_bot() const AEGIS_NOEXCEPT
     {
         return _is_bot;
     }
@@ -115,7 +115,7 @@ public:
     /**
     * @returns bool of mfa status
     */
-    AEGIS_DECL bool is_mfa_enabled() const AEGIS_NOEXCEPT
+    bool is_mfa_enabled() const AEGIS_NOEXCEPT
     {
         return _mfa_enabled;
     }

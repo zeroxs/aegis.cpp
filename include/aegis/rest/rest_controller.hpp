@@ -100,12 +100,12 @@ public:
     */
     AEGIS_DECL rest_reply execute(const std::string & path, const std::string & content, const std::string & method, const std::string & host = "");
 
-    AEGIS_DECL void set_auth(const std::string & token)
+    void set_auth(const std::string & token)
     {
         _token = token;
     }
 
-    AEGIS_DECL void set_prefix(const std::string & prefix)
+    void set_prefix(const std::string & prefix)
     {
         _prefix = prefix;
     }

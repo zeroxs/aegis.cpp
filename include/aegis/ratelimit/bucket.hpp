@@ -85,7 +85,7 @@ public:
     /**
      * @returns true if globally ratelimited
      */
-    AEGIS_DECL bool is_global() const AEGIS_NOEXCEPT
+    bool is_global() const AEGIS_NOEXCEPT
     {
         return _global_limit > 0;
     }
@@ -95,7 +95,7 @@ public:
     /**
      * @returns true if bucket ratelimits permit a message to be sent
      */
-    AEGIS_DECL bool can_perform() const AEGIS_NOEXCEPT
+    bool can_perform() const AEGIS_NOEXCEPT
     {
         if (ignore_rates)
             return true;
@@ -109,7 +109,7 @@ public:
         return true;
     }
 
-    AEGIS_DECL Result perform(const std::string & path, const std::string & content, const std::string & method, const std::string & host = "")
+    Result perform(const std::string & path, const std::string & content, const std::string & method, const std::string & host = "")
     {
         std::lock_guard<std::mutex> lock(m);
         while (!can_perform())
@@ -128,7 +128,7 @@ public:
         return reply;
     }
 
-    AEGIS_DECL std::future<Result> post_task(const std::string & path, const std::string & method = "POST", const std::string & obj = "", const std::string & host = "")
+    std::future<Result> post_task(const std::string & path, const std::string & method = "POST", const std::string & obj = "", const std::string & host = "")
     {
         using result = asio::async_result<asio::use_future_t<>, void(Result)>;
         using handler = typename result::completion_handler_type;

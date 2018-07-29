@@ -87,7 +87,7 @@ public:
     AEGIS_DECL void debug_trace(shard * _shard, bool extended = false);
 
     /// Get the internal (or external) io_service object
-    AEGIS_DECL asio::io_context & get_io_context()
+    asio::io_context & get_io_context()
     {
         return _io_context;
     }
@@ -105,7 +105,7 @@ public:
      * @param f A callable to execute within asio - signature should be void(void)
      */
     template<typename Func>
-    AEGIS_DECL void async(Func f)
+    void async(Func f)
     {
         asio::post(_io_context, std::move(f));
     }
@@ -150,27 +150,27 @@ public:
     using t_on_connect = std::function<void(websocketpp::connection_hdl hdl, shard * _shard)>;
     using t_on_close = std::function<void(websocketpp::connection_hdl hdl, shard * _shard)>;
 
-    AEGIS_DECL void set_on_message(t_on_message cb)
+    void set_on_message(t_on_message cb)
     {
         i_on_message = cb;
     }
 
-    AEGIS_DECL void set_on_connect(t_on_connect cb)
+    void set_on_connect(t_on_connect cb)
     {
         i_on_connect = cb;
     }
 
-    AEGIS_DECL void set_on_close(t_on_close cb)
+    void set_on_close(t_on_close cb)
     {
         i_on_close = cb;
     }
 
-    AEGIS_DECL void set_gateway_url(std::string url)
+    void set_gateway_url(std::string url)
     {
         gateway_url = url;
     }
 
-    AEGIS_DECL std::string get_gateway_url() const
+    std::string get_gateway_url() const
     {
         return gateway_url;
     }
