@@ -167,7 +167,7 @@ AEGIS_DECL void shard_mgr::_on_message(websocketpp::connection_hdl hdl, message_
         const std::string & pld = msg->get_payload();
         if (std::strcmp((pld.data() + pld.size() - 4), "\x00\x00\xff\xff"))
         {
-            log->trace("Shard#{}: zlib-stream incomplete", _shard->shardid);
+            log->trace("Shard#{}: zlib-stream incomplete", _shard->get_id());
             return;
         }
 
@@ -178,7 +178,7 @@ AEGIS_DECL void shard_mgr::_on_message(websocketpp::connection_hdl hdl, message_
             //DEBUG
             if (_shard->zlib_ctx == nullptr)
             {
-                log->error("Shard#{}: zlib failure. Context null.", _shard->shardid);
+                log->error("Shard#{}: zlib failure. Context null.", _shard->get_id());
                 close(*_shard);
                 return;
             }
@@ -191,7 +191,7 @@ AEGIS_DECL void shard_mgr::_on_message(websocketpp::connection_hdl hdl, message_
         }
         catch (std::exception & e)
         {
-            log->error("Shard#{}: zlib failure. Context invalid. {}", _shard->shardid, e.what());
+            log->error("Shard#{}: zlib failure. Context invalid. {}", _shard->get_id(), e.what());
             close(*_shard);
             return;
         }
@@ -215,11 +215,11 @@ AEGIS_DECL void shard_mgr::_on_message(websocketpp::connection_hdl hdl, message_
 
 AEGIS_DECL void shard_mgr::_on_connect(websocketpp::connection_hdl hdl, shard * _shard)
 {
-    log->info("Shard#{}: connection established", _shard->shardid);
+    log->info("Shard#{}: connection established", _shard->get_id());
     _shard->set_connected();
     if (_shards_to_connect.empty())
     {
-        log->error("Shard#{}: _shards_to_connect empty", _shard->shardid);
+        log->error("Shard#{}: _shards_to_connect empty", _shard->get_id());
     }
     else
     {
@@ -229,13 +229,13 @@ AEGIS_DECL void shard_mgr::_on_connect(websocketpp::connection_hdl hdl, shard * 
         assert(_s != nullptr);
         if (_s != _shard)
             log->error("Shard#{}: _shards_to_connect.front wrong shard id:{} status:{}",
-                       _shard->shardid,
-                       _s->shardid,
+                       _shard->get_id(),
+                       _s->get_id(),
                        _s->is_connected()?"connected":"not connected");
         if (_s != _connecting_shard)
             log->error("Shard#{}: _connecting_shard wrong shard id:{} status:{}",
-                       _shard->shardid,
-                       _s->shardid,
+                       _shard->get_id(),
+                       _s->get_id(),
                        _s->is_connected() ? "connected" : "not connected");
         _shards_to_connect.pop_front();
     }
@@ -319,7 +319,7 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
                         if (_shard->lastwsevent < (now - 90s))
                         {
                             _shard->lastwsevent = now;
-                            log->error("Shard#{}: Websocket had no events in last 90s - reconnecting", _shard->shardid);
+                            log->error("Shard#{}: Websocket had no events in last 90s - reconnecting", _shard->get_id());
                             debug_trace(_shard.get());
                             reset_shard(_shard.get());
                         }
@@ -328,12 +328,12 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
                 }
                 catch (std::exception & e)
                 {
-                    log->error("Shard#{}: worst happened std::exception {}", _shard->shardid, e.what());
+                    log->error("Shard#{}: worst happened std::exception {}", _shard->get_id(), e.what());
                     reset_shard(_shard.get());
                 }
                 catch (asio::error_code & e)
                 {
-                    log->error("Shard#{}: worst happened asio::error_code {}:{}", _shard->shardid, e.value(), e.message());
+                    log->error("Shard#{}: worst happened asio::error_code {}:{}", _shard->get_id(), e.value(), e.message());
                     reset_shard(_shard.get());
                 }
             }
@@ -429,7 +429,7 @@ AEGIS_DECL void shard_mgr::queue_reconnect(shard * _shard)
     auto it = std::find(_shards_to_connect.cbegin(), _shards_to_connect.cend(), _shard);
     if (it != _shards_to_connect.cend())
     {
-        log->error("Shard#{}: shard to be connected already on connect list", _shard->shardid);
+        log->error("Shard#{}: shard to be connected already on connect list", _shard->get_id());
         return;
     }
     log->trace("Shard#{}: added to connect list", _shard->get_id());
@@ -444,8 +444,8 @@ AEGIS_DECL void shard_mgr::debug_trace(shard * _shard, bool extended)
 
     w << "~~ERROR~~ extended(" << extended << ")"
         << "\n==========<Start Error Trace>==========\n"
-        << "Shard: " << _shard->shardid << '\n'
-        << "Seq: " << _shard->sequence << '\n';
+        << "Shard: " << _shard->get_id() << '\n'
+        << "Seq: " << _shard->get_sequence() << '\n';
 
     for (auto & msg : _shard->debug_messages)
         w << std::get<0>(msg) << " - " << std::get<1>(msg) << '\n';
@@ -456,16 +456,16 @@ AEGIS_DECL void shard_mgr::debug_trace(shard * _shard, bool extended)
     {
         if (c == nullptr)
             w << fmt::format("Shard#{} INVALID OBJECT\n",
-                             _shard->shardid);
+                             _shard->get_id());
 
         else
         {
             if (c->_connection == nullptr)
                 w << fmt::format("Shard#{} not connected\n",
-                                 c->shardid);
+                                 c->get_id());
             else
                 w << fmt::format("Shard#{} connected Seq:{} LastWS:{}ms ago\n",
-                                 c->shardid, c->sequence, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - c->lastwsevent).count());
+                                 c->get_id(), c->get_sequence(), std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - c->lastwsevent).count());
         }
     }
     w << "==========<End Error Trace>==========";

@@ -46,7 +46,7 @@ public:
      */
     const int64_t get_sequence() const AEGIS_NOEXCEPT
     {
-        return sequence;
+        return _sequence;
     }
 
     /// Gets the id of the shard in the master list
@@ -56,7 +56,7 @@ public:
      */
     const int32_t get_id() const AEGIS_NOEXCEPT
     {
-        return shardid;
+        return _id;
     }
 
     /// Check if this shard has an active connection or is a connecting state
@@ -71,18 +71,15 @@ public:
     */
     AEGIS_DECL bool is_online() const AEGIS_NOEXCEPT;
 
-    /// Check if this shard's socket has an active connection
-    /**
-    * @returns bool
-    */
-    AEGIS_DECL bool is_socket_connected() const AEGIS_NOEXCEPT;
-
-    /// Send a message to this shard's websocket connection
+    /// Send a message to this shard's websocket connection asynchronously
     /**
      * @param payload String of the payload to send
      * @param op Opcode of the message (default: text)
      */
-    AEGIS_DECL void send(std::string const & payload, websocketpp::frame::opcode::value op = websocketpp::frame::opcode::text);
+    AEGIS_DECL void send(const std::string & payload, websocketpp::frame::opcode::value op = websocketpp::frame::opcode::text);
+
+    /// Send message over the websocket synchronously 
+    AEGIS_DECL void send_now(const std::string & payload, websocketpp::frame::opcode::value op = websocketpp::frame::opcode::text);
 
     /// Returns a formatted string of bytes received since library start
     /**
@@ -174,40 +171,47 @@ public:
         return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _ready_time).count();
     }
 
-//private:
-    friend class shard_mgr;
-
-    AEGIS_DECL void _reset();
-
-    /// Actual websocket connection
-    websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr _connection;
-
-    AEGIS_DECL void set_connected();
-    AEGIS_DECL void process_writes(const asio::error_code & ec);
-    AEGIS_DECL void send_now(std::string const & payload, websocketpp::frame::opcode::value op = websocketpp::frame::opcode::text);
-
-    std::string session_id;
     std::deque<std::tuple<int64_t, std::string>> debug_messages;
     std::shared_ptr<asio::steady_timer> keepalivetimer;
     asio::steady_timer write_timer;
 
     std::queue<std::tuple<std::string, websocketpp::frame::opcode::value>> write_queue;
-    std::mutex m;
 
     int32_t heartbeattime;
+
     std::chrono::time_point<std::chrono::steady_clock> heartbeat_ack;
     std::chrono::time_point<std::chrono::steady_clock> lastheartbeat;
     std::chrono::time_point<std::chrono::steady_clock> lastwsevent;
     std::chrono::time_point<std::chrono::steady_clock> last_status_time;
-
     std::chrono::time_point<std::chrono::steady_clock> _ready_time;
-
     std::chrono::time_point<std::chrono::steady_clock> last_ws_write;
-    int64_t sequence;
-    int32_t shardid;
+
     shard_status connection_state;
-    // Websocket++ socket connection
-    websocketpp::connection_hdl hdl;
+
+private:
+    friend class shard_mgr;
+    friend class core;
+
+    void set_sequence(int64_t seq) AEGIS_NOEXCEPT
+    {
+        _sequence = seq;
+    }
+
+    void set_id(int32_t shard_id) AEGIS_NOEXCEPT
+    {
+        _id = shard_id;
+    }
+
+    AEGIS_DECL void process_writes(const asio::error_code & ec);
+    AEGIS_DECL void _reset();
+    AEGIS_DECL void set_connected();
+
+    websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr _connection;
+    std::string session_id;
+
+    int64_t _sequence;
+    int32_t _id;
+
     asio::io_context & _io_context;
 
     /// bytes transferred
@@ -220,6 +224,9 @@ public:
 
     std::stringstream ws_buffer;
     std::unique_ptr<zstr::istream> zlib_ctx;
+
+    // Websocket++ socket connection
+    websocketpp::connection_hdl hdl;
 };
 
 }

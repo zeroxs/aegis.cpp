@@ -212,7 +212,7 @@ AEGIS_DECL guild * core::guild_create(snowflake id, shards::shard * _shard) AEGI
     auto it = guilds.find(id);
     if (it == guilds.end())
     {
-        auto g = std::make_unique<guild>(_shard->shardid, id, this, *_io_context);
+        auto g = std::make_unique<guild>(_shard->get_id(), id, this, *_io_context);
         auto ptr = g.get();
         guilds.emplace(id, std::move(g));
         return ptr;
@@ -590,7 +590,7 @@ AEGIS_DECL channel * core::dm_channel_create(const json & obj, shards::shard * _
     }
     catch (std::exception&e)
     {
-        log->error("Shard#{} : Error processing DM channel[{}] {}", _shard->shardid, channel_id, e.what());
+        log->error("Shard#{} : Error processing DM channel[{}] {}", _shard->get_id(), channel_id, e.what());
     }
     return nullptr;
 }
@@ -619,14 +619,14 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                    || (result["t"] != "GUILD_CREATE"
                        && result["t"] != "PRESENCE_UPDATE"
                        && result["t"] != "GUILD_MEMBERS_CHUNK")))
-               log->trace("Shard#{}: {}", _shard->shardid, msg);
+               log->trace("Shard#{}: {}", _shard->get_id(), msg);
 
            int64_t t_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
            _shard->lastwsevent = std::chrono::steady_clock::now();
         
             if (!result["s"].is_null())
-                _shard->sequence = result["s"];
+                _shard->set_sequence(result["s"]);
         
             if (!result.is_null())
             {
@@ -635,7 +635,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                 {
                     std::string cmd = result["t"];
         
-                    //log->info("Shard#{}: {}", _shard->shardid, cmd);
+                    //log->info("Shard#{}: {}", _shard->get_id(), cmd);
                    
                     const auto it = ws_handlers.find(cmd);
                     if (it != ws_handlers.end())
@@ -681,8 +681,8 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                 {
                     if (result["d"] == false)
                     {
-                        _shard->sequence = 0;
-                        log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->shardid);
+                        _shard->set_sequence(0);
+                        log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->get_id());
                         _shard->session_id.clear();
                         std::this_thread::sleep_for(std::chrono::milliseconds((rand() % 2000) + 5000));
                         json obj = {
@@ -698,7 +698,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                                             { "$device", "aegis.cpp" }
                                         }
                                     },
-                                    { "shard", json::array({ _shard->shardid, _shard_mgr->shard_max_count }) },
+                                    { "shard", json::array({ _shard->get_id(), _shard_mgr->shard_max_count }) },
                                     { "compress", false },
                                     { "large_threshhold", 250 },
                                     { "presence",
@@ -717,7 +717,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                                 }
                             }
                         };
-                        //log->trace("Shard#{}: {}", _shard->shardid, obj.dump());
+                        //log->trace("Shard#{}: {}", _shard->id, obj.dump());
                         if (_shard->_connection != nullptr)
                         {
                             _shard->send(obj.dump());
@@ -726,7 +726,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                         else
                         {
                             //debug?
-                            log->error("Shard#{} : Invalid session received with an invalid connection state state: {}", _shard->shardid, static_cast<int32_t>(_shard->connection_state));
+                            log->error("Shard#{} : Invalid session received with an invalid connection state state: {}", _shard->get_id(), static_cast<int32_t>(_shard->connection_state));
                             _shard_mgr->reset_shard(_shard);
                             _shard->session_id.clear();
                             return;
@@ -743,7 +743,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                 {
                     //requested heartbeat
                     json obj;
-                    obj["d"] = _shard->sequence;
+                    obj["d"] = _shard->get_sequence();
                     obj["op"] = 1;
 
                     _shard->send(obj.dump());
@@ -816,7 +816,7 @@ AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const int32_t ms, 
             return;
         }
         json obj;
-        obj["d"] = _shard->sequence;
+        obj["d"] = _shard->get_sequence();
         obj["op"] = 1;
         _shard->send_now(obj.dump());
         _shard->lastheartbeat = std::chrono::steady_clock::now();
@@ -855,7 +855,7 @@ AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shards::shard 
                                 { "$device", "aegis.cpp" }
                             }
                         },
-                        { "shard", json::array({ _shard->shardid, _shard_mgr->shard_max_count }) },
+                        { "shard", json::array({ _shard->get_id(), _shard_mgr->shard_max_count }) },
                         { "compress", false },
                         { "large_threshhold", 250 },
                         { "presence",
@@ -884,7 +884,7 @@ AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shards::shard 
                     {
                         { "token", _token },
                         { "session_id", _shard->session_id },
-                        { "seq", _shard->sequence }
+                        { "seq", _shard->get_sequence() }
                     }
                 }
             };
@@ -1216,13 +1216,13 @@ AEGIS_DECL void core::ws_resumed(const json & result, shards::shard * _shard)
     _shard->connection_state = shard_status::Online;
     _shard_mgr->_connect_time = std::chrono::steady_clock::time_point();
     _shard->_ready_time = _shard_mgr->_last_ready = std::chrono::steady_clock::now();
-    log->info("Shard#{} RESUMED Processed", _shard->shardid);
     if (_shard->keepalivetimer)
         _shard->keepalivetimer->cancel();
     _shard->keepalivetimer = _shard_mgr->get_websocket().set_timer(
         _shard->heartbeattime
         , std::bind(&core::keep_alive, this, std::placeholders::_1, _shard->heartbeattime, _shard)
     );
+    log->info("Shard#{} RESUMED Processed", _shard->get_id());
 
     gateway::events::resumed obj;
     obj = result["d"];
@@ -1240,7 +1240,7 @@ AEGIS_DECL void core::ws_ready(const json & result, shards::shard * _shard)
     _shard_mgr->_connect_time = std::chrono::steady_clock::time_point();
     _shard->_ready_time = _shard_mgr->_last_ready = std::chrono::steady_clock::now();
     process_ready(result["d"], _shard);
-    log->info("Shard#{} READY Processed", _shard->shardid);
+    log->info("Shard#{} READY Processed", _shard->get_id());
 
     gateway::events::ready obj;
     obj = result["d"];
@@ -1457,18 +1457,18 @@ AEGIS_DECL void core::ws_guild_member_update(const json & result, shards::shard 
     if (_member == nullptr)
     {
 #ifdef WIN32
-        log->critical("Shard#{} : Error in [{}] _member == nullptr", _shard->shardid, __FUNCSIG__);
+        log->critical("Shard#{} : Error in [{}] _member == nullptr", _shard->get_id(), __FUNCSIG__);
 #else
-        log->critical("Shard#{} : Error in [{}] _member == nullptr", _shard->shardid, __PRETTY_FUNCTION__);
+        log->critical("Shard#{} : Error in [{}] _member == nullptr", _shard->get_id(), __PRETTY_FUNCTION__);
 #endif
         return;
     }
     if (_guild == nullptr)
     {
 #ifdef WIN32
-        log->critical("Shard#{} : Error in [{}] _guild == nullptr", _shard->shardid, __FUNCSIG__);
+        log->critical("Shard#{} : Error in [{}] _guild == nullptr", _shard->get_id(), __FUNCSIG__);
 #else
-        log->critical("Shard#{} : Error in [{}] _guild == nullptr", _shard->shardid, __PRETTY_FUNCTION__);
+        log->critical("Shard#{} : Error in [{}] _guild == nullptr", _shard->get_id(), __PRETTY_FUNCTION__);
 #endif
         return;
     }

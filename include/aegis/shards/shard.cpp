@@ -20,9 +20,9 @@ namespace shards
 AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp::config::asio_tls_client> & _ws, int32_t id)
     : write_timer(_io)
     , heartbeattime(0)
-    , sequence(0)
-    , shardid(id)
     , connection_state(shard_status::Uninitialized)
+    , _sequence(0)
+    , _id(id)
     , _io_context(_io)
     , transfer_bytes(0)
     , transfer_bytes_u(0)
@@ -45,7 +45,7 @@ AEGIS_DECL void shard::do_reset(shard_status _status) AEGIS_NOEXCEPT
                 if (_connection->get_state() == websocketpp::session::state::open)
                 {
                     _connection->close(1001, "");
-                    std::cout << "Shard#" << shardid << ": had to close socket on a reset\n";
+                    std::cout << "Shard#" << get_id() << ": had to close socket on a reset\n";
                 }
             }
 
@@ -55,13 +55,13 @@ AEGIS_DECL void shard::do_reset(shard_status _status) AEGIS_NOEXCEPT
         }
         catch (std::exception & e)
         {
-            std::cout << "Shard#" << shardid << ": worst happened do_reset() - std::exception " << e.what() << '\n';
+            std::cout << "Shard#" << get_id() << ": worst happened do_reset() - std::exception " << e.what() << '\n';
             _reset();
             ++counters.reconnects;
         }
         catch (asio::error_code & e)
         {
-            std::cout << "Shard#" << shardid << ": worst happened do_reset() - asio::error_code " << e.value() << ':' << e.message() << '\n';
+            std::cout << "Shard#" << get_id() << ": worst happened do_reset() - asio::error_code " << e.value() << ':' << e.message() << '\n';
             _reset();
             ++counters.reconnects;
         }
@@ -102,12 +102,12 @@ AEGIS_DECL void shard::connect()
         }
         catch (std::exception & e)
         {
-            std::cout << "Shard#" << shardid << ": worst happened connect() - std::exception " << e.what() << '\n';
+            std::cout << "Shard#" << get_id() << ": worst happened connect() - std::exception " << e.what() << '\n';
             _reset();
         }
         catch (asio::error_code & e)
         {
-            std::cout << "Shard#" << shardid << ": worst happened connect() - asio::error_code " << e.value() << ':' << e.message() << '\n';
+            std::cout << "Shard#" << get_id() << ": worst happened connect() - asio::error_code " << e.value() << ':' << e.message() << '\n';
             _reset();
         }
         catch (...)
@@ -160,18 +160,7 @@ AEGIS_DECL bool shard::is_online() const AEGIS_NOEXCEPT
     return false;
 }
 
-AEGIS_DECL bool shard::is_socket_connected() const AEGIS_NOEXCEPT
-{
-    if (_connection == nullptr)
-        return false;
-
-    if (_connection->get_raw_socket().is_open())
-        return true;
-
-    return false;
-}
-
-AEGIS_DECL void shard::send(std::string const & payload, websocketpp::frame::opcode::value op)
+AEGIS_DECL void shard::send(const std::string & payload, websocketpp::frame::opcode::value op)
 {
     if (!is_connected())
         return;
@@ -181,7 +170,7 @@ AEGIS_DECL void shard::send(std::string const & payload, websocketpp::frame::opc
     }));
 }
 
-AEGIS_DECL void shard::send_now(std::string const & payload, websocketpp::frame::opcode::value op)
+AEGIS_DECL void shard::send_now(const std::string & payload, websocketpp::frame::opcode::value op)
 {
     if (!is_connected())
         return;
