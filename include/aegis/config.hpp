@@ -20,7 +20,7 @@
 #define ASIO_STANDALONE
 #endif
 
-#if !defined(ASIO_HEADER_ONLY)
+#if !defined(ASIO_HEADER_ONLY) && !defined(ASIO_DYN_LINK) && !defined(ASIO_SEPARATE_COMPILATION)
 #define ASIO_HEADER_ONLY
 #endif
 
@@ -119,22 +119,45 @@
 // Support for std::optional over built-in
 #if !defined(AEGIS_HAS_STD_OPTIONAL)
 # if !defined(AEGIS_DISABLE_STD_OPTIONAL)
-#  if defined(__clang__)
-#   if (__cplusplus >= 201703)
-#    if __has_include(<optional>)
-#     define AEGIS_HAS_STD_OPTIONAL 1
-#    endif // __has_include(<optional>)
-#   endif // (__cplusplus >= 201703)
-#  endif // defined(__clang__)
-#  if defined(__GNUC__)
-#   if (__GNUC__ >= 7)
-#    if (__cplusplus >= 201703)
-#     define AEGIS_HAS_STD_OPTIONAL 1
-#    endif // (__cplusplus >= 201703)
-#   endif // (__GNUC__ >= 7)
-#  endif // defined(__GNUC__)
+#  if (__cplusplus >= 201703)
+#   if __has_include(<optional>)
+#    include <optional>
+namespace aegis
+{
+namespace lib
+{
+template<typename T> using optional = std::optional<T>;
+constexpr auto nullopt = std::nullopt;
+using bad_optional_access = std::bad_optional_access;
+}
+}
+#    define AEGIS_HAS_STD_OPTIONAL 1
+#   elif __has_include(<experimental/optional>)
+#    include <experimental/optional>
+namespace aegis
+{
+namespace lib
+{
+template<typename T> using optional = std::experimental::::optional<T>;
+constexpr auto nullopt = std::experimental::::nullopt;
+using bad_optional_access = std::experimental::::bad_optional_access;
+}
+}
+#    define AEGIS_HAS_STD_OPTIONAL 1
+#   endif // __has_include(<optional>)
+#  endif // (__cplusplus >= 201703)
 #  if defined(AEGIS_MSVC)
 #   if (_MSC_VER >= 1910 && defined(_HAS_CXX17))
+#    include <optional>
+namespace aegis
+{
+namespace lib
+{
+template<typename T> using optional = std::optional<T>;
+constexpr auto nullopt = std::nullopt;
+using bad_optional_access = std::bad_optional_access;
+}
+}
 #    define AEGIS_HAS_STD_OPTIONAL
 #   endif // (_MSC_VER >= 1910 && _HAS_CXX17)
 #  endif // defined(AEGIS_MSVC)

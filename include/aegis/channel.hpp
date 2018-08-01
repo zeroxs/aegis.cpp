@@ -17,15 +17,6 @@
 #include "aegis/snowflake.hpp"
 #include "aegis/objects/permission_overwrite.hpp"
 #include "aegis/objects/channel.hpp"
-#if defined(AEGIS_HAS_STD_OPTIONAL)
-#include <optional>
-#else
-#include "aegis/optional.hpp"
-namespace std
-{
-using std::experimental::optional;
-}
-#endif
 #include <shared_mutex>
 
 namespace aegis
@@ -274,9 +265,9 @@ public:
      * @param _parent_id Snowflake of category channel belongs in (empty parent puts channel in no category)
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> modify_channel(std::error_code & ec, std::optional<std::string> _name = {}, std::optional<int> _position = {}, std::optional<std::string> _topic = {},
-                        std::optional<bool> _nsfw = {}, std::optional<int> _bitrate = {}, std::optional<int> _user_limit = {},
-                        std::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, std::optional<snowflake> _parent_id = {});
+    AEGIS_DECL std::future<rest::rest_reply> modify_channel(std::error_code & ec, lib::optional<std::string> _name = {}, lib::optional<int> _position = {}, lib::optional<std::string> _topic = {},
+                        lib::optional<bool> _nsfw = {}, lib::optional<int> _bitrate = {}, lib::optional<int> _user_limit = {},
+                        lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, lib::optional<snowflake> _parent_id = {});
 
     /// Modify this channel (all parameters optional)
     /**
@@ -291,9 +282,9 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    std::future<rest::rest_reply> modify_channel(std::optional<std::string> _name = {}, std::optional<int> _position = {}, std::optional<std::string> _topic = {},
-                        std::optional<bool> _nsfw = {}, std::optional<int> _bitrate = {}, std::optional<int> _user_limit = {},
-                        std::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, std::optional<snowflake> _parent_id = {})
+    std::future<rest::rest_reply> modify_channel(lib::optional<std::string> _name = {}, lib::optional<int> _position = {}, lib::optional<std::string> _topic = {},
+                        lib::optional<bool> _nsfw = {}, lib::optional<int> _bitrate = {}, lib::optional<int> _user_limit = {},
+                        lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, lib::optional<snowflake> _parent_id = {})
     {
         std::error_code ec;
         auto res = modify_channel(ec, _name, _position, _topic, _nsfw, _bitrate, _user_limit, _permission_overwrites, _parent_id);
@@ -507,7 +498,7 @@ public:
      * @param unique Is this invite code a unique one-use
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> create_channel_invite(std::error_code & ec, const std::optional<int> max_age, const std::optional<int> max_uses, const std::optional<bool> temporary, const std::optional<bool> unique);
+    AEGIS_DECL std::future<rest::rest_reply> create_channel_invite(std::error_code & ec, const lib::optional<int> max_age, const lib::optional<int> max_uses, const lib::optional<bool> temporary, const lib::optional<bool> unique);
 
     /// Create a new channel invite
     /**
@@ -518,7 +509,7 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    std::future<rest::rest_reply> create_channel_invite(const std::optional<int> max_age, const std::optional<int> max_uses, const std::optional<bool> temporary, const std::optional<bool> unique)
+    std::future<rest::rest_reply> create_channel_invite(const lib::optional<int> max_age, const lib::optional<int> max_uses, const lib::optional<bool> temporary, const lib::optional<bool> unique)
     {
         std::error_code ec;
         auto res = create_channel_invite(ec, max_age, max_uses, temporary, unique);

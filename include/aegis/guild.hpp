@@ -19,15 +19,6 @@
 #include <future>
 #include <asio.hpp>
 #include <shared_mutex>
-#if defined(AEGIS_HAS_STD_OPTIONAL)
-#include <optional>
-#else
-#include "aegis/optional.hpp"
-namespace std
-{
-using std::experimental::optional;
-}
-#endif
 
 namespace aegis
 {
@@ -232,12 +223,12 @@ public:
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL std::future<rest::rest_reply> modify_guild(
-        std::error_code & ec, std::optional<std::string> name = {},
-        std::optional<std::string> voice_region = {}, std::optional<int> verification_level = {},
-        std::optional<int> default_message_notifications = {}, std::optional<int> explicit_content_filter = {},
-        std::optional<snowflake> afk_channel_id = {}, std::optional<int> afk_timeout = {},
-        std::optional<std::string> icon = {}, std::optional<snowflake> owner_id = {},
-        std::optional<std::string> splash = {}
+        std::error_code & ec, lib::optional<std::string> name = {},
+        lib::optional<std::string> voice_region = {}, lib::optional<int> verification_level = {},
+        lib::optional<int> default_message_notifications = {}, lib::optional<int> explicit_content_filter = {},
+        lib::optional<snowflake> afk_channel_id = {}, lib::optional<int> afk_timeout = {},
+        lib::optional<std::string> icon = {}, lib::optional<snowflake> owner_id = {},
+        lib::optional<std::string> splash = {}
     );
 
 
@@ -260,12 +251,12 @@ public:
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL std::future<rest::rest_reply> modify_guild(
-        std::optional<std::string> name = {},
-        std::optional<std::string> voice_region = {}, std::optional<int> verification_level = {},
-        std::optional<int> default_message_notifications = {}, std::optional<int> explicit_content_filter = {},
-        std::optional<snowflake> afk_channel_id = {}, std::optional<int> afk_timeout = {},
-        std::optional<std::string> icon = {}, std::optional<snowflake> owner_id = {},
-        std::optional<std::string> splash = {}
+        lib::optional<std::string> name = {},
+        lib::optional<std::string> voice_region = {}, lib::optional<int> verification_level = {},
+        lib::optional<int> default_message_notifications = {}, lib::optional<int> explicit_content_filter = {},
+        lib::optional<snowflake> afk_channel_id = {}, lib::optional<int> afk_timeout = {},
+        lib::optional<std::string> icon = {}, lib::optional<snowflake> owner_id = {},
+        lib::optional<std::string> splash = {}
     )
     {
         std::error_code ec;
@@ -425,9 +416,9 @@ public:
      * @param channel_id Snowflake of the channel to move user to
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> modify_guild_member(std::error_code & ec, snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
-                                            std::optional<bool> deaf, std::optional<std::vector<snowflake>> roles,
-                                            std::optional<snowflake> channel_id);
+    AEGIS_DECL std::future<rest::rest_reply> modify_guild_member(std::error_code & ec, snowflake user_id, lib::optional<std::string> nick, lib::optional<bool> mute,
+                                            lib::optional<bool> deaf, lib::optional<std::vector<snowflake>> roles,
+                                            lib::optional<snowflake> channel_id);
 
     /// Modify a member
     /// All fields are optional
@@ -441,9 +432,9 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns std::future<rest::rest_reply>
      */
-    std::future<rest::rest_reply> modify_guild_member(snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
-                                            std::optional<bool> deaf, std::optional<std::vector<snowflake>> roles,
-                                            std::optional<snowflake> channel_id)
+    std::future<rest::rest_reply> modify_guild_member(snowflake user_id, lib::optional<std::string> nick, lib::optional<bool> mute,
+                                            lib::optional<bool> deaf, lib::optional<std::vector<snowflake>> roles,
+                                            lib::optional<snowflake> channel_id)
     {
         std::error_code ec;
         auto res = modify_guild_member(ec, user_id, nick, mute, deaf, roles, channel_id);

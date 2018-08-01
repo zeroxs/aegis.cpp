@@ -492,9 +492,9 @@ AEGIS_DECL std::future<rest::rest_reply> guild::get_guild(std::error_code & ec)
     return post_task(fmt::format("/guilds/{}", guild_id), "GET");
 }
 
-AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild(std::error_code & ec, std::optional<std::string> name, std::optional<std::string> voice_region, std::optional<int> verification_level,
-                    std::optional<int> default_message_notifications, std::optional<int> explicit_content_filter, std::optional<snowflake> afk_channel_id, std::optional<int> afk_timeout,
-                    std::optional<std::string> icon, std::optional<snowflake> owner_id, std::optional<std::string> splash)
+AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild(std::error_code & ec, lib::optional<std::string> name, lib::optional<std::string> voice_region, lib::optional<int> verification_level,
+                    lib::optional<int> default_message_notifications, lib::optional<int> explicit_content_filter, lib::optional<snowflake> afk_channel_id, lib::optional<int> afk_timeout,
+                    lib::optional<std::string> icon, lib::optional<snowflake> owner_id, lib::optional<std::string> splash)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if ((!perms().can_manage_guild()) || (owner_id.has_value() && owner_id != self()->_member_id))
@@ -638,8 +638,8 @@ AEGIS_DECL std::future<rest::rest_reply> guild::modify_channel_positions(std::er
     return {};
 }
 
-AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild_member(std::error_code & ec, snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
-                            std::optional<bool> deaf, std::optional<std::vector<snowflake>> roles, std::optional<snowflake> channel_id)
+AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild_member(std::error_code & ec, snowflake user_id, lib::optional<std::string> nick, lib::optional<bool> mute,
+                            lib::optional<bool> deaf, lib::optional<std::vector<snowflake>> roles, lib::optional<snowflake> channel_id)
 {
     json obj;
 #if !defined(AEGIS_DISABLE_ALL_CACHE)

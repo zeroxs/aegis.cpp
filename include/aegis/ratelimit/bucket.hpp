@@ -22,15 +22,6 @@
 #include <asio/io_context.hpp>
 #include <asio/use_future.hpp>
 #include <asio/post.hpp>
-#if defined(AEGIS_HAS_STD_OPTIONAL)
-#include <optional>
-#else
-#include "aegis/optional.hpp"
-namespace std
-{
-using std::experimental::optional;
-}
-#endif
 
 namespace aegis
 {

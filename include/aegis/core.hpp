@@ -17,11 +17,6 @@
 #include "aegis/shards/shard_mgr.hpp"
 #include "aegis/objects/role.hpp"
 #include "aegis/guild.hpp"
-#if defined(AEGIS_HAS_STD_OPTIONAL)
-#include <optional>
-#else
-#include "aegis/optional.hpp"
-#endif
 
 #include <vector>
 #include <iostream>
@@ -39,13 +34,6 @@
 #include "aegis/fwd.hpp"
 
 #include <asio/bind_executor.hpp>
-
-#if !defined(AEGIS_HAS_STD_OPTIONAL)
-namespace std
-{
-using std::experimental::optional;
-}
-#endif
 
 namespace aegis
 {
@@ -191,10 +179,10 @@ public:
      */
     AEGIS_DECL rest::rest_reply create_guild(
         std::error_code & ec, std::string name,
-        std::optional<std::string> voice_region = {}, std::optional<int> verification_level = {},
-        std::optional<int> default_message_notifications = {}, std::optional<int> explicit_content_filter = {},
-        std::optional<std::string> icon = {}, std::optional<std::vector<gateway::objects::role>> roles = {},
-        std::optional<std::vector<std::tuple<std::string, int>>> channels = {}
+        lib::optional<std::string> voice_region = {}, lib::optional<int> verification_level = {},
+        lib::optional<int> default_message_notifications = {}, lib::optional<int> explicit_content_filter = {},
+        lib::optional<std::string> icon = {}, lib::optional<std::vector<gateway::objects::role>> roles = {},
+        lib::optional<std::vector<std::tuple<std::string, int>>> channels = {}
     );
 
     /// Create new guild - Unique case. Does not belong to any ratelimit bucket so it is run
@@ -218,10 +206,10 @@ public:
      */
     AEGIS_DECL rest::rest_reply create_guild(
         std::string name,
-        std::optional<std::string> voice_region = {}, std::optional<int> verification_level = {},
-        std::optional<int> default_message_notifications = {}, std::optional<int> explicit_content_filter = {},
-        std::optional<std::string> icon = {}, std::optional<std::vector<gateway::objects::role>> roles = {},
-        std::optional<std::vector<std::tuple<std::string, int>>> channels = {}
+        lib::optional<std::string> voice_region = {}, lib::optional<int> verification_level = {},
+        lib::optional<int> default_message_notifications = {}, lib::optional<int> explicit_content_filter = {},
+        lib::optional<std::string> icon = {}, lib::optional<std::vector<gateway::objects::role>> roles = {},
+        lib::optional<std::vector<std::tuple<std::string, int>>> channels = {}
     );
 
     /// Spawns and starts the specified amount of threads on the io_context

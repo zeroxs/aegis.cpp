@@ -222,9 +222,9 @@ AEGIS_DECL std::future<rest::rest_reply> channel::bulk_delete_message(std::error
     return post_task(fmt::format("/channels/{}/messages/bulk-delete", channel_id), "POST", obj.dump());
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::modify_channel(std::error_code & ec, std::optional<std::string> _name, std::optional<int> _position, std::optional<std::string> _topic,
-                                    std::optional<bool> _nsfw, std::optional<int> _bitrate, std::optional<int> _user_limit,
-                                    std::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites, std::optional<snowflake> _parent_id)
+AEGIS_DECL std::future<rest::rest_reply> channel::modify_channel(std::error_code & ec, lib::optional<std::string> _name, lib::optional<int> _position, lib::optional<std::string> _topic,
+                                    lib::optional<bool> _nsfw, lib::optional<int> _bitrate, lib::optional<int> _user_limit,
+                                    lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites, lib::optional<snowflake> _parent_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_channels())
@@ -382,7 +382,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::get_channel_invites(std::error
     return post_task(fmt::format("/channels/{}/invites", channel_id), "GET");
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::create_channel_invite(std::error_code & ec, std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique)
+AEGIS_DECL std::future<rest::rest_reply> channel::create_channel_invite(std::error_code & ec, lib::optional<int> max_age, lib::optional<int> max_uses, lib::optional<bool> temporary, lib::optional<bool> unique)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_invite())

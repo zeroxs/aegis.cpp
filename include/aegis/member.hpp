@@ -20,16 +20,6 @@
 #include <memory>
 #include <set>
 #include <shared_mutex>
-#if defined(AEGIS_HAS_STD_OPTIONAL)
-#include <optional>
-#else
-#include "aegis/optional.hpp"
-namespace std
-{
-using std::experimental::optional;
-}
-#endif
-#include <shared_mutex>
 
 namespace aegis
 {

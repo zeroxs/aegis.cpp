@@ -23,15 +23,6 @@
 #include <future>
 #include <thread>
 #include <mutex>
-#if defined(AEGIS_HAS_STD_OPTIONAL)
-#include <optional>
-#else
-#include "aegis/optional.hpp"
-namespace std
-{
-using std::experimental::optional;
-}
-#endif
 
 namespace aegis
 {
@@ -71,7 +62,7 @@ public:
     /**
      * @returns true if globally ratelimited
      */
-    AEGIS_DECL bool is_global() const AEGIS_NOEXCEPT
+    bool is_global() const AEGIS_NOEXCEPT
     {
         return global_limit > 0;
     }
@@ -82,7 +73,7 @@ public:
     * @param id Snowflake of bucket object
     * @returns Reference to a bucket object
     */
-    AEGIS_DECL bucket<Callable, Result> & get_bucket(const bucket_type type, const snowflake id) AEGIS_NOEXCEPT
+    bucket<Callable, Result> & get_bucket(const bucket_type type, const snowflake id) AEGIS_NOEXCEPT
     {
         // look for existing bucket set by type
         auto bkt_type = _buckets.find(type);

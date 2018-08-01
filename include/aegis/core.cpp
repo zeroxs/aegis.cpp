@@ -523,10 +523,10 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
 
 AEGIS_DECL rest::rest_reply core::create_guild(
     std::string name,
-    std::optional<std::string> voice_region, std::optional<int> verification_level,
-    std::optional<int> default_message_notifications, std::optional<int> explicit_content_filter,
-    std::optional<std::string> icon, std::optional<std::vector<gateway::objects::role>> roles,
-    std::optional<std::vector<std::tuple<std::string, int>>> channels
+    lib::optional<std::string> voice_region, lib::optional<int> verification_level,
+    lib::optional<int> default_message_notifications, lib::optional<int> explicit_content_filter,
+    lib::optional<std::string> icon, lib::optional<std::vector<gateway::objects::role>> roles,
+    lib::optional<std::vector<std::tuple<std::string, int>>> channels
 )
 {
     std::error_code ec;
@@ -1594,10 +1594,10 @@ AEGIS_DECL void core::ws_voice_server_update(const json & result, shards::shard 
 
 AEGIS_DECL rest::rest_reply core::create_guild(
     std::error_code & ec, std::string name,
-    std::optional<std::string> voice_region, std::optional<int> verification_level,
-    std::optional<int> default_message_notifications, std::optional<int> explicit_content_filter,
-    std::optional<std::string> icon, std::optional<std::vector<gateway::objects::role>> roles,
-    std::optional<std::vector<std::tuple<std::string, int>>> channels
+    lib::optional<std::string> voice_region, lib::optional<int> verification_level,
+    lib::optional<int> default_message_notifications, lib::optional<int> explicit_content_filter,
+    lib::optional<std::string> icon, lib::optional<std::vector<gateway::objects::role>> roles,
+    lib::optional<std::vector<std::tuple<std::string, int>>> channels
 )
 {
     json obj;
