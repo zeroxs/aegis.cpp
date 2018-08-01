@@ -126,7 +126,7 @@ namespace aegis
 {
 namespace lib
 {
-template<typename T> using optional = std::optional<T>;
+using namespace std::optional;
 constexpr auto nullopt = std::nullopt;
 using bad_optional_access = std::bad_optional_access;
 }
@@ -138,13 +138,24 @@ namespace aegis
 {
 namespace lib
 {
-template<typename T> using optional = std::experimental::::optional<T>;
-constexpr auto nullopt = std::experimental::::nullopt;
-using bad_optional_access = std::experimental::::bad_optional_access;
+template<typename T> using optional = std::experimental::optional<T>;
+constexpr auto nullopt = std::experimental::nullopt;
+using bad_optional_access = std::experimental::bad_optional_access;
 }
 }
 #    define AEGIS_HAS_STD_OPTIONAL 1
 #   endif // __has_include(<optional>)
+#  elif (__cplusplus >= 201402) // c++14
+#   include "aegis/optional.hpp"
+namespace aegis
+{
+namespace lib
+{
+template<typename T> using optional = std::experimental::optional<T>;
+constexpr auto nullopt = std::experimental::nullopt;
+using bad_optional_access = std::experimental::bad_optional_access;
+}
+}
 #  endif // (__cplusplus >= 201703)
 #  if defined(AEGIS_MSVC)
 #   if (_MSC_VER >= 1910 && defined(_HAS_CXX17))
@@ -159,6 +170,17 @@ using bad_optional_access = std::bad_optional_access;
 }
 }
 #    define AEGIS_HAS_STD_OPTIONAL
+#  else
+#   include "aegis/optional.hpp"
+namespace aegis
+{
+namespace lib
+{
+template<typename T> using optional = std::experimental::optional<T>;
+constexpr auto nullopt = std::experimental::nullopt;
+using bad_optional_access = std::experimental::bad_optional_access;
+}
+}
 #   endif // (_MSC_VER >= 1910 && _HAS_CXX17)
 #  endif // defined(AEGIS_MSVC)
 # endif // !defined(AEGIS_DISABLE_STD_OPTIONAL)
