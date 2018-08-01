@@ -34,6 +34,9 @@ namespace shards
 class shard
 {
 public:
+    /// Type of a pointer to the Websocket++ TLS connection
+    using connection_ptr = websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr;
+
     /// Constructs a shard object for connecting to the websocket gateway and tracking timers
     AEGIS_DECL shard(asio::io_context & _io, websocketpp::client<websocketpp::config::asio_tls_client> & _ws, int32_t id);
 
@@ -171,8 +174,32 @@ public:
         return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _ready_time).count();
     }
 
+    void set_heartbeat(std::function<void(const asio::error_code &, const int32_t, shard *)> fnkeepalive)
+    {
+        keepalivefunc = fnkeepalive;
+    }
+
+    void start_heartbeat(int32_t heartbeat) AEGIS_NOEXCEPT
+    {
+        heartbeattime = heartbeat;
+
+        if (!keepalivefunc || !_connection)
+            return;
+
+        keepalivetimer.expires_after(std::chrono::milliseconds(heartbeat));
+        keepalivetimer.async_wait(asio::bind_executor(*_connection->get_strand(), [=](const asio::error_code & ec)
+        {
+            if (ec == asio::error::operation_aborted)
+                return;
+
+            keepalivefunc(ec, heartbeat, this);
+            start_heartbeat(heartbeat);
+        }));
+    }
+
     std::deque<std::tuple<int64_t, std::string>> debug_messages;
-    std::shared_ptr<asio::steady_timer> keepalivetimer;
+    asio::steady_timer keepalivetimer;
+    asio::steady_timer delayedauth;
     asio::steady_timer write_timer;
 
     std::queue<std::tuple<std::string, websocketpp::frame::opcode::value>> write_queue;
@@ -187,10 +214,8 @@ public:
     std::chrono::time_point<std::chrono::steady_clock> last_ws_write;
 
     shard_status connection_state;
-
-private:
-    friend class shard_mgr;
-    friend class core;
+    std::string session_id;
+    std::function<void(const asio::error_code &, const int32_t, shard *)> keepalivefunc;
 
     void set_sequence(int64_t seq) AEGIS_NOEXCEPT
     {
@@ -202,12 +227,20 @@ private:
         _id = shard_id;
     }
 
+    connection_ptr get_connection() AEGIS_NOEXCEPT
+    {
+        return _connection;
+    }
+
+private:
+    friend class shard_mgr;
+    friend class core;
+
     AEGIS_DECL void process_writes(const asio::error_code & ec);
     AEGIS_DECL void _reset();
     AEGIS_DECL void set_connected();
 
-    websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr _connection;
-    std::string session_id;
+    connection_ptr _connection;
 
     int64_t _sequence;
     int32_t _id;

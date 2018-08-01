@@ -357,9 +357,9 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
             {
                 if (_connect_time != std::chrono::steady_clock::time_point())
                 {
-                    if (std::chrono::duration_cast<std::chrono::seconds>(now - _connect_time) >= 10s)
+                    if (std::chrono::duration_cast<std::chrono::seconds>(now - _connect_time) >= 20s)
                     {
-                        log->error("Shard#{}: timeout while connecting (10s)", _connecting_shard->get_id());
+                        log->error("Shard#{}: timeout while connecting (20s)", _connecting_shard->get_id());
                         close(_connecting_shard);
                         _shards_to_connect.pop_front();
                         queue_reconnect(_connecting_shard);

@@ -684,59 +684,63 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                         _shard->set_sequence(0);
                         log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->get_id());
                         _shard->session_id.clear();
-                        std::this_thread::sleep_for(std::chrono::milliseconds((rand() % 2000) + 5000));
-                        json obj = {
-                            { "op", 2 },
+
+                        _shard->delayedauth.expires_after(std::chrono::milliseconds((rand() % 2000) + 5000));
+                        _shard->delayedauth.async_wait(asio::bind_executor(*_shard->get_connection()->get_strand(), [=](const asio::error_code & ec)
+                        {
+                            if (ec == asio::error::operation_aborted)
+                                return;
+
+                            if (_shard->get_connection() == nullptr)
                             {
-                                "d",
+                                //debug?
+                                log->error("Shard#{} : Invalid session received with an invalid connection state state: {}", _shard->get_id(), static_cast<int32_t>(_shard->connection_state));
+                                _shard_mgr->reset_shard(_shard);
+                                _shard->session_id.clear();
+                                return;
+                            }
+
+                            json obj = {
+                                { "op", 2 },
                                 {
-                                    { "token", _token },
-                                    { "properties",
-                                        {
-                                            { "$os", utility::platform::get_platform() },
-                                            { "$browser", "aegis.cpp" },
-                                            { "$device", "aegis.cpp" }
-                                        }
-                                    },
-                                    { "shard", json::array({ _shard->get_id(), _shard_mgr->shard_max_count }) },
-                                    { "compress", false },
-                                    { "large_threshhold", 250 },
-                                    { "presence",
-                                        {
-                                            { "game",
-                                                {
-                                                    { "name", self_presence },
-                                                    { "type", 0 }
-                                                }
-                                            },
-                                            { "status", "online" },
-                                            { "since", 1 },
-                                            { "afk", false }
+                                    "d",
+                                    {
+                                        { "token", _token },
+                                        { "properties",
+                                            {
+                                                { "$os", utility::platform::get_platform() },
+                                                { "$browser", "aegis.cpp" },
+                                                { "$device", "aegis.cpp" }
+                                            }
+                                        },
+                                        { "shard", json::array({ _shard->get_id(), _shard_mgr->shard_max_count }) },
+                                        { "compress", false },
+                                        { "large_threshhold", 250 },
+                                        { "presence",
+                                            {
+                                                { "game",
+                                                    {
+                                                        { "name", self_presence },
+                                                        { "type", 0 }
+                                                    }
+                                                },
+                                                { "status", "online" },
+                                                { "since", 1 },
+                                                { "afk", false }
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        };
-                        //log->trace("Shard#{}: {}", _shard->id, obj.dump());
-                        if (_shard->_connection != nullptr)
-                        {
+                            };
                             _shard->send(obj.dump());
-                            return;
-                        }
-                        else
-                        {
-                            //debug?
-                            log->error("Shard#{} : Invalid session received with an invalid connection state state: {}", _shard->get_id(), static_cast<int32_t>(_shard->connection_state));
-                            _shard_mgr->reset_shard(_shard);
-                            _shard->session_id.clear();
-                            return;
-                        }
+                        }));
+
+
                     }
                     else
                     {
-        
+                        //
                     }
-                    //debug_trace(_shard);
                     return;
                 }
                 if (result["op"] == 1)
@@ -752,17 +756,14 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                 if (result["op"] == 10)
                 {
                     int32_t heartbeat = result["d"]["heartbeat_interval"];
-                    _shard->keepalivetimer = _shard_mgr->get_websocket().set_timer(
-                        heartbeat,
-                        std::bind(&core::keep_alive, this, std::placeholders::_1, heartbeat, _shard)
-                    );
-                    _shard->heartbeattime = heartbeat;
+                    _shard->set_heartbeat(std::bind(&core::keep_alive, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+                    _shard->start_heartbeat(heartbeat);
                     return;
                 }
                 if (result["op"] == 11)
                 {
                     //heartbeat ACK
-                    _shard->lastheartbeat = _shard->heartbeat_ack = std::chrono::steady_clock::now();
+                    _shard->heartbeat_ack = std::chrono::steady_clock::now();
                     return;
                 }
         
@@ -797,7 +798,7 @@ AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const int32_t ms, 
         return;
     try
     {
-        if (_shard->connection_state == shard_status::Shutdown || _shard->_connection == nullptr)
+        if (_shard->connection_state == shard_status::Shutdown || !_shard->is_connected())
             return;
 
         auto now = std::chrono::steady_clock::now();
@@ -820,10 +821,6 @@ AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const int32_t ms, 
         obj["op"] = 1;
         _shard->send_now(obj.dump());
         _shard->lastheartbeat = std::chrono::steady_clock::now();
-        _shard->keepalivetimer = _shard_mgr->get_websocket().set_timer(
-            ms,
-            std::bind(&core::keep_alive, this, std::placeholders::_1, ms, _shard)
-        );
     }
     catch (websocketpp::exception & e)
     {
@@ -1216,13 +1213,10 @@ AEGIS_DECL void core::ws_resumed(const json & result, shards::shard * _shard)
     _shard->connection_state = shard_status::Online;
     _shard_mgr->_connect_time = std::chrono::steady_clock::time_point();
     _shard->_ready_time = _shard_mgr->_last_ready = std::chrono::steady_clock::now();
-    if (_shard->keepalivetimer)
-        _shard->keepalivetimer->cancel();
-    _shard->keepalivetimer = _shard_mgr->get_websocket().set_timer(
-        _shard->heartbeattime
-        , std::bind(&core::keep_alive, this, std::placeholders::_1, _shard->heartbeattime, _shard)
-    );
     log->info("Shard#{} RESUMED Processed", _shard->get_id());
+    _shard->keepalivetimer.cancel();
+    _shard->set_heartbeat(std::bind(&core::keep_alive, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    _shard->start_heartbeat(_shard->heartbeattime);
 
     gateway::events::resumed obj;
     obj = result["d"];

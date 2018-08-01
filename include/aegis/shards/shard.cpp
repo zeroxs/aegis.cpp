@@ -18,7 +18,9 @@ namespace shards
 {
 
 AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp::config::asio_tls_client> & _ws, int32_t id)
-    : write_timer(_io)
+    : keepalivetimer(_io)
+    , delayedauth(_io)
+    , write_timer(_io)
     , heartbeattime(0)
     , connection_state(shard_status::Uninitialized)
     , _sequence(0)
@@ -33,7 +35,10 @@ AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp:
 AEGIS_DECL void shard::do_reset(shard_status _status) AEGIS_NOEXCEPT
 {
     if (_connection == nullptr)
+    {
+        _reset();
         return;
+    }
 
     asio::post(asio::bind_executor(*_connection->get_strand(), [this, _status]()
     {
@@ -77,11 +82,8 @@ AEGIS_DECL void shard::_reset()
     last_status_time = lastwsevent = std::chrono::steady_clock::now();
     heartbeat_ack = lastheartbeat = std::chrono::steady_clock::time_point();
 
-    if (keepalivetimer != nullptr)
-    {
-        keepalivetimer->cancel();
-        keepalivetimer.reset();
-    }
+    delayedauth.cancel();
+    keepalivetimer.cancel();
     write_timer.cancel();
     ws_buffer.str("");
     zlib_ctx.reset();
