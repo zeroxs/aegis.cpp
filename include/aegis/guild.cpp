@@ -26,7 +26,6 @@ AEGIS_DECL guild::guild(const int32_t _shard_id, const snowflake _id, core * _bo
     : shard_id(_shard_id)
     , guild_id(_id)
     , _bot(_bot)
-    , guild_bucket(_bot->get_ratelimit().get_bucket(ratelimit::Guild, _id))
     , _io_context(_io)
 {
 
@@ -481,7 +480,7 @@ AEGIS_DECL channel * guild::get_channel(snowflake id) const AEGIS_NOEXCEPT
 
 AEGIS_DECL std::future<rest::rest_reply> guild::post_task(const std::string & path, const std::string & method, const std::string & obj, const std::string & host)
 {
-    return guild_bucket.post_task(path, method, obj, host);
+    return _bot->get_ratelimit().post_task(path, method, obj, host);
 }
 
 /**\todo Incomplete. Signature may change. Location may change.

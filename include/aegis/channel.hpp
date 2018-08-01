@@ -704,8 +704,6 @@ private:
 
     snowflake channel_id; /**< snowflake of this channel */
     snowflake guild_id; /**< snowflake of the guild this channel belongs to */
-    ratelimit::bucket<rest_call, aegis::rest::rest_reply> & channel_bucket;
-    ratelimit::bucket<rest_call, aegis::rest::rest_reply> & emoji_bucket;
     guild * _guild; /**< Pointer to the guild this channel belongs to */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     snowflake last_message_id = 0; /**< Snowflake of the last message sent in this channel */

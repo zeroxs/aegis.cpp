@@ -26,23 +26,20 @@ using json = nlohmann::json;
 AEGIS_DECL channel::channel(const snowflake channel_id, const snowflake guild_id, core * _bot, asio::io_context & _io)
     : channel_id(channel_id)
     , guild_id(guild_id)
-    , channel_bucket(_bot->get_ratelimit().get_bucket(ratelimit::Channel, channel_id))
-    , emoji_bucket(_bot->get_ratelimit().get_bucket(ratelimit::Emoji, guild_id))
     , _guild(nullptr)
     , _io_context(_io)
     , _bot(_bot)
 {
-    emoji_bucket.ignore_rates = true;
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::post_task(const std::string & path, const std::string & method, const std::string & obj, const std::string & host)
 {
-    return channel_bucket.post_task(path, method, obj, host);
+    return _bot->get_ratelimit().post_task(path, method, obj, host);
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::post_emoji_task(const std::string & path, const std::string & method, const std::string & obj, const std::string & host)
 {
-    return emoji_bucket.post_task(path, method, obj, host);
+    return _bot->get_ratelimit().post_task(path, method, obj, host);
 }
 
 AEGIS_DECL guild & channel::get_guild() const

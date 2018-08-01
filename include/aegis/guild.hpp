@@ -1017,7 +1017,6 @@ private:
     bool is_init = true;
 #endif
     core * _bot;
-    ratelimit::bucket<rest_call, aegis::rest::rest_reply> & guild_bucket;
     asio::io_context & _io_context;
     mutable shared_mutex _m;
 };
