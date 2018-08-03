@@ -149,6 +149,7 @@ constexpr auto nullopt = std::experimental::nullopt;
 using bad_optional_access = std::experimental::bad_optional_access;
 }
 }
+#  define AEGIS_HAS_STD_OPTIONAL 1
 # endif // (__cplusplus >= 201703)
 # if defined(AEGIS_MSVC)
 #  if (_MSC_VER >= 1910 && defined(_HAS_CXX17))
@@ -174,6 +175,11 @@ using bad_optional_access = std::experimental::bad_optional_access;
 #  endif // (_MSC_VER >= 1910 && _HAS_CXX17)
 # endif // defined(AEGIS_MSVC)
 #endif // !defined(AEGIS_HAS_STD_OPTIONAL)
+
+#if !defined(AEGIS_HAS_STD_OPTIONAL)
+# error Could not find a suitable optional library.
+#endif
+
 namespace aegis
 {
 namespace lib
@@ -181,10 +187,6 @@ namespace lib
 using nullopt_t = decltype(nullopt);
 }
 }
-
-#if !defined(AEGIS_HAS_STD_OPTIONAL)
-# error Could not find a suitable optional library.
-#endif
 
 // use std::shared_timed_mutex on C++14 or shared_mutex on C++17
 #if !defined(AEGIS_HAS_STD_SHARED_MUTEX)
