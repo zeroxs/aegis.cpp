@@ -356,14 +356,6 @@ AEGIS_DECL void core::load_config()
 
     if (!cfg["file-logging"].is_null())
         file_logging = cfg["file-logging"].get<bool>();
-
-#if defined(REDIS)
-    redis_address = cfg["redis-address"].get<std::string>();
-    if (!redis_address.empty())
-    {
-        redis_port = cfg["redis-port"];
-    }
-#endif
 }
 
 AEGIS_DECL void core::setup_callbacks()

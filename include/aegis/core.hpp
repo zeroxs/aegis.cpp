@@ -388,11 +388,6 @@ public:
 #endif
     std::map<std::string, uint64_t> message_count;
 
-    // DEBUG CODE ONLY
-#ifdef REDIS
-    std::unique_ptr<redisclient::RedisSyncClient> redis;
-#endif
-
     std::string self_presence;
     uint32_t force_shard_count;
     uint32_t shard_max_count;
@@ -619,10 +614,6 @@ private:
     mutable shared_mutex _channel_m;
     mutable shared_mutex _member_m;
 
-#if defined(REDIS)
-    std::string redis_address;
-    uint16_t redis_port;
-#endif
     bool file_logging = false;
 };
 
