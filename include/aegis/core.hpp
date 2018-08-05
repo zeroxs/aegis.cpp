@@ -17,11 +17,6 @@
 #include "aegis/shards/shard_mgr.hpp"
 #include "aegis/objects/role.hpp"
 #include "aegis/guild.hpp"
-#if defined(AEGIS_HAS_STD_OPTIONAL)
-#include <optional>
-#else
-#include "aegis/optional.hpp"
-#endif
 
 #include <vector>
 #include <iostream>
@@ -39,13 +34,6 @@
 #include "aegis/fwd.hpp"
 
 #include <asio/bind_executor.hpp>
-
-#if !defined(AEGIS_HAS_STD_OPTIONAL)
-namespace std
-{
-using std::experimental::optional;
-}
-#endif
 
 namespace aegis
 {
@@ -191,10 +179,10 @@ public:
      */
     AEGIS_DECL rest::rest_reply create_guild(
         std::error_code & ec, std::string name,
-        std::optional<std::string> voice_region = {}, std::optional<int> verification_level = {},
-        std::optional<int> default_message_notifications = {}, std::optional<int> explicit_content_filter = {},
-        std::optional<std::string> icon = {}, std::optional<std::vector<gateway::objects::role>> roles = {},
-        std::optional<std::vector<std::tuple<std::string, int>>> channels = {}
+        lib::optional<std::string> voice_region = {}, lib::optional<int> verification_level = {},
+        lib::optional<int> default_message_notifications = {}, lib::optional<int> explicit_content_filter = {},
+        lib::optional<std::string> icon = {}, lib::optional<std::vector<gateway::objects::role>> roles = {},
+        lib::optional<std::vector<std::tuple<std::string, int>>> channels = {}
     );
 
     /// Create new guild - Unique case. Does not belong to any ratelimit bucket so it is run
@@ -218,10 +206,10 @@ public:
      */
     AEGIS_DECL rest::rest_reply create_guild(
         std::string name,
-        std::optional<std::string> voice_region = {}, std::optional<int> verification_level = {},
-        std::optional<int> default_message_notifications = {}, std::optional<int> explicit_content_filter = {},
-        std::optional<std::string> icon = {}, std::optional<std::vector<gateway::objects::role>> roles = {},
-        std::optional<std::vector<std::tuple<std::string, int>>> channels = {}
+        lib::optional<std::string> voice_region = {}, lib::optional<int> verification_level = {},
+        lib::optional<int> default_message_notifications = {}, lib::optional<int> explicit_content_filter = {},
+        lib::optional<std::string> icon = {}, lib::optional<std::vector<gateway::objects::role>> roles = {},
+        lib::optional<std::vector<std::tuple<std::string, int>>> channels = {}
     );
 
     /// Spawns and starts the specified amount of threads on the io_context
@@ -250,13 +238,15 @@ public:
      */
     void yield() const AEGIS_NOEXCEPT
     {
-        while (_status != Shutdown)
+        while (_status != bot_status::Shutdown)
         {
             std::this_thread::yield();
         }
     }
 
-    ratelimit::ratelimit_mgr<rest_call, aegis::rest::rest_reply> & get_ratelimit() AEGIS_NOEXCEPT { return *ratelimit_o; }
+    rest::rest_controller & get_rest_controller() AEGIS_NOEXCEPT { return *_rest; }
+    ratelimit_mgr_t & get_ratelimit() AEGIS_NOEXCEPT { return *_ratelimit; }
+    shards::shard_mgr & get_shard_mgr() AEGIS_NOEXCEPT { return *_shard_mgr; }
     bot_status get_state() const AEGIS_NOEXCEPT { return _status; }
     void set_state(bot_status s) AEGIS_NOEXCEPT { _status = s; }
 
@@ -397,11 +387,6 @@ public:
     std::unordered_map<snowflake, std::unique_ptr<member>> members;
 #endif
     std::map<std::string, uint64_t> message_count;
-
-    // DEBUG CODE ONLY
-#ifdef REDIS
-    std::unique_ptr<redisclient::RedisSyncClient> redis;
-#endif
 
     std::string self_presence;
     uint32_t force_shard_count;
@@ -615,8 +600,7 @@ private:
     bot_status _status;
 
     std::unique_ptr<rest::rest_controller> _rest;
-
-    std::unique_ptr<ratelimit::ratelimit_mgr<rest_call, aegis::rest::rest_reply>> ratelimit_o;
+    std::unique_ptr<ratelimit_mgr_t > _ratelimit;
     std::unique_ptr<shards::shard_mgr> _shard_mgr;
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
@@ -630,10 +614,6 @@ private:
     mutable shared_mutex _channel_m;
     mutable shared_mutex _member_m;
 
-#if defined(REDIS)
-    std::string redis_address;
-    uint16_t redis_port;
-#endif
     bool file_logging = false;
 };
 

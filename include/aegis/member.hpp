@@ -20,16 +20,6 @@
 #include <memory>
 #include <set>
 #include <shared_mutex>
-#if defined(AEGIS_HAS_STD_OPTIONAL)
-#include <optional>
-#else
-#include "aegis/optional.hpp"
-namespace std
-{
-using std::experimental::optional;
-}
-#endif
-#include <shared_mutex>
 
 namespace aegis
 {
@@ -79,7 +69,7 @@ public:
     /**
     * @returns string of the username
     */
-    AEGIS_DECL std::string get_username() const AEGIS_NOEXCEPT
+    std::string get_username() const AEGIS_NOEXCEPT
     {
         return std::string(_name);
     }
@@ -88,7 +78,7 @@ public:
     /**
     * @returns string of the discriminator
     */
-    AEGIS_DECL uint16_t get_discriminator() const AEGIS_NOEXCEPT
+    uint16_t get_discriminator() const AEGIS_NOEXCEPT
     {
         return _discriminator;
     }
@@ -97,7 +87,7 @@ public:
     /**
     * @returns string of the discriminator
     */
-    AEGIS_DECL std::string get_avatar() const AEGIS_NOEXCEPT
+    std::string get_avatar() const AEGIS_NOEXCEPT
     {
         return std::string(_avatar);
     }
@@ -106,7 +96,7 @@ public:
     /**
     * @returns bool of bot status
     */
-    AEGIS_DECL bool is_bot() const AEGIS_NOEXCEPT
+    bool is_bot() const AEGIS_NOEXCEPT
     {
         return _is_bot;
     }
@@ -115,7 +105,7 @@ public:
     /**
     * @returns bool of mfa status
     */
-    AEGIS_DECL bool is_mfa_enabled() const AEGIS_NOEXCEPT
+    bool is_mfa_enabled() const AEGIS_NOEXCEPT
     {
         return _mfa_enabled;
     }
@@ -146,6 +136,9 @@ public:
 private:
     friend class core;
     friend class guild;
+    friend class gateway::objects::message;
+
+    AEGIS_DECL void load_data(gateway::objects::user mbr);
 
     snowflake _member_id = 0;
     member_status _status = member_status::Offline; /**< Member _status */

@@ -26,23 +26,20 @@ using json = nlohmann::json;
 AEGIS_DECL channel::channel(const snowflake channel_id, const snowflake guild_id, core * _bot, asio::io_context & _io)
     : channel_id(channel_id)
     , guild_id(guild_id)
-    , channel_bucket(_bot->get_ratelimit().get_bucket(ratelimit::Channel, channel_id))
-    , emoji_bucket(_bot->get_ratelimit().get_bucket(ratelimit::Emoji, guild_id))
     , _guild(nullptr)
     , _io_context(_io)
     , _bot(_bot)
 {
-    emoji_bucket.ignore_rates = true;
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::post_task(const std::string & path, const std::string & method, const std::string & obj, const std::string & host)
 {
-    return channel_bucket.post_task(path, method, obj, host);
+    return _bot->get_ratelimit().post_task(path, method, obj, host);
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::post_emoji_task(const std::string & path, const std::string & method, const std::string & obj, const std::string & host)
 {
-    return emoji_bucket.post_task(path, method, obj, host);
+    return _bot->get_ratelimit().post_task(path, method, obj, host);
 }
 
 AEGIS_DECL guild & channel::get_guild() const
@@ -222,9 +219,9 @@ AEGIS_DECL std::future<rest::rest_reply> channel::bulk_delete_message(std::error
     return post_task(fmt::format("/channels/{}/messages/bulk-delete", channel_id), "POST", obj.dump());
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::modify_channel(std::error_code & ec, std::optional<std::string> _name, std::optional<int> _position, std::optional<std::string> _topic,
-                                    std::optional<bool> _nsfw, std::optional<int> _bitrate, std::optional<int> _user_limit,
-                                    std::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites, std::optional<snowflake> _parent_id)
+AEGIS_DECL std::future<rest::rest_reply> channel::modify_channel(std::error_code & ec, lib::optional<std::string> _name, lib::optional<int> _position, lib::optional<std::string> _topic,
+                                    lib::optional<bool> _nsfw, lib::optional<int> _bitrate, lib::optional<int> _user_limit,
+                                    lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites, lib::optional<snowflake> _parent_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_channels())
@@ -382,7 +379,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::get_channel_invites(std::error
     return post_task(fmt::format("/channels/{}/invites", channel_id), "GET");
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::create_channel_invite(std::error_code & ec, std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique)
+AEGIS_DECL std::future<rest::rest_reply> channel::create_channel_invite(std::error_code & ec, lib::optional<int> max_age, lib::optional<int> max_uses, lib::optional<bool> temporary, lib::optional<bool> unique)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_invite())

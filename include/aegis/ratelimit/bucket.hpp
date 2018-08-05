@@ -22,15 +22,6 @@
 #include <asio/io_context.hpp>
 #include <asio/use_future.hpp>
 #include <asio/post.hpp>
-#if defined(AEGIS_HAS_STD_OPTIONAL)
-#include <optional>
-#else
-#include "aegis/optional.hpp"
-namespace std
-{
-using std::experimental::optional;
-}
-#endif
 
 namespace aegis
 {
@@ -85,7 +76,7 @@ public:
     /**
      * @returns true if globally ratelimited
      */
-    AEGIS_DECL bool is_global() const AEGIS_NOEXCEPT
+    bool is_global() const AEGIS_NOEXCEPT
     {
         return _global_limit > 0;
     }
@@ -95,7 +86,7 @@ public:
     /**
      * @returns true if bucket ratelimits permit a message to be sent
      */
-    AEGIS_DECL bool can_perform() const AEGIS_NOEXCEPT
+    bool can_perform() const AEGIS_NOEXCEPT
     {
         if (ignore_rates)
             return true;
@@ -109,7 +100,7 @@ public:
         return true;
     }
 
-    AEGIS_DECL Result perform(const std::string & path, const std::string & content, const std::string & method, const std::string & host = "")
+    Result perform(const std::string & path, const std::string & content, const std::string & method, const std::string & host = "")
     {
         std::lock_guard<std::mutex> lock(m);
         while (!can_perform())
@@ -120,7 +111,6 @@ public:
             std::this_thread::sleep_for(seconds((reset.load(std::memory_order_relaxed)
                                                  - std::chrono::duration_cast<seconds>(std::chrono::system_clock::now().time_since_epoch()).count()) + 1));
         }
-        //std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_response)>>> query;
         Result reply(_call(path, content, method, host));
         limit.store(reply.limit, std::memory_order_relaxed);
         remaining.store(reply.remaining, std::memory_order_relaxed);
@@ -128,12 +118,12 @@ public:
         return reply;
     }
 
-    AEGIS_DECL std::future<Result> post_task(const std::string & path, const std::string & method = "POST", const std::string & obj = "", const std::string & host = "")
+    std::future<Result> post_task(const std::string & path, const std::string & method = "POST", const std::string & obj = "", const std::string & host = "")
     {
         using result = asio::async_result<asio::use_future_t<>, void(Result)>;
         using handler = typename result::completion_handler_type;
 
-        handler exec(std::forward<decltype(asio::use_future)>(asio::use_future));
+        handler exec(asio::use_future);
         result ret(exec);
 
         asio::post(_io_context, [=]() mutable
@@ -154,19 +144,5 @@ private:
 };
 
 }
-
-}
-
-namespace std
-{
-
-template <>
-struct hash<aegis::ratelimit::bucket_type>
-{
-    std::size_t operator()(const aegis::ratelimit::bucket_type& k) const
-    {
-        return hash<int64_t>()(k);
-    }
-};
 
 }

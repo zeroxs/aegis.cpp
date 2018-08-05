@@ -116,5 +116,18 @@ AEGIS_DECL member::guild_info & member::join(snowflake guild_id)
     return g->second;
 }
 
+AEGIS_DECL void member::load_data(gateway::objects::user mbr)
+{
+    if (!mbr.avatar.empty())
+        _avatar = mbr.avatar;
+    if (!mbr.username.empty())
+        _name = mbr.username;
+    if (!mbr.avatar.empty())
+        _discriminator = std::stoul(mbr.discriminator);
+
+    _is_bot = mbr.is_bot();
+}
+
+
 }
 #endif

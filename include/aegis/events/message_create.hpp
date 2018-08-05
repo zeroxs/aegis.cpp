@@ -13,7 +13,7 @@
 #include "aegis/snowflake.hpp"
 #include "aegis/objects/message.hpp"
 #include "aegis/error.hpp"
-#include "base_event.hpp"
+#include "aegis/fwd.hpp"
 #include <string>
 #include <vector>
 
@@ -28,10 +28,12 @@ namespace events
 
 /**\todo Needs documentation
  */
-struct message_create : public base_event
+struct message_create
 {
-    ::aegis::gateway::objects::message msg; /**<\todo Needs documentation */
-    channel * const _channel; /**<\todo Needs documentation */
+    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
+    core * bot = nullptr; /**< Pointer to the main bot object */
+    objects::message msg; /**<\todo Needs documentation */
+    channel * const _channel = nullptr; /**<\todo Needs documentation */
     
     bool has_channel()
     {

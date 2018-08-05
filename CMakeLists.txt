@@ -56,6 +56,10 @@ if (AEGIS_DISABLE_ALL_CACHE)
 set(AEGIS_FLAGS ${AEGIS_FLAGS} AEGIS_DISABLE_ALL_CACHE)
 endif ()
 
+if (AEGIS_HAS_STD_OPTIONAL)
+set(AEGIS_FLAGS ${AEGIS_FLAGS} AEGIS_HAS_STD_OPTIONAL)
+endif ()
+
 add_library(aegis SHARED ${AEGIS_FILES})
 add_library(aegis_static STATIC ${AEGIS_FILES})
 add_library(Aegis::aegis ALIAS aegis)

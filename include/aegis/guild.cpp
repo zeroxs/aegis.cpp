@@ -26,7 +26,6 @@ AEGIS_DECL guild::guild(const int32_t _shard_id, const snowflake _id, core * _bo
     : shard_id(_shard_id)
     , guild_id(_id)
     , _bot(_bot)
-    , guild_bucket(_bot->get_ratelimit().get_bucket(ratelimit::Guild, _id))
     , _io_context(_io)
 {
 
@@ -360,6 +359,7 @@ AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) AEGIS_NOEX
             {
                 snowflake member_id = member["user"]["id"];
                 auto _member = bot.member_create(member_id);
+                std::unique_lock<shared_mutex> l(_member->mtx());
                 _member->load(this, member, _shard);
                 this->members.emplace(member_id, _member);
             }
@@ -480,7 +480,7 @@ AEGIS_DECL channel * guild::get_channel(snowflake id) const AEGIS_NOEXCEPT
 
 AEGIS_DECL std::future<rest::rest_reply> guild::post_task(const std::string & path, const std::string & method, const std::string & obj, const std::string & host)
 {
-    return guild_bucket.post_task(path, method, obj, host);
+    return _bot->get_ratelimit().post_task(path, method, obj, host);
 }
 
 /**\todo Incomplete. Signature may change. Location may change.
@@ -491,9 +491,9 @@ AEGIS_DECL std::future<rest::rest_reply> guild::get_guild(std::error_code & ec)
     return post_task(fmt::format("/guilds/{}", guild_id), "GET");
 }
 
-AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild(std::error_code & ec, std::optional<std::string> name, std::optional<std::string> voice_region, std::optional<int> verification_level,
-                    std::optional<int> default_message_notifications, std::optional<int> explicit_content_filter, std::optional<snowflake> afk_channel_id, std::optional<int> afk_timeout,
-                    std::optional<std::string> icon, std::optional<snowflake> owner_id, std::optional<std::string> splash)
+AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild(std::error_code & ec, lib::optional<std::string> name, lib::optional<std::string> voice_region, lib::optional<int> verification_level,
+                    lib::optional<int> default_message_notifications, lib::optional<int> explicit_content_filter, lib::optional<snowflake> afk_channel_id, lib::optional<int> afk_timeout,
+                    lib::optional<std::string> icon, lib::optional<snowflake> owner_id, lib::optional<std::string> splash)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if ((!perms().can_manage_guild()) || (owner_id.has_value() && owner_id != self()->_member_id))
@@ -637,8 +637,8 @@ AEGIS_DECL std::future<rest::rest_reply> guild::modify_channel_positions(std::er
     return {};
 }
 
-AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild_member(std::error_code & ec, snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
-                            std::optional<bool> deaf, std::optional<std::vector<snowflake>> roles, std::optional<snowflake> channel_id)
+AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild_member(std::error_code & ec, snowflake user_id, lib::optional<std::string> nick, lib::optional<bool> mute,
+                            lib::optional<bool> deaf, lib::optional<std::vector<snowflake>> roles, lib::optional<snowflake> channel_id)
 {
     json obj;
 #if !defined(AEGIS_DISABLE_ALL_CACHE)

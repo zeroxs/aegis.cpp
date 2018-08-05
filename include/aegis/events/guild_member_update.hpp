@@ -12,7 +12,7 @@
 #include "aegis/config.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/objects/user.hpp"
-#include "base_event.hpp"
+#include "aegis/fwd.hpp"
 #include <string>
 #include <vector>
 
@@ -27,10 +27,12 @@ namespace events
 
 /**\todo Needs documentation
  */
-struct guild_member_update : public base_event
+struct guild_member_update
 {
+    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
+    core * bot = nullptr; /**< Pointer to the main bot object */
     objects::user _user; /**<\todo Needs documentation */
-    snowflake guild_id; /**<\todo Needs documentation */
+    snowflake guild_id = 0; /**<\todo Needs documentation */
     std::vector<snowflake> roles; /**<\todo Needs documentation */
     std::string nick; /**<\todo Needs documentation */
 };

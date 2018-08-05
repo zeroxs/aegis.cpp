@@ -18,6 +18,7 @@
 #include <string>
 #include <iostream>
 #include <chrono>
+#include <sstream>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -41,34 +42,43 @@
 namespace aegis
 {
 
+/**\todo Needs documentation
+ */
+enum class bot_status
+{
+    Uninitialized = 0,
+    Running,
+    Shutdown
+};
+
+enum class shard_status
+{
+    Uninitialized = 0,
+    Connecting,
+    PreReady,
+    Online,
+    Reconnecting,
+    Closed,
+    Shutdown
+};
+
+namespace utility
+{
 
 template<class Func>
-void perf_run(const std::string & name, Func f)
+std::string perf_run(const std::string & name, Func f)
 {
-    std::cout << "Running [" << name << "]\n";
+    std::stringstream ss;
+    ss << "Running [" << name << "]\n";
     auto n = std::chrono::steady_clock::now();
 
     f();
 
     auto n_end = std::chrono::steady_clock::now();
 
-    std::cout << "Time: [" << std::chrono::duration_cast<std::chrono::microseconds>(n_end - n).count() << "us]\n";
+    ss << "Time: [" << std::chrono::duration_cast<std::chrono::microseconds>(n_end - n).count() << "us]\n";
+    return ss.str();
 }
-
-/**\todo Needs documentation
- */
-enum bot_status
-{
-    Uninitialized = 0,
-    Ready = 1,
-    Connecting = 2,
-    Online = 3,
-    Reconnecting = 4,
-    Shutdown = 5
-};
-
-namespace utility
-{
 
 namespace platform
 {

@@ -8,6 +8,7 @@
 //
 
 #include "aegis/shards/shard.hpp"
+#include "aegis/error.hpp"
 #include <websocketpp/connection.hpp>
 
 namespace aegis
@@ -17,11 +18,13 @@ namespace shards
 {
 
 AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp::config::asio_tls_client> & _ws, int32_t id)
-    : write_timer(_io)
+    : keepalivetimer(_io)
+    , delayedauth(_io)
+    , write_timer(_io)
     , heartbeattime(0)
-    , sequence(0)
-    , shardid(id)
-    , connection_state(Uninitialized)
+    , connection_state(shard_status::Uninitialized)
+    , _sequence(0)
+    , _id(id)
     , _io_context(_io)
     , transfer_bytes(0)
     , transfer_bytes_u(0)
@@ -29,32 +32,42 @@ AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp:
 {
 }
 
-AEGIS_DECL void shard::do_reset(bot_status _status) AEGIS_NOEXCEPT
+AEGIS_DECL void shard::do_reset(shard_status _status) AEGIS_NOEXCEPT
 {
     if (_connection == nullptr)
+    {
+        _reset();
         return;
+    }
+
     asio::post(asio::bind_executor(*_connection->get_strand(), [this, _status]()
     {
         try
         {
             connection_state = _status;
-            last_status_time = lastwsevent = std::chrono::steady_clock::now();
-            heartbeat_ack = lastheartbeat = std::chrono::steady_clock::time_point();
             if (_connection != nullptr)
             {
-                if ((_connection->get_state() == websocketpp::session::state::value::connecting)
-                    || (_connection->get_state() == websocketpp::session::state::value::open))
+                if (_connection->get_state() == websocketpp::session::state::open)
+                {
                     _connection->close(1001, "");
-                _connection.reset();
+                    std::cout << "Shard#" << get_id() << ": had to close socket on a reset\n";
+                }
             }
-            if (keepalivetimer != nullptr)
-            {
-                keepalivetimer->cancel();
-                keepalivetimer.reset();
-            }
-            write_timer.cancel();
-            ws_buffer.str("");
-            zlib_ctx.reset();
+
+            _reset();
+
+            ++counters.reconnects;
+        }
+        catch (std::exception & e)
+        {
+            std::cout << "Shard#" << get_id() << ": worst happened do_reset() - std::exception " << e.what() << '\n';
+            _reset();
+            ++counters.reconnects;
+        }
+        catch (asio::error_code & e)
+        {
+            std::cout << "Shard#" << get_id() << ": worst happened do_reset() - asio::error_code " << e.value() << ':' << e.message() << '\n';
+            _reset();
             ++counters.reconnects;
         }
         catch (...)
@@ -64,26 +77,44 @@ AEGIS_DECL void shard::do_reset(bot_status _status) AEGIS_NOEXCEPT
     }));
 }
 
-AEGIS_DECL void shard::cleanup()
+AEGIS_DECL void shard::_reset()
+{
+    last_status_time = lastwsevent = std::chrono::steady_clock::now();
+    heartbeat_ack = lastheartbeat = std::chrono::steady_clock::time_point();
+
+    delayedauth.cancel();
+    keepalivetimer.cancel();
+    write_timer.cancel();
+    ws_buffer.str("");
+    zlib_ctx.reset();
+}
+
+AEGIS_DECL void shard::connect()
 {
     if (_connection == nullptr)
         return;
+
     asio::post(asio::bind_executor(*_connection->get_strand(), [this]()
     {
-        write_timer.cancel();
-        heartbeat_ack = lastheartbeat = std::chrono::steady_clock::time_point();
-        if (keepalivetimer != nullptr)
+        try
         {
-            keepalivetimer->cancel();
-            keepalivetimer.reset();
+            _reset();
+            _websocket.connect(_connection);
+            connection_state = shard_status::Connecting;
         }
-        connection_state = Shutdown;
-        if (_connection != nullptr)
+        catch (std::exception & e)
         {
-            if ((_connection->get_state() == websocketpp::session::state::value::connecting)
-                || (_connection->get_state() == websocketpp::session::state::value::open))
-                _connection->close(1001, "");
-            _connection.reset();
+            std::cout << "Shard#" << get_id() << ": worst happened connect() - std::exception " << e.what() << '\n';
+            _reset();
+        }
+        catch (asio::error_code & e)
+        {
+            std::cout << "Shard#" << get_id() << ": worst happened connect() - asio::error_code " << e.value() << ':' << e.message() << '\n';
+            _reset();
+        }
+        catch (...)
+        {
+            std::cout << "error in shard::connect()\n";
         }
     }));
 }
@@ -91,32 +122,47 @@ AEGIS_DECL void shard::cleanup()
 AEGIS_DECL void shard::set_connected()
 {
     using namespace std::chrono_literals;
-    ws_buffer.str("");
-    zlib_ctx = std::make_unique<zstr::istream>(ws_buffer);
+    if (zlib_ctx)
+    {
+        //already has an existing context
+        throw aegis::exception("set_connected() zlib context already exists");
+    }
     if (_connection == nullptr)
     {
         //error
-        std::cout << "set_connected() connection = nullpt\nr";
-        return;
+        throw aegis::exception("set_connected() connection = nullptr");
     }
+    connection_state = shard_status::PreReady;
+    ws_buffer.str("");
+    zlib_ctx = std::make_unique<zstr::istream>(ws_buffer);
     write_timer.cancel();
     write_timer.expires_after(600ms);
     write_timer.async_wait(asio::bind_executor(*_connection->get_strand(), std::bind(&shard::process_writes, this, std::placeholders::_1)));
-    connection_state = Online;
 }
 
 AEGIS_DECL bool shard::is_connected() const AEGIS_NOEXCEPT
 {
-    if (_connection == nullptr)
+    if ((_connection == nullptr) || (!_connection->get_raw_socket().is_open()))
         return false;
 
-    if ((connection_state == Connecting) || (connection_state == Online))
+    if (connection_state == shard_status::PreReady || connection_state == shard_status::Online)
         return true;
 
     return false;
 }
 
-AEGIS_DECL void shard::send(std::string const & payload, websocketpp::frame::opcode::value op)
+AEGIS_DECL bool shard::is_online() const AEGIS_NOEXCEPT
+{
+    if ((_connection == nullptr) || (!_connection->get_raw_socket().is_open()))
+        return false;
+
+    if (connection_state == shard_status::Online)
+        return true;
+
+    return false;
+}
+
+AEGIS_DECL void shard::send(const std::string & payload, websocketpp::frame::opcode::value op)
 {
     if (!is_connected())
         return;
@@ -126,7 +172,7 @@ AEGIS_DECL void shard::send(std::string const & payload, websocketpp::frame::opc
     }));
 }
 
-AEGIS_DECL void shard::send_now(std::string const & payload, websocketpp::frame::opcode::value op)
+AEGIS_DECL void shard::send_now(const std::string & payload, websocketpp::frame::opcode::value op)
 {
     if (!is_connected())
         return;
@@ -146,7 +192,7 @@ AEGIS_DECL void shard::process_writes(const asio::error_code & ec)
         return;
 
     using namespace std::chrono_literals;
-    if ((connection_state == Online || connection_state == Connecting) && !write_queue.empty())
+    if ((connection_state == shard_status::Online || connection_state == shard_status::PreReady) && !write_queue.empty())
     {
         last_ws_write = std::chrono::steady_clock::now();
 
@@ -187,15 +233,6 @@ AEGIS_DECL std::string shard::uptime_str() const AEGIS_NOEXCEPT
         ss << m << "m ";
     ss << s << "s ";
     return ss.str();
-}
-
-AEGIS_DECL void shard::close(int32_t code, std::string reason) AEGIS_NOEXCEPT
-{
-    connection_state = Shutdown;
-    if (_connection != nullptr)
-    {
-        _connection->close(code, reason);
-    }
 }
 
 }

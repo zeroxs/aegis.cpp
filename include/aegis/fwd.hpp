@@ -37,4 +37,15 @@ class guild;
 class member;
 class shard;
 
+namespace gateway
+{
+namespace objects
+{
+
+struct user;
+class message;
+
+}
+}
+
 }

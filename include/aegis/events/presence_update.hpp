@@ -12,7 +12,7 @@
 #include "aegis/config.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/objects/message.hpp"
-#include "base_event.hpp"
+#include "aegis/fwd.hpp"
 #include <string>
 #include <vector>
 
@@ -27,8 +27,10 @@ namespace events
 
 /**\todo Needs documentation
  */
-struct presence_update : public base_event
+struct presence_update
 {
+    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
+    core * bot = nullptr; /**< Pointer to the main bot object */
     objects::user _user; /**<\todo Needs documentation */
 };
 

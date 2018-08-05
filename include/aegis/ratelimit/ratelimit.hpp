@@ -23,15 +23,6 @@
 #include <future>
 #include <thread>
 #include <mutex>
-#if defined(AEGIS_HAS_STD_OPTIONAL)
-#include <optional>
-#else
-#include "aegis/optional.hpp"
-namespace std
-{
-using std::experimental::optional;
-}
-#endif
 
 namespace aegis
 {
@@ -71,7 +62,7 @@ public:
     /**
      * @returns true if globally ratelimited
      */
-    AEGIS_DECL bool is_global() const AEGIS_NOEXCEPT
+    bool is_global() const AEGIS_NOEXCEPT
     {
         return global_limit > 0;
     }
@@ -82,26 +73,31 @@ public:
     * @param id Snowflake of bucket object
     * @returns Reference to a bucket object
     */
-    AEGIS_DECL bucket<Callable, Result> & get_bucket(const bucket_type type, const snowflake id) AEGIS_NOEXCEPT
+    bucket<Callable, Result> & get_bucket(const std::string & path) AEGIS_NOEXCEPT
     {
-        // look for existing bucket set by type
-        auto bkt_type = _buckets.find(type);
-        if (bkt_type != _buckets.end())
-        {
-            // found. look for existing bucket
-            auto bkt = bkt_type->second.find(id);
-            if (bkt != bkt_type->second.end())
+        // look for existing bucket
+        auto bkt = _buckets.find(path);
+        if (bkt != _buckets.end())
                 return *bkt->second;// found
 
-            // create new bucket and return
-            return *bkt_type->second.emplace(id, std::make_unique<bucket<Callable, Result>>(_call, _io_context, global_limit)).first->second;
-        }
-
-        using bkt_map = std::unordered_map<aegis::snowflake, std::unique_ptr<aegis::ratelimit::bucket<rest_call, aegis::rest::rest_reply>>>;
-        // create new bucket set
-        auto & bkt = _buckets.emplace(type, bkt_map()).first->second;
         // create new bucket and return
-        return *bkt.emplace(id, std::make_unique<bucket<Callable, Result>>(_call, _io_context, global_limit)).first->second;
+        return *_buckets.emplace(path, std::make_unique<bucket<Callable, Result>>(_call, _io_context, global_limit)).first->second;
+    }
+
+    std::future<Result> post_task(const std::string & path, const std::string & method = "POST", const std::string & obj = "", const std::string & host = "")
+    {
+        auto & bkt = get_bucket(path);
+        using result = asio::async_result<asio::use_future_t<>, void(Result)>;
+        using handler = typename result::completion_handler_type;
+
+        handler exec(asio::use_future);
+        result ret(exec);
+
+        asio::post(_io_context, [=, &bkt]() mutable
+        {
+            exec(bkt.perform(path, obj, method, host));
+        });
+        return ret.get();
     }
 
 private:
@@ -109,8 +105,7 @@ private:
 
     std::atomic<int64_t> global_limit; /**< Timestamp in seconds when global ratelimit expires */
 
-    // <bucket_type, bucket_factory>
-    std::unordered_map<bucket_type, std::unordered_map<snowflake, std::unique_ptr<bucket<Callable, Result>>>> _buckets;
+    std::unordered_map<std::string, std::unique_ptr<bucket<Callable, Result>>> _buckets;
     Callable _call;
     asio::io_context & _io_context;
 };
