@@ -25,8 +25,8 @@ namespace events
  */
 struct guild_role_create
 {
-    shards::shard * _shard; /**< Pointer to shard object this message came from */
-    core * bot; /**< Pointer to the main bot object */
+    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
+    core * bot = nullptr; /**< Pointer to the main bot object */
 };
 
 /**\todo Needs documentation

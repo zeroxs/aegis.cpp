@@ -111,7 +111,6 @@ public:
             std::this_thread::sleep_for(seconds((reset.load(std::memory_order_relaxed)
                                                  - std::chrono::duration_cast<seconds>(std::chrono::system_clock::now().time_since_epoch()).count()) + 1));
         }
-        //std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest_response)>>> query;
         Result reply(_call(path, content, method, host));
         limit.store(reply.limit, std::memory_order_relaxed);
         remaining.store(reply.remaining, std::memory_order_relaxed);
@@ -124,7 +123,7 @@ public:
         using result = asio::async_result<asio::use_future_t<>, void(Result)>;
         using handler = typename result::completion_handler_type;
 
-        handler exec(std::forward<decltype(asio::use_future)>(asio::use_future));
+        handler exec(asio::use_future);
         result ret(exec);
 
         asio::post(_io_context, [=]() mutable

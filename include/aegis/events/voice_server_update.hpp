@@ -25,10 +25,10 @@ namespace events
  */
 struct voice_server_update
 {
-    shards::shard * _shard; /**< Pointer to shard object this message came from */
-    core * bot; /**< Pointer to the main bot object */
+    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
+    core * bot = nullptr; /**< Pointer to the main bot object */
     std::string token;
-    snowflake guild_id;
+    snowflake guild_id = 0;
     std::string endpoint;
 };
 

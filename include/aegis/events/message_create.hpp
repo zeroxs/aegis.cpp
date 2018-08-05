@@ -30,10 +30,10 @@ namespace events
  */
 struct message_create
 {
-    shards::shard * _shard; /**< Pointer to shard object this message came from */
-    core * bot; /**< Pointer to the main bot object */
+    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
+    core * bot = nullptr; /**< Pointer to the main bot object */
     objects::message msg; /**<\todo Needs documentation */
-    channel * const _channel; /**<\todo Needs documentation */
+    channel * const _channel = nullptr; /**<\todo Needs documentation */
     
     bool has_channel()
     {

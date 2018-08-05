@@ -149,7 +149,7 @@ public:
         i_on_close = cb;
     }
 
-    void set_gateway_url(std::string url)
+    void set_gateway_url(const std::string & url)
     {
         gateway_url = url;
     }

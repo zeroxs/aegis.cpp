@@ -30,13 +30,13 @@ struct message_delete
 {
     snowflake message_id; /**<\todo Needs documentation */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    message_delete(snowflake m, channel * c) : message_id(m), _channel(c) {};
-    channel * const _channel; /**<\todo Needs documentation */
+    explicit message_delete(snowflake m, channel * c) : message_id(m), _channel(c) {};
+    channel * const _channel = nullptr; /**<\todo Needs documentation */
 #else
-    message_delete(snowflake m) : message_id(m) {}
+    explicit message_delete(snowflake m) : message_id(m) {}
 #endif
-    shards::shard * _shard; /**< Pointer to shard object this message came from */
-    core * bot; /**< Pointer to the main bot object */
+    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
+    core * bot = nullptr; /**< Pointer to the main bot object */
 };
 
 }

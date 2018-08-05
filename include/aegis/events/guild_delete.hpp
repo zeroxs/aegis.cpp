@@ -28,10 +28,10 @@ namespace events
  */
 struct guild_delete
 {
-    shards::shard * _shard; /**< Pointer to shard object this message came from */
-    core * bot; /**< Pointer to the main bot object */
-    snowflake guild_id; /**<\todo Needs documentation */
-    bool unavailable; /**<\todo Needs documentation */
+    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
+    core * bot = nullptr; /**< Pointer to the main bot object */
+    snowflake guild_id = 0; /**<\todo Needs documentation */
+    bool unavailable = true; /**<\todo Needs documentation */
 };
 
 /**\todo Needs documentation

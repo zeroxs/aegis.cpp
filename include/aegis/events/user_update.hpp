@@ -31,10 +31,10 @@ struct user_update
 {
     objects::user _user; /**<\todo Needs documentation */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    user_update(member * m) : _member(m) {}
-    shards::shard * _shard; /**< Pointer to shard object this message came from */
-    core * bot; /**< Pointer to the main bot object */
-    member * const _member; /**<\todo Needs documentation */
+    explicit user_update(member * m) : _member(m) {}
+    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
+    core * bot = nullptr; /**< Pointer to the main bot object */
+    member * const _member = nullptr; /**<\todo Needs documentation */
 #endif
 };
 

@@ -73,7 +73,7 @@ public:
     * @param id Snowflake of bucket object
     * @returns Reference to a bucket object
     */
-    bucket<Callable, Result> & get_bucket(const std::string path/*, const snowflake id*/) AEGIS_NOEXCEPT
+    bucket<Callable, Result> & get_bucket(const std::string & path) AEGIS_NOEXCEPT
     {
         // look for existing bucket
         auto bkt = _buckets.find(path);
@@ -105,7 +105,6 @@ private:
 
     std::atomic<int64_t> global_limit; /**< Timestamp in seconds when global ratelimit expires */
 
-    // <bucket_type, bucket_factory>
     std::unordered_map<std::string, std::unique_ptr<bucket<Callable, Result>>> _buckets;
     Callable _call;
     asio::io_context & _io_context;

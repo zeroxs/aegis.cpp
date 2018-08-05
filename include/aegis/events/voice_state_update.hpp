@@ -25,11 +25,11 @@ namespace events
  */
 struct voice_state_update
 {
-    shards::shard * _shard; /**< Pointer to shard object this message came from */
-    core * bot; /**< Pointer to the main bot object */
-    snowflake guild_id;
-    snowflake channel_id;
-    snowflake user_id;
+    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
+    core * bot = nullptr; /**< Pointer to the main bot object */
+    snowflake guild_id = 0;
+    snowflake channel_id = 0;
+    snowflake user_id = 0;
     std::string session_id;
     bool deaf = false;
     bool mute = false;

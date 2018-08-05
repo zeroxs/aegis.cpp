@@ -29,10 +29,10 @@ namespace events
  */
 struct guild_member_update
 {
-    shards::shard * _shard; /**< Pointer to shard object this message came from */
-    core * bot; /**< Pointer to the main bot object */
+    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
+    core * bot = nullptr; /**< Pointer to the main bot object */
     objects::user _user; /**<\todo Needs documentation */
-    snowflake guild_id; /**<\todo Needs documentation */
+    snowflake guild_id = 0; /**<\todo Needs documentation */
     std::vector<snowflake> roles; /**<\todo Needs documentation */
     std::string nick; /**<\todo Needs documentation */
 };

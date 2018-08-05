@@ -32,8 +32,8 @@ namespace events
  */
 struct ready 
 {
-    shards::shard * _shard; /**< Pointer to shard object this message came from */
-    core * bot; /**< Pointer to the main bot object */
+    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
+    core * bot = nullptr; /**< Pointer to the main bot object */
     int8_t v; /**<\todo Needs documentation */
     objects::user _user; /**<\todo Needs documentation */
     std::vector<objects::channel_gw> private_channels; /**<\todo Needs documentation */

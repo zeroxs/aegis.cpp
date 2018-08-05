@@ -29,8 +29,8 @@ namespace events
  */
 struct guild_ban_add
 {
-    shards::shard * _shard; /**< Pointer to shard object this message came from */
-    core * bot; /**< Pointer to the main bot object */
+    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
+    core * bot = nullptr; /**< Pointer to the main bot object */
     objects::user _user; /**<\todo Needs documentation */
 };
 

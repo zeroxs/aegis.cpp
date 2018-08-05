@@ -32,10 +32,10 @@ struct typing_start
     int64_t timestamp; /**<\todo Needs documentation */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     typing_start(int64_t _timestamp, channel * c, member * m) : timestamp(_timestamp), _channel(c), _member(m) {};
-    shards::shard * _shard; /**< Pointer to shard object this message came from */
-    core * bot; /**< Pointer to the main bot object */
-    channel * const _channel; /**<\todo Needs documentation */
-    member * const _member; /**<\todo Needs documentation */
+    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
+    core * bot = nullptr; /**< Pointer to the main bot object */
+    channel * const _channel = nullptr; /**<\todo Needs documentation */
+    member * const _member = nullptr; /**<\todo Needs documentation */
 #else
     typing_start(int64_t _timestamp) : timestamp(_timestamp) {}
 #endif
