@@ -201,7 +201,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::delete_message(std::error_code
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/messages/{}", guild_id, message_id), "DELETE");
+    return post_task(fmt::format("/channels/{}/messages/{}", channel_id, message_id), "DELETE");
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::bulk_delete_message(std::error_code & ec, const std::vector<int64_t> & messages)
