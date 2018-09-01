@@ -100,7 +100,7 @@ public:
         _guild = _g;
     }
 
-    explicit message() noexcept = default;
+    explicit message() = default;
 
     std::string timestamp; /**<\todo Needs documentation */
     std::string edited_timestamp; /**<\todo Needs documentation */
