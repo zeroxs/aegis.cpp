@@ -44,7 +44,7 @@ enum channel_type
 struct channel_gw
 {
     snowflake channel_id; /**<\todo Needs documentation */
-    channel_type type; /**<\todo Needs documentation */
+    channel_type type = Text; /**<\todo Needs documentation */
     snowflake guild_id = 0;//? /**<\todo Needs documentation */
     int position = 0;//? /**<\todo Needs documentation */
     std::vector<permission_overwrite> permission_overwrites;//? /**<\todo Needs documentation */

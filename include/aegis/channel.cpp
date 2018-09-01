@@ -49,7 +49,7 @@ AEGIS_DECL guild & channel::get_guild() const
     return *_guild;
 }
 
-AEGIS_DECL guild & channel::get_guild(std::error_code & ec) const AEGIS_NOEXCEPT
+AEGIS_DECL guild & channel::get_guild(std::error_code & ec) const noexcept
 {
     if (_guild == nullptr)
         ec = make_error_code(error::guild_not_found);

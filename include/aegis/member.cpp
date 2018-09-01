@@ -22,7 +22,7 @@
 namespace aegis
 {
 
-AEGIS_DECL std::string member::get_full_name() const AEGIS_NOEXCEPT
+AEGIS_DECL std::string member::get_full_name() const noexcept
 {
     return fmt::format("{}#{:0=4}", std::string(_name), _discriminator);
 }
@@ -86,7 +86,7 @@ AEGIS_DECL void member::load(guild * _guild, const json & obj, shards::shard * _
     }
 }
 
-AEGIS_DECL member::guild_info & member::get_guild_info(snowflake guild_id) AEGIS_NOEXCEPT
+AEGIS_DECL member::guild_info & member::get_guild_info(snowflake guild_id) noexcept
 {
     std::shared_lock<shared_mutex> l(_m);
     auto g = guilds.find(guild_id);
@@ -99,7 +99,7 @@ AEGIS_DECL member::guild_info & member::get_guild_info(snowflake guild_id) AEGIS
     return g->second;
 }
 
-AEGIS_DECL std::string member::get_name(snowflake guild_id) AEGIS_NOEXCEPT
+AEGIS_DECL std::string member::get_name(snowflake guild_id) noexcept
 {
     auto g = get_guild_info(guild_id);
     return g.nickname;

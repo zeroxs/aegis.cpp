@@ -236,7 +236,7 @@ public:
     /**
      * Yields operation of the current thread until library shutdown is detected
      */
-    void yield() const AEGIS_NOEXCEPT
+    void yield() const noexcept
     {
         while (_status != bot_status::Shutdown)
         {
@@ -244,11 +244,11 @@ public:
         }
     }
 
-    rest::rest_controller & get_rest_controller() AEGIS_NOEXCEPT { return *_rest; }
-    ratelimit_mgr_t & get_ratelimit() AEGIS_NOEXCEPT { return *_ratelimit; }
-    shards::shard_mgr & get_shard_mgr() AEGIS_NOEXCEPT { return *_shard_mgr; }
-    bot_status get_state() const AEGIS_NOEXCEPT { return _status; }
-    void set_state(bot_status s) AEGIS_NOEXCEPT { _status = s; }
+    rest::rest_controller & get_rest_controller() noexcept { return *_rest; }
+    ratelimit_mgr_t & get_ratelimit() noexcept { return *_ratelimit; }
+    shards::shard_mgr & get_shard_mgr() noexcept { return *_shard_mgr; }
+    bot_status get_state() const noexcept { return _status; }
+    void set_state(bot_status s) noexcept { _status = s; }
 
     /// Helper function for posting tasks to asio
     /**
@@ -269,28 +269,28 @@ public:
         return _self;
     }
 
-    AEGIS_DECL int64_t get_member_count() const AEGIS_NOEXCEPT;
+    AEGIS_DECL int64_t get_member_count() const noexcept;
 
     /// Obtain a pointer to a member by snowflake
     /**
      * @param id Snowflake of member to search for
      * @returns Pointer to member or nullptr
      */
-    AEGIS_DECL member * find_member(snowflake id) const AEGIS_NOEXCEPT;
+    AEGIS_DECL member * find_member(snowflake id) const noexcept;
 
     /// Obtain a pointer to a member by snowflake. If none exists, creates the object.
     /**
      * @param id Snowflake of member to search for
      * @returns Pointer to member
      */
-    AEGIS_DECL member * member_create(snowflake id) AEGIS_NOEXCEPT;
+    AEGIS_DECL member * member_create(snowflake id) noexcept;
 #endif
 
     /// Get the snowflake of the bot
     /**
     * @returns A snowflake of the bot
     */
-    const snowflake get_id() const AEGIS_NOEXCEPT
+    const snowflake get_id() const noexcept
     {
         return member_id;
     }
@@ -300,21 +300,21 @@ public:
      * @param id Snowflake of channel to search for
      * @returns Pointer to channel or nullptr
      */
-    AEGIS_DECL channel * find_channel(snowflake id) const AEGIS_NOEXCEPT;
+    AEGIS_DECL channel * find_channel(snowflake id) const noexcept;
 
     /// Obtain a pointer to a channel by snowflake. If none exists, creates the object.
     /**
      * @param id Snowflake of channel to search for
      * @returns Pointer to channel
      */
-    AEGIS_DECL channel * channel_create(snowflake id) AEGIS_NOEXCEPT;
+    AEGIS_DECL channel * channel_create(snowflake id) noexcept;
 
     /// Obtain a pointer to a guild by snowflake
     /**
      * @param id Snowflake of guild to search for
      * @returns Pointer to guild or nullptr
      */
-    AEGIS_DECL guild * find_guild(snowflake id) const AEGIS_NOEXCEPT;
+    AEGIS_DECL guild * find_guild(snowflake id) const noexcept;
 
     /// Obtain a pointer to a guild by snowflake. If none exists, creates the object.
     /**
@@ -322,7 +322,7 @@ public:
      * @param _shard Shard this guild will exist on
      * @returns Pointer to guild
      */
-    AEGIS_DECL guild * guild_create(snowflake id, shards::shard * _shard) AEGIS_NOEXCEPT;
+    AEGIS_DECL guild * guild_create(snowflake id, shards::shard * _shard) noexcept;
 
     /// Called by CHANNEL_CREATE (DirectMessage)
     /**
@@ -336,7 +336,7 @@ public:
     /**
      * @returns std::string of `##h ##m ##s` formatted time
      */
-    AEGIS_DECL std::string uptime() const AEGIS_NOEXCEPT;
+    AEGIS_DECL std::string uptime() const noexcept;
 
     /// Performs a GET request on the path
     /**
@@ -581,9 +581,9 @@ private:
 
     AEGIS_DECL void load_config();
 
-    AEGIS_DECL void remove_channel(snowflake channel_id) AEGIS_NOEXCEPT;
+    AEGIS_DECL void remove_channel(snowflake channel_id) noexcept;
 
-    AEGIS_DECL void remove_member(snowflake member_id) AEGIS_NOEXCEPT;
+    AEGIS_DECL void remove_member(snowflake member_id) noexcept;
 
     std::chrono::steady_clock::time_point starttime;
 

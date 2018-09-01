@@ -98,20 +98,22 @@ enum http_code
 class rest_reply
 {
 public:
-    explicit rest_reply(std::string const & msg)
+    explicit rest_reply(std::string const & msg) noexcept
         : _msg{ msg }
         , reply_code(http_code::unknown)
+        , execution_time(0ms)
     {
     }
 
-    rest_reply()
+    rest_reply() noexcept
         : _msg("")
         , reply_code(http_code::unknown)
+        , execution_time(0ms)
     {
 
     }
 
-    rest_reply(http_code reply_code, bool global, int32_t limit, int32_t remaining, int64_t reset, int32_t retry, const std::string & content, std::chrono::steady_clock::duration exec_time = 0ms)
+    rest_reply(http_code reply_code, bool global, int32_t limit, int32_t remaining, int64_t reset, int32_t retry, const std::string & content, std::chrono::steady_clock::duration exec_time = 0ms) noexcept
         : reply_code(reply_code)
         , global(global)
         , limit(limit)
@@ -123,7 +125,7 @@ public:
     {
     }
 
-    rest_reply(const std::string & msg, http_code reply_code = http_code::unknown, bool global = false, int32_t limit = 0, int32_t remaining = 0, int64_t reset = 0, int32_t retry = 0, const std::string & content = "", std::chrono::steady_clock::duration exec_time = 0ms)
+    rest_reply(const std::string & msg, http_code reply_code = http_code::unknown, bool global = false, int32_t limit = 0, int32_t remaining = 0, int64_t reset = 0, int32_t retry = 0, const std::string & content = "", std::chrono::steady_clock::duration exec_time = 0ms) noexcept
         : _msg(msg)
         , reply_code(reply_code)
         , global(global)

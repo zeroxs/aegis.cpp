@@ -54,14 +54,14 @@ public:
     /**
      * @returns Reference to the guild this channel belongs to
      */
-    AEGIS_DECL guild & get_guild(std::error_code & ec) const AEGIS_NOEXCEPT;
+    AEGIS_DECL guild & get_guild(std::error_code & ec) const noexcept;
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     /// Get channel name
     /**
      * @returns String of channel name
      */
-    std::string get_name() const AEGIS_NOEXCEPT
+    std::string get_name() const noexcept
     {
         return name;
     }
@@ -70,7 +70,7 @@ public:
     /**
      * @returns An channel_type enum for this channel
      */
-    const gateway::objects::channel_type get_type() const AEGIS_NOEXCEPT
+    const gateway::objects::channel_type get_type() const noexcept
     {
         return type;
     }
@@ -671,7 +671,7 @@ public:
     /**
      * @returns A snowflake of the channel
      */
-    const snowflake get_id() const AEGIS_NOEXCEPT
+    const snowflake get_id() const noexcept
     {
         return channel_id;
     }
@@ -680,7 +680,7 @@ public:
     /**
      * @returns A snowflake of this channel's guild
      */
-    const snowflake get_guild_id() const AEGIS_NOEXCEPT
+    const snowflake get_guild_id() const noexcept
     {
         return guild_id;
     }
@@ -689,7 +689,7 @@ public:
     /**
      * @returns bool whether channel is a DM or belongs to a guild
      */
-    const bool is_dm() const AEGIS_NOEXCEPT
+    const bool is_dm() const noexcept
     {
         return _guild == nullptr;
     }

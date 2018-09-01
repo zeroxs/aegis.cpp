@@ -67,14 +67,11 @@ public:
     /// Constructor for the message object
     /**
      * @param _shard Pointer to the shard this message is being handled by
-     *
      * @param _c Pointer of channel object
-     *
      * @param _g Pointer of guild object
-     *
      * @param content String of the message sent
      */
-    explicit message(const std::string & content, channel * _c, guild * _g)
+    explicit message(const std::string & content, channel * _c, guild * _g) noexcept
         : _content(content)
         , _channel(_c)
         , _guild(_g)
@@ -84,9 +81,7 @@ public:
     /// Constructor for the message object
     /**
      * @param _shard Pointer to the shard this message is being handled by
-     *
      * @param channel_id Snowflake of channel this message belongs to
-     *
      * @param content String of the message sent
      */
     void set_channel(channel * _c)
@@ -97,9 +92,7 @@ public:
     /// Constructor for the message object
     /**
      * @param _shard Pointer to the shard this message is being handled by
-     *
      * @param channel_id Snowflake of channel this message belongs to
-     *
      * @param content String of the message sent
      */
     void set_guild(guild * _g)
@@ -107,7 +100,7 @@ public:
         _guild = _g;
     }
 
-    explicit message() = default;
+    explicit message() noexcept = default;
 
     std::string timestamp; /**<\todo Needs documentation */
     std::string edited_timestamp; /**<\todo Needs documentation */
@@ -149,18 +142,18 @@ public:
         return _message_id;
     }
 
-    bool has_guild()
+    bool has_guild() const noexcept
     {
         return _guild != nullptr || _guild_id != 0;
     }
 
-    bool has_channel()
+    bool has_channel() const noexcept
     {
         return _channel != nullptr || _channel_id != 0;
     }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    bool has_member()
+    bool has_member() const noexcept
     {
         return _member != nullptr || _author_id != 0;
     }
@@ -219,7 +212,39 @@ public:
     }
 #endif
 
-    std::future<rest::rest_reply> edit(std::error_code & ec, const std::string & content)
+    std::future<rest::rest_reply> delete_message(std::error_code & ec) noexcept
+    {
+        populate_self();
+        assert(_channel != nullptr);
+        if (_channel == nullptr)
+        {
+            ec = make_error_code(error::general);
+            return {};
+        }
+
+        ec = std::error_code();
+        return get_channel().delete_message(_message_id);
+    }
+
+    std::future<rest::rest_reply> delete_message()
+    {
+        populate_self();
+        assert(_channel != nullptr);
+        std::error_code ec;
+        if (_channel == nullptr)
+        {
+            ec = make_error_code(error::general);
+            return {};
+        }
+
+        ec = std::error_code();
+        auto res = get_channel().delete_message(ec, _message_id);
+        if (ec)
+            throw ec;
+        return res;
+    }
+
+    std::future<rest::rest_reply> edit(std::error_code & ec, const std::string & content) noexcept
     {
         populate_self();
         assert(_channel != nullptr);
@@ -242,7 +267,7 @@ public:
         return res;
     }
 
-    std::future<rest::rest_reply> create_reaction(std::error_code & ec, const std::string & content)
+    std::future<rest::rest_reply> create_reaction(std::error_code & ec, const std::string & content) noexcept
     {
         populate_self();
         assert(_channel != nullptr);
@@ -265,7 +290,7 @@ public:
         return res;
     }
 
-    std::future<rest::rest_reply> delete_own_reaction(std::error_code & ec, const std::string & content)
+    std::future<rest::rest_reply> delete_own_reaction(std::error_code & ec, const std::string & content) noexcept
     {
         populate_self();
         assert(_channel != nullptr);
@@ -288,7 +313,7 @@ public:
         return res;
     }
 
-    std::future<rest::rest_reply> delete_user_reaction(std::error_code & ec, const std::string & content, const snowflake member_id)
+    std::future<rest::rest_reply> delete_user_reaction(std::error_code & ec, const std::string & content, const snowflake member_id) noexcept
     {
         populate_self();
         assert(_channel != nullptr);
@@ -311,7 +336,7 @@ public:
         return res;
     }
 
-    std::future<rest::rest_reply> delete_all_reactions(std::error_code & ec)
+    std::future<rest::rest_reply> delete_all_reactions(std::error_code & ec) noexcept
     {
         populate_self();
         assert(_channel != nullptr);
@@ -340,7 +365,7 @@ public:
      * Some may be 0 such as guild for a DM or author for a webhook
      * @returns std::tuple<snowflake, snowflake, snowflake, snowflake>
      */ 
-    std::tuple<snowflake, snowflake, snowflake, snowflake> get_related_ids()
+    std::tuple<snowflake, snowflake, snowflake, snowflake> get_related_ids() const noexcept
     {
         return std::tuple<snowflake, snowflake, snowflake, snowflake>{ _channel_id, _guild_id, _message_id, _author_id };
     };
@@ -376,6 +401,8 @@ private:
             _guild = BOT::bot->find_guild(_guild_id);
         if ((_channel == nullptr) && (_channel_id > 0))
             _channel = BOT::bot->find_channel(_channel_id);
+        if (_channel == nullptr)
+            return;//fail
         if (_guild == nullptr)
             _guild = BOT::bot->find_guild(_channel->get_guild_id());
 #if !defined(AEGIS_DISABLE_ALL_CACHE)

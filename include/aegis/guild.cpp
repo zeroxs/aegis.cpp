@@ -41,7 +41,7 @@ AEGIS_DECL guild::~guild()
 #endif
 }
 
-AEGIS_DECL core & guild::get_bot() const AEGIS_NOEXCEPT
+AEGIS_DECL core & guild::get_bot() const noexcept
 {
     return *_bot;
 }
@@ -52,12 +52,12 @@ AEGIS_DECL member * guild::self() const
     return get_bot().self();
 }
 
-AEGIS_DECL void guild::add_member(member * _member) AEGIS_NOEXCEPT
+AEGIS_DECL void guild::add_member(member * _member) noexcept
 {
     members.emplace(_member->_member_id, _member);
 }
 
-AEGIS_DECL void guild::remove_member(snowflake member_id) AEGIS_NOEXCEPT
+AEGIS_DECL void guild::remove_member(snowflake member_id) noexcept
 {
     auto _member = members.find(member_id);
     if (_member == members.end())
@@ -69,7 +69,7 @@ AEGIS_DECL void guild::remove_member(snowflake member_id) AEGIS_NOEXCEPT
     members.erase(member_id);
 }
 
-AEGIS_DECL bool guild::member_has_role(snowflake member_id, snowflake role_id) const AEGIS_NOEXCEPT
+AEGIS_DECL bool guild::member_has_role(snowflake member_id, snowflake role_id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_m);
     auto _member = find_member(member_id);
@@ -81,7 +81,7 @@ AEGIS_DECL bool guild::member_has_role(snowflake member_id, snowflake role_id) c
     return false;
 }
 
-AEGIS_DECL void guild::load_presence(const json & obj) AEGIS_NOEXCEPT
+AEGIS_DECL void guild::load_presence(const json & obj) noexcept
 {
     json user = obj["user"];
 
@@ -104,7 +104,7 @@ AEGIS_DECL void guild::load_presence(const json & obj) AEGIS_NOEXCEPT
     _member->_status = status;
 }
 
-AEGIS_DECL void guild::load_role(const json & obj) AEGIS_NOEXCEPT
+AEGIS_DECL void guild::load_role(const json & obj) noexcept
 {
     snowflake role_id = obj["id"];
     if (!roles.count(role_id))
@@ -124,12 +124,12 @@ AEGIS_DECL void guild::load_role(const json & obj) AEGIS_NOEXCEPT
     _role.color = obj["color"];
 }
 
-AEGIS_DECL const snowflake guild::get_owner() const AEGIS_NOEXCEPT
+AEGIS_DECL const snowflake guild::get_owner() const noexcept
 {
     return owner_id;
 }
 
-AEGIS_DECL member * guild::find_member(snowflake member_id) const AEGIS_NOEXCEPT
+AEGIS_DECL member * guild::find_member(snowflake member_id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_m);
     auto m = members.find(member_id);
@@ -138,7 +138,7 @@ AEGIS_DECL member * guild::find_member(snowflake member_id) const AEGIS_NOEXCEPT
     return m->second;
 }
 
-AEGIS_DECL member * guild::_find_member(snowflake member_id) const AEGIS_NOEXCEPT
+AEGIS_DECL member * guild::_find_member(snowflake member_id) const noexcept
 {
     auto m = members.find(member_id);
     if (m == members.end())
@@ -146,7 +146,7 @@ AEGIS_DECL member * guild::_find_member(snowflake member_id) const AEGIS_NOEXCEP
     return m->second;
 }
 
-AEGIS_DECL channel * guild::find_channel(snowflake channel_id) const AEGIS_NOEXCEPT
+AEGIS_DECL channel * guild::find_channel(snowflake channel_id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_m);
     auto m = channels.find(channel_id);
@@ -155,7 +155,7 @@ AEGIS_DECL channel * guild::find_channel(snowflake channel_id) const AEGIS_NOEXC
     return m->second;
 }
 
-AEGIS_DECL channel * guild::_find_channel(snowflake channel_id) const AEGIS_NOEXCEPT
+AEGIS_DECL channel * guild::_find_channel(snowflake channel_id) const noexcept
 {
     auto m = channels.find(channel_id);
     if (m == channels.end())
@@ -163,14 +163,14 @@ AEGIS_DECL channel * guild::_find_channel(snowflake channel_id) const AEGIS_NOEX
     return m->second;
 }
 
-AEGIS_DECL permission guild::get_permissions(snowflake member_id, snowflake channel_id) AEGIS_NOEXCEPT
+AEGIS_DECL permission guild::get_permissions(snowflake member_id, snowflake channel_id) noexcept
 {
     if (!members.count(member_id) || !channels.count(channel_id))
         return 0;
     return get_permissions(find_member(member_id), find_channel(channel_id));
 }
 
-AEGIS_DECL permission guild::get_permissions(member * _member, channel * _channel) AEGIS_NOEXCEPT
+AEGIS_DECL permission guild::get_permissions(member * _member, channel * _channel) noexcept
 {
     if (_member == nullptr || _channel == nullptr)
         return 0;
@@ -182,7 +182,7 @@ AEGIS_DECL permission guild::get_permissions(member * _member, channel * _channe
     return _base_permissions | _compute_overwrites;
 }
 
-AEGIS_DECL int64_t guild::base_permissions(member & _member) const AEGIS_NOEXCEPT
+AEGIS_DECL int64_t guild::base_permissions(member & _member) const noexcept
 {
     try
     {
@@ -218,7 +218,7 @@ AEGIS_DECL int64_t guild::base_permissions(member & _member) const AEGIS_NOEXCEP
     }
 }
 
-AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const AEGIS_NOEXCEPT
+AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const noexcept
 {
     try
     {
@@ -301,12 +301,12 @@ AEGIS_DECL void guild::remove_role(snowflake role_id)
     }
 }
 
-AEGIS_DECL int32_t guild::get_member_count() const AEGIS_NOEXCEPT
+AEGIS_DECL int32_t guild::get_member_count() const noexcept
 {
     return static_cast<int32_t>(members.size());
 }
 
-AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) AEGIS_NOEXCEPT
+AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) noexcept
 {
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
     snowflake g_id = obj["id"];
@@ -426,7 +426,7 @@ AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) AEGIS_NOEX
     }
 }
 #else
-AEGIS_DECL void guild::load(const json & obj, shard * _shard) AEGIS_NOEXCEPT
+AEGIS_DECL void guild::load(const json & obj, shard * _shard) noexcept
 {
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
     snowflake g_id = obj["id"];
@@ -458,7 +458,7 @@ AEGIS_DECL void guild::load(const json & obj, shard * _shard) AEGIS_NOEXCEPT
 }
 #endif
 
-AEGIS_DECL void guild::remove_channel(snowflake channel_id) AEGIS_NOEXCEPT
+AEGIS_DECL void guild::remove_channel(snowflake channel_id) noexcept
 {
     auto it = channels.find(channel_id);
     if (it == channels.end())
@@ -469,7 +469,7 @@ AEGIS_DECL void guild::remove_channel(snowflake channel_id) AEGIS_NOEXCEPT
     channels.erase(it);
 }
 
-AEGIS_DECL channel * guild::get_channel(snowflake id) const AEGIS_NOEXCEPT
+AEGIS_DECL channel * guild::get_channel(snowflake id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_m);
     auto it = channels.find(id);

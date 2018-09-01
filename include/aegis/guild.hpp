@@ -86,7 +86,7 @@ public:
     /**
      * @returns String of guild name
      */
-    std::string get_name() const AEGIS_NOEXCEPT
+    std::string get_name() const noexcept
     {
         return name;
     }
@@ -95,7 +95,7 @@ public:
     /**
      * @returns String of region guild is in
      */
-    std::string get_region() const AEGIS_NOEXCEPT
+    std::string get_region() const noexcept
     {
         return region;
     }
@@ -106,13 +106,13 @@ public:
      * @param role_id Snowflake of role
      * @returns true if member has role
      */
-    AEGIS_DECL bool member_has_role(snowflake member_id, snowflake role_id) const AEGIS_NOEXCEPT;
+    AEGIS_DECL bool member_has_role(snowflake member_id, snowflake role_id) const noexcept;
 
     /// Get count of members in guild (potentially inaccurate)
     /**
      * @returns Count of members in guild
      */
-    AEGIS_DECL int32_t get_member_count() const AEGIS_NOEXCEPT;
+    AEGIS_DECL int32_t get_member_count() const noexcept;
 
     /// Get guild permissions for member in channel
     /**
@@ -120,7 +120,7 @@ public:
      * @param channel_id Snowflake of channel
      * @returns Permission object of channel
      */
-    AEGIS_DECL permission get_permissions(snowflake member_id, snowflake channel_id) AEGIS_NOEXCEPT;
+    AEGIS_DECL permission get_permissions(snowflake member_id, snowflake channel_id) noexcept;
 
     /// Get guild permissions for member in channel
     /**
@@ -128,13 +128,13 @@ public:
      * @param _channel Pointer to channel object
      * @returns Permission object of channel
      */
-    AEGIS_DECL permission get_permissions(member * _member, channel * _channel) AEGIS_NOEXCEPT;
+    AEGIS_DECL permission get_permissions(member * _member, channel * _channel) noexcept;
 
     /// Get base guild permissions for member
     /**
      * @param _member Pointer to member object
      */
-    int64_t base_permissions(member * _member) const AEGIS_NOEXCEPT
+    int64_t base_permissions(member * _member) const noexcept
     {
         return base_permissions(*_member);
     }
@@ -143,7 +143,7 @@ public:
     /**
      * @param _member Reference to member object
      */
-    AEGIS_DECL int64_t base_permissions(member & _member) const AEGIS_NOEXCEPT;
+    AEGIS_DECL int64_t base_permissions(member & _member) const noexcept;
 
     /// Calculate permission overrides for member in channel
     /**
@@ -152,7 +152,7 @@ public:
      * @param _channel Reference to channel object
      * @returns true on successful request, false for no permissions
      */
-    AEGIS_DECL int64_t compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const AEGIS_NOEXCEPT;
+    AEGIS_DECL int64_t compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const noexcept;
 
     /// Get role
     /**
@@ -165,14 +165,14 @@ public:
     /**
      * @returns Snowflake of owner
      */
-    AEGIS_DECL const snowflake get_owner() const AEGIS_NOEXCEPT;
+    AEGIS_DECL const snowflake get_owner() const noexcept;
 #endif
 
     /// Get the snowflake of this guild
     /**
     * @returns A snowflake of this guild
     */
-    const snowflake get_id() const AEGIS_NOEXCEPT
+    const snowflake get_id() const noexcept
     {
         return guild_id;
     }
@@ -182,7 +182,7 @@ public:
      * @param id Snowflake of channel
      * @returns Pointer to channel object created
      */
-    AEGIS_DECL channel * get_channel(snowflake id) const AEGIS_NOEXCEPT;
+    AEGIS_DECL channel * get_channel(snowflake id) const noexcept;
 
     /// Get guild information
     /**
@@ -946,21 +946,21 @@ public:
      * @throws aegis::exception Thrown on failure.
      * @returns Aegis main object
      */
-    AEGIS_DECL core & get_bot() const AEGIS_NOEXCEPT;
+    AEGIS_DECL core & get_bot() const noexcept;
 
     /// Obtain a pointer to a member by snowflake
     /**
      * @param member_id Snowflake of member to search for
      * @returns Pointer to member or nullptr
      */
-    AEGIS_DECL member * find_member(snowflake member_id) const AEGIS_NOEXCEPT;
+    AEGIS_DECL member * find_member(snowflake member_id) const noexcept;
 
     /// Obtain a pointer to a channel by snowflake
     /**
      * @param channel_id Snowflake of channel to search for
      * @returns Pointer to channel or nullptr
      */
-    AEGIS_DECL channel * find_channel(snowflake channel_id) const AEGIS_NOEXCEPT;
+    AEGIS_DECL channel * find_channel(snowflake channel_id) const noexcept;
 
     std::unordered_map<snowflake, channel*> channels; /**< Map of snowflakes to channel objects */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
@@ -973,28 +973,28 @@ private:
     friend class member;
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    AEGIS_DECL void add_member(member * _member) AEGIS_NOEXCEPT;
+    AEGIS_DECL void add_member(member * _member) noexcept;
 
-    AEGIS_DECL void remove_member(snowflake member_id) AEGIS_NOEXCEPT;
+    AEGIS_DECL void remove_member(snowflake member_id) noexcept;
 
-    AEGIS_DECL void load_presence(const json & obj) AEGIS_NOEXCEPT;
+    AEGIS_DECL void load_presence(const json & obj) noexcept;
 
-    AEGIS_DECL void load_role(const json & obj) AEGIS_NOEXCEPT;
+    AEGIS_DECL void load_role(const json & obj) noexcept;
 
     AEGIS_DECL void remove_role(snowflake role_id);
 #endif
 
-    AEGIS_DECL void load(const json & obj, shards::shard * _shard) AEGIS_NOEXCEPT;
+    AEGIS_DECL void load(const json & obj, shards::shard * _shard) noexcept;
 
     AEGIS_DECL shared_mutex & mtx() { return _m; }
 
     /// non-locking version for internal use
-    AEGIS_DECL member * _find_member(snowflake member_id) const AEGIS_NOEXCEPT;
+    AEGIS_DECL member * _find_member(snowflake member_id) const noexcept;
     
     /// non-locking version for internal use
-    AEGIS_DECL channel * _find_channel(snowflake channel_id) const AEGIS_NOEXCEPT;
+    AEGIS_DECL channel * _find_channel(snowflake channel_id) const noexcept;
 
-    AEGIS_DECL void remove_channel(snowflake channel_id) AEGIS_NOEXCEPT;
+    AEGIS_DECL void remove_channel(snowflake channel_id) noexcept;
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     std::string name;

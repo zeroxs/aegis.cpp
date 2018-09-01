@@ -32,7 +32,7 @@ AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp:
 {
 }
 
-AEGIS_DECL void shard::do_reset(shard_status _status) AEGIS_NOEXCEPT
+AEGIS_DECL void shard::do_reset(shard_status _status) noexcept
 {
     if (_connection == nullptr)
     {
@@ -140,7 +140,7 @@ AEGIS_DECL void shard::set_connected()
     write_timer.async_wait(asio::bind_executor(*_connection->get_strand(), std::bind(&shard::process_writes, this, std::placeholders::_1)));
 }
 
-AEGIS_DECL bool shard::is_connected() const AEGIS_NOEXCEPT
+AEGIS_DECL bool shard::is_connected() const noexcept
 {
     if ((_connection == nullptr) || (!_connection->get_raw_socket().is_open()))
         return false;
@@ -151,7 +151,7 @@ AEGIS_DECL bool shard::is_connected() const AEGIS_NOEXCEPT
     return false;
 }
 
-AEGIS_DECL bool shard::is_online() const AEGIS_NOEXCEPT
+AEGIS_DECL bool shard::is_online() const noexcept
 {
     if ((_connection == nullptr) || (!_connection->get_raw_socket().is_open()))
         return false;
@@ -206,7 +206,7 @@ AEGIS_DECL void shard::process_writes(const asio::error_code & ec)
     write_timer.async_wait(asio::bind_executor(*_connection->get_strand(), std::bind(&shard::process_writes, this, std::placeholders::_1)));
 }
 
-AEGIS_DECL std::string shard::uptime_str() const AEGIS_NOEXCEPT
+AEGIS_DECL std::string shard::uptime_str() const noexcept
 {
     using seconds = std::chrono::duration<int, std::ratio<1, 1>>;
     using minutes = std::chrono::duration<int, std::ratio<60, 1>>;

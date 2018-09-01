@@ -96,9 +96,9 @@ public:
     /// and propagates the Shutdown state along with closing all websockets within the shard vector
     AEGIS_DECL void shutdown();
 
-    websocket & get_websocket() AEGIS_NOEXCEPT { return websocket_o; }
-    bot_status get_state() const AEGIS_NOEXCEPT { return _status; }
-    void set_state(bot_status s) AEGIS_NOEXCEPT { _status = s; }
+    websocket & get_websocket() noexcept { return websocket_o; }
+    bot_status get_state() const noexcept { return _status; }
+    void set_state(bot_status s) noexcept { _status = s; }
 
     /// Helper function for posting tasks to asio
     /**
@@ -114,7 +114,7 @@ public:
     /**
      * @returns std::string of `##h ##m ##s` formatted time
      */
-    AEGIS_DECL std::string uptime() const AEGIS_NOEXCEPT;
+    AEGIS_DECL std::string uptime() const noexcept;
 
     /// Send a websocket message to a single shard
     /**
@@ -134,27 +134,27 @@ public:
     using t_on_connect = std::function<void(websocketpp::connection_hdl hdl, shard * _shard)>;
     using t_on_close = std::function<void(websocketpp::connection_hdl hdl, shard * _shard)>;
 
-    void set_on_message(t_on_message cb)
+    void set_on_message(t_on_message cb) noexcept
     {
         i_on_message = cb;
     }
 
-    void set_on_connect(t_on_connect cb)
+    void set_on_connect(t_on_connect cb) noexcept
     {
         i_on_connect = cb;
     }
 
-    void set_on_close(t_on_close cb)
+    void set_on_close(t_on_close cb) noexcept
     {
         i_on_close = cb;
     }
 
-    void set_gateway_url(const std::string & url)
+    void set_gateway_url(const std::string & url) noexcept
     {
         gateway_url = url;
     }
 
-    std::string get_gateway_url() const
+    std::string get_gateway_url() const noexcept
     {
         return gateway_url;
     }

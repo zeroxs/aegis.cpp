@@ -21,8 +21,8 @@ namespace aegis
 class snowflake
 {
 public:
-    constexpr snowflake() : snowflake_id(0) {}
-    constexpr snowflake(int64_t _snowflake) : snowflake_id(_snowflake) {}
+    constexpr snowflake() noexcept : snowflake_id(0) {}
+    constexpr snowflake(int64_t _snowflake) noexcept : snowflake_id(_snowflake) {}
 
     constexpr operator int64_t() const noexcept
     {
@@ -59,27 +59,27 @@ public:
         return (snowflake_id & _timestampMask) >> 22;
     };
 
-    static constexpr std::tuple<int64_t, int8_t, int8_t, int16_t> c_get_all(int64_t snowflake)
+    static constexpr std::tuple<int64_t, int8_t, int8_t, int16_t> c_get_all(int64_t snowflake) noexcept
     {
         return std::tuple<int64_t, int8_t, int8_t, int16_t>{ c_get_timestamp(snowflake), c_get_worker(snowflake), c_get_process(snowflake), c_get_count(snowflake) };
     };
 
-    static constexpr int16_t c_get_count(int64_t snowflake)
+    static constexpr int16_t c_get_count(int64_t snowflake) noexcept
     {
         return static_cast<int16_t>(snowflake & _countMask);
     };
 
-    static constexpr int8_t c_get_process(int64_t snowflake)
+    static constexpr int8_t c_get_process(int64_t snowflake) noexcept
     {
         return static_cast<int8_t>((snowflake & _workerMask) >> 12);
     };
 
-    static constexpr int8_t c_get_worker(int64_t snowflake)
+    static constexpr int8_t c_get_worker(int64_t snowflake) noexcept
     {
         return static_cast<int8_t>((snowflake & _workerMask) >> 17);
     };
 
-    static constexpr int64_t c_get_timestamp(int64_t snowflake)
+    static constexpr int64_t c_get_timestamp(int64_t snowflake) noexcept
     {
         return (snowflake & _timestampMask) >> 22;
     };
@@ -89,7 +89,7 @@ public:
         return get_timestamp() + _discordEpoch;
     };
 
-    static constexpr int64_t c_get_time(int64_t snowflake)
+    static constexpr int64_t c_get_time(int64_t snowflake) noexcept
     {
         return c_get_timestamp(snowflake) + _discordEpoch;
     };

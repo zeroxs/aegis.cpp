@@ -62,7 +62,7 @@ public:
     /**
      * @returns true if globally ratelimited
      */
-    bool is_global() const AEGIS_NOEXCEPT
+    bool is_global() const noexcept
     {
         return global_limit > 0;
     }
@@ -73,7 +73,7 @@ public:
     * @param id Snowflake of bucket object
     * @returns Reference to a bucket object
     */
-    bucket<Callable, Result> & get_bucket(const std::string & path) AEGIS_NOEXCEPT
+    bucket<Callable, Result> & get_bucket(const std::string & path) noexcept
     {
         // look for existing bucket
         auto bkt = _buckets.find(path);

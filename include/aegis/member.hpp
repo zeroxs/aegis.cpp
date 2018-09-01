@@ -63,13 +63,13 @@ public:
      * @param guild_id The snowflake for the guild to check if nickname is set
      * @returns string of the nickname or empty if no nickname is set
      */
-    AEGIS_DECL std::string get_name(snowflake guild_id) AEGIS_NOEXCEPT;
+    AEGIS_DECL std::string get_name(snowflake guild_id) noexcept;
 
     /// Get the nickname of this user
     /**
     * @returns string of the username
     */
-    std::string get_username() const AEGIS_NOEXCEPT
+    std::string get_username() const noexcept
     {
         return std::string(_name);
     }
@@ -78,7 +78,7 @@ public:
     /**
     * @returns string of the discriminator
     */
-    uint16_t get_discriminator() const AEGIS_NOEXCEPT
+    uint16_t get_discriminator() const noexcept
     {
         return _discriminator;
     }
@@ -87,7 +87,7 @@ public:
     /**
     * @returns string of the discriminator
     */
-    std::string get_avatar() const AEGIS_NOEXCEPT
+    std::string get_avatar() const noexcept
     {
         return std::string(_avatar);
     }
@@ -96,7 +96,7 @@ public:
     /**
     * @returns bool of bot status
     */
-    bool is_bot() const AEGIS_NOEXCEPT
+    bool is_bot() const noexcept
     {
         return _is_bot;
     }
@@ -105,7 +105,7 @@ public:
     /**
     * @returns bool of mfa status
     */
-    bool is_mfa_enabled() const AEGIS_NOEXCEPT
+    bool is_mfa_enabled() const noexcept
     {
         return _mfa_enabled;
     }
@@ -115,19 +115,19 @@ public:
      * @param guild_id The snowflake for the guild
      * @returns Pointer to the member owned guild information object
      */
-    AEGIS_DECL guild_info & get_guild_info(snowflake guild_id) AEGIS_NOEXCEPT;
+    AEGIS_DECL guild_info & get_guild_info(snowflake guild_id) noexcept;
 
     /// Get the full name (username#discriminator) of this user
     /**
      * @returns string of the full username and discriminator
      */
-    AEGIS_DECL std::string get_full_name() const AEGIS_NOEXCEPT;
+    AEGIS_DECL std::string get_full_name() const noexcept;
 
     /// Get the snowflake of this user
     /**
      * @returns snowflake of the user
      */
-    snowflake get_id() const AEGIS_NOEXCEPT
+    snowflake get_id() const noexcept
     {
         return _member_id;
     }

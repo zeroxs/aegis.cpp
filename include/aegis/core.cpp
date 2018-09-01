@@ -142,7 +142,7 @@ AEGIS_DECL core::~core()
 }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-AEGIS_DECL int64_t core::get_member_count() const AEGIS_NOEXCEPT
+AEGIS_DECL int64_t core::get_member_count() const noexcept
 {
     int64_t count = 0;
     for (auto & kv : guilds)
@@ -150,7 +150,7 @@ AEGIS_DECL int64_t core::get_member_count() const AEGIS_NOEXCEPT
     return count;
 }
 
-AEGIS_DECL member * core::find_member(snowflake id) const AEGIS_NOEXCEPT
+AEGIS_DECL member * core::find_member(snowflake id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_member_m);
     auto it = members.find(id);
@@ -159,7 +159,7 @@ AEGIS_DECL member * core::find_member(snowflake id) const AEGIS_NOEXCEPT
     return it->second.get();
 }
 
-AEGIS_DECL member * core::member_create(snowflake id) AEGIS_NOEXCEPT
+AEGIS_DECL member * core::member_create(snowflake id) noexcept
 {
     std::unique_lock<shared_mutex> l(_member_m);
     auto it = members.find(id);
@@ -174,7 +174,7 @@ AEGIS_DECL member * core::member_create(snowflake id) AEGIS_NOEXCEPT
 }
 #endif
 
-AEGIS_DECL channel * core::find_channel(snowflake id) const AEGIS_NOEXCEPT
+AEGIS_DECL channel * core::find_channel(snowflake id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_channel_m);
     auto it = channels.find(id);
@@ -183,7 +183,7 @@ AEGIS_DECL channel * core::find_channel(snowflake id) const AEGIS_NOEXCEPT
     return it->second.get();
 }
 
-AEGIS_DECL channel * core::channel_create(snowflake id) AEGIS_NOEXCEPT
+AEGIS_DECL channel * core::channel_create(snowflake id) noexcept
 {
     std::unique_lock<shared_mutex> l(_channel_m);
     auto it = channels.find(id);
@@ -197,7 +197,7 @@ AEGIS_DECL channel * core::channel_create(snowflake id) AEGIS_NOEXCEPT
     return it->second.get();
 }
 
-AEGIS_DECL guild * core::find_guild(snowflake id) const AEGIS_NOEXCEPT
+AEGIS_DECL guild * core::find_guild(snowflake id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_guild_m);
     auto it = guilds.find(id);
@@ -206,7 +206,7 @@ AEGIS_DECL guild * core::find_guild(snowflake id) const AEGIS_NOEXCEPT
     return it->second.get();
 }
 
-AEGIS_DECL guild * core::guild_create(snowflake id, shards::shard * _shard) AEGIS_NOEXCEPT
+AEGIS_DECL guild * core::guild_create(snowflake id, shards::shard * _shard) noexcept
 {
     std::unique_lock<shared_mutex> l(_guild_m);
     auto it = guilds.find(id);
@@ -220,7 +220,7 @@ AEGIS_DECL guild * core::guild_create(snowflake id, shards::shard * _shard) AEGI
     return it->second.get();
 }
 
-AEGIS_DECL void core::remove_channel(snowflake channel_id) AEGIS_NOEXCEPT
+AEGIS_DECL void core::remove_channel(snowflake channel_id) noexcept
 {
     auto it = channels.find(channel_id);
     if (it == channels.end())
@@ -233,7 +233,7 @@ AEGIS_DECL void core::remove_channel(snowflake channel_id) AEGIS_NOEXCEPT
 
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-AEGIS_DECL void core::remove_member(snowflake member_id) AEGIS_NOEXCEPT
+AEGIS_DECL void core::remove_member(snowflake member_id) noexcept
 {
     auto it = members.find(member_id);
     if (it == members.end())
@@ -529,7 +529,7 @@ AEGIS_DECL rest::rest_reply core::create_guild(
     return res;
 }
 
-AEGIS_DECL std::string core::uptime() const AEGIS_NOEXCEPT
+AEGIS_DECL std::string core::uptime() const noexcept
 {
     using seconds = std::chrono::duration<int, std::ratio<1, 1>>;
     using minutes = std::chrono::duration<int, std::ratio<60, 1>>;

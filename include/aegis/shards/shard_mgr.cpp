@@ -25,6 +25,7 @@ AEGIS_DECL shard_mgr::shard_mgr(std::string token, asio::io_context & _io, std::
     , force_shard_count(0)
     , shard_max_count(0)
     , log(log)
+    , _connecting_shard(nullptr)
     , _token(token)
 {
     websocket_o.init_asio(&_io_context);
@@ -119,7 +120,7 @@ AEGIS_DECL void shard_mgr::shutdown()
         t.join();
 }
 
-AEGIS_DECL std::string shard_mgr::uptime() const AEGIS_NOEXCEPT
+AEGIS_DECL std::string shard_mgr::uptime() const noexcept
 {
     using seconds = std::chrono::duration<int, std::ratio<1, 1>>;
     using minutes = std::chrono::duration<int, std::ratio<60, 1>>;

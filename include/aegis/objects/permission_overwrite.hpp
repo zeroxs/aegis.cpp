@@ -46,7 +46,7 @@ struct permission_overwrite
 {
     snowflake id; /**<\todo Needs documentation */
     //either "role" or "member"
-    overwrite_type type; /**<\todo Needs documentation */
+    overwrite_type type = User; /**<\todo Needs documentation */
     int64_t allow = 0; /**<\todo Needs documentation */
     int64_t deny = 0; /**<\todo Needs documentation */
 };

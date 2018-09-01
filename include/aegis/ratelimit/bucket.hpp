@@ -76,7 +76,7 @@ public:
     /**
      * @returns true if globally ratelimited
      */
-    bool is_global() const AEGIS_NOEXCEPT
+    bool is_global() const noexcept
     {
         return _global_limit > 0;
     }
@@ -86,7 +86,7 @@ public:
     /**
      * @returns true if bucket ratelimits permit a message to be sent
      */
-    bool can_perform() const AEGIS_NOEXCEPT
+    bool can_perform() const noexcept
     {
         if (ignore_rates)
             return true;
