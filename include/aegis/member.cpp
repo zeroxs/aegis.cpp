@@ -128,6 +128,10 @@ AEGIS_DECL void member::load_data(gateway::objects::user mbr)
     _is_bot = mbr.is_bot();
 }
 
+AEGIS_DECL std::string member::get_mention() const noexcept
+{
+    return fmt::format("<@{}>", _member_id);
+}
 
 }
 #endif

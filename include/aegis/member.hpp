@@ -110,6 +110,11 @@ public:
         return _mfa_enabled;
     }
 
+    /// Builds a mention for this user
+    /**
+    * @returns string of member mention
+    */
+    AEGIS_DECL std::string get_mention() const noexcept;
     /// Get the member owned guild information object
     /**
      * @param guild_id The snowflake for the guild
