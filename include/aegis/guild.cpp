@@ -716,7 +716,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::modify_my_nick(std::error_code &
     }
 #endif
 
-    json obj = { "nick", newname };
+    json obj = { { "nick", newname } };
     ec = error_code();
     return post_task(fmt::format("/guilds/{}/members/@me/nick", guild_id), "PATCH", obj.dump());
 }
