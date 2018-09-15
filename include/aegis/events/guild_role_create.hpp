@@ -11,6 +11,7 @@
 
 #include "aegis/config.hpp"
 #include "aegis/fwd.hpp"
+#include "aegis/objects/role.hpp"
 
 namespace aegis
 {
@@ -27,12 +28,16 @@ struct guild_role_create
 {
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
+    snowflake guild_id;
+    objects::role _role;
 };
 
 /**\todo Needs documentation
  */
 inline void from_json(const nlohmann::json& j, guild_role_create& m)
 {
+    m.guild_id = j["guild_id"];
+    m._role = j["role"];
 }
 
 }
