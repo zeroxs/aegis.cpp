@@ -31,6 +31,7 @@ struct guild_ban_remove
 {
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
+    snowflake guild_id;
     objects::user _user; /**<\todo Needs documentation */
 };
 
@@ -38,6 +39,7 @@ struct guild_ban_remove
  */
 inline void from_json(const nlohmann::json& j, guild_ban_remove& m)
 {
+    m.guild_id = j["guild_id"];
     m._user = j["user"];
 }
 
