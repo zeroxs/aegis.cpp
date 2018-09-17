@@ -482,7 +482,7 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
         _self->_is_bot = true;
         _self->_name = username;
         _self->_discriminator = discriminator;
-        _self->_status = member::Online;
+        _self->_status = aegis::gateway::objects::presence::Online;
     }
 #else
     const json & userdata = d["user"];
@@ -915,18 +915,6 @@ AEGIS_DECL void core::ws_presence_update(const json & result, shards::shard * _s
 {
     _shard->counters.presence_changes++;
 
-
-    member::member_status status;
-    std::string sts = result["d"]["status"];
-    if (sts == "idle")
-        status = member::Idle;
-    else if (sts == "dnd")
-        status = member::DoNotDisturb;
-    else if (sts == "online")
-        status = member::Online;
-    else
-        status = member::Offline;
-
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     json user = result["d"]["user"];
     snowflake guild_id = result["d"]["guild_id"];
@@ -942,7 +930,22 @@ AEGIS_DECL void core::ws_presence_update(const json & result, shards::shard * _s
     std::unique_lock<shared_mutex> l2(_guild->mtx(), std::defer_lock);
     std::lock(l, l2);
     _member->load(_guild, result["d"], _shard);
-    _member->_status = status;
+
+    using user_status = aegis::gateway::objects::presence::user_status;
+
+    const std::string & sts = result["d"]["status"];
+
+    if (sts == "idle")
+        _member->_status = user_status::Idle;
+    else if (sts == "dnd")
+        _member->_status = user_status::DoNotDisturb;
+    else if (sts == "online")
+        _member->_status = user_status::Online;
+    else
+        _member->_status = user_status::Offline;
+
+    //TODO: this is where rich presence might be stored if it's relevant to do so
+    //_member->rich_presence = result["d"]["game"]; //activity object
 #endif
 
     gateway::events::presence_update obj;

@@ -85,23 +85,25 @@ AEGIS_DECL void guild::load_presence(const json & obj) noexcept
 {
     json user = obj["user"];
 
-    member::member_status status;
-    if (obj["status"] == "idle")
-        status = member::Idle;
-    else if (obj["status"] == "dnd")
-        status = member::DoNotDisturb;
-    else if (obj["status"] == "online")
-        status = member::Online;
-    else
-        status = member::Offline;
-
     auto _member = _find_member(user["id"]);
     if (_member == nullptr)
     {
         //_status->core->log->error("User doesn't exist {}", user["id"].get<std::string>());
         return;
     }
-    _member->_status = status;
+
+    using user_status = aegis::gateway::objects::presence::user_status;
+
+    const std::string & sts = obj["status"];
+
+    if (sts == "idle")
+        _member->_status = user_status::Idle;
+    else if (sts == "dnd")
+        _member->_status = user_status::DoNotDisturb;
+    else if (sts == "online")
+        _member->_status = user_status::Online;
+    else
+        _member->_status = user_status::Offline;
 }
 
 AEGIS_DECL void guild::load_role(const json & obj) noexcept

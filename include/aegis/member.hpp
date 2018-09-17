@@ -36,6 +36,8 @@ using json = nlohmann::json;
 class member
 {
 public:
+    using presence = aegis::gateway::objects::presence;
+  
     explicit member(snowflake id) : _member_id(id) {}
 
     /// Member owned guild information
@@ -47,15 +49,6 @@ public:
         uint64_t joined_at = 0;
         bool deaf = false;
         bool mute = false;
-    };
-
-    /// The statuses a member is able to be
-    enum member_status
-    {
-        Offline,
-        Online,
-        Idle,
-        DoNotDisturb
     };
 
     /// Get the nickname of this user
@@ -146,7 +139,7 @@ private:
     AEGIS_DECL void load_data(gateway::objects::user mbr);
 
     snowflake _member_id = 0;
-    member_status _status = member_status::Offline; /**< Member _status */
+    presence::user_status _status = presence::user_status::Offline; /**< Member _status */
     std::string _name; /**< Username of member */
     uint16_t _discriminator = 0; /**< 4 digit discriminator (1-9999) */
     std::string _avatar; /**< Hash of member avatar */
