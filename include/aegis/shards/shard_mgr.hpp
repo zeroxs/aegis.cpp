@@ -179,6 +179,11 @@ public:
         close(&_shard, code, reason, connection_state);
     }
 
+    uint32_t shard_count() const noexcept
+    {
+        return _shards.size();
+    }
+
     std::mutex m;
     std::condition_variable cv;
     asio::io_context & _io_context;
