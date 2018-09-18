@@ -32,14 +32,14 @@ AEGIS_DECL channel::channel(const snowflake channel_id, const snowflake guild_id
 {
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::post_task(const std::string & path, const std::string & method, const std::string & obj, const std::string & host)
+AEGIS_DECL std::future<rest::rest_reply> channel::post_task(rest::request_params params)
 {
-    return _bot->get_ratelimit().post_task(path, method, obj, host);
+    return _bot->get_ratelimit().post_task(params);
 }
 
-AEGIS_DECL std::future<rest::rest_reply> channel::post_emoji_task(const std::string & path, const std::string & method, const std::string & obj, const std::string & host)
+AEGIS_DECL std::future<rest::rest_reply> channel::post_emoji_task(rest::request_params params)
 {
-    return _bot->get_ratelimit().post_task(path, method, obj, host);
+    return _bot->get_ratelimit().post_task(params);
 }
 
 AEGIS_DECL guild & channel::get_guild() const
@@ -141,7 +141,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::create_message(std::error_code
         obj["nonce"] = nonce;
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/messages", channel_id), "POST", obj.dump());
+    return post_task({ fmt::format("/channels/{}/messages", channel_id), rest::Post, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::create_message_embed(std::error_code & ec, const std::string & content, const json & embed, int64_t nonce)
@@ -164,7 +164,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::create_message_embed(std::erro
         obj["nonce"] = nonce;
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/messages", channel_id), "POST", obj.dump());
+    return post_task({ fmt::format("/channels/{}/messages", channel_id), rest::Post, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::edit_message(std::error_code & ec, snowflake message_id, const std::string & content)
@@ -173,7 +173,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::edit_message(std::error_code &
     obj["content"] = content;
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/messages/{}", channel_id, message_id), "PATCH", obj.dump());
+    return post_task({ fmt::format("/channels/{}/messages/{}", channel_id, message_id), rest::Patch, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::edit_message_embed(std::error_code & ec, snowflake message_id, const std::string & content, const json & embed)
@@ -185,7 +185,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::edit_message_embed(std::error_
     obj["content"] = content;
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/messages/{}", channel_id, message_id), "PATCH", obj.dump());
+    return post_task({ fmt::format("/channels/{}/messages/{}", channel_id, message_id), rest::Patch, obj.dump() });
 }
 
 /**\todo can delete your own messages freely - provide separate function or keep history of messages
@@ -201,7 +201,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::delete_message(std::error_code
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/messages/{}", channel_id, message_id), "DELETE");
+    return post_task({ fmt::format("/channels/{}/messages/{}", channel_id, message_id), rest::Delete });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::bulk_delete_message(std::error_code & ec, const std::vector<int64_t> & messages)
@@ -216,7 +216,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::bulk_delete_message(std::error
 
     json obj = messages;
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/messages/bulk-delete", channel_id), "POST", obj.dump());
+    return post_task({ fmt::format("/channels/{}/messages/bulk-delete", channel_id), rest::Post, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::modify_channel(std::error_code & ec, lib::optional<std::string> _name, lib::optional<int> _position, lib::optional<std::string> _topic,
@@ -264,7 +264,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::modify_channel(std::error_code
         obj["parent_id"] = _parent_id.value();
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}", channel_id), "PATCH", obj.dump());
+    return post_task({ fmt::format("/channels/{}", channel_id), rest::Patch, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::delete_channel(std::error_code & ec)
@@ -278,7 +278,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::delete_channel(std::error_code
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}", channel_id), "DELETE");
+    return post_task({ fmt::format("/channels/{}", channel_id), rest::Delete });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::create_reaction(std::error_code & ec, snowflake message_id, const std::string & emoji_text)
@@ -292,7 +292,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::create_reaction(std::error_cod
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "PUT");
+    return post_task({ fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), rest::Put });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::delete_own_reaction(std::error_code & ec, snowflake message_id, const std::string & emoji_text)
@@ -306,7 +306,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::delete_own_reaction(std::error
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), "DELETE");
+    return post_task({ fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text), rest::Delete });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::delete_user_reaction(std::error_code & ec, snowflake message_id, const std::string & emoji_text, snowflake member_id)
@@ -320,7 +320,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::delete_user_reaction(std::erro
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/messages/{}/reactions/{}/{}", channel_id, message_id, emoji_text, member_id), "DELETE");
+    return post_task({ fmt::format("/channels/{}/messages/{}/reactions/{}/{}", channel_id, message_id, emoji_text, member_id), rest::Delete });
 }
 
 /**\todo Support query parameters
@@ -329,7 +329,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::delete_user_reaction(std::erro
 AEGIS_DECL std::future<rest::rest_reply> channel::get_reactions(std::error_code & ec, snowflake message_id, const std::string & emoji_text)
 {
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/messages/{}/reactions/{}", channel_id, message_id, emoji_text), "GET");
+    return post_task({ fmt::format("/channels/{}/messages/{}/reactions/{}", channel_id, message_id, emoji_text), rest::Get });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::delete_all_reactions(std::error_code & ec, snowflake message_id)
@@ -343,7 +343,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::delete_all_reactions(std::erro
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/messages/{}/reactions", channel_id, message_id), "DELETE");
+    return post_task({ fmt::format("/channels/{}/messages/{}/reactions", channel_id, message_id), rest::Delete });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::edit_channel_permissions(std::error_code & ec, snowflake _overwrite_id, int64_t _allow, int64_t _deny, const std::string & _type)
@@ -362,7 +362,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::edit_channel_permissions(std::
     obj["type"] = _type;
  
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/permissions/{}", channel_id, _overwrite_id), "PUT", obj.dump());
+    return post_task({ fmt::format("/channels/{}/permissions/{}", channel_id, _overwrite_id), rest::Put, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::get_channel_invites(std::error_code & ec)
@@ -376,7 +376,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::get_channel_invites(std::error
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/invites", channel_id), "GET");
+    return post_task({ fmt::format("/channels/{}/invites", channel_id), rest::Get });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::create_channel_invite(std::error_code & ec, lib::optional<int> max_age, lib::optional<int> max_uses, lib::optional<bool> temporary, lib::optional<bool> unique)
@@ -400,7 +400,7 @@ AEGIS_DECL std::future<rest::rest_reply> channel::create_channel_invite(std::err
         obj["unique"] = unique.value();
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/invites", channel_id), "POST", obj.dump());
+    return post_task({ fmt::format("/channels/{}/invites", channel_id), rest::Post, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::delete_channel_permission(std::error_code & ec, snowflake overwrite_id)
@@ -414,13 +414,13 @@ AEGIS_DECL std::future<rest::rest_reply> channel::delete_channel_permission(std:
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/permissions/{}", channel_id, overwrite_id), "DELETE");
+    return post_task({ fmt::format("/channels/{}/permissions/{}", channel_id, overwrite_id), rest::Delete });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::trigger_typing_indicator(std::error_code & ec)
 {
     ec = error_code();
-    return post_task(fmt::format("/channels/{}/typing", channel_id));
+    return post_task({ fmt::format("/channels/{}/typing", channel_id) });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> channel::get_pinned_messages(std::error_code & ec)

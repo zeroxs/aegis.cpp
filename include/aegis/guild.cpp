@@ -480,9 +480,9 @@ AEGIS_DECL channel * guild::get_channel(snowflake id) const noexcept
     return it->second;
 }
 
-AEGIS_DECL std::future<rest::rest_reply> guild::post_task(const std::string & path, const std::string & method, const std::string & obj, const std::string & host)
+AEGIS_DECL std::future<rest::rest_reply> guild::post_task(rest::request_params params)
 {
-    return _bot->get_ratelimit().post_task(path, method, obj, host);
+    return _bot->get_ratelimit().post_task(params);
 }
 
 /**\todo Incomplete. Signature may change. Location may change.
@@ -490,7 +490,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::post_task(const std::string & pa
 AEGIS_DECL std::future<rest::rest_reply> guild::get_guild(std::error_code & ec)
 {
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}", guild_id), "GET");
+    return post_task({ fmt::format("/guilds/{}", guild_id), rest::Get });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild(std::error_code & ec, lib::optional<std::string> name, lib::optional<std::string> voice_region, lib::optional<int> verification_level,
@@ -528,7 +528,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild(std::error_code & e
         obj["splash"] = splash.value();
 
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}", guild_id), "PATCH", obj.dump());
+    return post_task({ fmt::format("/guilds/{}", guild_id), rest::Patch, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::delete_guild(std::error_code & ec)
@@ -542,7 +542,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::delete_guild(std::error_code & e
     }
 #endif
 
-    return post_task(fmt::format("/guilds/{}", guild_id), "DELETE");
+    return post_task({ fmt::format("/guilds/{}", guild_id), rest::Delete });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::create_text_channel(std::error_code & ec, const std::string & name,
@@ -568,7 +568,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::create_text_channel(std::error_c
         obj["permission_overwrites"].push_back(p_ow);
     }
 
-    return post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj.dump());
+    return post_task({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::create_voice_channel(std::error_code & ec, const std::string & name,
@@ -596,7 +596,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::create_voice_channel(std::error_
     }
 
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj.dump());
+    return post_task({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::create_category_channel(std::error_code & ec, const std::string & name,
@@ -620,7 +620,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::create_category_channel(std::err
     }
 
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}/channels", guild_id), "POST", obj.dump());
+    return post_task({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
 }
 
 /**\todo Incomplete. Signature may change
@@ -705,7 +705,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild_member(std::error_c
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}/members/{}", guild_id, user_id), "PATCH", obj.dump());
+    return post_task({ fmt::format("/guilds/{}/members/{}", guild_id, user_id), rest::Patch, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::modify_my_nick(std::error_code & ec, const std::string & newname)
@@ -720,7 +720,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::modify_my_nick(std::error_code &
 
     json obj = { { "nick", newname } };
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}/members/@me/nick", guild_id), "PATCH", obj.dump());
+    return post_task({ fmt::format("/guilds/{}/members/@me/nick", guild_id), rest::Patch, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::add_guild_member_role(std::error_code & ec, snowflake user_id, snowflake role_id)
@@ -734,7 +734,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::add_guild_member_role(std::error
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}/members/{}/roles/{}", guild_id, user_id, role_id), "PUT");
+    return post_task({ fmt::format("/guilds/{}/members/{}/roles/{}", guild_id, user_id, role_id), rest::Put });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::remove_guild_member_role(std::error_code & ec, snowflake user_id, snowflake role_id)
@@ -748,7 +748,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::remove_guild_member_role(std::er
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}/members/{}/roles/{}", guild_id, user_id, role_id), "DELETE");
+    return post_task({ fmt::format("/guilds/{}/members/{}/roles/{}", guild_id, user_id, role_id), rest::Delete });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::remove_guild_member(std::error_code & ec, snowflake user_id)
@@ -762,7 +762,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::remove_guild_member(std::error_c
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}/members/{}", guild_id, user_id), "DELETE");
+    return post_task({ fmt::format("/guilds/{}/members/{}", guild_id, user_id), rest::Delete });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::create_guild_ban(std::error_code & ec, snowflake user_id, int8_t delete_message_days, const std::string & reason)
@@ -782,7 +782,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::create_guild_ban(std::error_code
         obj = { { "delete-message-days", delete_message_days }, { "reason", reason } };
 
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}/bans/{}", guild_id, user_id), "PUT", obj.dump());
+    return post_task({ fmt::format("/guilds/{}/bans/{}", guild_id, user_id), rest::Put, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::remove_guild_ban(std::error_code & ec, snowflake user_id)
@@ -796,7 +796,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::remove_guild_ban(std::error_code
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}/bans/{}", guild_id, user_id), "DELETE");
+    return post_task({ fmt::format("/guilds/{}/bans/{}", guild_id, user_id), rest::Delete });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::create_guild_role(std::error_code & ec, const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable)
@@ -811,7 +811,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::create_guild_role(std::error_cod
 
     json obj = { { "name", name },{ "permissions", _perms },{ "color", color },{ "hoist", hoist },{ "mentionable", mentionable } };
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}/roles", guild_id), "POST", obj.dump());
+    return post_task({ fmt::format("/guilds/{}/roles", guild_id), rest::Post, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild_role_positions(std::error_code & ec, snowflake role_id, int16_t position)
@@ -826,7 +826,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild_role_positions(std:
 
     json obj = { { "id", role_id },{ "position", position } };
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}/roles", guild_id), "PATCH", obj.dump());
+    return post_task({ fmt::format("/guilds/{}/roles", guild_id), rest::Patch, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild_role(std::error_code & ec, snowflake role_id, const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable)
@@ -841,7 +841,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild_role(std::error_cod
 
     json obj = { { "name", name },{ "permissions", _perms },{ "color", color },{ "hoist", hoist },{ "mentionable", mentionable } };
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}/roles/{}", guild_id, role_id), "POST", obj.dump());
+    return post_task({ fmt::format("/guilds/{}/roles/{}", guild_id, role_id), rest::Post, obj.dump() });
 }
 
 AEGIS_DECL std::future<rest::rest_reply> guild::delete_guild_role(std::error_code & ec, snowflake role_id)
@@ -855,7 +855,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::delete_guild_role(std::error_cod
 #endif
 
     ec = error_code();
-    return post_task(fmt::format("/guilds/{}/roles/{}", guild_id, role_id), "DELETE");
+    return post_task({ fmt::format("/guilds/{}/roles/{}", guild_id, role_id), rest::Delete });
 }
 
 /**\todo Incomplete. Signature may change
@@ -1021,7 +1021,7 @@ AEGIS_DECL std::future<rest::rest_reply> guild::modify_guild_embed(std::error_co
 AEGIS_DECL std::future<rest::rest_reply> guild::leave(std::error_code & ec)
 {
     ec = error_code();
-    return post_task(fmt::format("/users/@me/guilds/{0}", guild_id), "DELETE");
+    return post_task({ fmt::format("/users/@me/guilds/{0}", guild_id), rest::Delete });
 }
 
 }

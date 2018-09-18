@@ -23,6 +23,25 @@ namespace aegis
 namespace rest
 {
 
+enum RequestMethod
+{
+    Get,
+    Post,
+    Put,
+    Patch,
+    Delete,
+    MAX_METHODS
+};
+
+struct request_params
+{
+    std::string path;
+    RequestMethod method = Post;
+    std::string body;
+    std::string host;
+    std::vector<std::string> headers;
+};
+
 class rest_controller
 {
 public:
@@ -41,64 +60,39 @@ public:
     rest_controller(rest_controller &&) = delete;
     rest_controller & operator=(const rest_controller &) = delete;
 
-    /// Performs a GET request on the path
-    /**
-     * @see rest_reply
-     * @param path A string of the uri path to get
-     *
-     * @returns Response object
-     */
-    AEGIS_DECL rest_reply get(const std::string & path);
-
-    /// Performs a GET request on the path with content as the request body
-    /**
-    * @see rest_reply
-    * @param path A string of the uri path to get
-    *
-    * @param content JSON formatted string to send as the body
-    *
-    * @param host Provide only if the call should go to a different host
-    *
-    * @returns Response object
-    */
-    AEGIS_DECL rest_reply get(const std::string & path, const std::string & content, const std::string & host = "");
-
-    /// Performs a POST request on the path
-    /**
-    * @see rest_reply
-    * @param path A string of the uri path to post
-    *
-    * @returns Response object
-    */
-    AEGIS_DECL rest_reply post(const std::string & path);
-
-    /// Performs a POST request on the path with content as the request body
-    /**
-    * @see rest_reply
-    * @param path A string of the uri path to post
-    *
-    * @param content JSON formatted string to send as the body
-    *
-    * @param host Provide only if the call should go to a different host
-    *
-    * @returns Response object
-    */
-    AEGIS_DECL rest_reply post(const std::string & path, const std::string & content, const std::string & host = "");
-
     /// Performs an HTTP request on the path with content as the request body using the method method
     /**
-    * @see rest_reply
-    * @param path A string of the uri path to get
-    *
-    * @param content JSON formatted string to send as the body
-    *
-    * @param method The HTTP method of the request
-    *
-    * @param host Provide only if the call should go to a different host
-    *
-    * @returns Response object
-    */
-    AEGIS_DECL rest_reply execute(const std::string & path, const std::string & content, const std::string & method, const std::string & host = "");
+     * @see rest_reply
+     * @see rest::request_params
+     * @param params A struct of HTTP parameters to perform the request
+     * @returns rest_reply
+     */
+    AEGIS_DECL rest_reply execute(rest::request_params params);
+
+    std::string get_method(RequestMethod method)
+    {
+        switch (method)
+        {
+            case Get:
+                return "GET";
+                break;
+            case Post:
+                return "POST";
+                break;
+            case Put:
+                return "PUT";
+                break;
+            case Patch:
+                return "PATCH";
+                break;
+            case Delete:
+                return "DELETE";
+                break;
+            default:
+                return "GET";
+                break;
+        }
+    }
 
     void set_auth(const std::string & token)
     {

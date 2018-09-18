@@ -84,9 +84,9 @@ public:
         return *_buckets.emplace(path, std::make_unique<bucket<Callable, Result>>(_call, _io_context, global_limit)).first->second;
     }
 
-    std::future<Result> post_task(const std::string & path, const std::string & method = "POST", const std::string & obj = "", const std::string & host = "")
+    std::future<Result> post_task(rest::request_params params)
     {
-        auto & bkt = get_bucket(path);
+        auto & bkt = get_bucket(params.path);
         using result = asio::async_result<asio::use_future_t<>, void(Result)>;
         using handler = typename result::completion_handler_type;
 
@@ -95,7 +95,7 @@ public:
 
         asio::post(_io_context, [=, &bkt]() mutable
         {
-            exec(bkt.perform(path, obj, method, host));
+            exec(bkt.perform(params));
         });
         return ret.get();
     }

@@ -124,10 +124,7 @@ AEGIS_DECL core::core(spdlog::level::level_enum loglevel)
     _ratelimit = std::make_unique<ratelimit_mgr_t>(
         std::bind(&aegis::rest::rest_controller::execute,
                   _rest.get(),
-                  std::placeholders::_1,
-                  std::placeholders::_2,
-                  std::placeholders::_3,
-                  std::placeholders::_4),
+                  std::placeholders::_1),
         get_io_context());
 
     setup_callbacks();
@@ -188,8 +185,9 @@ AEGIS_DECL std::future<rest::rest_reply> core::create_dm_message(snowflake membe
     {
         return post_task([=]() -> rest::rest_reply
         {
+            rest::request_params params{ "/users/@me/channels", rest::Post, fmt::format(R"({{ "recipient_id": "{}" }})", member_id), "", {} };
             auto res = json::parse(get_ratelimit()
-                                   .post_task("/users/@me/channels", "POST", fmt::format(R"({{ "recipient_id": "{}" }})", member_id))
+                                   .post_task(params)
                                    .get()
                                    .content);
             snowflake channel_id = std::stoull(res["id"].get<std::string>());
@@ -408,7 +406,7 @@ AEGIS_DECL void core::setup_gateway(std::error_code & ec)
 #else
     aegis::rest::rest_controller _rest(_token, "/api/v6", "discordapp.com");
 #endif
-    rest::rest_reply res = _rest.get("/gateway/bot");
+    rest::rest_reply res = _rest.execute({ "/gateway/bot", rest::Get });
 
     if (res.content.empty())
     {
@@ -1195,11 +1193,12 @@ AEGIS_DECL void core::ws_message_delete_bulk(const json & result, shards::shard 
 AEGIS_DECL void core::ws_user_update(const json & result, shards::shard * _shard)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    snowflake member_id = result["d"]["user"]["id"];
+
+    snowflake member_id = result["d"]["id"];
 
     auto _member = member_create(member_id);
 
-    const json & user = result["d"]["user"];
+    const json & user = result["d"];
     if (user.count("username") && !user["username"].is_null())
         _member->_name = user["username"].get<std::string>();
     if (user.count("avatar") && !user["avatar"].is_null())
@@ -1652,7 +1651,7 @@ AEGIS_DECL rest::rest_reply core::create_guild(
 
     try
     {
-        return _rest->execute("/guilds", obj.dump(), "POST");
+        return _rest->execute({ "/guilds", rest::Post, obj.dump() });
     }
     catch (nlohmann::json::type_error& e)
     {
@@ -1666,24 +1665,9 @@ AEGIS_DECL rest::rest_reply core::create_guild(
     return {};
 }
 
-AEGIS_DECL rest::rest_reply core::get(const std::string & path)
+AEGIS_DECL rest::rest_reply core::call(rest::request_params params)
 {
-    return _rest->get(path);
-}
-
-AEGIS_DECL rest::rest_reply core::get(const std::string & path, const std::string & content, const std::string & host)
-{
-    return _rest->get(path, content, host);
-}
-
-AEGIS_DECL rest::rest_reply core::post(const std::string & path, const std::string & content, const std::string & host)
-{
-    return _rest->post(path, content, host);
-}
-
-AEGIS_DECL rest::rest_reply core::call(const std::string & path, const std::string & content, const std::string & method, const std::string & host)
-{
-    return _rest->execute(path, content, method, host);
+    return _rest->execute(params);
 }
 
 }

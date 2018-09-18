@@ -92,7 +92,7 @@ public:
     * @param host String of remote host. Defaults to discordapp.com
     * @returns std::future<rest::rest_reply>
     */
-    AEGIS_DECL std::future<rest::rest_reply> post_task(const std::string & path, const std::string & method = "POST", const std::string & obj = "", const std::string & host = "");
+    AEGIS_DECL std::future<rest::rest_reply> post_task(rest::request_params params);
 
     /// Creates a task to make a REST call - preferable to use specific functions
     /// for interactions. This function is public for the case of any functionality
@@ -104,7 +104,7 @@ public:
     * @param host String of remote host. Defaults to discordapp.com
     * @returns std::future<rest::rest_reply>
     */
-    AEGIS_DECL std::future<rest::rest_reply> post_emoji_task(const std::string & path, const std::string & method = "POST", const std::string & obj = "", const std::string & host = "");
+    AEGIS_DECL std::future<rest::rest_reply> post_emoji_task(rest::request_params params);
 
     /// Send message to this channel
     /**

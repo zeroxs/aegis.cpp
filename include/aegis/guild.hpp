@@ -63,8 +63,7 @@ public:
      * @param host String of remote host. Defaults to discordapp.com
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL std::future<rest::rest_reply> post_task(const std::string & path, const std::string & method = "POST",
-                                                       const std::string & obj = "", const std::string & host = "");
+    AEGIS_DECL std::future<rest::rest_reply> post_task(rest::request_params params);
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     /// Get bot's current permissions for this guild

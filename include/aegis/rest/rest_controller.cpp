@@ -70,29 +70,9 @@ AEGIS_DECL rest_controller::~rest_controller()
     _io_context.stop();
 }
 
-AEGIS_DECL rest_reply rest_controller::get(const std::string & path)
+AEGIS_DECL rest_reply rest_controller::execute(rest::request_params params)
 {
-    return execute(path, "", "GET", "");
-}
-
-AEGIS_DECL rest_reply rest_controller::get(const std::string & path, const std::string & content, const std::string & host)
-{
-    return execute(path, content, "GET", host);
-}
-
-AEGIS_DECL rest_reply rest_controller::post(const std::string & path)
-{
-    return execute(path, "", "POST", "");
-}
-
-AEGIS_DECL rest_reply rest_controller::post(const std::string & path, const std::string & content, const std::string & host)
-{
-    return execute(path, content, "POST", host);
-}
-
-AEGIS_DECL rest_reply rest_controller::execute(const std::string & path, const std::string & content, const std::string & method, const std::string & host)
-{
-    if (_host.empty() && host.empty())
+    if (_host.empty() && params.host.empty())
         throw aegis::exception("REST host not set");
 
     websocketpp::http::parser::response hresponse;
@@ -111,7 +91,7 @@ AEGIS_DECL rest_reply rest_controller::execute(const std::string & path, const s
 
         asio::ip::basic_resolver<asio::ip::tcp>::results_type r;
 
-        const std::string & tar_host = host.empty() ? _host : host;
+        const std::string & tar_host = params.host.empty() ? _host : params.host;
 
         //TODO: make cache expire?
         auto it = _resolver_cache.find(tar_host);
@@ -141,7 +121,7 @@ AEGIS_DECL rest_reply rest_controller::execute(const std::string & path, const s
 
         asio::streambuf request;
         std::ostream request_stream(&request);
-        request_stream << method << " " << _prefix << path << " HTTP/1.0\r\n";
+        request_stream << get_method(params.method) << " " << _prefix << params.path << " HTTP/1.0\r\n";
         request_stream << "Host: " << tar_host << "\r\n";
         request_stream << "Accept: */*\r\n";
         if (tar_host == "discordapp.com")
@@ -149,10 +129,10 @@ AEGIS_DECL rest_reply rest_controller::execute(const std::string & path, const s
         else
             request_stream << "Authorization: " << _token << "\r\n";
         request_stream << "User-Agent: DiscordBot (https://github.com/zeroxs/aegis.cpp, " << AEGIS_VERSION_LONG << ")\r\n";
-        request_stream << "Content-Length: " << content.size() << "\r\n";
+        request_stream << "Content-Length: " << params.body.size() << "\r\n";
         request_stream << "Content-Type: application/json\r\n";
         request_stream << "Connection: close\r\n\r\n";
-        request_stream << content;
+        request_stream << params.body;
 
         asio::write(socket, request);
         asio::streambuf response;
