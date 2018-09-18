@@ -13,6 +13,7 @@
 #include "aegis/utility.hpp"
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 #include "aegis/snowflake.hpp"
+#include "aegis/objects/presence.hpp"
 #include "aegis/fwd.hpp"
 #include <nlohmann/json.hpp>
 #include <string>
