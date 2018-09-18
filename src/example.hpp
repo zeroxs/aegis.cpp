@@ -54,7 +54,7 @@ public:
         bot.set_on_message_create(std::bind(&example::MessageCreate, this, std::placeholders::_1));
     }
 
-    snowflake get_snowflake(const std::string name, const guild & _guild) const noexcept
+    snowflake get_snowflake(const std::string name, guild & _guild) const noexcept
     {
         if (name.empty())
             return { 0 };
@@ -63,15 +63,18 @@ public:
             if (name[0] == '<')
             {
                 //mention param
-                std::string res;
+
+                std::string::size_type pos = name.find_first_of('>');
+                if (pos == std::string::npos)
+                    return { 0 };
                 if (name[2] == '!')//mobile mention. strip <@!
-                    return std::stoull(std::string{ name.substr(3, name.size() - 1) });
+                    return std::stoull(std::string{ name.substr(3, pos - 1) });
                 else  if (name[2] == '&')//role mention. strip <@&
-                    return std::stoull(std::string{ name.substr(3, name.size() - 1) });
+                    return std::stoull(std::string{ name.substr(3, pos - 1) });
                 else  if (name[1] == '#')//channel mention. strip <#
-                    return std::stoull(std::string{ name.substr(3, name.size() - 1) });
+                    return std::stoull(std::string{ name.substr(2, pos - 1) });
                 else//regular mention. strip <@
-                    return std::stoull(std::string{ name.substr(2, name.size() - 1) });
+                    return std::stoull(std::string{ name.substr(2, pos - 1) });
             }
             else if (std::isdigit(name[0]))
             {
@@ -85,7 +88,7 @@ public:
                 if (n != std::string::npos)
                 {
                     //found # separator
-                    for (auto & m : _guild.members)
+                    for (auto & m : _guild.get_members())
                         if (m.second->get_full_name() == name)
                             return { m.second->get_id() };
                     return { 0 };
