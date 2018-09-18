@@ -260,6 +260,9 @@ public:
         asio::post(*_io_context, std::move(f));
     }
 
+    template<typename T = aegis::rest::rest_reply, typename P>
+    AEGIS_DECL std::future<T> post_task(P fn);
+
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 
     member * self() const

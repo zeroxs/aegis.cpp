@@ -171,6 +171,22 @@ AEGIS_DECL member * core::member_create(snowflake id) noexcept
 }
 #endif
 
+template<typename T, typename P>
+AEGIS_DECL std::future<T> core::post_task(P fn)
+{
+    using result = asio::async_result<asio::use_future_t<>, void(T)>;
+    using handler = typename result::completion_handler_type;
+
+    handler exec(asio::use_future);
+    result ret(exec);
+
+    asio::post(*_io_context, [=]() mutable
+    {
+        exec(fn());
+    });
+    return ret.get();
+}
+
 AEGIS_DECL std::future<rest::rest_reply> core::create_dm_message(snowflake member_id, const std::string & content, int64_t nonce) noexcept
 {
     auto m = find_member(member_id);
