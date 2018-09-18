@@ -455,21 +455,20 @@ inline void from_json(const nlohmann::json& j, message& m)
     if (j.count("webhook_id") && !j["webhook_id"].is_null())
         m.webhook_id = j["webhook_id"].get<std::string>();
     if (j.count("mentions") && !j["mentions"].is_null())
-        for (const auto& i : j["mentions"])
-            m.mentions.push_back(i["id"]);
+        for (const auto & _mention : j["mentions"])
+            m.mentions.push_back(_mention["id"]);
     if (j.count("roles") && !j["roles"].is_null())
-        for (const auto& i : j["roles"])
-            m.mention_roles.push_back(i);
+        for (const auto & _mention_role : j["roles"])
+            m.mention_roles.push_back(_mention_role);
     if (j.count("attachments") && !j["attachments"].is_null())
-        for (const auto& i : j["attachments"])
-            m.attachments.push_back(i);
+        for (const auto & _attachment : j["attachments"])
+            m.attachments.push_back(_attachment);
     if (j.count("embeds") && !j["embeds"].is_null())
-        for (const auto& i : j["embeds"])
-            m.embeds.push_back(i);
+        for (const auto & _embed : j["embeds"])
+            m.embeds.push_back(_embed);
     if (j.count("reactions") && !j["reactions"].is_null())
-        for (const auto& i : j["reactions"])
-            m.reactions.push_back(i);
-    bool _initialized = true;
+        for (const auto & _reaction : j["reactions"])
+            m.reactions.push_back(_reaction);
 }
 
 /**\todo Needs documentation
@@ -488,17 +487,17 @@ inline void to_json(nlohmann::json& j, const message& m)
         j["nonce"] = m.nonce;
     if (!m.webhook_id.empty())
         j["webhook_id"] = m.webhook_id;
-    for (const auto & i : m.mentions)
-        j["mentions"].push_back(i);
-    for (const auto & i : m.mention_roles)
-        j["roles"].push_back(i);
-    for (const auto & i : m.attachments)
-        j["attachments"].push_back(i);
-    for (const auto & i : m.embeds)
-        j["embeds"].push_back(i);
+    for (const auto & _mention : m.mentions)
+        j["mentions"].push_back(_mention);
+    for (const auto & _mention_role : m.mention_roles)
+        j["roles"].push_back(_mention_role);
+    for (const auto & _attachment : m.attachments)
+        j["attachments"].push_back(_attachment);
+    for (const auto & _embed : m.embeds)
+        j["embeds"].push_back(_embed);
     if (!m.reactions.empty())
-        for (const auto & i : m.reactions)
-            j["reactions"].push_back(i);
+        for (const auto & _reaction : m.reactions)
+            j["reactions"].push_back(_reaction);
 }
 
 }

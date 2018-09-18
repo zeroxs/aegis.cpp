@@ -48,8 +48,8 @@ inline void from_json(const nlohmann::json& j, guild_member& m)
     if (j.count("guild_id") && !j["guild_id"].is_null())
         m.guild_id = j["guild_id"];
     if (j.count("roles") && !j["roles"].is_null())
-        for (auto i : j["roles"])
-            m.roles.push_back(i);
+        for (const auto & _role : j["roles"])
+            m.roles.push_back(_role);
     if (j.count("joined_at"))
         m.joined_at = j["joined_at"];
     if (j.count("deaf"))

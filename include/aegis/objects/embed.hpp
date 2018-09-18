@@ -135,8 +135,8 @@ inline void from_json(const nlohmann::json& j, embed& m)
     if (j.count("provider") && !j["provider"].is_null())
         m.provider_ = j["provider"];
     if (j.count("fields") && !j["fields"].is_null())
-        for (const auto& i : j["fields"])
-            m.fields.push_back(i);
+        for (const auto & _field : j["fields"])
+            m.fields.push_back(_field);
 }
 
 /**\todo Needs documentation
@@ -154,8 +154,8 @@ inline void to_json(nlohmann::json& j, const embed& m)
     j["thumbnail"] = m.thumbnail_;
     j["video"] = m.video_;
     j["provider"] = m.provider_;
-    for (auto i : m.fields)
-        j["fields"].push_back(i);
+    for (const auto & _field : m.fields)
+        j["fields"].push_back(_field);
 }
 
 }
