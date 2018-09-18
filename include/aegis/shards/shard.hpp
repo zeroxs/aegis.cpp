@@ -174,7 +174,7 @@ public:
         return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _ready_time).count();
     }
 
-    void set_heartbeat(std::function<void(const asio::error_code &, const int32_t, shard *)> fnkeepalive)
+    void set_heartbeat(std::function<void(const asio::error_code &, const std::chrono::milliseconds, shard *)> fnkeepalive)
     {
         keepalivefunc = fnkeepalive;
     }
@@ -192,7 +192,7 @@ public:
             if (ec == asio::error::operation_aborted)
                 return;
 
-            keepalivefunc(ec, heartbeat, this);
+            keepalivefunc(ec, std::chrono::milliseconds(heartbeat), this);
             start_heartbeat(heartbeat);
         }));
     }
@@ -215,7 +215,7 @@ public:
 
     shard_status connection_state;
     std::string session_id;
-    std::function<void(const asio::error_code &, const int32_t, shard *)> keepalivefunc;
+    std::function<void(const asio::error_code &, const std::chrono::milliseconds, shard *)> keepalivefunc;
 
     void set_sequence(int64_t seq) noexcept
     {

@@ -534,7 +534,7 @@ private:
 
     AEGIS_DECL void _run(std::size_t count = 0, std::function<void(void)> f = {});
     AEGIS_DECL void setup_gateway(std::error_code & ec);
-    AEGIS_DECL void keep_alive(const asio::error_code & error, const int32_t ms, shards::shard * _shard);
+    AEGIS_DECL void keep_alive(const asio::error_code & error, const std::chrono::milliseconds ms, shards::shard * _shard);
 
     AEGIS_DECL void reset_shard(shards::shard * _shard);
 

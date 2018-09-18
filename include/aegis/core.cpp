@@ -784,7 +784,7 @@ AEGIS_DECL void core::debug_trace(shards::shard * _shard)
     _shard_mgr->debug_trace(_shard);
 }
 
-AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const int32_t ms, shards::shard * _shard)
+AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const std::chrono::milliseconds ms, shards::shard * _shard)
 {
     if (ec == asio::error::operation_aborted)
         return;
@@ -794,15 +794,18 @@ AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const int32_t ms, 
             return;
 
         auto now = std::chrono::steady_clock::now();
+        auto _timeout = int32_t(ms.count() * 1.5);
 
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(_shard->heartbeat_ack.time_since_epoch()).count() > 0
-            && std::chrono::duration_cast<std::chrono::milliseconds>(now - _shard->lastheartbeat) >= std::chrono::milliseconds(int32_t(ms * 1.5)))
+        using milli = std::chrono::milliseconds;
+
+        if (utility::to_ms(_shard->heartbeat_ack) > 0
+            && utility::to_t<milli>(now - _shard->lastheartbeat) >= milli(_timeout))
         {
             log->error("Shard#{}: Heartbeat ack timeout. Reconnecting. Last Ack:{}ms Last Sent:{}ms Timeout:{}ms",
                        _shard->get_id(),
-                       std::chrono::duration_cast<std::chrono::milliseconds>(now - _shard->heartbeat_ack).count(),
-                       std::chrono::duration_cast<std::chrono::milliseconds>(now - _shard->lastheartbeat).count(),
-                       int32_t(ms * 1.5));
+                       utility::to_ms(now - _shard->heartbeat_ack),
+                       utility::to_ms(now - _shard->lastheartbeat),
+                       _timeout);
             _shard_mgr->close(_shard, 1001, "");
             _shard_mgr->reset_shard(_shard);
             _shard_mgr->queue_reconnect(_shard);
@@ -812,7 +815,7 @@ AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const int32_t ms, 
         obj["d"] = _shard->get_sequence();
         obj["op"] = 1;
         _shard->send_now(obj.dump());
-        _shard->lastheartbeat = std::chrono::steady_clock::now();
+        _shard->lastheartbeat = now;
     }
     catch (websocketpp::exception & e)
     {

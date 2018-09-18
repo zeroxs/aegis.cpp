@@ -52,12 +52,7 @@ AEGIS_DECL void member::load(guild * _guild, const json & obj, shards::shard * _
 
         if (obj.count("joined_at") && !obj["joined_at"].is_null())// g_info.value()->joined_at = obj["joined_at"];
         {
-            std::tm tm = {};
-            std::istringstream ss(obj["joined_at"].get<std::string>());
-            ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
-            auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
-
-            g_info.joined_at = tp.time_since_epoch().count();
+            g_info.joined_at = utility::from_iso8601(obj["joined_at"]).time_since_epoch().count();
         }
 
         if (obj.count("roles") && !obj["roles"].is_null())

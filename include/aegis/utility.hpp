@@ -19,6 +19,7 @@
 #include <iostream>
 #include <chrono>
 #include <sstream>
+#include <iomanip>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -78,6 +79,71 @@ std::string perf_run(const std::string & name, Func f)
 
     ss << "Time: [" << std::chrono::duration_cast<std::chrono::microseconds>(n_end - n).count() << "us]\n";
     return ss.str();
+}
+
+/// Returns the duration of the time since epoch for the timer.
+/**
+ * @param t The time_point to convert to the provided duration template parameter
+ * @returns std::chrono::duration of the time since epoch start until the provided time_point
+ */
+template<typename Duration, typename T>
+inline Duration to_t(const T & t)
+{
+    return std::chrono::duration_cast<Duration>(t.time_since_epoch());
+}
+
+/// Returns the duration of the time since epoch for the timer.
+/// Specialized template for conversions from nanoseconds.
+/**
+ * @param t The time_point to convert to the provided duration template parameter
+ * @returns std::chrono::duration of the time since epoch start until the provided time_point
+ */
+template<typename Duration>
+inline Duration to_t(const std::chrono::duration<int64_t, std::nano> & t)
+{
+    return std::chrono::duration_cast<Duration>(t);
+}
+
+/// Returns the value of the time since epoch for the timer.
+/// For steady_clock this is last reboot.
+/// For system_clock this is the Unix epoch.
+/**
+ * @param t The time_point to convert to milliseconds
+ * @returns int64_t of the time since epoch start until the provided time_point
+ */
+template<typename T>
+inline int64_t to_ms(const T & t)
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count();
+}
+
+/// Returns the value of the time since epoch for the timer.
+/// Specialized template for nanoseconds.
+/// For steady_clock this is last reboot.
+/// For system_clock this is the Unix epoch.
+/**
+ * @param t The time_point to convert to milliseconds
+ * @returns int64_t of the time since epoch start until the provided time_point
+ */
+template<>
+inline int64_t to_ms(const std::chrono::duration<int64_t, std::nano> & t)
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(t).count();
+}
+
+/// Converts an ISO8601 date string to an std::chrono::system_clock::time_point
+/// or other provided template parameter type
+/**
+ * @param _time_t String of the timestamp
+ * @returns std::chrono::system_clock::time_point String timestamp converted to time_point
+ */
+template<typename T = std::chrono::system_clock::time_point>
+T from_iso8601(const std::string & _time_t)
+{
+    std::tm tm = {};
+    std::istringstream ss(_time_t);
+    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+    return std::chrono::system_clock::from_time_t(std::mktime(&tm));
 }
 
 namespace platform
