@@ -979,6 +979,7 @@ public:
         return channels;
     }
 
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
     /// Obtain map of members
     /**
      * @returns unordered_map<snowflake, member*> of members
@@ -996,6 +997,7 @@ public:
     {
         return roles;
     }
+#endif
 
     shared_mutex & mtx()
     {
