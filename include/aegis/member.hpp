@@ -131,6 +131,10 @@ public:
         return _member_id;
     }
 
+    shared_mutex & mtx() noexcept
+    {
+        return _m;
+    }
 
 private:
     friend class core;
@@ -155,10 +159,9 @@ private:
     /// requires the caller to handle locking
     AEGIS_DECL guild_info & join(snowflake guild_id);
 
-    AEGIS_DECL shared_mutex & mtx() { return _m; }
-
     void leave(snowflake guild_id)
     {
+        std::unique_lock<shared_mutex> l(mtx());
         guilds.erase(guild_id);
     }
 };

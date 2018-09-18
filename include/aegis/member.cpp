@@ -83,7 +83,7 @@ AEGIS_DECL void member::load(guild * _guild, const json & obj, shards::shard * _
 
 AEGIS_DECL member::guild_info & member::get_guild_info(snowflake guild_id) noexcept
 {
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<shared_mutex> l(mtx());
     auto g = guilds.find(guild_id);
     if (g == guilds.end())
     {

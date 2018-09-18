@@ -694,13 +694,17 @@ public:
         return _guild == nullptr;
     }
 
+    shared_mutex & mtx() noexcept
+    {
+        return _m;
+    }
+
 private:
     friend class guild;
     friend class core;
 
     /// requires the caller to handle locking
     AEGIS_DECL void load_with_guild(guild & _guild, const json & obj, shards::shard * _shard);
-    shared_mutex & mtx() { return _m; }
 
     snowflake channel_id; /**< snowflake of this channel */
     snowflake guild_id; /**< snowflake of the guild this channel belongs to */

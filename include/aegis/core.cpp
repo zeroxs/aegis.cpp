@@ -566,7 +566,7 @@ AEGIS_DECL channel * core::dm_channel_create(const json & obj, shards::shard * _
 
     try
     {
-        std::unique_lock<shared_mutex> l(_channel->_m);
+        std::unique_lock<shared_mutex> l(_channel->mtx());
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
         log->debug("Shard#{} : Channel[{}] created for DirectMessage", _shard->get_id(), channel_id);
         if (obj.count("name") && !obj["name"].is_null()) _channel->name = obj["name"].get<std::string>();
@@ -1047,8 +1047,10 @@ AEGIS_DECL void core::ws_guild_create(const json & result, shards::shard * _shar
     }
 #endif
 
-    std::unique_lock<shared_mutex> l(_guild->mtx());
-    _guild->load(result["d"], _shard);
+    {
+        std::unique_lock<shared_mutex> l(_guild->mtx());
+        _guild->load(result["d"], _shard);
+    }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     //TODO: abide by rate limits (120/60)
@@ -1081,8 +1083,10 @@ AEGIS_DECL void core::ws_guild_update(const json & result, shards::shard * _shar
         return;
     }
 
-    std::unique_lock<shared_mutex> l(_guild->mtx());
-    _guild->load(result["d"], _shard);
+    {
+        std::unique_lock<shared_mutex> l(_guild->mtx());
+        _guild->load(result["d"], _shard);
+    }
 
     gateway::events::guild_update obj;
     obj._guild = result["d"];

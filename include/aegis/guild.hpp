@@ -962,15 +962,20 @@ public:
      */
     AEGIS_DECL channel * find_channel(snowflake channel_id) const noexcept;
 
+    shared_mutex & mtx()
+    {
+        return _m;
+    }
+
+private:
+    friend class core;
+    friend class member;
+
     std::unordered_map<snowflake, channel*> channels; /**< Map of snowflakes to channel objects */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     std::unordered_map<snowflake, member*> members; /**< Map of snowflakes to member objects */
     std::unordered_map<snowflake, gateway::objects::role> roles; /**< Map of snowflakes to role objects */
 #endif
-
-private:
-    friend class core;
-    friend class member;
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     AEGIS_DECL void add_member(member * _member) noexcept;
@@ -985,8 +990,6 @@ private:
 #endif
 
     AEGIS_DECL void load(const json & obj, shards::shard * _shard) noexcept;
-
-    AEGIS_DECL shared_mutex & mtx() { return _m; }
 
     /// non-locking version for internal use
     AEGIS_DECL member * _find_member(snowflake member_id) const noexcept;
