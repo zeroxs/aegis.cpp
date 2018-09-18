@@ -570,7 +570,7 @@ AEGIS_DECL channel * core::dm_channel_create(const json & obj, shards::shard * _
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
         log->debug("Shard#{} : Channel[{}] created for DirectMessage", _shard->get_id(), channel_id);
         if (obj.count("name") && !obj["name"].is_null()) _channel->name = obj["name"].get<std::string>();
-        _channel->type = static_cast<gateway::objects::channel_type>(obj["type"].get<int>());// 0 = text, 2 = voice
+        _channel->type = static_cast<gateway::objects::channel_gw::channel_type>(obj["type"].get<int>());// 0 = text, 2 = voice
 
         if (!obj["last_message_id"].is_null()) _channel->last_message_id = obj["last_message_id"];
 #endif

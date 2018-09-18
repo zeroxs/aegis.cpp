@@ -70,7 +70,7 @@ public:
     /**
      * @returns An channel_type enum for this channel
      */
-    const gateway::objects::channel_type get_type() const noexcept
+    const gateway::objects::channel_gw::channel_type get_type() const noexcept
     {
         return type;
     }
@@ -714,7 +714,7 @@ private:
     std::string name; /**< String of the name of this channel */
     std::string topic; /**< String of the topic of this channel */
     uint32_t position = 0; /**< Position of channel in guild channel list */
-    gateway::objects::channel_type type = gateway::objects::channel_type::Text; /**< Type of channel */
+    gateway::objects::channel_gw::channel_type type = gateway::objects::channel_gw::channel_type::Text; /**< Type of channel */
     uint16_t bitrate = 0; /**< Bit rate of voice channel */
     uint16_t user_limit = 0; /**< User limit of voice channel */
     std::unordered_map<int64_t, gateway::objects::permission_overwrite> overrides; /**< Snowflake map of user/role to permission overrides */

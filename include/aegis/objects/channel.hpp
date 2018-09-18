@@ -30,19 +30,19 @@ namespace objects
 
 /**\todo Needs documentation
  */
-enum channel_type
-{
-    Text = 0,
-    DirectMessage = 1,
-    Voice = 2,
-    GroupDirectMessage = 3,
-    Category = 4
-};
-
-/**\todo Needs documentation
- */
 struct channel_gw
 {
+    /**\todo Needs documentation
+     */
+    enum channel_type
+    {
+        Text = 0,
+        DirectMessage = 1,
+        Voice = 2,
+        GroupDirectMessage = 3,
+        Category = 4
+    };
+
     snowflake channel_id; /**<\todo Needs documentation */
     channel_type type = Text; /**<\todo Needs documentation */
     snowflake guild_id = 0;//? /**<\todo Needs documentation */
