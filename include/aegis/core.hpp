@@ -332,6 +332,8 @@ public:
      */
     AEGIS_DECL channel * dm_channel_create(const json & obj, shards::shard * _shard);
 
+    AEGIS_DECL std::future<rest::rest_reply> create_dm_message(snowflake member_id, const std::string & content, int64_t nonce = 0) noexcept;
+
     /// Return bot uptime as {days hours minutes seconds}
     /**
      * @returns std::string of `##h ##m ##s` formatted time

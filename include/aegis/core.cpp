@@ -174,6 +174,33 @@ AEGIS_DECL member * core::member_create(snowflake id) noexcept
 }
 #endif
 
+AEGIS_DECL std::future<rest::rest_reply> core::create_dm_message(snowflake member_id, const std::string & content, int64_t nonce) noexcept
+{
+    auto m = find_member(member_id);
+    if (!m) return {};
+    channel * c = nullptr;
+    if (m->get_dm_id())
+        c = channel_create(m->get_dm_id());
+
+    if (c)
+        return c->create_message(content, nonce);
+    else
+    {
+        return post_task([=]() -> rest::rest_reply
+        {
+            auto res = json::parse(get_ratelimit()
+                                   .post_task("/users/@me/channels", "POST", fmt::format(R"({{ "recipient_id": "{}" }})", member_id))
+                                   .get()
+                                   .content);
+            snowflake channel_id = std::stoull(res["id"].get<std::string>());
+            auto c = channel_create(channel_id);
+            if (!c) return {};
+            m->set_dm_id(channel_id);
+            return c->create_message(content, nonce).get();
+        });
+    }
+}
+
 AEGIS_DECL channel * core::find_channel(snowflake id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_channel_m);
@@ -1271,8 +1298,17 @@ AEGIS_DECL void core::ws_channel_create(const json & result, shards::shard * _sh
     else
     {
         //dm
-        //auto _channel = channel_create(channel_id);
         auto _channel = dm_channel_create(result["d"], _shard);
+
+        const json & r = result["d"]["recipients"];
+        if (result["d"]["type"] == gateway::objects::channel_gw::channel_type::DirectMessage)//as opposed to a GroupDirectMessage
+        {
+            snowflake user_id = std::stoull(r.at(0)["id"].get<std::string>());
+            snowflake dm_id = std::stoull(result["d"]["id"].get<std::string>());
+            auto user = find_member(user_id);
+            if (user)
+                user->set_dm_id(dm_id);
+        }
     }
 
     gateway::events::channel_create obj;

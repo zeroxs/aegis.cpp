@@ -131,6 +131,16 @@ public:
         return _member_id;
     }
 
+    snowflake get_dm_id() const noexcept
+    {
+        return _dm_id;
+    }
+
+    void set_dm_id(int64_t _id) noexcept
+    {
+        _dm_id = _id;
+    }
+
     shared_mutex & mtx() noexcept
     {
         return _m;
@@ -144,6 +154,7 @@ private:
     AEGIS_DECL void load_data(gateway::objects::user mbr);
 
     snowflake _member_id = 0;
+    snowflake _dm_id = 0;
     presence::user_status _status = presence::user_status::Offline; /**< Member _status */
     std::string _name; /**< Username of member */
     uint16_t _discriminator = 0; /**< 4 digit discriminator (1-9999) */
