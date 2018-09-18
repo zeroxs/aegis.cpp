@@ -57,15 +57,15 @@ public:
      * @param guild_id The snowflake for the guild to check if nickname is set
      * @returns string of the nickname or empty if no nickname is set
      */
-    AEGIS_DECL std::string get_name(snowflake guild_id) noexcept;
+    AEGIS_DECL const std::string & get_name(snowflake guild_id) noexcept;
 
     /// Get the nickname of this user
     /**
     * @returns string of the username
     */
-    std::string get_username() const noexcept
+    const std::string & get_username() const noexcept
     {
-        return std::string(_name);
+        return _name;
     }
 
     /// Get the discriminator of this user
@@ -81,9 +81,9 @@ public:
     /**
     * @returns string of the discriminator
     */
-    std::string get_avatar() const noexcept
+    const std::string & get_avatar() const noexcept
     {
-        return std::string(_avatar);
+        return _avatar;
     }
 
     /// Check whether user is a bot

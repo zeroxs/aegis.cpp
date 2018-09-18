@@ -94,9 +94,9 @@ AEGIS_DECL member::guild_info & member::get_guild_info(snowflake guild_id) noexc
     return g->second;
 }
 
-AEGIS_DECL std::string member::get_name(snowflake guild_id) noexcept
+AEGIS_DECL const std::string & member::get_name(snowflake guild_id) noexcept
 {
-    auto g = get_guild_info(guild_id);
+    auto & g = get_guild_info(guild_id);
     return g.nickname;
 }
 
