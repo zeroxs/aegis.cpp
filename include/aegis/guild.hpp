@@ -134,6 +134,15 @@ public:
     /**
      * @param _member Pointer to member object
      */
+    int64_t base_permissions() const noexcept
+    {
+        return base_permissions(self());
+    }
+
+    /// Get base guild permissions for self
+/**
+ * @param _member Pointer to member object
+ */
     int64_t base_permissions(member * _member) const noexcept
     {
         return base_permissions(*_member);
@@ -961,6 +970,33 @@ public:
      * @returns Pointer to channel or nullptr
      */
     AEGIS_DECL channel * find_channel(snowflake channel_id) const noexcept;
+
+    /// Obtain map of channels
+    /**
+     * @returns unordered_map<snowflake, channel*> of channels
+     */
+    const std::unordered_map<snowflake, channel*> & get_channels() const noexcept
+    {
+        return channels;
+    }
+
+    /// Obtain map of members
+    /**
+     * @returns unordered_map<snowflake, member*> of members
+     */
+    const std::unordered_map<snowflake, member*> & get_members() const noexcept
+    {
+        return members;
+    }
+
+    /// Obtain map of roles
+    /**
+     * @returns unordered_map<snowflake, gateway::objects::role> of roles
+     */
+    const std::unordered_map<snowflake, gateway::objects::role> & get_roles() const noexcept
+    {
+        return roles;
+    }
 
     shared_mutex & mtx()
     {
