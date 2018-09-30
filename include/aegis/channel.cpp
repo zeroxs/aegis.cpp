@@ -221,7 +221,8 @@ AEGIS_DECL std::future<rest::rest_reply> channel::bulk_delete_message(std::error
 
 AEGIS_DECL std::future<rest::rest_reply> channel::modify_channel(std::error_code & ec, lib::optional<std::string> _name, lib::optional<int> _position, lib::optional<std::string> _topic,
                                     lib::optional<bool> _nsfw, lib::optional<int> _bitrate, lib::optional<int> _user_limit,
-                                    lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites, lib::optional<snowflake> _parent_id)
+                                    lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites, lib::optional<snowflake> _parent_id,
+                                    lib::optional<int> _rate_limit_per_user)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_channels())
@@ -262,6 +263,8 @@ AEGIS_DECL std::future<rest::rest_reply> channel::modify_channel(std::error_code
     }
     if (_parent_id.has_value())//VIP only
         obj["parent_id"] = _parent_id.value();
+    if (_rate_limit_per_user.has_value())
+        obj["rate_limit_per_user"] = _rate_limit_per_user.value();
 
     ec = error_code();
     return post_task({ fmt::format("/channels/{}", channel_id), rest::Patch, obj.dump() });

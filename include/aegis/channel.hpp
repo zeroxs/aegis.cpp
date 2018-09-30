@@ -267,7 +267,8 @@ public:
      */
     AEGIS_DECL std::future<rest::rest_reply> modify_channel(std::error_code & ec, lib::optional<std::string> _name = {}, lib::optional<int> _position = {}, lib::optional<std::string> _topic = {},
                         lib::optional<bool> _nsfw = {}, lib::optional<int> _bitrate = {}, lib::optional<int> _user_limit = {},
-                        lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, lib::optional<snowflake> _parent_id = {});
+                        lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, lib::optional<snowflake> _parent_id = {},
+                        lib::optional<int> _rate_limit_per_user = {});
 
     /// Modify this channel (all parameters optional)
     /**
@@ -284,10 +285,11 @@ public:
      */
     std::future<rest::rest_reply> modify_channel(lib::optional<std::string> _name = {}, lib::optional<int> _position = {}, lib::optional<std::string> _topic = {},
                         lib::optional<bool> _nsfw = {}, lib::optional<int> _bitrate = {}, lib::optional<int> _user_limit = {},
-                        lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, lib::optional<snowflake> _parent_id = {})
+                        lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, lib::optional<snowflake> _parent_id = {},
+                        lib::optional<int> _rate_limit_per_user = {})
     {
         std::error_code ec;
-        auto res = modify_channel(ec, _name, _position, _topic, _nsfw, _bitrate, _user_limit, _permission_overwrites, _parent_id);
+        auto res = modify_channel(ec, _name, _position, _topic, _nsfw, _bitrate, _user_limit, _permission_overwrites, _parent_id, _rate_limit_per_user);
         if (ec)
             throw ec;
         return res;
@@ -718,6 +720,7 @@ private:
     uint16_t bitrate = 0; /**< Bit rate of voice channel */
     uint16_t user_limit = 0; /**< User limit of voice channel */
     std::unordered_map<int64_t, gateway::objects::permission_overwrite> overrides; /**< Snowflake map of user/role to permission overrides */
+    uint16_t rate_limit_per_user = 0; /**< Limit of how many seconds sent messages must have between each */
 #endif
     asio::io_context & _io_context;
     mutable shared_mutex _m;
