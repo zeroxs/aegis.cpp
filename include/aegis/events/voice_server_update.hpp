@@ -32,14 +32,14 @@ struct voice_server_update
     std::string endpoint;
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, voice_server_update& m)
 {
     m.token = j["token"];
     m.guild_id = j["guild_id"];
     m.endpoint = j["endpoint"];
 }
+/// \endcond
 
 }
 

@@ -61,8 +61,7 @@ struct channel_gw
     snowflake parent_id;//? /**<\todo Needs documentation */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, channel_gw& m)
 {
     m.channel_id = j["id"];
@@ -98,9 +97,9 @@ inline void from_json(const nlohmann::json& j, channel_gw& m)
         for (const auto & i : j["recipients"])
             m.recipients.push_back(i);
 }
+/// \endcond
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const channel_gw& m)
 {
     if (m.channel_id)
@@ -138,6 +137,7 @@ inline void to_json(nlohmann::json& j, const channel_gw& m)
         for (auto i : m.recipients)
             j["recipients"].push_back(i);
 }
+/// \endcond
 
 }
 

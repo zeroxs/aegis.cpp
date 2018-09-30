@@ -108,8 +108,7 @@ public:
     std::vector<field> fields; /**<\todo Needs documentation */ // Limit: 25 name:256 value:1024
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, embed& m)
 {
     if (j.count("title") && !j["title"].is_null())
@@ -138,9 +137,9 @@ inline void from_json(const nlohmann::json& j, embed& m)
         for (const auto & _field : j["fields"])
             m.fields.push_back(_field);
 }
+/// \endcond
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const embed& m)
 {
     j["title"] = m.title;
@@ -157,6 +156,7 @@ inline void to_json(nlohmann::json& j, const embed& m)
     for (const auto & _field : m.fields)
         j["fields"].push_back(_field);
 }
+/// \endcond
 
 }
 

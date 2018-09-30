@@ -31,19 +31,19 @@ struct voice_state
 
 };
 
-/**\todo Incomplete. Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, voice_state& m)
 {
 
 }
+/// \endcond
 
-/**\todo Incomplete. Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const voice_state& m)
 {
 
 }
+/// \endcond
 
 }
 

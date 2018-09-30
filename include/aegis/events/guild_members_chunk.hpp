@@ -26,18 +26,16 @@ namespace gateway
 namespace events
 {
 
-/**\todo Needs documentation
- */
+/// Reply to a Request Guild Members request
 struct guild_members_chunk
 {
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
-    snowflake guild_id; /**<\todo Needs documentation */
-    std::vector<objects::guild_member> members; /**<\todo Needs documentation */
+    snowflake guild_id; /**< Snowflake of guild */
+    std::vector<objects::guild_member> members; /** Array of guild members */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, guild_members_chunk& m)
 {
     m.guild_id = j["guild_id"];
@@ -45,6 +43,7 @@ inline void from_json(const nlohmann::json& j, guild_members_chunk& m)
         for (const auto & i : j["members"])
             m.members.push_back(i);
 }
+/// \endcond
 
 }
 

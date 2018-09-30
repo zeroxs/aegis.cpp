@@ -32,8 +32,7 @@ struct secret
     std::string match;
 };
 
-/**\todo Incomplete. Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, secret& m)
 {
     if (j.count("join") && !j["join"].is_null())
@@ -43,9 +42,9 @@ inline void from_json(const nlohmann::json& j, secret& m)
     if (j.count("match") && !j["match"].is_null())
         m.match = j["match"].get<std::string>();
 }
+/// \endcond
 
-/**\todo Incomplete. Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const secret& m)
 {
     if (!m.join.empty())
@@ -55,6 +54,7 @@ inline void to_json(nlohmann::json& j, const secret& m)
     if (!m.match.empty())
         j["match"] = m.match;
 }
+/// \endcond
 
 }
 

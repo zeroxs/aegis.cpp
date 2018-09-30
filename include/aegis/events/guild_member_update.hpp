@@ -25,20 +25,18 @@ namespace gateway
 namespace events
 {
 
-/**\todo Needs documentation
- */
+/// Sent when a guild member is updated
 struct guild_member_update
 {
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
-    objects::user _user; /**<\todo Needs documentation */
-    snowflake guild_id = 0; /**<\todo Needs documentation */
-    std::vector<snowflake> roles; /**<\todo Needs documentation */
-    std::string nick; /**<\todo Needs documentation */
+    objects::user _user; /**< User that was updated */
+    snowflake guild_id; /**< Snowflake of guild */
+    std::vector<snowflake> roles; /**< Array of roles the user has */
+    std::string nick; /**< Nickname the user currently has (if any) */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, guild_member_update& m)
 {
     m._user = j["user"];
@@ -50,6 +48,7 @@ inline void from_json(const nlohmann::json& j, guild_member_update& m)
         for (const auto & i : j["roles"])
             m.roles.push_back(i);
 }
+/// \endcond
 
 }
 

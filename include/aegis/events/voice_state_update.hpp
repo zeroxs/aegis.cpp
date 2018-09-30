@@ -38,8 +38,7 @@ struct voice_state_update
     bool suppress = false;
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, voice_state_update& m)
 {
     if (j.count("guild_id") && !j["guild_id"].is_null())
@@ -53,6 +52,7 @@ inline void from_json(const nlohmann::json& j, voice_state_update& m)
     m.self_mute = j["self_mute"];
     m.suppress = j["suppress"];
 }
+/// \endcond
 
 }
 

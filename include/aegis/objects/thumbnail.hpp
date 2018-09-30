@@ -33,8 +33,7 @@ struct thumbnail
     int32_t width = 0; /**<\todo Needs documentation */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, thumbnail& m)
 {
     if (j.count("url"))
@@ -46,9 +45,9 @@ inline void from_json(const nlohmann::json& j, thumbnail& m)
     if (j.count("width") && !j["width"].is_null())
         m.width = j["width"];
 }
+/// \endcond
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const thumbnail& m)
 {
     j["url"] = m.url;
@@ -56,6 +55,7 @@ inline void to_json(nlohmann::json& j, const thumbnail& m)
     j["height"] = m.height;
     j["width"] = m.width;
 }
+/// \endcond
 
 }
 

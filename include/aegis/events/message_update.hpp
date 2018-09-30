@@ -41,12 +41,12 @@ struct message_update
 #endif
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, message_update& m)
 {
     m.msg = j;
 }
+/// \endcond
 
 }
 

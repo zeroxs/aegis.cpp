@@ -51,8 +51,7 @@ struct permission_overwrite
     int64_t deny = 0; /**<\todo Needs documentation */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, permission_overwrite& m)
 {
     m.id = j["id"];
@@ -61,9 +60,9 @@ inline void from_json(const nlohmann::json& j, permission_overwrite& m)
     m.allow = j["allow"];
     m.deny = j["deny"];
 }
+/// \endcond
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const permission_overwrite& m)
 {
     j["id"] = m.id;
@@ -71,6 +70,7 @@ inline void to_json(nlohmann::json& j, const permission_overwrite& m)
     j["allow"] = m.allow;
     j["deny"] = m.deny;
 }
+/// \endcond
 
 }
 

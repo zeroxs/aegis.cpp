@@ -75,8 +75,7 @@ struct guild_gw
 };
 
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, guild_gw& m)
 {
     if (j.count("id") && !j["id"].is_null())
@@ -144,13 +143,14 @@ inline void from_json(const nlohmann::json& j, guild_gw& m)
         for (const auto & _feature : j["features"])
             m.features.push_back(_feature);
 }
+/// \endcond
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const guild_gw& m)
 {
 
 }
+/// \endcond
 
 }
 

@@ -25,21 +25,20 @@ namespace gateway
 namespace events
 {
 
-/**\todo Needs documentation
- */
+/// Sent when the bot is added to a new guild or when recovering from an outage
 struct guild_create
 {
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
-    objects::guild_gw _guild; /**<\todo Needs documentation */
+    objects::guild_gw _guild; /**< guild object */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, guild_create& m)
 {
     m._guild = j;
 }
+/// \endcond
 
 }
 

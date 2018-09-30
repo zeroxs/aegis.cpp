@@ -31,8 +31,7 @@ struct timestamp
     int64_t end;
 };
 
-/**\todo Incomplete. Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, timestamp& m)
 {
     if (j.count("start") && !j["start"].is_null())
@@ -40,9 +39,9 @@ inline void from_json(const nlohmann::json& j, timestamp& m)
     if (j.count("end") && !j["end"].is_null())
         m.end = j["end"];
 }
+/// \endcond
 
-/**\todo Incomplete. Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const timestamp& m)
 {
     if (m.start != 0)
@@ -50,6 +49,7 @@ inline void to_json(nlohmann::json& j, const timestamp& m)
     if (m.end != 0)
         j["end"] = m.end;
 }
+/// \endcond
 
 }
 

@@ -21,19 +21,18 @@ namespace gateway
 namespace events
 {
 
-/**\todo Needs documentation
- */
+/// Sent when channel pins are updated in a channel
 struct channel_pins_update
 {
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, channel_pins_update& m)
 {
 }
+/// \endcond
 
 }
 

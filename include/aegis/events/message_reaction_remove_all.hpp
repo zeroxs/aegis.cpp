@@ -29,11 +29,11 @@ struct message_reaction_remove_all
     core * bot = nullptr; /**< Pointer to the main bot object */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, message_reaction_remove_all& m)
 {
 }
+/// \endcond
 
 }
 

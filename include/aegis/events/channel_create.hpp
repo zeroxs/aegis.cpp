@@ -12,7 +12,6 @@
 #include "aegis/config.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/objects/channel.hpp"
-#include "aegis/fwd.hpp"
 #include <string>
 #include <vector>
 
@@ -25,21 +24,20 @@ namespace gateway
 namespace events
 {
 
-/**\todo Needs documentation
- */
+/// Channel object sent over the gateway on create
 struct channel_create
 {
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
-    objects::channel_gw _channel; /**<\todo Needs documentation */
+    objects::channel_gw _channel; /**< gateway channel object */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, channel_create& m)
 {
     m._channel = j;
 }
+/// \endcond
 
 }
 

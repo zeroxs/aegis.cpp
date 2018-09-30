@@ -25,21 +25,20 @@ namespace gateway
 namespace events
 {
 
-/**\todo Needs documentation
- */
+/// Sent when a new member joins the guild
 struct guild_member_add
 {
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
-    objects::guild_member _member_data; /**<\todo Needs documentation */
+    objects::guild_member _member; /**< User being added to the guild */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, guild_member_add& m)
 {
-    m._member_data = j;
+    m._member = j;
 }
+/// \endcond
 
 }
 

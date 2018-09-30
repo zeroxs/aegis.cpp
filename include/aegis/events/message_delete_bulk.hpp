@@ -21,19 +21,18 @@ namespace gateway
 namespace events
 {
 
-/**\todo Needs documentation
- */
+/// Sent when many messages are deleted at once
 struct message_delete_bulk
 {
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, message_delete_bulk& m)
 {
 }
+/// \endcond
 
 }
 

@@ -32,8 +32,7 @@ struct party
     int32_t max_size = 0;
 };
 
-/**\todo Incomplete. Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, party& m)
 {
     if (j.count("id") && !j["id"].is_null())
@@ -45,9 +44,9 @@ inline void from_json(const nlohmann::json& j, party& m)
         m.max_size = size.at(1).get<int32_t>();
     }
 }
+/// \endcond
 
-/**\todo Incomplete. Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const party& m)
 {
     if (!m.id.empty())
@@ -59,6 +58,7 @@ inline void to_json(nlohmann::json& j, const party& m)
         size.at(1) = m.max_size;
     }
 }
+/// \endcond
 
 }
 

@@ -32,8 +32,7 @@ namespace gateway
 namespace objects
 {
 
-/**\todo Needs documentation
- */
+/// Type of message
 enum message_type
 {
     Default = 0,
@@ -423,8 +422,7 @@ private:
     snowflake _author_id = 0; /**< snowflake of the author of this message */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, message& m)
 {
     m._message_id = j["id"];
@@ -470,9 +468,9 @@ inline void from_json(const nlohmann::json& j, message& m)
         for (const auto & _reaction : j["reactions"])
             m.reactions.push_back(_reaction);
 }
+/// \endcond
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const message& m)
 {
     j["id"] = m._message_id;
@@ -499,6 +497,7 @@ inline void to_json(nlohmann::json& j, const message& m)
         for (const auto & _reaction : m.reactions)
             j["reactions"].push_back(_reaction);
 }
+/// \endcond
 
 }
 

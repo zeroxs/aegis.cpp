@@ -38,8 +38,7 @@ struct guild_member
     bool mute = false; /**<\todo Needs documentation */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, guild_member& m)
 {
     m._user = j["user"];
@@ -57,6 +56,7 @@ inline void from_json(const nlohmann::json& j, guild_member& m)
     if (j.count("mute"))
         m.mute = j["mute"];
 }
+/// \endcond
 
 }
 

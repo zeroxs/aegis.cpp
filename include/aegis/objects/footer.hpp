@@ -32,8 +32,7 @@ struct footer
     std::string proxy_icon_url; /**<\todo Needs documentation */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, footer& m)
 {
     if (j.count("text") && !j["text"].is_null())
@@ -43,15 +42,16 @@ inline void from_json(const nlohmann::json& j, footer& m)
     if (j.count("proxy_icon_url") && !j["proxy_icon_url"].is_null())
         m.proxy_icon_url = j["proxy_icon_url"];
 }
+/// \endcond
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const footer& m)
 {
     j["text"] = m.text;
     j["icon_url"] = m.icon_url;
     j["proxy_icon_url"] = m.proxy_icon_url;
 }
+/// \endcond
 
 }
 

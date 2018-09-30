@@ -31,8 +31,7 @@ struct provider
     std::string url; /**<\todo Needs documentation */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, provider& m)
 {
     if (j.count("name") && !j["name"].is_null())
@@ -40,14 +39,15 @@ inline void from_json(const nlohmann::json& j, provider& m)
     if (j.count("url") && !j["url"].is_null())
         m.url = j["url"];
 }
+/// \endcond
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const provider& m)
 {
     j["name"] = m.name;
     j["url"] = m.url;
 }
+/// \endcond
 
 }
 

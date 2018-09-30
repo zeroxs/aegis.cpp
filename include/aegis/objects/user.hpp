@@ -79,11 +79,7 @@ private:
     bool verified = false;
 };
 
-/// Parse json into user object
-/**
- * @param j const reference to json object
- * @param m reference to user object
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, user& m)
 {
     m.user_id = j["id"];
@@ -102,12 +98,9 @@ inline void from_json(const nlohmann::json& j, user& m)
     if (j.count("verified") && !j["verified"].is_null())
         m.verified = j["verified"];
 }
+/// \endcond
 
-/// Dump user object into json
-/**
- * @param j reference to json object
- * @param m const reference to user object
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const user& m)
 {
     j["id"] = m.user_id;
@@ -118,6 +111,7 @@ inline void to_json(nlohmann::json& j, const user& m)
     j["mfa_enabled"] = m.mfa_enabled;
     j["verified"] = m.verified;
 }
+/// \endcond
 
 }
 

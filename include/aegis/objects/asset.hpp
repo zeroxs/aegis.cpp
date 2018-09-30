@@ -33,8 +33,7 @@ struct asset
     std::string small_text;
 };
 
-/**\todo Incomplete. Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, asset& m)
 {
     if (j.count("large_image") && !j["large_image"].is_null())
@@ -46,9 +45,9 @@ inline void from_json(const nlohmann::json& j, asset& m)
     if (j.count("small_text") && !j["small_text"].is_null())
         m.small_text = j["small_text"].get<std::string>();
 }
+/// \endcond
 
-/**\todo Incomplete. Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const asset& m)
 {
     if (!m.large_image.empty())
@@ -60,6 +59,7 @@ inline void to_json(nlohmann::json& j, const asset& m)
     if (!m.small_text.empty())
         j["small_text"] = m.small_text;
 }
+/// \endcond
 
 }
 

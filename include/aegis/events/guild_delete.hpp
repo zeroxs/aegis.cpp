@@ -24,23 +24,22 @@ namespace gateway
 namespace events
 {
 
-/**\todo Needs documentation
- */
+/// Sent when the bot is removed from a guild
 struct guild_delete
 {
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
-    snowflake guild_id = 0; /**<\todo Needs documentation */
-    bool unavailable = true; /**<\todo Needs documentation */
+    snowflake guild_id = 0; /**< Snowflake of the guild */
+    bool unavailable = true; /**< Whether guild is unavailable due to an outage */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, guild_delete& m)
 {
     m.guild_id = j["id"];
     m.unavailable = j["unavailable"];
 }
+/// \endcond
 
 }
 

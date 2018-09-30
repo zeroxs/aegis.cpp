@@ -63,8 +63,7 @@ struct activity
     activity_flags flags;
 };
 
-/**\todo Incomplete. Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, activity& m)
 {
     if (j.count("name") && !j["name"].is_null())
@@ -92,9 +91,9 @@ inline void from_json(const nlohmann::json& j, activity& m)
     if (j.count("flags") && !j["flags"].is_null())
         m.flags = j["flags"];
 }
+/// \endcond
 
-/**\todo Incomplete. Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const activity& m)
 {
     j["name"] = m.name;
@@ -119,6 +118,7 @@ inline void to_json(nlohmann::json& j, const activity& m)
         }
     }
 }
+/// \endcond
 
 }
 

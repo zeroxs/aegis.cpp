@@ -40,8 +40,7 @@ struct presence_update
     presence::user_status status = presence::Online;
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, presence_update& m)
 {
     m._user = j["user"];
@@ -66,6 +65,7 @@ inline void from_json(const nlohmann::json& j, presence_update& m)
         for (const auto & _role : j["roles"])
             m.roles.push_back(_role);
 }
+/// \endcond
 
 }
 

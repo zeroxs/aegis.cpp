@@ -35,8 +35,7 @@ struct field
     bool is_inline = false; /**<\todo Needs documentation */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, field& m)
 {
     if (j.count("name"))
@@ -46,15 +45,16 @@ inline void from_json(const nlohmann::json& j, field& m)
     if (j.count("inline"))
         m.is_inline = j["inline"];
 }
+/// \endcond
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const field& m)
 {
     j["name"] = m.name;
     j["value"] = m.value;
     j["inline"] = m.is_inline;
 }
+/// \endcond
 
 }
 

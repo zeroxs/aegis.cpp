@@ -38,12 +38,12 @@ struct user_update
 #endif
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, user_update& m)
 {
     m._user = j;
 }
+/// \endcond
 
 }
 

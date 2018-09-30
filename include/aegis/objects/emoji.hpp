@@ -36,8 +36,7 @@ struct emoji
     bool managed = false; /**<\todo Needs documentation */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, emoji& m)
 {
     m.emoji_id = j["id"];
@@ -53,9 +52,9 @@ inline void from_json(const nlohmann::json& j, emoji& m)
         for (const auto & i : j["roles"])
             m.roles.push_back(i);
 }
+/// \endcond
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const emoji& m)
 {
     j["id"] = m.emoji_id;
@@ -66,6 +65,7 @@ inline void to_json(nlohmann::json& j, const emoji& m)
     for (const auto & i : m.roles)
         j["roles"].push_back(i);
 }
+/// \endcond
 
 }
 

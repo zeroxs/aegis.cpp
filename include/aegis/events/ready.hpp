@@ -42,8 +42,7 @@ struct ready
     std::vector<std::string> _trace; /**<\todo Needs documentation */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, ready& m)
 {
     m._user = j["user"];
@@ -57,9 +56,9 @@ inline void from_json(const nlohmann::json& j, ready& m)
         for (const auto & i : j["_trace"])
             m._trace.push_back(i);
 }
+/// \endcond
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const ready& m)
 {
     j["user"] = m._user;
@@ -73,6 +72,7 @@ inline void to_json(nlohmann::json& j, const ready& m)
         for (const auto & i : m._trace)
             j["_trace"].push_back(i);
 }
+/// \endcond
 
 }
 

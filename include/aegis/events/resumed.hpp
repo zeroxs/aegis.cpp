@@ -34,8 +34,7 @@ struct resumed
     std::vector<std::string> _trace; /**<\todo Needs documentation */
 };
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, resumed& m)
 {
     if (j.count("_trace") && !j["_trace"].is_null())
@@ -43,14 +42,14 @@ inline void from_json(const nlohmann::json& j, resumed& m)
             m._trace.push_back(i);
 }
 
-/**\todo Needs documentation
- */
+/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const resumed& m)
 {
     if (!m._trace.empty())
         for (auto i : m._trace)
             j["_trace"].push_back(i);
 }
+/// \endcond
 
 }
 
