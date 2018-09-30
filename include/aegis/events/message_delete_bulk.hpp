@@ -26,11 +26,18 @@ struct message_delete_bulk
 {
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
+    snowflake channel_id; /**< Snowflake of channel */
+    snowflake guild_id; /**< Snowflake of guild */
+    std::vector<snowflake> ids; /**< Array of snowflake of deleted messages */
 };
 
 /// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, message_delete_bulk& m)
 {
+    m.channel_id = j["channel_id"];
+    m.guild_id = j["guild_id"];
+    for (const auto & id : j["ids"])
+        m.ids.push_back(id);
 }
 /// \endcond
 
