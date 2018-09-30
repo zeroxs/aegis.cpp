@@ -33,7 +33,7 @@ struct message_delete
     explicit message_delete(snowflake m, channel * c) : id(m), _channel(c) {};
     channel * const _channel = nullptr; /**<\todo Needs documentation */
 #else
-    explicit message_delete(snowflake m) : message_id(m) {}
+    explicit message_delete(snowflake m) : id(m) {}
 #endif
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
