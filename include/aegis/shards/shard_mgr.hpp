@@ -172,6 +172,11 @@ public:
 
     AEGIS_DECL shard & get_shard(uint16_t shard_id);
 
+    AEGIS_DECL const std::vector<std::unique_ptr<shard>> & get_shards() const noexcept
+    {
+        return _shards;
+    }
+
     AEGIS_DECL void close(shard * _shard, int32_t code = 1001, const std::string & reason = "", shard_status connection_state = shard_status::Closed);
 
     void close(shard & _shard, int32_t code = 1001, const std::string & reason = "", shard_status connection_state = shard_status::Closed)
