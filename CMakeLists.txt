@@ -75,8 +75,8 @@ set_target_properties(aegis_static PROPERTIES CXX_STANDARD 14)
 set_target_properties(aegis_static PROPERTIES CXX_STANDARD_REQUIRED ON)
 set_target_properties(aegis_static PROPERTIES LINKER_LANGUAGE CXX)
 
-target_compile_definitions(aegis PUBLIC -DAEGIS_DYN_LINK ${AEGIS_FLAGS})
-target_compile_definitions(aegis_static PUBLIC -DAEGIS_SEPARATE_COMPILATION ${AEGIS_FLAGS})
+target_compile_definitions(aegis PUBLIC AEGIS_DYN_LINK AEGIS_SOURCE ${AEGIS_FLAGS})
+target_compile_definitions(aegis_static PUBLIC AEGIS_SEPARATE_COMPILATION ${AEGIS_FLAGS})
 
 target_link_libraries(aegis PUBLIC ssl crypto z dl Threads::Threads)
 target_link_libraries(aegis_static INTERFACE ssl crypto z dl Threads::Threads)
@@ -103,6 +103,19 @@ target_include_directories(aegis_static
     ${AEGIS_PACKAGE_INCLUDE_DIRS}
 )
 
+if(MSVC)
+    add_compile_options("/W3" "$<$<CONFIG:RELEASE>:/O2>")
+else()
+	set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "-Wl,--no-undefined")
+	set(AEGIS_CFLAGS -Wall -Wno-sign-compare -Wno-unknown-pragmas -Wno-unused-variable -Wno-noexcept-type -Wno-unused-result)
+    add_compile_options("-Wall" "-Wextra" "-Werror" "$<$<CONFIG:RELEASE>:-O3>")
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        add_compile_options("-stdlib=libc++")
+    else()
+        # nothing special for gcc at the moment
+    endif()
+endif()
+
 if ((CXX_STANDARD EQUAL "17") OR (CMAKE_CXX_STANDARD EQUAL "17"))
 target_compile_features(aegis PUBLIC cxx_std_17)
 target_compile_features(aegis_static PUBLIC cxx_std_17)
@@ -111,8 +124,6 @@ target_compile_features(aegis PUBLIC cxx_std_14)
 target_compile_features(aegis_static PUBLIC cxx_std_14)
 endif ()
 
-set(AEGIS_CFLAGS -Wall -Wno-sign-compare -Wno-unknown-pragmas -Wno-unused-variable -Wno-noexcept-type -Wno-unused-result)
-
 target_compile_options(aegis PRIVATE ${AEGIS_CFLAGS})
 target_compile_options(aegis_static PRIVATE ${AEGIS_CFLAGS})
 
@@ -120,7 +131,6 @@ include(GNUInstallDirs)
 set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Aegis)
 
 set_target_properties(aegis PROPERTIES EXPORT_NAME Aegis)
-SET(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "-Wl,--no-undefined")
 
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
@@ -203,7 +213,7 @@ if (BUILD_EXAMPLES)
 add_executable(aegis_example src/example_main.cpp src/example.cpp)
 add_executable(aegis_minimal src/minimal.cpp)
 add_executable(aegis_headeronly_no_cache src/minimal.cpp)
-target_compile_definitions(aegis_headeronly_no_cache PRIVATE -DAEGIS_DISABLE_ALL_CACHE)
+target_compile_definitions(aegis_headeronly_no_cache PRIVATE AEGIS_DISABLE_ALL_CACHE)
 
 set_property(TARGET aegis_example PROPERTY CXX_STANDARD 14)
 set_property(TARGET aegis_example PROPERTY CXX_STANDARD_REQUIRED ON)
@@ -213,9 +223,15 @@ set_property(TARGET aegis_headeronly_no_cache PROPERTY CXX_STANDARD 14)
 set_property(TARGET aegis_headeronly_no_cache PROPERTY CXX_STANDARD_REQUIRED ON)
 
 
-target_link_libraries(aegis_example PRIVATE aegis ssl crypto z dl Threads::Threads)
-target_link_libraries(aegis_minimal PRIVATE aegis ssl crypto z dl Threads::Threads)
-target_link_libraries(aegis_headeronly_no_cache PRIVATE aegis ssl crypto z dl Threads::Threads)
+if(MSVC)
+	target_link_libraries(aegis_example PRIVATE aegis ssleay32 libeay32 zlib Threads::Threads)
+	target_link_libraries(aegis_minimal PRIVATE aegis ssleay32 libeay32 zlib Threads::Threads)
+	target_link_libraries(aegis_headeronly_no_cache PRIVATE aegis ssleay32 libeay32 crypto zlib Threads::Threads)
+else()
+	target_link_libraries(aegis_example PRIVATE aegis ssl crypto z dl Threads::Threads)
+	target_link_libraries(aegis_minimal PRIVATE aegis ssl crypto z dl Threads::Threads)
+	target_link_libraries(aegis_headeronly_no_cache PRIVATE aegis ssl crypto z dl Threads::Threads)
+endif()
 
 target_include_directories(aegis_example
   PUBLIC
