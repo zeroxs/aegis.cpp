@@ -417,30 +417,30 @@ public:
     void set_on_message_create_dm(message_create_t cb) { i_message_create_dm = cb; }/**< MESSAGE_CREATE callback for direct messages */
     void set_on_message_update(message_update_t cb) { i_message_update = cb; }/**< MESSAGE_UPDATE callback */
     void set_on_message_delete(message_delete_t cb) { i_message_delete = cb; }/**< MESSAGE_DELETE callback */
-    void set_on_message_delete_bulk(message_delete_bulk_t cb) { i_message_delete_bulk = cb; }/**<\todo MESSAGE_DELETE_BULK callback */
+    void set_on_message_delete_bulk(message_delete_bulk_t cb) { i_message_delete_bulk = cb; }/**< MESSAGE_DELETE_BULK callback */
     void set_on_guild_create(guild_create_t cb) { i_guild_create = cb; }/**< GUILD_CREATE callback */
     void set_on_guild_update(guild_update_t cb) { i_guild_update = cb; }/**< GUILD_UPDATE callback */
     void set_on_guild_delete(guild_delete_t cb) { i_guild_delete = cb; }/**< GUILD_DELETE callback */
     void set_on_user_update(user_update_t cb) { i_user_update = cb; }/**< USER_UPDATE callback */
     void set_on_ready(ready_t cb) { i_ready = cb; }/**< READY callback */
     void set_on_resumed(resumed_t cb) { i_resumed = cb; }/**< RESUME callback */
-    void set_on_channel_create(channel_create_t cb) { i_channel_create = cb; }/**<\todo CHANNEL_CREATE callback */
-    void set_on_channel_update(channel_update_t cb) { i_channel_update = cb; }/**<\todo CHANNEL_UPDATE callback */
-    void set_on_channel_delete(channel_delete_t cb) { i_channel_delete = cb; }/**<\todo CHANNEL_DELETE callback */
+    void set_on_channel_create(channel_create_t cb) { i_channel_create = cb; }/**< CHANNEL_CREATE callback */
+    void set_on_channel_update(channel_update_t cb) { i_channel_update = cb; }/**< CHANNEL_UPDATE callback */
+    void set_on_channel_delete(channel_delete_t cb) { i_channel_delete = cb; }/**< CHANNEL_DELETE callback */
     void set_on_guild_ban_add(guild_ban_add_t cb) { i_guild_ban_add = cb; }/**< GUILD_BAN_ADD callback */
     void set_on_guild_ban_remove(guild_ban_remove_t cb) { i_guild_ban_remove = cb; }/**< GUILD_BAN_REMOVE callback */
-    void set_on_guild_emojis_update(guild_emojis_update_t cb) { i_guild_emojis_update = cb; }/**<\todo GUILD_EMOJIS_UPDATE callback */
-    void set_on_guild_integrations_update(guild_integrations_update_t cb) { i_guild_integrations_update = cb; }/**<\todo GUILD_INTEGRATIONS_UPDATE callback */
+    void set_on_guild_emojis_update(guild_emojis_update_t cb) { i_guild_emojis_update = cb; }/**< GUILD_EMOJIS_UPDATE callback */
+    void set_on_guild_integrations_update(guild_integrations_update_t cb) { i_guild_integrations_update = cb; }/**< GUILD_INTEGRATIONS_UPDATE callback */
     void set_on_guild_member_add(guild_member_add_t cb) { i_guild_member_add = cb; }/**< GUILD_MEMBER_ADD callback */
     void set_on_guild_member_remove(guild_member_remove_t cb) { i_guild_member_remove = cb; }/**< GUILD_MEMBER_REMOVE callback */
     void set_on_guild_member_update(guild_member_update_t cb) { i_guild_member_update = cb; }/**< GUILD_MEMBER_UPDATE callback */
     void set_on_guild_member_chunk(guild_members_chunk_t cb) { i_guild_members_chunk = cb; }/**< GUILD_MEMBERS_CHUNK callback */
-    void set_on_guild_role_create(guild_role_create_t cb) { i_guild_role_create = cb; }/**<\todo GUILD_ROLE_CREATE callback */
-    void set_on_guild_role_update(guild_role_update_t cb) { i_guild_role_update = cb; }/**<\todo GUILD_ROLE_UPDATE callback */
-    void set_on_guild_role_delete(guild_role_delete_t cb) { i_guild_role_delete = cb; }/**<\todo GUILD_ROLE_DELETE callback */
+    void set_on_guild_role_create(guild_role_create_t cb) { i_guild_role_create = cb; }/**< GUILD_ROLE_CREATE callback */
+    void set_on_guild_role_update(guild_role_update_t cb) { i_guild_role_update = cb; }/**< GUILD_ROLE_UPDATE callback */
+    void set_on_guild_role_delete(guild_role_delete_t cb) { i_guild_role_delete = cb; }/**< GUILD_ROLE_DELETE callback */
     void set_on_presence_update(presence_update_t cb) { i_presence_update = cb; }/**< PRESENCE_UPDATE callback */
-    void set_on_voice_state_update(voice_state_update_t cb) { i_voice_state_update = cb; }/**<\todo VOICE_STATE_UPDATE callback */
-    void set_on_voice_server_update(voice_server_update_t cb) { i_voice_server_update = cb; }/**<\todo VOICE_SERVER_UPDATE callback */
+    void set_on_voice_state_update(voice_state_update_t cb) { i_voice_state_update = cb; }/**< VOICE_STATE_UPDATE callback */
+    void set_on_voice_server_update(voice_server_update_t cb) { i_voice_server_update = cb; }/**< VOICE_SERVER_UPDATE callback */
 
     /// Send a websocket message to a single shard
     /**

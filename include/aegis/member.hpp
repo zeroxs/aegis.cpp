@@ -34,6 +34,7 @@ using shared_mutex = std::shared_timed_mutex;
 using json = nlohmann::json;
 
 /// Stores user-specific and guild-specific attributes of users
+///\todo Maybe rename this to the more appropriate `user`?
 class member
 {
 public:
@@ -44,12 +45,12 @@ public:
     /// Member owned guild information
     struct guild_info
     {
+        snowflake id;/**< Snowflake of the guild for this data */
         std::vector<snowflake> roles;
-        std::string nickname;
-        //std::string joined_at;
-        uint64_t joined_at = 0;
-        bool deaf = false;
-        bool mute = false;
+        std::string nickname;/**< Nickname of the user in this guild */
+        uint64_t joined_at = 0;/**< Unix timestamp of when member joined this guild */
+        bool deaf = false;/**< Whether member is deafened in a voice channel */
+        bool mute = false;/**< Whether member is muted in a voice channel */
     };
 
     /// Get the nickname of this user
@@ -131,16 +132,29 @@ public:
         return _member_id;
     }
 
+    /// Get the DM channel associated with this user
+    /// DM channels are obtained when a DM is sent
+    /**
+     * @returns snowflake of DM channel
+     */
     snowflake get_dm_id() const noexcept
     {
         return _dm_id;
     }
 
-    void set_dm_id(int64_t _id) noexcept
+    /// Set the DM channel id for the user
+    /**
+     * @param _id Snowflake of DM channel for this user
+     */
+    void set_dm_id(snowflake _id) noexcept
     {
         _dm_id = _id;
     }
 
+    /// 
+    /**
+     * @returns shared_mutex The mutex for the user
+     */
     shared_mutex & mtx() noexcept
     {
         return _m;
@@ -170,6 +184,7 @@ private:
     /// requires the caller to handle locking
     AEGIS_DECL guild_info & join(snowflake guild_id);
 
+    /// remove this member from the specified guild
     void leave(snowflake guild_id)
     {
         std::unique_lock<shared_mutex> l(mtx());
