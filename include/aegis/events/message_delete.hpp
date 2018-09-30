@@ -28,9 +28,9 @@ namespace events
  */
 struct message_delete
 {
-    snowflake message_id; /**<\todo Needs documentation */
+    snowflake id; /**< Snowflake of deleted message */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    explicit message_delete(snowflake m, channel * c) : message_id(m), _channel(c) {};
+    explicit message_delete(snowflake m, channel * c) : id(m), _channel(c) {};
     channel * const _channel = nullptr; /**<\todo Needs documentation */
 #else
     explicit message_delete(snowflake m) : message_id(m) {}
