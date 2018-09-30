@@ -70,7 +70,7 @@ public:
     /**
      * @returns An channel_type enum for this channel
      */
-    const gateway::objects::channel_gw::channel_type get_type() const noexcept
+    gateway::objects::channel_gw::channel_type get_type() const noexcept
     {
         return type;
     }
@@ -673,7 +673,7 @@ public:
     /**
      * @returns A snowflake of the channel
      */
-    const snowflake get_id() const noexcept
+    snowflake get_id() const noexcept
     {
         return channel_id;
     }
@@ -682,7 +682,7 @@ public:
     /**
      * @returns A snowflake of this channel's guild
      */
-    const snowflake get_guild_id() const noexcept
+    snowflake get_guild_id() const noexcept
     {
         return guild_id;
     }
@@ -691,7 +691,7 @@ public:
     /**
      * @returns bool whether channel is a DM or belongs to a guild
      */
-    const bool is_dm() const noexcept
+    bool is_dm() const noexcept
     {
         return _guild == nullptr;
     }

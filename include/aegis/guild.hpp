@@ -180,7 +180,7 @@ public:
     /**
     * @returns A snowflake of this guild
     */
-    const snowflake get_id() const noexcept
+    snowflake get_id() const noexcept
     {
         return guild_id;
     }

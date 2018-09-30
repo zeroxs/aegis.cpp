@@ -107,7 +107,7 @@ if(MSVC)
     add_compile_options("/W3" "$<$<CONFIG:RELEASE>:/O2>")
 else()
 	set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "-Wl,--no-undefined")
-	set(AEGIS_CFLAGS -Wall -Wno-sign-compare -Wno-unknown-pragmas -Wno-unused-variable -Wno-noexcept-type -Wno-unused-result)
+	set(AEGIS_CFLAGS -Wno-sign-compare -Wno-unknown-pragmas -Wno-unused-variable -Wno-noexcept-type -Wno-unused-result -Wno-unused-parameter -Wno-unused-but-set-variable)
     add_compile_options("-Wall" "-Wextra" "-Werror" "$<$<CONFIG:RELEASE>:-O3>")
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         add_compile_options("-stdlib=libc++")
@@ -232,6 +232,10 @@ else()
 	target_link_libraries(aegis_minimal PRIVATE aegis ssl crypto z dl Threads::Threads)
 	target_link_libraries(aegis_headeronly_no_cache PRIVATE aegis ssl crypto z dl Threads::Threads)
 endif()
+
+target_compile_options(aegis_example PRIVATE ${AEGIS_CFLAGS})
+target_compile_options(aegis_minimal PRIVATE ${AEGIS_CFLAGS})
+target_compile_options(aegis_headeronly_no_cache PRIVATE ${AEGIS_CFLAGS})
 
 target_include_directories(aegis_example
   PUBLIC
