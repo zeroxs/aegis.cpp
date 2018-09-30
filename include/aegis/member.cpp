@@ -57,16 +57,12 @@ AEGIS_DECL void member::load(guild * _guild, const json & obj, shards::shard * _
 
         if (obj.count("roles") && !obj["roles"].is_null())
         {
-            if (!guilds.count(_guild->guild_id))
-            {
-                guilds.emplace(_guild->guild_id, member::guild_info());
-            }
             g_info.roles.clear();
-            g_info.roles.emplace(_guild->guild_id);//default everyone role
+            g_info.roles.emplace_back(_guild->guild_id);//default everyone role
 
             json roles = obj["roles"];
             for (auto & r : roles)
-                g_info.roles.emplace(std::stoll(r.get<std::string>()));
+                g_info.roles.emplace_back(std::stoull(r.get<std::string>()));
         }
 
         if (obj.count("nick") && !obj["nick"].is_null())
@@ -84,31 +80,45 @@ AEGIS_DECL void member::load(guild * _guild, const json & obj, shards::shard * _
 AEGIS_DECL member::guild_info & member::get_guild_info(snowflake guild_id) noexcept
 {
     std::shared_lock<shared_mutex> l(mtx());
-    auto g = guilds.find(guild_id);
+    auto g = std::find_if(std::begin(guilds), std::end(guilds), [&guild_id](const guild_info & gi)
+    {
+        if (gi.id == guild_id)
+            return true;
+        return false;
+    });
     if (g == guilds.end())
     {
-        auto g2 = guilds.emplace(guild_id, guild_info());
-        return g2.first->second;
+#if defined(AEGIS_CXX17)
+        return guilds.emplace_back(guild_info{ guild_id });
+#else
+        return *guilds.insert(guilds.end(), { guild_id });
+#endif
     }
-        //throw std::out_of_range(fmt::format("M: {} G: {} guild_info does not exist", member_id, guild_id));
-    return g->second;
+    return *g;
 }
 
 AEGIS_DECL const std::string & member::get_name(snowflake guild_id) noexcept
 {
-    auto & g = get_guild_info(guild_id);
-    return g.nickname;
+    return get_guild_info(guild_id).nickname;
 }
 
 AEGIS_DECL member::guild_info & member::join(snowflake guild_id)
 {
-    auto g = guilds.find(guild_id);
+    auto g = std::find_if(std::begin(guilds), std::end(guilds), [&guild_id](const guild_info & gi)
+    {
+        if (gi.id == guild_id)
+            return true;
+        return false;
+    });
     if (g == guilds.end())
     {
-        auto g2 = guilds.emplace(guild_id, guild_info());
-        return g2.first->second;
+#if defined(AEGIS_CXX17)
+        return guilds.emplace_back(guild_info{ guild_id });
+#else
+        return *guilds.insert(guilds.end(), { guild_id });
+#endif
     }
-    return g->second;
+    return *g;
 }
 
 AEGIS_DECL void member::load_data(gateway::objects::user mbr)

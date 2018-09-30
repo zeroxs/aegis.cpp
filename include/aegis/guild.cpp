@@ -65,7 +65,7 @@ AEGIS_DECL void guild::remove_member(snowflake member_id) noexcept
         get_bot().log->error("Unable to remove member [{}] from guild [{}] (does not exist)", member_id, guild_id);
         return;
     }
-    _member->second->guilds.erase(guild_id);
+    _member->second->leave(guild_id);
     members.erase(member_id);
 }
 
@@ -75,8 +75,14 @@ AEGIS_DECL bool guild::member_has_role(snowflake member_id, snowflake role_id) c
     auto _member = find_member(member_id);
     if (_member == nullptr)
         return false;
-    auto it = _member->guilds[guild_id].roles.find(role_id);
-    if (it != _member->guilds[guild_id].roles.end())
+    auto & gi = _member->get_guild_info(guild_id);
+    auto it = std::find_if(std::begin(gi.roles), std::end(gi.roles), [&](const snowflake & id)
+    {
+        if (id == guild_id)
+            return true;
+        return false;
+    });
+    if (it != std::end(gi.roles))
         return true;
     return false;
 }
@@ -87,10 +93,7 @@ AEGIS_DECL void guild::load_presence(const json & obj) noexcept
 
     auto _member = _find_member(user["id"]);
     if (_member == nullptr)
-    {
-        //_status->core->log->error("User doesn't exist {}", user["id"].get<std::string>());
         return;
-    }
 
     using user_status = aegis::gateway::objects::presence::user_status;
 
@@ -110,11 +113,7 @@ AEGIS_DECL void guild::load_role(const json & obj) noexcept
 {
     snowflake role_id = obj["id"];
     if (!roles.count(role_id))
-    {
-        auto r = std::make_unique<gateway::objects::role>();
-        //auto & _role = *r.get();
         roles.emplace(role_id, gateway::objects::role());
-    }
     auto & _role = roles[role_id];
     _role.role_id = role_id;
     _role.hoist = obj["hoist"];

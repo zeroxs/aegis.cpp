@@ -44,7 +44,7 @@ public:
     /// Member owned guild information
     struct guild_info
     {
-        std::set<int64_t> roles;
+        std::vector<snowflake> roles;
         std::string nickname;
         //std::string joined_at;
         uint64_t joined_at = 0;
@@ -161,7 +161,7 @@ private:
     std::string _avatar; /**< Hash of member avatar */
     bool _is_bot = false; /**< true if member is a bot */
     bool _mfa_enabled = false; /**< true if member has Two-factor authentication enabled */
-    std::unordered_map<int64_t, guild_info> guilds; /**< Map of snowflakes to member owned guild information */
+    std::vector<guild_info> guilds; /**< Vector of snowflakes to member owned guild information */
     mutable shared_mutex _m;
 
     /// requires the caller to handle locking
@@ -173,7 +173,12 @@ private:
     void leave(snowflake guild_id)
     {
         std::unique_lock<shared_mutex> l(mtx());
-        guilds.erase(guild_id);
+        guilds.erase(std::find_if(std::begin(guilds), std::end(guilds), [&guild_id](const guild_info & gi)
+        {
+            if (gi.id == guild_id)
+                return true;
+            return false;
+        }));
     }
 };
 
