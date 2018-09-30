@@ -47,7 +47,7 @@ public:
     /**
      * @returns Sequence counter specific to this shard
      */
-    const int64_t get_sequence() const noexcept
+    int64_t get_sequence() const noexcept
     {
         return _sequence;
     }
@@ -57,7 +57,7 @@ public:
      * @see core::shards
      * @returns Shard id
      */
-    const int32_t get_id() const noexcept
+    int32_t get_id() const noexcept
     {
         return _id;
     }
