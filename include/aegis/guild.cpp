@@ -78,7 +78,7 @@ AEGIS_DECL bool guild::member_has_role(snowflake member_id, snowflake role_id) c
     auto & gi = _member->get_guild_info(guild_id);
     auto it = std::find_if(std::begin(gi.roles), std::end(gi.roles), [&](const snowflake & id)
     {
-        if (id == guild_id)
+        if (id == role_id)
             return true;
         return false;
     });
