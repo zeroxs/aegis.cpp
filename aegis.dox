@@ -64,7 +64,7 @@ int main(int argc, char * argv[])
             }
         });
 
-        // start the bot with 3 async threads. the function passed is executed after
+        // start the bot with three async threads. the function passed is executed after
         // websocket gateway information is collected but before the websocket is connected
         // allowing you to change any options such as shard count
         bot.run(3, [&]
