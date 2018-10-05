@@ -38,73 +38,66 @@
 namespace aegis
 {
 
+/// Type of a work guard executor for keeping Asio services alive
+using asio_exec = asio::executor_work_guard<asio::io_context::executor_type>;
+
+/// Type of a shared pointer to an io_context work object
+using work_ptr = std::unique_ptr<asio_exec>;
+
+using json = nlohmann::json;
+using namespace std::literals;
+
+#if !defined(AEGIS_CXX17)
+template<class T>
+struct V
+{
+    static core * bot;
+    static std::unique_ptr<asio::io_context> _io_context;
+    static std::vector<std::thread> threads;
+    static work_ptr wrk;
+    static std::condition_variable cv;
+    static void shutdown()
+    {
+        cv.notify_all();
+    }
+};
+#endif
+
+#if defined(AEGIS_CXX17)
+struct internal
+{
+    static inline core * bot = nullptr;
+    static inline std::unique_ptr<asio::io_context> _io_context = nullptr;
+    static inline std::vector<std::thread> threads;
+    static inline work_ptr wrk = nullptr;
+    static inline std::condition_variable cv;
+    static inline void shutdown()
+    {
+        cv.notify_all();
+    }
+};
+#endif
+
+#if !defined(AEGIS_CXX17)
+template<class T>
+core * V<T>::bot = nullptr;
+template<class T>
+std::unique_ptr<asio::io_context> V<T>::_io_context = nullptr;
+template<class T>
+std::vector<std::thread> V<T>::threads;
+template<class T>
+work_ptr V<T>::wrk = nullptr;
+template<class T>
+std::condition_variable V<T>::cv;
+
+using internal = V<void>;
+#endif
+
 #if (AEGIS_HAS_STD_SHARED_MUTEX == 1)
 using shared_mutex = std::shared_mutex;
 #else
 using shared_mutex = std::shared_timed_mutex;
 #endif
-
-namespace rest
-{
-class rest_controller;
-
-}
-
-using json = nlohmann::json;
-using namespace std::literals;
-
-namespace gateway
-{
-
-namespace events
-{
-struct typing_start;
-struct message_create;
-struct message_update;
-struct message_delete;
-struct ready;
-struct resumed;
-struct presence_update;
-struct channel_create;
-struct channel_delete;
-struct channel_pins_update;
-struct channel_update;
-struct guild_ban_add;
-struct guild_ban_remove;
-struct guild_create;
-struct guild_delete;
-struct guild_emojis_update;
-struct guild_integrations_update;
-struct guild_member_add;
-struct guild_member_remove;
-struct guild_member_update;
-struct guild_members_chunk;
-struct guild_role_create;
-struct guild_role_delete;
-struct guild_role_update;
-struct guild_update;
-struct message_delete_bulk;
-struct message_reaction_add;
-struct message_reaction_remove;
-struct message_reaction_remove_all;
-struct user_update;
-struct voice_server_update;
-struct voice_state_update;
-struct webhooks_update;
-}
-
-namespace objects
-{
-struct channel_gw;
-struct guild_gw;
-}
-
-}
-
-class shard;
-class member;
-class channel;
-class guild;
 
 /// Primary class for managing a bot interface
 /**
@@ -113,9 +106,6 @@ class guild;
 class core
 {
 public:
-    /// Type of a pointer to the asio io_service
-    using io_service_ptr = asio::io_context *;
-
     /// Type of a pointer to the Websocket++ TLS connection
     using connection_ptr = websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr;
 
@@ -133,7 +123,13 @@ public:
      * @see spdlog::level::level_enum
      * @param loglevel The level of logging to use
      */
-    AEGIS_DECL explicit core(spdlog::level::level_enum loglevel = spdlog::level::level_enum::warn);
+    AEGIS_DECL explicit core(spdlog::level::level_enum loglevel = spdlog::level::level_enum::info, std::size_t count = 2);
+
+    AEGIS_DECL explicit core(std::unique_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel = spdlog::level::level_enum::info);
+
+    AEGIS_DECL explicit core(std::shared_ptr<spdlog::logger> _log, std::size_t count = 2);
+
+    AEGIS_DECL explicit core(std::unique_ptr<asio::io_context> _io, std::shared_ptr<spdlog::logger> _log);
 
     /// Destroys the shards, stops the asio::work object, destroys the websocket object
     AEGIS_DECL ~core();
@@ -148,10 +144,26 @@ public:
      */
     AEGIS_DECL void debug_trace(shards::shard * _shard);
 
+    AEGIS_DECL void setup_logging();
+
+    AEGIS_DECL void setup_context();
+
+    AEGIS_DECL void setup_shard_mgr();
+
     /// Get the internal (or external) io_service object
-    asio::io_context & get_io_context()
+//     asio::io_context & get_io_context()
+//     {
+//         return *_io_context;
+//     }
+
+    static asio::io_context & get_io_context()
     {
-        return *_io_context;
+        return *internal::_io_context;
+    }
+
+    static core & get_bot()
+    {
+        return *internal::bot;
     }
 
     /// Invokes a shutdown on the entire lib. Sets internal state to `Shutdown`, stops the asio::work object
@@ -212,12 +224,6 @@ public:
         lib::optional<std::vector<std::tuple<std::string, int>>> channels = {}
     );
 
-    /// Spawns and starts the specified amount of threads on the io_context
-    /**
-     * @param count Spawn `count` threads and run all on io_context object
-     */
-    AEGIS_DECL void run(std::size_t count = 0);
-
     /// Spawns and starts the default hardware hinted threads on the io_context
     /// and executes the provided functor prior to connecting the gateway
     /**
@@ -225,23 +231,24 @@ public:
      */
     AEGIS_DECL void run(std::function<void(void)> f);
 
-    /// Spawns and starts the specified amount of threads on the io_context
-    /// and executes the provided functor prior to connecting the gateways
-    /**
-     * @param count Spawn `count` threads and run io_service object
-     * @param f Run f() after gateway information is obtained but before connection
-     */
-    AEGIS_DECL void run(std::size_t count, std::function<void(void)> f);
-
     /**
      * Yields operation of the current thread until library shutdown is detected
      */
     void yield() const noexcept
     {
-        while (_status != bot_status::Shutdown)
+        std::mutex m;
+        std::unique_lock<std::mutex> l(m);
+        internal::cv.wait(l);
+
+        log->info("Closing bot");
+    
+        if (!external_io_context)
         {
-            std::this_thread::yield();
+            internal::wrk.reset();
+            internal::_io_context->stop();
         }
+        for (auto & t : internal::threads)
+            t.join();
     }
 
     rest::rest_controller & get_rest_controller() noexcept { return *_rest; }
@@ -257,7 +264,7 @@ public:
     template<typename T>
     void async(T f)
     {
-        asio::post(*_io_context, std::move(f));
+        asio::post(*internal::_io_context, std::move(f));
     }
 
     template<typename T = aegis::rest::rest_reply, typename P>
@@ -364,10 +371,6 @@ public:
      */
     AEGIS_DECL rest::rest_reply call(rest::request_params params);
 
-    std::mutex m;
-    std::condition_variable cv;
-    std::shared_ptr<asio::io_context> _io_context;
-
     std::unordered_map<snowflake, std::unique_ptr<channel>> channels;
     std::unordered_map<snowflake, std::unique_ptr<guild>> guilds;
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
@@ -376,8 +379,8 @@ public:
     std::map<std::string, uint64_t> message_count;
 
     std::string self_presence;
-    uint32_t force_shard_count;
-    uint32_t shard_max_count;
+    uint32_t force_shard_count = 0;
+    uint32_t shard_max_count = 0;
     std::string mention;
     bool wsdbg = false;
     std::unique_ptr<asio::io_context::strand> ws_open_strand;
@@ -519,7 +522,6 @@ private:
     voice_state_update_t i_voice_state_update;
     voice_server_update_t i_voice_server_update;
 
-    AEGIS_DECL void _run(std::size_t count = 0, std::function<void(void)> f = {});
     AEGIS_DECL void setup_gateway(std::error_code & ec);
     AEGIS_DECL void keep_alive(const asio::error_code & error, const std::chrono::milliseconds ms, shards::shard * _shard);
 
@@ -602,6 +604,9 @@ private:
     mutable shared_mutex _member_m;
 
     bool file_logging = false;
+    bool external_io_context = true;
+    std::size_t thread_count = 0;
+    std::string log_formatting;
 };
 
 }

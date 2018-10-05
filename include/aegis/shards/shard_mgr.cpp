@@ -47,25 +47,12 @@ AEGIS_DECL shard_mgr::~shard_mgr()
     shutdown();
 }
 
-AEGIS_DECL void shard_mgr::start(std::size_t count)
+AEGIS_DECL void shard_mgr::start()
 {
-    if (count == 0)
-        count = std::thread::hardware_concurrency();
-
-    // ensure any sort of single blocking call in message processing usercode doesn't block everything
-    // this will not protect against faulty usercode entirely, but will at least provide some leeway
-    // to allow a single blocking message to not halt operations
-    if (count == 1)
-        count = 2;
-
     set_state(bot_status::Running);
 
     if (gateway_url.empty())
         throw exception(error::get_gateway);
-
-    wrk = std::make_shared<asio_exec>(asio::make_work_guard(_io_context));
-    for (std::size_t i = 0; i < count; ++i)
-        threads.emplace_back(std::bind(static_cast<asio::io_context::count_type(asio::io_context::*)()>(&asio::io_context::run), &_io_context));
 
     starttime = std::chrono::steady_clock::now();
     
@@ -89,11 +76,6 @@ AEGIS_DECL void shard_mgr::start(std::size_t count)
         }
 
         ws_timer = websocket_o.set_timer(100, std::bind(&shard_mgr::ws_status, this, std::placeholders::_1));
-
-        std::unique_lock<std::mutex> l(m);
-        cv.wait(l);
-
-        log->info("Closing bot");
     }
 }
 
@@ -111,13 +93,8 @@ AEGIS_DECL void shard_mgr::shutdown()
 {
     set_state(bot_status::Shutdown);
     websocket_o.stop();
-    cv.notify_all();
     for (auto & _shard : _shards)
         _shard->do_reset(shard_status::Shutdown);
-    wrk.reset();
-    _io_context.stop();
-    for (auto & t : threads)
-        t.join();
 }
 
 AEGIS_DECL std::string shard_mgr::uptime() const noexcept

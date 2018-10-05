@@ -18,31 +18,6 @@ namespace aegis
 namespace rest
 {
 
-#if defined(AEGIS_PROFILING)
-AEGIS_DECL rest_controller::rest_controller(const std::string & token, core * bot)
-    : _token(token)
-    , _bot(bot)
-{
-
-}
-
-AEGIS_DECL rest_controller::rest_controller(const std::string & token, const std::string & prefix, core * bot)
-    : _token(token)
-    , _prefix(prefix)
-    , _bot(bot)
-{
-
-}
-
-AEGIS_DECL rest_controller::rest_controller(const std::string & token, const std::string & prefix, const std::string & host, core * bot)
-    : _token(token)
-    , _prefix(prefix)
-    , _host(host)
-    , _bot(bot)
-{
-
-}
-#else
 AEGIS_DECL rest_controller::rest_controller(const std::string & token)
     : _token(token)
 {
@@ -63,7 +38,6 @@ AEGIS_DECL rest_controller::rest_controller(const std::string & token, const std
 {
 
 }
-#endif
 
 AEGIS_DECL rest_controller::~rest_controller()
 {
@@ -163,8 +137,8 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params params)
         global = !(hresponse.get_header("X-RateLimit-Global").empty());
 
 #if defined(AEGIS_PROFILING)
-        if (_bot->call_end)
-            _bot->call_end(start_time);
+        if (internal::bot->call_end)
+            internal::bot->call_end(start_time);
 #endif
 
         if (error != asio::error::eof && error != asio::ssl::error::stream_truncated)

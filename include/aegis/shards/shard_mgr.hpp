@@ -41,9 +41,6 @@ using namespace std::literals;
 class shard_mgr
 {
 public:
-    /// Type of a pointer to the asio io_service
-    using io_service_ptr = asio::io_context *;
-
     /// Type of a pointer to the Websocket++ client
     using websocket = websocketpp::client<websocketpp::config::asio_tls_client>;
 
@@ -52,12 +49,6 @@ public:
 
     /// Type of a pointer to the Websocket++ message payload
     using message_ptr = websocketpp::config::asio_client::message_type::ptr;
-
-    /// Type of a work guard executor for keeping Asio services alive
-    using asio_exec = asio::executor_work_guard<asio::io_context::executor_type>;
-
-    /// Type of a shared pointer to an io_context work object
-    using work_ptr = std::shared_ptr<asio_exec>;
 
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /**
@@ -128,7 +119,7 @@ public:
     */
     AEGIS_DECL void send_all_shards(const json & msg);
 
-    AEGIS_DECL void start(std::size_t count = 0);
+    AEGIS_DECL void start();
 
     using t_on_message = std::function<void(websocketpp::connection_hdl hdl, std::string msg, shard * _shard)>;
     using t_on_connect = std::function<void(websocketpp::connection_hdl hdl, shard * _shard)>;
@@ -189,8 +180,6 @@ public:
         return _shards.size();
     }
 
-    std::mutex m;
-    std::condition_variable cv;
     asio::io_context & _io_context;
 
     std::string ws_gateway;
@@ -238,8 +227,6 @@ private:
     std::shared_ptr<asio::steady_timer> ws_timer;
     std::shared_ptr<asio::steady_timer> ws_connect_timer;
     std::deque<shard*> _shards_to_connect;
-    work_ptr wrk;
-    std::vector<std::thread> threads;
 };
 
 }

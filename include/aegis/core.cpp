@@ -59,31 +59,8 @@
 namespace aegis
 {
 
-AEGIS_DECL core::core(spdlog::level::level_enum loglevel)
-    : force_shard_count(0)
-    , shard_max_count(0)
-    , member_id(0)
-    , discriminator(0)
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
-    , mfa_enabled(false)
-#endif
-    , _status{ bot_status::Uninitialized }
-    , _loglevel(loglevel)
+AEGIS_DECL void core::setup_logging()
 {
-#if !defined(AEGIS_CXX17)
-    if (gateway::objects::BOT::bot != nullptr)
-        throw std::runtime_error("Instance of bot already exists");
-    gateway::objects::BOT::bot = this;
-#else
-    if (gateway::objects::message::bot != nullptr)
-        throw std::runtime_error("Instance of bot already exists");
-    gateway::objects::message::bot = this;
-#endif
-    //gateway::objects::message::bot = this;
-
-    load_config();
-
-    // DEBUG CODE ONLY
     std::vector<spdlog::sink_ptr> sinks;
 #ifdef _WIN32
     auto color_sink = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
@@ -103,23 +80,36 @@ AEGIS_DECL core::core(spdlog::level::level_enum loglevel)
     log = std::make_shared<spdlog::logger>("aegis", begin(sinks), end(sinks));
     spdlog::register_logger(log);
 
-    log->set_pattern("%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v");
-    log->set_level(loglevel);
+    log->set_pattern(log_formatting);
+    log->set_level(_loglevel);
+}
 
-    _io_context = std::make_shared<asio::io_context>();
+AEGIS_DECL void core::setup_context()
+{
+    // ensure any sort of single blocking call in message processing usercode doesn't block everything
+    // this will not protect against faulty usercode entirely, but will at least provide some leeway
+    // to allow a single blocking message to not halt operations
+    if (thread_count == 1)
+        thread_count = 2;
 
-    _shard_mgr = std::make_unique<shards::shard_mgr>(_token, *_io_context, log);
+    external_io_context = false;
+    internal::_io_context = std::make_unique<asio::io_context>();
+
+    internal::wrk = std::make_unique<asio_exec>(asio::make_work_guard(*internal::_io_context));
+    for (std::size_t i = 0; i < thread_count; ++i)
+        internal::threads.emplace_back(std::bind(static_cast<asio::io_context::count_type(asio::io_context::*)()>(&asio::io_context::run), internal::_io_context.get()));
+}
+
+AEGIS_DECL void core::setup_shard_mgr()
+{
+    _shard_mgr = std::make_unique<shards::shard_mgr>(_token, *internal::_io_context, log);
+
+    _rest = std::make_unique<rest::rest_controller>(_token, "/api/v6", "discordapp.com");
 
     std::error_code ec;
     setup_gateway(ec);
     if (ec)
         throw ec;
-
-#if defined(AEGIS_PROFILING)
-    _rest = std::make_unique<rest::rest_controller>(_token, "/api/v6", "discordapp.com", this);
-#else
-    _rest = std::make_unique<rest::rest_controller>(_token, "/api/v6", "discordapp.com");
-#endif
 
     _ratelimit = std::make_unique<ratelimit_mgr_t>(
         std::bind(&aegis::rest::rest_controller::execute,
@@ -130,12 +120,76 @@ AEGIS_DECL core::core(spdlog::level::level_enum loglevel)
     setup_callbacks();
 }
 
+AEGIS_DECL core::core(spdlog::level::level_enum loglevel, std::size_t count)
+    : _loglevel(loglevel)
+    , thread_count(count)
+{
+    if (internal::bot != nullptr)
+        throw std::runtime_error("Instance of bot already exists");
+    internal::bot = this;
+
+    if (thread_count == 0)
+        thread_count = std::thread::hardware_concurrency();
+
+    load_config();
+
+    setup_logging();
+    setup_context();
+    setup_shard_mgr();
+}
+
+AEGIS_DECL core::core(std::unique_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel)
+    : _loglevel(loglevel)
+{
+    if (internal::bot != nullptr)
+        throw std::runtime_error("Instance of bot already exists");
+    internal::bot = this;
+
+    load_config();
+
+    setup_logging();
+    setup_context();
+    setup_shard_mgr();
+}
+
+AEGIS_DECL core::core(std::shared_ptr<spdlog::logger> _log, std::size_t count)
+    : thread_count(count)
+{
+    if (internal::bot != nullptr)
+        throw std::runtime_error("Instance of bot already exists");
+    internal::bot = this;
+
+    if (thread_count == 0)
+        thread_count = std::thread::hardware_concurrency();
+
+    load_config();
+
+    log = _log;
+    _loglevel = log->level();
+    setup_context();
+    setup_shard_mgr();
+}
+
+AEGIS_DECL core::core(std::unique_ptr<asio::io_context> _io, std::shared_ptr<spdlog::logger> _log)
+{
+    if (internal::bot != nullptr)
+        throw std::runtime_error("Instance of bot already exists");
+    internal::bot = this;
+
+    load_config();
+
+    log = _log;
+    _loglevel = log->level();
+    internal::_io_context = std::move(_io);
+    setup_shard_mgr();
+}
+
 AEGIS_DECL core::~core()
 {
     if (_shard_mgr)
         _shard_mgr->shutdown();
-    if (_io_context)
-        _io_context->stop();
+    if (internal::_io_context)
+        internal::_io_context->stop();
 }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
@@ -180,7 +234,7 @@ AEGIS_DECL std::future<T> core::post_task(P fn)
     handler exec(asio::use_future);
     result ret(exec);
 
-    asio::post(*_io_context, [=]() mutable
+    asio::post(*internal::_io_context, [=]() mutable
     {
         exec(fn());
     });
@@ -230,7 +284,7 @@ AEGIS_DECL channel * core::channel_create(snowflake id) noexcept
     auto it = channels.find(id);
     if (it == channels.end())
     {
-        auto g = std::make_unique<channel>(id, 0, this, *_io_context);
+        auto g = std::make_unique<channel>(id, 0, this, *internal::_io_context);
         auto ptr = g.get();
         channels.emplace(id, std::move(g));
         return ptr;
@@ -253,7 +307,7 @@ AEGIS_DECL guild * core::guild_create(snowflake id, shards::shard * _shard) noex
     auto it = guilds.find(id);
     if (it == guilds.end())
     {
-        auto g = std::make_unique<guild>(_shard->get_id(), id, this, *_io_context);
+        auto g = std::make_unique<guild>(_shard->get_id(), id, this, *internal::_io_context);
         auto ptr = g.get();
         guilds.emplace(id, std::move(g));
         return ptr;
@@ -286,17 +340,8 @@ AEGIS_DECL void core::remove_member(snowflake member_id) noexcept
 }
 #endif
 
-AEGIS_DECL void core::_run(std::size_t count, std::function<void(void)> f)
+AEGIS_DECL void core::run(std::function<void(void)> f)
 {
-    if (count == 0)
-        count = std::thread::hardware_concurrency();
-
-    // ensure any sort of single blocking call in message processing usercode doesn't block everything
-    // this will not protect against faulty usercode entirely, but will at least provide some leeway
-    // to allow a single blocking message to not halt operations
-    if (count == 1)
-        count = 2;
-
     set_state(bot_status::Running);
 
     starttime = std::chrono::steady_clock::now();
@@ -305,26 +350,9 @@ AEGIS_DECL void core::_run(std::size_t count, std::function<void(void)> f)
         f();
 
     log->info("Starting shard manager with {} shards", _shard_mgr->shard_max_count);
-    _shard_mgr->start(count);
-
-
-    _io_context->stop();
+    _shard_mgr->start();
 }
 
-AEGIS_DECL void core::run(std::size_t count)
-{
-    _run(count);
-}
-
-AEGIS_DECL void core::run(std::size_t count, std::function<void(void)> f)
-{
-    _run(count, f);
-}
-
-AEGIS_DECL void core::run(std::function<void(void)> f)
-{
-    _run(0, f);
-}
 
 AEGIS_DECL void core::load_config()
 {
@@ -392,11 +420,20 @@ AEGIS_DECL void core::load_config()
                 _loglevel = spdlog::level::level_enum::critical;
             else if (s == "off")
                 _loglevel = spdlog::level::level_enum::off;
+            else
+                _loglevel = spdlog::level::level_enum::info;
         }
     }
+    else
+        _loglevel = spdlog::level::level_enum::info;
 
     if (!cfg["file-logging"].is_null())
         file_logging = cfg["file-logging"].get<bool>();
+
+    if (!cfg["log-format"].is_null())
+        log_formatting = cfg["file-format"].get<std::string>();
+    else
+        log_formatting = "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v";
 }
 
 AEGIS_DECL void core::setup_callbacks()
@@ -410,19 +447,14 @@ AEGIS_DECL void core::shutdown()
 {
     set_state(bot_status::Shutdown);
     _shard_mgr->shutdown();
-    cv.notify_all();
+    internal::cv.notify_all();
 }
 
 AEGIS_DECL void core::setup_gateway(std::error_code & ec)
 {
     log->info("Creating websocket");
 
-#if defined(AEGIS_PROFILING)
-    aegis::rest::rest_controller _rest(_token, "/api/v6", "discordapp.com", this);
-#else
-    aegis::rest::rest_controller _rest(_token, "/api/v6", "discordapp.com");
-#endif
-    rest::rest_reply res = _rest.execute({ "/gateway/bot", rest::Get });
+    rest::rest_reply res = _rest->execute({ "/gateway/bot", rest::Get });
 
     if (res.content.empty())
     {
@@ -608,22 +640,19 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
     {
         const json result = json::parse(msg);
 
-#if defined(AEGIS_PROFILING)
         if (!result.is_null())
-            if (!result["t"].is_null())
-                if (js_end)
+        {
+#if defined(AEGIS_PROFILING)
+            if (!result["t"].is_null() && js_end)
                     js_end(s_t, result["t"]);
 #endif
 
-        if (!result.is_null())
-        {
-        
-           if ((log->level() == spdlog::level::level_enum::trace && wsdbg)
-               && (result["t"].is_null()
-                   || (result["t"] != "GUILD_CREATE"
-                       && result["t"] != "PRESENCE_UPDATE"
-                       && result["t"] != "GUILD_MEMBERS_CHUNK")))
-               log->trace("Shard#{}: {}", _shard->get_id(), msg);
+            if ((log->level() == spdlog::level::level_enum::trace && wsdbg)
+                && (result["t"].is_null()
+                    || (result["t"] != "GUILD_CREATE"
+                        && result["t"] != "PRESENCE_UPDATE"
+                        && result["t"] != "GUILD_MEMBERS_CHUNK")))
+                log->trace("Shard#{}: {}", _shard->get_id(), msg);
 
            int64_t t_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 

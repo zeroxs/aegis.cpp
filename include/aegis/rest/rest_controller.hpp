@@ -45,15 +45,9 @@ struct request_params
 class rest_controller
 {
 public:
-#if defined(AEGIS_PROFILING)
-    AEGIS_DECL rest_controller(const std::string & token, core * bot);
-    AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix, core * bot);
-    AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix, const std::string & host, core * bot);
-#else
     AEGIS_DECL rest_controller(const std::string & token);
     AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix);
     AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix, const std::string & host);
-#endif
     AEGIS_DECL ~rest_controller();
 
     rest_controller(const rest_controller &) = delete;
@@ -110,9 +104,6 @@ private:
     std::string _host;
     std::unordered_map<std::string, asio::ip::basic_resolver<asio::ip::tcp>::results_type> _resolver_cache;
     asio::io_context _io_context;
-#if defined(AEGIS_PROFILING)
-    core * _bot;
-#endif
 };
 
 }

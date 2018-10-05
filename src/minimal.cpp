@@ -107,7 +107,7 @@ int main(int argc, char * argv[])
 
         // start the bot. the function passed is executed after the internal logger is set up and the
         // websocket gateway information is collected.
-        bot.run(5, [&]
+        bot.run([&]
         {
             bot.log->trace("stuff");
             bot.log->debug("stuff");
