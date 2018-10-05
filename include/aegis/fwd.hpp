@@ -87,3 +87,12 @@ struct webhooks_update;
 }
 
 #define aegis_optional_arg_default(cls, type, name, default_value)  \
+    public: cls & name(type name) { _##name = name; return *this; } \
+    private: type _##name = default_value
+
+#define aegis_optional_arg(cls, type, name)  \
+    public: cls & name(type name) { _##name = name; return *this; } \
+    private: type _##name;
+
+#define aegis_optional_construct(cls) \
+    public: cls & create() { return *this; }
