@@ -340,15 +340,12 @@ AEGIS_DECL void core::remove_member(snowflake member_id) noexcept
 }
 #endif
 
-AEGIS_DECL void core::run(std::function<void(void)> f)
+AEGIS_DECL void core::run()
 {
     set_state(bot_status::Running);
 
     starttime = std::chrono::steady_clock::now();
     
-    if (f)
-        f();
-
     log->info("Starting shard manager with {} shards", _shard_mgr->shard_max_count);
     _shard_mgr->start();
 }

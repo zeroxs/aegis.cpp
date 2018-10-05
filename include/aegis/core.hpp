@@ -224,12 +224,10 @@ public:
         lib::optional<std::vector<std::tuple<std::string, int>>> channels = {}
     );
 
-    /// Spawns and starts the default hardware hinted threads on the io_context
-    /// and executes the provided functor prior to connecting the gateway
-    /**
-     * @param f Run f() after gateway information is obtained but before connection
-     */
-    AEGIS_DECL void run(std::function<void(void)> f);
+    AEGIS_DECL std::future<rest::rest_reply> modify_bot_user(const std::string & username = "", const std::string & avatar = "");
+
+    /// Starts the shard manager, creates the shards, and connects to the gateway
+    AEGIS_DECL void run();
 
     /**
      * Yields operation of the current thread until library shutdown is detected
