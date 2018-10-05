@@ -341,7 +341,19 @@ public:
     /**
      * @returns std::string of `##h ##m ##s` formatted time
      */
-    AEGIS_DECL std::string uptime() const noexcept;
+    AEGIS_DECL std::string uptime_str() const noexcept
+    {
+        return utility::uptime_str(starttime);
+    }
+
+    /// Return shard uptime as {days hours minutes seconds}
+    /**
+     * @returns Time in milliseconds since shard received ready
+     */
+    int64_t uptime() const noexcept
+    {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - starttime).count();
+    }
 
     /// Performs an HTTP request on the path with content as the request body using the method method
     /**

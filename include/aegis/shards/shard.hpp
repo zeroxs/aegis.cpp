@@ -70,8 +70,8 @@ public:
 
     /// Check if this shard is ready to interact with the gateway
     /**
-    * @returns bool
-    */
+     * @returns bool
+     */
     AEGIS_DECL bool is_online() const noexcept;
 
     /// Send a message to this shard's websocket connection asynchronously
@@ -161,14 +161,17 @@ public:
 
     /// Return shard uptime as {days hours minutes seconds}
     /**
-    * @returns std::string of `##h ##m ##s` formatted time
-    */
-    AEGIS_DECL std::string uptime_str() const noexcept;
+     * @returns std::string of `##h ##m ##s` formatted time
+     */
+    AEGIS_DECL std::string uptime_str() const noexcept
+    {
+        return utility::uptime_str(_ready_time);
+    }
 
     /// Return shard uptime as {days hours minutes seconds}
     /**
-    * @returns Time in milliseconds since shard received ready
-    */
+     * @returns Time in milliseconds since shard received ready
+     */
     int64_t uptime() const noexcept
     {
         return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _ready_time).count();

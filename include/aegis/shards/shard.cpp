@@ -206,35 +206,6 @@ AEGIS_DECL void shard::process_writes(const asio::error_code & ec)
     write_timer.async_wait(asio::bind_executor(*_connection->get_strand(), std::bind(&shard::process_writes, this, std::placeholders::_1)));
 }
 
-AEGIS_DECL std::string shard::uptime_str() const noexcept
-{
-    using seconds = std::chrono::duration<int, std::ratio<1, 1>>;
-    using minutes = std::chrono::duration<int, std::ratio<60, 1>>;
-    using hours = std::chrono::duration<int, std::ratio<3600, 1>>;
-    using days = std::chrono::duration<int, std::ratio<24 * 3600, 1>>;
-
-    std::stringstream ss;
-    std::chrono::time_point<std::chrono::steady_clock> now_t = std::chrono::steady_clock::now();
-
-    auto time_is = now_t - _ready_time;
-    auto d = std::chrono::duration_cast<days>(time_is).count();
-    time_is -= days(d);
-    auto h = std::chrono::duration_cast<hours>(time_is).count();
-    time_is -= hours(h);
-    auto m = std::chrono::duration_cast<minutes>(time_is).count();
-    time_is -= minutes(m);
-    auto s = std::chrono::duration_cast<seconds>(time_is).count();
-
-    if (d)
-        ss << d << "d ";
-    if (h)
-        ss << h << "h ";
-    if (m)
-        ss << m << "m ";
-    ss << s << "s ";
-    return ss.str();
-}
-
 }
 
 }

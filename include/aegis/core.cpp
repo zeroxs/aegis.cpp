@@ -570,35 +570,6 @@ AEGIS_DECL rest::rest_reply core::create_guild(
     return res;
 }
 
-AEGIS_DECL std::string core::uptime() const noexcept
-{
-    using seconds = std::chrono::duration<int, std::ratio<1, 1>>;
-    using minutes = std::chrono::duration<int, std::ratio<60, 1>>;
-    using hours = std::chrono::duration<int, std::ratio<3600, 1>>;
-    using days = std::chrono::duration<int, std::ratio<24 * 3600, 1>>;
-
-    std::stringstream ss;
-    std::chrono::time_point<std::chrono::steady_clock> now_t = std::chrono::steady_clock::now();
-
-    auto time_is = now_t - starttime;
-    auto d = std::chrono::duration_cast<days>(time_is).count();
-    time_is -= days(d);
-    auto h = std::chrono::duration_cast<hours>(time_is).count();
-    time_is -= hours(h);
-    auto m = std::chrono::duration_cast<minutes>(time_is).count();
-    time_is -= minutes(m);
-    auto s = std::chrono::duration_cast<seconds>(time_is).count();
-
-    if (d)
-        ss << d << "d ";
-    if (h)
-        ss << h << "h ";
-    if (m)
-        ss << m << "m ";
-    ss << s << "s ";
-    return ss.str();
-}
-
 ///\todo
 AEGIS_DECL channel * core::dm_channel_create(const json & obj, shards::shard * _shard)
 {
