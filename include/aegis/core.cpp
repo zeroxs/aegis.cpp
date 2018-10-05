@@ -675,7 +675,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                     {
                         //message id found
                         ++message_count[cmd];
-                        asio::post(*_io_context, [=, res = std::move(result)]()
+                        asio::post(*internal::_io_context, [=, res = std::move(result)]()
                         {
                             try
                             {
