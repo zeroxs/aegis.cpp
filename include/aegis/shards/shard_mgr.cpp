@@ -320,6 +320,7 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
 //                 //shard is not connected. do a check if shard is in connection queue or if it needs adding to it
                 if (_shard->connection_state == shard_status::Reconnecting && utility::to_ms(now - _shard->connect_time) > 20000)
                 {
+                    close(_shard.get());
                     log->error("Shard#{}: shard timed out reconnecting (20s)", _shard->get_id());
                     reset_shard(_shard.get());
                 }

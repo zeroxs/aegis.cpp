@@ -44,6 +44,7 @@ AEGIS_DECL void shard::do_reset(shard_status _status) noexcept
     {
         try
         {
+            connect_time = std::chrono::steady_clock::time_point();
             connection_state = _status;
             if (_connection != nullptr)
             {
@@ -80,7 +81,7 @@ AEGIS_DECL void shard::do_reset(shard_status _status) noexcept
 AEGIS_DECL void shard::_reset()
 {
     last_status_time = lastwsevent = std::chrono::steady_clock::now();
-    heartbeat_ack = lastheartbeat = std::chrono::steady_clock::time_point();
+    heartbeat_ack = lastheartbeat = connect_time = std::chrono::steady_clock::time_point();
 
     delayedauth.cancel();
     keepalivetimer.cancel();
