@@ -10,12 +10,10 @@
 #pragma once
 
 #include "aegis/config.hpp"
+#include "aegis/fwd.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/objects/message.hpp"
 #include "aegis/error.hpp"
-#include "aegis/fwd.hpp"
-#include <string>
-#include <vector>
 
 namespace aegis
 {

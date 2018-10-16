@@ -11,6 +11,7 @@
 
 #include "aegis/config.hpp"
 #include "aegis/snowflake.hpp"
+#include "aegis/objects/member.hpp"
 #include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
@@ -28,7 +29,16 @@ namespace objects
  */
 struct voice_state
 {
-
+    snowflake guild_id;
+    snowflake channel_id;
+    snowflake user_id;
+    objects::member * _member = nullptr;
+    std::string session_id;
+    bool deaf = false;
+    bool mute = false;
+    bool self_deaf = false;
+    bool self_mute = false;
+    bool suppress = false;
 };
 
 /// \cond TEMPLATES

@@ -27,11 +27,21 @@ struct message_reaction_remove
 {
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
+    snowflake user_id;
+    snowflake channel_id;
+    snowflake message_id;
+    snowflake guild_id;
+    objects::emoji _emoji;
 };
 
 /// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, message_reaction_remove& m)
 {
+    m.user_id = j["user_id"];
+    m.channel_id = j["channel_id"];
+    m.message_id = j["message_id"];
+    m.guild_id = j["guild_id"];
+    m._emoji = j["emoji"];
 }
 /// \endcond
 
