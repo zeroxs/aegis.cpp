@@ -48,7 +48,8 @@ AEGIS_DECL void shard::do_reset(shard_status _status) noexcept
             connection_state = _status;
             if (_connection != nullptr)
             {
-                if (_connection->get_state() == websocketpp::session::state::open)
+                // if socket is being set to a closed/shutdown state then it may be intentional to be closing an open socket
+                if (_connection->get_state() == websocketpp::session::state::open && _status <= shard_status::Reconnecting)
                 {
                     _connection->close(1001, "");
                     std::cout << "Shard#" << get_id() << ": had to close socket on a reset\n";
@@ -80,8 +81,9 @@ AEGIS_DECL void shard::do_reset(shard_status _status) noexcept
 
 AEGIS_DECL void shard::_reset()
 {
-    last_status_time = lastwsevent = std::chrono::steady_clock::now();
+    last_status_time = lastwsevent = //std::chrono::steady_clock::now();
     heartbeat_ack = lastheartbeat = connect_time = std::chrono::steady_clock::time_point();
+    _connection.reset();
 
     delayedauth.cancel();
     keepalivetimer.cancel();
@@ -99,7 +101,7 @@ AEGIS_DECL void shard::connect()
     {
         try
         {
-            _reset();
+            //_reset();
             _websocket.connect(_connection);
             connection_state = shard_status::Connecting;
         }

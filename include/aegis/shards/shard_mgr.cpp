@@ -317,8 +317,10 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
             }
             else
             {
-//                 //shard is not connected. do a check if shard is in connection queue or if it needs adding to it
-                if (_shard->connection_state == shard_status::Reconnecting && utility::to_ms(now - _shard->connect_time) > 20000)
+                //shard is not connected. do a check if shard is in connection queue or if it needs adding to it
+                if (_shard->connection_state == shard_status::Reconnecting &&
+                    _shard->connect_time != std::chrono::steady_clock::time_point() &&
+                    utility::to_ms(now - _shard->connect_time) > 20000)
                 {
                     close(_shard.get());
                     log->error("Shard#{}: shard timed out reconnecting (20s)", _shard->get_id());
@@ -466,12 +468,12 @@ AEGIS_DECL shard & shard_mgr::get_shard(uint16_t shard_id)
 
 AEGIS_DECL void shard_mgr::close(shard * _shard, int32_t code, const std::string & reason, shard_status connection_state)
 {
-    _shard->connection_state = connection_state;
+    //_shard->connection_state = connection_state;
     if (_shard->_connection != nullptr && _shard->_connection->get_raw_socket().is_open())
     {
         asio::error_code ec;
         _shard->_connection->close(code, reason, ec);
-        _shard->_connection.reset();
+        //_shard->_connection.reset();
     }
 }
 
