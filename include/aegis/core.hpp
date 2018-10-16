@@ -37,7 +37,6 @@
 
 namespace aegis
 {
-
 /// Type of a work guard executor for keeping Asio services alive
 using asio_exec = asio::executor_work_guard<asio::io_context::executor_type>;
 
@@ -115,20 +114,36 @@ public:
     using ratelimit_mgr_t = aegis::ratelimit::ratelimit_mgr<rest_call, aegis::rest::rest_reply>;
   
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
+    /// This constructor creates its own spdlog::logger and asio::io_context
     /**
-     * @see shard
-     * @see guild
-     * @see channel
-     * @see member
-     * @see spdlog::level::level_enum
      * @param loglevel The level of logging to use
+     * @param count Amount of threads to start
      */
     AEGIS_DECL explicit core(spdlog::level::level_enum loglevel = spdlog::level::level_enum::info, std::size_t count = 2);
 
+    /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
+    /// This constructor creates its own spdlog::logger and expects you to create the asio::io_context.
+    /// It also expects you to manage the event loop or start threads on the io_context.
+    /**
+     * @param loglevel The level of logging to use
+     */
     AEGIS_DECL explicit core(std::unique_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel = spdlog::level::level_enum::info);
 
+    /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
+    /// This constructor creates its own asio::io_context and expects you to create the spdlog::logger
+    /**
+     * @param _log Your pre-constructed spdlog::logger object
+     * @param count Amount of threads to start
+     */
     AEGIS_DECL explicit core(std::shared_ptr<spdlog::logger> _log, std::size_t count = 2);
 
+    /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
+    /// This constructor accepts a logger and io_context that you create. It expects you to
+    /// manage the event loop or start threads on the io_context.
+    /**
+     * @param _io Your pre-constructed asio::io_context object
+     * @param _log Your pre-constructed spdlog::logger object
+     */
     AEGIS_DECL explicit core(std::unique_ptr<asio::io_context> _io, std::shared_ptr<spdlog::logger> _log);
 
     /// Destroys the shards, stops the asio::work object, destroys the websocket object
@@ -166,8 +181,8 @@ public:
         return *internal::bot;
     }
 
-    /// Invokes a shutdown on the entire lib. Sets internal state to `Shutdown`, stops the asio::work object
-    /// and propagates the Shutdown state along with closing all websockets within the shard vector
+    /// Invokes a shutdown on the entire lib. Sets internal state to `Shutdown` and propagates the
+    /// Shutdown state along with closing all websockets within the shard vector
     AEGIS_DECL void shutdown();
 
     /// Create new guild - Unique case. Does not belong to any ratelimit bucket so it is run
@@ -234,6 +249,8 @@ public:
      */
     void yield() const noexcept
     {
+        if (_status == bot_status::Shutdown)
+            return;
         std::mutex m;
         std::unique_lock<std::mutex> l(m);
         internal::cv.wait(l);
@@ -245,8 +262,6 @@ public:
             internal::wrk.reset();
             internal::_io_context->stop();
         }
-        for (auto & t : internal::threads)
-            t.join();
     }
 
     rest::rest_controller & get_rest_controller() noexcept { return *_rest; }
@@ -488,6 +503,8 @@ public:
         return count;
     }
 
+    const std::string & get_token() const noexcept { return _token; }
+
 private:
 
     typing_start_t i_typing_start;
@@ -575,24 +592,20 @@ private:
     std::chrono::steady_clock::time_point starttime;
 
     snowflake member_id;
-    int16_t discriminator;
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    int16_t discriminator = 0;
     std::string username;
-    bool mfa_enabled;
-#endif
+    bool mfa_enabled = false;
 
     // Bot's token
     std::string _token;
 
-    bot_status _status;
+    bot_status _status = bot_status::Uninitialized;
 
     std::unique_ptr<rest::rest_controller> _rest;
     std::unique_ptr<ratelimit_mgr_t > _ratelimit;
     std::unique_ptr<shards::shard_mgr> _shard_mgr;
 
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
     member * _self = nullptr;
-#endif
 
     std::unordered_map<std::string, std::function<void(const json &, shards::shard *)>> ws_handlers;
     spdlog::level::level_enum _loglevel = spdlog::level::level_enum::info;

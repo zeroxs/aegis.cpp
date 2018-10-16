@@ -44,7 +44,7 @@ AEGIS_DECL shard_mgr::shard_mgr(std::string token, asio::io_context & _io, std::
 
 AEGIS_DECL shard_mgr::~shard_mgr()
 {
-    shutdown();
+
 }
 
 AEGIS_DECL void shard_mgr::start()

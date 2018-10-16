@@ -29,7 +29,7 @@ struct reaction
 {
     int32_t count = 0; /**<\todo Needs documentation */
     bool me = false; /**<\todo Needs documentation */
-    emoji emoji_; /**<\todo Needs documentation */
+    objects::emoji emoji_; /**<\todo Needs documentation */
 };
 
 /// \cond TEMPLATES

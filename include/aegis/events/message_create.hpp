@@ -33,14 +33,14 @@ struct message_create
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
     objects::message msg; /**<\todo Needs documentation */
-    channel * const _channel = nullptr; /**<\todo Needs documentation */
+    aegis::channel * const _channel = nullptr; /**<\todo Needs documentation */
     
     bool has_channel()
     {
         return (_channel != nullptr);
     }
 
-    channel & get_channel()
+    aegis::channel & get_channel()
     {
         if (_channel == nullptr)
             throw exception(make_error_code(error::channel_not_found));
@@ -48,25 +48,25 @@ struct message_create
     }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    member * const _member; /**<\todo Needs documentation */
+    aegis::member * const _member; /**<\todo Needs documentation */
 
     bool has_member()
     {
         return (_member != nullptr);
     }
 
-    member & get_member()
+    aegis::member & get_member()
     {
         if (_member == nullptr)
             throw exception(make_error_code(error::member_not_found));
         return *_member;
     }
 
-    message_create(const json & j, channel * c, member * m) : msg(j), _channel(c), _member(m) { msg.set_channel(c); };
-    message_create(const json & j, guild * g, channel * c, member * m) : msg(j), _channel(c), _member(m) { msg.set_channel(c); msg.set_guild(g); };
+    message_create(const json & j, aegis::channel * c, aegis::member * m) : msg(j), _channel(c), _member(m) { msg.set_channel(c); };
+    message_create(const json & j, aegis::guild * g, aegis::channel * c, aegis::member * m) : msg(j), _channel(c), _member(m) { msg.set_channel(c); msg.set_guild(g); };
 #else
-    message_create(const json & j, channel * c) : msg(j), _channel(c) { msg.set_channel(c); };
-    message_create(const json & j, guild * g, channel * c) : msg(j), _channel(c) { msg.set_channel(c); msg.set_guild(g); };
+    message_create(const json & j, aegis::channel * c) : msg(j), _channel(c) { msg.set_channel(c); };
+    message_create(const json & j, aegis::guild * g, aegis::channel * c) : msg(j), _channel(c) { msg.set_channel(c); msg.set_guild(g); };
 #endif
 };
 

@@ -19,7 +19,6 @@ namespace example_bot
 
 using json = nlohmann::json;
 using namespace aegis;
-using namespace aegis::gateway::objects;
 using namespace aegis::gateway::events;
 
 class example
@@ -54,7 +53,7 @@ public:
         bot.set_on_message_create(std::bind(&example::MessageCreate, this, std::placeholders::_1));
     }
 
-    snowflake get_snowflake(const std::string name, guild & _guild) const noexcept
+    snowflake get_snowflake(const std::string name, aegis::guild & _guild) const noexcept
     {
         if (name.empty())
             return { 0 };

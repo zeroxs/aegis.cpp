@@ -188,8 +188,12 @@ AEGIS_DECL core::~core()
 {
     if (_shard_mgr)
         _shard_mgr->shutdown();
-    if (internal::_io_context)
-        internal::_io_context->stop();
+    internal::wrk.reset();
+    if (!external_io_context)
+        if (internal::_io_context)
+            internal::_io_context->stop();
+    for (auto & t : internal::threads)
+        t.join();
 }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
@@ -611,7 +615,7 @@ AEGIS_DECL channel * core::dm_channel_create(const json & obj, shards::shard * _
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
         log->debug("Shard#{} : Channel[{}] created for DirectMessage", _shard->get_id(), channel_id);
         if (obj.count("name") && !obj["name"].is_null()) _channel->name = obj["name"].get<std::string>();
-        _channel->type = static_cast<gateway::objects::channel_gw::channel_type>(obj["type"].get<int>());// 0 = text, 2 = voice
+        _channel->type = static_cast<gateway::objects::channel::channel_type>(obj["type"].get<int>());// 0 = text, 2 = voice
 
         if (!obj["last_message_id"].is_null()) _channel->last_message_id = obj["last_message_id"];
 #endif
@@ -639,168 +643,162 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
 
         if (!result.is_null())
         {
+            if (!result["s"].is_null())
+                _shard->set_sequence(result["s"]);
+
+            if (!result["t"].is_null())
+            {
 #if defined(AEGIS_PROFILING)
-            if (!result["t"].is_null() && js_end)
+                if (js_end)
                     js_end(s_t, result["t"]);
 #endif
 
-            if ((log->level() == spdlog::level::level_enum::trace && wsdbg)
-                && (result["t"].is_null()
-                    || (result["t"] != "GUILD_CREATE"
-                        && result["t"] != "PRESENCE_UPDATE"
-                        && result["t"] != "GUILD_MEMBERS_CHUNK")))
-                log->trace("Shard#{}: {}", _shard->get_id(), msg);
+                if (/*(log->level() == spdlog::level::level_enum::trace && wsdbg)
+                    && */((result["t"] != "GUILD_CREATE"
+                           && result["t"] != "PRESENCE_UPDATE"
+                           && result["t"] != "GUILD_MEMBERS_CHUNK")))
+                    log->trace("Shard#{}: {}", _shard->get_id(), msg);
 
-           int64_t t_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+                int64_t t_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
-           _shard->lastwsevent = std::chrono::steady_clock::now();
-        
-            if (!result["s"].is_null())
-                _shard->set_sequence(result["s"]);
-        
-            if (!result.is_null())
-            {
-                //does string message exist
-                if (!result["t"].is_null())
+                _shard->lastwsevent = std::chrono::steady_clock::now();
+
+                std::string cmd = result["t"];
+
+                //log->info("Shard#{}: {}", _shard->get_id(), cmd);
+
+                const auto it = ws_handlers.find(cmd);
+                if (it != ws_handlers.end())
                 {
-                    std::string cmd = result["t"];
-        
-                    //log->info("Shard#{}: {}", _shard->get_id(), cmd);
-                   
-                    const auto it = ws_handlers.find(cmd);
-                    if (it != ws_handlers.end())
+                    //message id found
+                    ++message_count[cmd];
+                    asio::post(*internal::_io_context, [=, res = std::move(result)]()
                     {
-                        //message id found
-                        ++message_count[cmd];
-                        asio::post(*internal::_io_context, [=, res = std::move(result)]()
+                        try
                         {
-                            try
-                            {
 #if defined(AEGIS_PROFILING)
-                                auto s_t = std::chrono::steady_clock::now();
-                                (it->second)(res, _shard);
-                                if (message_end)
-                                    message_end(s_t, cmd);
+                            auto s_t = std::chrono::steady_clock::now();
+                            (it->second)(res, _shard);
+                            if (message_end)
+                                message_end(s_t, cmd);
 #else
-                                (it->second)(res, _shard);
+                            (it->second)(res, _shard);
 #endif
-                            }
-                            catch (std::exception& e)
-                            {
-                                log->error("Failed to process object: {0}", e.what());
-                                log->error(res.dump());
-                                debug_trace(_shard);
-                            }
-                            catch (...)
-                            {
-                                log->error("Failed to process object: Unknown error");
-                                debug_trace(_shard);
-                            }
-                        });
-                    }
-                    else
-                    {
-                        //message id exists but not found
-                    }
-                    return;
-                }
-        
-                //no message. check opcodes
-        
-                if (result["op"] == 9)
-                {
-                    if (result["d"] == false)
-                    {
-                        _shard->set_sequence(0);
-                        log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->get_id());
-                        _shard->session_id.clear();
-
-                        _shard->delayedauth.expires_after(std::chrono::milliseconds((rand() % 2000) + 5000));
-                        _shard->delayedauth.async_wait(asio::bind_executor(*_shard->get_connection()->get_strand(), [=](const asio::error_code & ec)
+                        }
+                        catch (std::exception& e)
                         {
-                            if (ec == asio::error::operation_aborted)
-                                return;
-
-                            if (_shard->get_connection() == nullptr)
-                            {
-                                //debug?
-                                log->error("Shard#{} : Invalid session received with an invalid connection state state: {}", _shard->get_id(), static_cast<int32_t>(_shard->connection_state));
-                                _shard_mgr->reset_shard(_shard);
-                                _shard->session_id.clear();
-                                return;
-                            }
-
-                            json obj = {
-                                { "op", 2 },
-                                {
-                                    "d",
-                                    {
-                                        { "token", _token },
-                                        { "properties",
-                                            {
-                                                { "$os", utility::platform::get_platform() },
-                                                { "$browser", "aegis.cpp" },
-                                                { "$device", "aegis.cpp" }
-                                            }
-                                        },
-                                        { "shard", json::array({ _shard->get_id(), _shard_mgr->shard_max_count }) },
-                                        { "compress", false },
-                                        { "large_threshhold", 250 },
-                                        { "presence",
-                                            {
-                                                { "game",
-                                                    {
-                                                        { "name", self_presence },
-                                                        { "type", 0 }
-                                                    }
-                                                },
-                                                { "status", "online" },
-                                                { "since", 1 },
-                                                { "afk", false }
-                                            }
-                                        }
-                                    }
-                                }
-                            };
-                            _shard->send(obj.dump());
-                        }));
-
-
-                    }
-                    else
-                    {
-                        //
-                    }
-                    return;
+                            log->error("Failed to process object: {0}", e.what());
+                            log->error(res.dump());
+                            debug_trace(_shard);
+                        }
+                        catch (...)
+                        {
+                            log->error("Failed to process object: Unknown error");
+                            debug_trace(_shard);
+                        }
+                    });
                 }
-                if (result["op"] == 1)
+                else
                 {
-                    //requested heartbeat
-                    json obj;
-                    obj["d"] = _shard->get_sequence();
-                    obj["op"] = 1;
-
-                    _shard->send(obj.dump());
-                    return;
+                    //message id exists but not found
                 }
-                if (result["op"] == 10)
-                {
-                    int32_t heartbeat = result["d"]["heartbeat_interval"];
-                    _shard->set_heartbeat(std::bind(&core::keep_alive, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-                    _shard->start_heartbeat(heartbeat);
-                    return;
-                }
-                if (result["op"] == 11)
-                {
-                    //heartbeat ACK
-                    _shard->heartbeat_ack = std::chrono::steady_clock::now();
-                    return;
-                }
-        
-                log->error("unhandled op({})", result["op"].get<int>());
-                debug_trace(_shard);
                 return;
             }
+
+            //no message. check opcodes
+
+            if (result["op"] == 9)
+            {
+                if (result["d"] == false)
+                {
+                    _shard->set_sequence(0);
+                    log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->get_id());
+                    _shard->session_id.clear();
+
+                    _shard->delayedauth.expires_after(std::chrono::milliseconds((rand() % 2000) + 5000));
+                    _shard->delayedauth.async_wait(asio::bind_executor(*_shard->get_connection()->get_strand(), [=](const asio::error_code & ec)
+                    {
+                        if (ec == asio::error::operation_aborted)
+                            return;
+
+                        if (_shard->get_connection() == nullptr)
+                        {
+                            //debug?
+                            log->error("Shard#{} : Invalid session received with an invalid connection state state: {}", _shard->get_id(), static_cast<int32_t>(_shard->connection_state));
+                            _shard_mgr->reset_shard(_shard);
+                            _shard->session_id.clear();
+                            return;
+                        }
+
+                        json obj = {
+                            { "op", 2 },
+                            {
+                                "d",
+                                {
+                                    { "token", _token },
+                                    { "properties",
+                                        {
+                                            { "$os", utility::platform::get_platform() },
+                                            { "$browser", "aegis.cpp" },
+                                            { "$device", "aegis.cpp" }
+                                        }
+                                    },
+                                    { "shard", json::array({ _shard->get_id(), _shard_mgr->shard_max_count }) },
+                                    { "compress", false },
+                                    { "large_threshold", 250 }
+                                }
+                            }
+                        };
+                        if (!self_presence.empty())
+                        {
+                            obj["d"]["presence"] = json({
+                                                            { "game", {
+                                                                { "name", self_presence },
+                                                                { "type", 0 } }
+                                                            },
+                                                            { "status", "online" },
+                                                            { "since", 1 },
+                                                            { "afk", false }
+                                                        });
+                        }
+                        _shard->send_now(obj.dump());
+                    }));
+
+
+                }
+                else
+                {
+                    //
+                }
+                return;
+            }
+            if (result["op"] == 1)
+            {
+                //requested heartbeat
+                json obj;
+                obj["d"] = _shard->get_sequence();
+                obj["op"] = 1;
+
+                _shard->send(obj.dump());
+                return;
+            }
+            if (result["op"] == 10)
+            {
+                int32_t heartbeat = result["d"]["heartbeat_interval"];
+                _shard->set_heartbeat(std::bind(&core::keep_alive, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+                _shard->start_heartbeat(heartbeat);
+                return;
+            }
+            if (result["op"] == 11)
+            {
+                //heartbeat ACK
+                _shard->heartbeat_ack = std::chrono::steady_clock::now();
+                return;
+            }
+
+            log->error("unhandled op({})", result["op"].get<int>());
+            debug_trace(_shard);
+            return;
         }
     }
     catch (std::exception& e)
@@ -887,7 +885,7 @@ AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shards::shard 
                         },
                         { "shard", json::array({ _shard->get_id(), _shard_mgr->shard_max_count }) },
                         { "compress", false },
-                        { "large_threshhold", 250 },
+                        { "large_threshold", 250 },
                         { "presence",
                             {
                                 { "game",
@@ -1313,7 +1311,7 @@ AEGIS_DECL void core::ws_channel_create(const json & result, shards::shard * _sh
         auto _channel = dm_channel_create(result["d"], _shard);
 
         const json & r = result["d"]["recipients"];
-        if (result["d"]["type"] == gateway::objects::channel_gw::channel_type::DirectMessage)//as opposed to a GroupDirectMessage
+        if (result["d"]["type"] == gateway::objects::channel::channel_type::DirectMessage)//as opposed to a GroupDirectMessage
         {
             snowflake user_id = std::stoull(r.at(0)["id"].get<std::string>());
             snowflake dm_id = std::stoull(result["d"]["id"].get<std::string>());

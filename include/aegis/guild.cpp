@@ -62,7 +62,7 @@ AEGIS_DECL void guild::remove_member(snowflake member_id) noexcept
     auto _member = members.find(member_id);
     if (_member == members.end())
     {
-        get_bot().log->error("Unable to remove member [{}] from guild [{}] (does not exist)", member_id, guild_id);
+        get_bot().log->debug("Unable to remove member [{}] from guild [{}] (does not exist)", member_id, guild_id);
         return;
     }
     _member->second->leave(guild_id);

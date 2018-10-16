@@ -30,7 +30,7 @@ struct guild_create
 {
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
-    objects::guild_gw _guild; /**< guild object */
+    objects::guild _guild; /**< guild object */
 };
 
 /// \cond TEMPLATES

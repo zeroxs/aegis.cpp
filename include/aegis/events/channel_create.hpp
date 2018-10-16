@@ -29,7 +29,7 @@ struct channel_create
 {
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
-    objects::channel_gw _channel; /**< gateway channel object */
+    objects::channel _channel; /**< gateway channel object */
 };
 
 /// \cond TEMPLATES

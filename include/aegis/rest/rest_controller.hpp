@@ -69,22 +69,16 @@ public:
         {
             case Get:
                 return "GET";
-                break;
             case Post:
                 return "POST";
-                break;
             case Put:
                 return "PUT";
-                break;
             case Patch:
                 return "PATCH";
-                break;
             case Delete:
                 return "DELETE";
-                break;
             default:
                 return "GET";
-                break;
         }
     }
 

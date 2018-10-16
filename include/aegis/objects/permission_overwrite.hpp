@@ -18,14 +18,6 @@
 namespace aegis
 {
 
-class member;
-class channel;
-
-}
-
-namespace aegis
-{
-
 namespace gateway
 {
 
@@ -46,7 +38,7 @@ struct permission_overwrite
 {
     snowflake id; /**<\todo Needs documentation */
     //either "role" or "member"
-    overwrite_type type = User; /**<\todo Needs documentation */
+    objects::overwrite_type type = User; /**<\todo Needs documentation */
     int64_t allow = 0; /**<\todo Needs documentation */
     int64_t deny = 0; /**<\todo Needs documentation */
 };
@@ -56,7 +48,7 @@ inline void from_json(const nlohmann::json& j, permission_overwrite& m)
 {
     m.id = j["id"];
     if (j.count("type"))
-        m.type = (j["type"] == "role") ? (overwrite_type::Role) : (overwrite_type::User);
+        m.type = (j["type"] == "role") ? (objects::overwrite_type::Role) : (objects::overwrite_type::User);
     m.allow = j["allow"];
     m.deny = j["deny"];
 }

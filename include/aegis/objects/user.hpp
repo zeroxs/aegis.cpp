@@ -66,7 +66,7 @@ struct user
         return (_is_bot) && (discriminator == "0000" || discriminator == "0");
     }
 
-    snowflake user_id; /**< snowflake of user */
+    snowflake id; /**< snowflake of user */
     snowflake guild_id; /**< snowflake of guild of the event this user is attached to */
     std::string username; /**< username of user */
     std::string discriminator; /**< discriminator of user */
@@ -82,7 +82,7 @@ private:
 /// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, user& m)
 {
-    m.user_id = j["id"];
+    m.id = j["id"];
     if (j.count("guild_id") && !j["guild_id"].is_null())
         m.guild_id = j["guild_id"];
     if (j.count("username") && !j["username"].is_null())
@@ -103,7 +103,7 @@ inline void from_json(const nlohmann::json& j, user& m)
 /// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const user& m)
 {
-    j["id"] = m.user_id;
+    j["id"] = m.id;
     j["guild_id"] = m.guild_id;
     j["username"] = m.username;
     j["discriminator"] = m.discriminator;

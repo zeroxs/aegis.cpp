@@ -36,8 +36,8 @@ struct ready
     core * bot = nullptr; /**< Pointer to the main bot object */
     int8_t v = 0; /**<\todo Needs documentation */
     objects::user _user; /**<\todo Needs documentation */
-    std::vector<objects::channel_gw> private_channels; /**<\todo Needs documentation */
-    std::vector<objects::guild_gw> guilds; /**<\todo Needs documentation */
+    std::vector<objects::channel> private_channels; /**<\todo Needs documentation */
+    std::vector<objects::guild> guilds; /**<\todo Needs documentation */
     std::string session_id; /**<\todo Needs documentation */
     std::vector<std::string> _trace; /**<\todo Needs documentation */
 };

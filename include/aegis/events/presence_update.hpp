@@ -30,14 +30,13 @@ namespace events
  */
 struct presence_update
 {
-    using presence = aegis::gateway::objects::presence;
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
     objects::user _user; /**<\todo Needs documentation */
     objects::activity game;
-    std::vector<aegis::gateway::objects::role> roles;
+    std::vector<objects::role> roles;
     snowflake guild_id = 0;
-    presence::user_status status = presence::Online;
+    objects::presence::user_status status = objects::presence::Online;
 };
 
 /// \cond TEMPLATES
@@ -46,17 +45,16 @@ inline void from_json(const nlohmann::json& j, presence_update& m)
     m._user = j["user"];
     m.guild_id = j["guild_id"];
 
-    using presence = aegis::gateway::objects::presence;
     const std::string & sts = j["status"];
 
     if (sts == "idle")
-        m.status = presence::user_status::Idle;
+        m.status = objects::presence::user_status::Idle;
     else if (sts == "dnd")
-        m.status = presence::user_status::DoNotDisturb;
+        m.status = objects::presence::user_status::DoNotDisturb;
     else if (sts == "online")
-        m.status = presence::user_status::Online;
+        m.status = objects::presence::user_status::Online;
     else
-        m.status = presence::user_status::Offline;
+        m.status = objects::presence::user_status::Offline;
 
     if (j.count("game") && !j["game"].is_null())
         m.game = j["game"];

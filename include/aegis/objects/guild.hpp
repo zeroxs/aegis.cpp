@@ -24,14 +24,6 @@
 namespace aegis
 {
 
-class member;
-class channel;
-
-}
-
-namespace aegis
-{
-
 namespace gateway
 {
 
@@ -40,7 +32,7 @@ namespace objects
 
 /**\todo Needs documentation
  */
-struct guild_gw
+struct guild
 {
     //TODO:
     snowflake guild_id; /**<\todo Needs documentation */
@@ -56,8 +48,8 @@ struct guild_gw
     int8_t verification_level = 0; /**<\todo Needs documentation */
     int8_t default_message_notifications = 0; /**<\todo Needs documentation */
     int8_t explicit_content_filter = 0; /**<\todo Needs documentation */
-    std::vector<role> roles; /**<\todo Needs documentation */
-    std::vector<emoji> emojis; /**<\todo Needs documentation */
+    std::vector<objects::role> roles; /**<\todo Needs documentation */
+    std::vector<objects::emoji> emojis; /**<\todo Needs documentation */
     std::vector<std::string> features; /**<\todo Needs documentation */
     int8_t mfa_level = 0; /**<\todo Needs documentation */
     snowflake application_id;//? /**<\todo Needs documentation */
@@ -68,15 +60,15 @@ struct guild_gw
     bool large = false; /**<\todo Needs documentation */
     bool unavailable = false; /**<\todo Needs documentation */
     int32_t member_count = 0; /**<\todo Needs documentation */
-    std::vector<voice_state> voice_states; /**<\todo Needs documentation */
-    std::vector<guild_member> members; /**<\todo Needs documentation */
-    std::vector<channel_gw> channels; /**<\todo Needs documentation */
-    std::vector<presence> presences; /**<\todo Needs documentation */
+    std::vector<objects::voice_state> voice_states; /**<\todo Needs documentation */
+    std::vector<objects::guild_member> members; /**<\todo Needs documentation */
+    std::vector<objects::channel> channels; /**<\todo Needs documentation */
+    std::vector<objects::presence> presences; /**<\todo Needs documentation */
 };
 
 
 /// \cond TEMPLATES
-inline void from_json(const nlohmann::json& j, guild_gw& m)
+inline void from_json(const nlohmann::json& j, guild& m)
 {
     if (j.count("id") && !j["id"].is_null())
         m.guild_id = j["id"];
@@ -146,7 +138,7 @@ inline void from_json(const nlohmann::json& j, guild_gw& m)
 /// \endcond
 
 /// \cond TEMPLATES
-inline void to_json(nlohmann::json& j, const guild_gw& m)
+inline void to_json(nlohmann::json& j, const guild& m)
 {
 
 }

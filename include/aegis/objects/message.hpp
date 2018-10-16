@@ -70,7 +70,7 @@ public:
      * @param _g Pointer of guild object
      * @param content String of the message sent
      */
-    explicit message(const std::string & content, channel * _c, guild * _g) noexcept
+    explicit message(const std::string & content, aegis::channel * _c, aegis::guild * _g) noexcept
         : _content(content)
         , _channel(_c)
         , _guild(_g)
@@ -83,7 +83,7 @@ public:
      * @param channel_id Snowflake of channel this message belongs to
      * @param content String of the message sent
      */
-    void set_channel(channel * _c)
+    void set_channel(aegis::channel * _c)
     {
         _channel = _c;
     }
@@ -94,7 +94,7 @@ public:
      * @param channel_id Snowflake of channel this message belongs to
      * @param content String of the message sent
      */
-    void set_guild(guild * _g)
+    void set_guild(aegis::guild * _g)
     {
         _guild = _g;
     }
@@ -107,13 +107,13 @@ public:
     bool mention_everyone = false; /**<\todo Needs documentation */
     std::vector<snowflake> mentions; /**<\todo Needs documentation */
     std::vector<snowflake> mention_roles; /**<\todo Needs documentation */
-    std::vector<attachment> attachments; /**<\todo Needs documentation */
-    std::vector<embed> embeds; /**<\todo Needs documentation */
+    std::vector<objects::attachment> attachments; /**<\todo Needs documentation */
+    std::vector<objects::embed> embeds; /**<\todo Needs documentation */
     bool pinned = false; /**<\todo Needs documentation */
-    std::vector<reaction> reactions; /**<\todo Needs documentation */
+    std::vector<objects::reaction> reactions; /**<\todo Needs documentation */
     snowflake nonce; /**<\todo Needs documentation */
     std::string webhook_id; /**<\todo Needs documentation */
-    message_type type = Default; /**<\todo Needs documentation */
+    objects::message_type type = Default; /**<\todo Needs documentation */
     user author; /**< author object for this message */
 
     bool is_bot() const noexcept
@@ -158,7 +158,7 @@ public:
     }
 #endif
 
-    guild & get_guild()
+    aegis::guild & get_guild()
     {
         if (_guild == nullptr)
 #if defined(AEGIS_CXX17)
@@ -172,7 +172,7 @@ public:
         return *_guild;
     }
 
-    channel & get_channel()
+    aegis::channel & get_channel()
     {
         if (_channel == nullptr)
 #if defined(AEGIS_CXX17)
@@ -187,7 +187,7 @@ public:
     }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    member & get_member()
+    aegis::member & get_member()
     {
         if (_member == nullptr)
 #if defined(AEGIS_CXX17)
@@ -374,11 +374,10 @@ public:
 #endif
 
 private:
-    friend void from_json(const nlohmann::json& j, message& m);
-    friend void to_json(nlohmann::json& j, const message& m);
+    friend void from_json(const nlohmann::json& j, objects::message& m);
+    friend void to_json(nlohmann::json& j, const objects::message& m);
     friend class core;
 
-    //static void set_bot(core * b) { bot = b; }
 #if defined(AEGIS_CXX17)
     void populate_self()
     {
@@ -411,10 +410,10 @@ private:
     };
 #endif
     std::string _content;/**< String of the message contents */
-    channel * _channel = nullptr;/**< Pointer to the channel this message belongs to */
-    guild * _guild = nullptr;/**< Pointer to the guild this message belongs to */
+    aegis::channel * _channel = nullptr;/**< Pointer to the channel this message belongs to */
+    aegis::guild * _guild = nullptr;/**< Pointer to the guild this message belongs to */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    member * _member = nullptr;/**< Pointer to the author of this message */
+    aegis::member * _member = nullptr;/**< Pointer to the author of this message */
 #endif
     snowflake _message_id = 0; /**< snowflake of the message */
     snowflake _channel_id = 0; /**< snowflake of the channel this message belongs to */
@@ -423,7 +422,7 @@ private:
 };
 
 /// \cond TEMPLATES
-inline void from_json(const nlohmann::json& j, message& m)
+inline void from_json(const nlohmann::json& j, objects::message& m)
 {
     m._message_id = j["id"];
     m._channel_id = j["channel_id"];
@@ -471,7 +470,7 @@ inline void from_json(const nlohmann::json& j, message& m)
 /// \endcond
 
 /// \cond TEMPLATES
-inline void to_json(nlohmann::json& j, const message& m)
+inline void to_json(nlohmann::json& j, const objects::message& m)
 {
     j["id"] = m._message_id;
     j["content"] = m._content;

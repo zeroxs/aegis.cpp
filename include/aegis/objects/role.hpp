@@ -31,7 +31,7 @@ struct role
     uint32_t color = 0;
     snowflake role_id;
     std::string name;
-    permission _permission;
+    aegis::permission _permission;
     uint16_t position = 0;
     bool hoist = false;
     bool managed = false;

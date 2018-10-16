@@ -69,7 +69,7 @@ inline void from_json(const nlohmann::json& j, activity& m)
     if (j.count("name") && !j["name"].is_null())
         m.name = j["name"].get<std::string>();
     if (j.count("type") && !j["type"].is_null())
-        m.type = static_cast<aegis::gateway::objects::activity::activity_type>(j["type"].get<int32_t>());
+        m.type = static_cast<objects::activity::activity_type>(j["type"].get<int32_t>());
     if (j.count("url") && !j["url"].is_null())
         m.url = j["url"].get<std::string>();
     if (j.count("timestamps") && !j["timestamps"].is_null())

@@ -91,16 +91,6 @@ public:
     bot_status get_state() const noexcept { return _status; }
     void set_state(bot_status s) noexcept { _status = s; }
 
-    /// Helper function for posting tasks to asio
-    /**
-     * @param f A callable to execute within asio - signature should be void(void)
-     */
-    template<typename Func>
-    void async(Func f)
-    {
-        asio::post(_io_context, std::move(f));
-    }
-
     /// Return bot uptime as {days hours minutes seconds}
     /**
      * @returns std::string of `## h ## m ## s` formatted time

@@ -51,7 +51,7 @@ int main()
 ```
 
 #### Separate compilation ####
-You can include `#include <aegis/src.hpp>` within a single cpp file while defining `-DAEGIS_SEPARATE_COMPILATION`
+You can include `#include <aegis/src.hpp>` within a single cpp file while defining `-DAEGIS_SEPARATE_COMPILATION`, have `#include <aegis.hpp>` in your program, then build as usual.
 
 #### Shared/Static library ####
 You can build this library with CMake.
@@ -62,7 +62,7 @@ $ mkdir build
 $ cd build
 $ cmake ..
 // or to use C++17
-$ cmake -DCMAKE_CXX_COMPILER=g++-7 -DCXX_STANDARD=17 ..
+$ cmake -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_CXX_STANDARD=17 ..
 ```
 You can also add `-DBUILD_EXAMPLES=1` and it will build 3 examples within the ./src directory.</br>
 `example_main.cpp;example.cpp` will build a bot that runs out of its own class</br>
@@ -73,7 +73,7 @@ You can also add `-DBUILD_EXAMPLES=1` and it will build 3 examples within the ./
 You can pass these flags to CMake to change what it builds</br>
 `-DBUILD_EXAMPLES=1` will build the examples</br>
 `-DCMAKE_CXX_COMPILER=g++-7` will let you select the compiler used</br>
-`-DCXX_STANDARD=17` will let you select C++14 (default) or C++17
+`-DCMAKE_CXX_STANDARD=17` will let you select C++14 (default) or C++17
 
 ##### Library #####
 You can pass these flags to your compiler to alter how the library is built</br>

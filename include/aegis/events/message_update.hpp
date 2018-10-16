@@ -31,11 +31,11 @@ struct message_update
 {
     objects::message msg; /**<\todo Needs documentation */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    message_update(const json & j, channel * c, member * m) : msg(j), _channel(c), _member(m) {};
+    message_update(const json & j, aegis::channel * c, aegis::member * m) : msg(j), _channel(c), _member(m) {};
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
-    channel * const _channel = nullptr; /**<\todo Needs documentation */
-    member * const _member = nullptr; /**<\todo Needs documentation */
+    aegis::channel * const _channel = nullptr; /**<\todo Needs documentation */
+    aegis::member * const _member = nullptr; /**<\todo Needs documentation */
 #else
     message_update(const json & j) : msg(j) {};
 #endif

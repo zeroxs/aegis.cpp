@@ -30,7 +30,7 @@ namespace objects
 
 /**\todo Needs documentation
  */
-struct channel_gw
+struct channel
 {
     /**\todo Needs documentation
      */
@@ -47,14 +47,14 @@ struct channel_gw
     channel_type type = Text; /**<\todo Needs documentation */
     snowflake guild_id = 0;//? /**<\todo Needs documentation */
     int position = 0;//? /**<\todo Needs documentation */
-    std::vector<permission_overwrite> permission_overwrites;//? /**<\todo Needs documentation */
+    std::vector<objects::permission_overwrite> permission_overwrites;//? /**<\todo Needs documentation */
     std::string name;//? /**<\todo Needs documentation */
     std::string topic;//? /**<\todo Needs documentation */
     bool nsfw = false;//? /**<\todo Needs documentation */
     snowflake last_message_id = 0;//? /**<\todo Needs documentation */
     int bitrate = 0;//? /**<\todo Needs documentation */
     int userlimit = 0;//? /**<\todo Needs documentation */
-    std::vector<user> recipients;//? /**<\todo Needs documentation */
+    std::vector<objects::user> recipients;//? /**<\todo Needs documentation */
     std::string icon;//? /**<\todo Needs documentation */
     snowflake owner_id;//? /**<\todo Needs documentation */
     snowflake application_id;//? /**<\todo Needs documentation */
@@ -62,7 +62,7 @@ struct channel_gw
 };
 
 /// \cond TEMPLATES
-inline void from_json(const nlohmann::json& j, channel_gw& m)
+inline void from_json(const nlohmann::json& j, channel& m)
 {
     m.channel_id = j["id"];
     m.type = j["type"];
@@ -100,7 +100,7 @@ inline void from_json(const nlohmann::json& j, channel_gw& m)
 /// \endcond
 
 /// \cond TEMPLATES
-inline void to_json(nlohmann::json& j, const channel_gw& m)
+inline void to_json(nlohmann::json& j, const channel& m)
 {
     if (m.channel_id)
         j["id"] = m.channel_id;

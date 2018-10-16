@@ -35,7 +35,7 @@ int main(int argc, char * argv[])
                 const aegis::snowflake member_id = std::get<3>(rets);
 
                 // Is message author myself?
-                if (obj.msg.author.user_id == obj.bot->get_id())
+                if (obj.msg.author.id == obj.bot->get_id())
                     return;
      
                 // Ignore bot messages and DMs
