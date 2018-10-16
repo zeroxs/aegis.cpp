@@ -701,6 +701,13 @@ public:
         return _m;
     }
 
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    bool nsfw() const noexcept
+    {
+        return _nsfw;
+    }
+#endif
+
 private:
     friend class guild;
     friend class core;
@@ -715,6 +722,7 @@ private:
     snowflake last_message_id = 0; /**< Snowflake of the last message sent in this channel */
     std::string name; /**< String of the name of this channel */
     std::string topic; /**< String of the topic of this channel */
+    bool _nsfw = false;
     uint32_t position = 0; /**< Position of channel in guild channel list */
     gateway::objects::channel_gw::channel_type type = gateway::objects::channel_gw::channel_type::Text; /**< Type of channel */
     uint16_t bitrate = 0; /**< Bit rate of voice channel */
