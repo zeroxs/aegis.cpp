@@ -45,19 +45,6 @@ enum message_type
     GuildMemberJoin = 7
 };
 
-#if !defined(AEGIS_CXX17)
-template< class T >
-struct V
-{
-    static core * bot;
-};
-
-template< class T >
-core * V<T>::bot = nullptr;
-
-using BOT = V<void>;
-#endif
-
 /**\todo Needs documentation
  */
 class message
@@ -161,11 +148,7 @@ public:
     aegis::guild & get_guild()
     {
         if (_guild == nullptr)
-#if defined(AEGIS_CXX17)
-            _guild = bot->find_guild(_guild_id);
-#else
-            _guild = BOT::bot->find_guild(_guild_id);
-#endif
+            _guild = internal::bot->find_guild(_guild_id);
         assert(_guild != nullptr);
         if (_guild == nullptr)
             throw exception("message::get_guild() _guild = nullptr", make_error_code(error::guild_not_found));
@@ -175,11 +158,7 @@ public:
     aegis::channel & get_channel()
     {
         if (_channel == nullptr)
-#if defined(AEGIS_CXX17)
-            _channel = bot->find_channel(_channel_id);
-#else
-            _channel = BOT::bot->find_channel(_channel_id);
-#endif
+            _channel = internal::bot->find_channel(_channel_id);
         assert(_channel != nullptr);
         if (_channel == nullptr)
             throw exception("message::get_channel() _channel == nullptr", make_error_code(error::channel_not_found));
@@ -190,21 +169,13 @@ public:
     aegis::member & get_member()
     {
         if (_member == nullptr)
-#if defined(AEGIS_CXX17)
-            _member = bot->find_member(_author_id);
-#else
-            _member = BOT::bot->find_member(_author_id);
-#endif
+            _member = internal::bot->find_member(_author_id);
         if (_member == nullptr)
         {
             if (_author_id == 0)
                 throw exception("message::get_member() _member|_author_id == nullptr", make_error_code(error::member_not_found));
 
-#if defined(AEGIS_CXX17)
-            _member = bot->member_create(_author_id);
-#else
-            _member = BOT::bot->member_create(_author_id);
-#endif
+            _member = internal::bot->member_create(_author_id);
             _member->load_data(author);
         }
         return *_member;
@@ -369,46 +340,27 @@ public:
         return std::tuple<snowflake, snowflake, snowflake, snowflake>{ _channel_id, _guild_id, _message_id, _author_id };
     };
 
-#if defined(AEGIS_CXX17)
-    static inline core * bot = nullptr;
-#endif
-
 private:
     friend void from_json(const nlohmann::json& j, objects::message& m);
     friend void to_json(nlohmann::json& j, const objects::message& m);
     friend class core;
 
-#if defined(AEGIS_CXX17)
     void populate_self()
     {
         if ((_guild == nullptr) && (_guild_id > 0))
-            _guild = bot->find_guild(_guild_id);
+            _guild = internal::bot->find_guild(_guild_id);
         if ((_channel == nullptr) && (_channel_id > 0))
-            _channel = bot->find_channel(_channel_id);
-        if (_guild == nullptr)
-            _guild = bot->find_guild(_channel->get_guild_id());
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
-        if ((_member == nullptr) && (_author_id > 0))
-            _member = bot->find_member(_author_id);
-#endif
-    };
-#else
-    void populate_self()
-    {
-        if ((_guild == nullptr) && (_guild_id > 0))
-            _guild = BOT::bot->find_guild(_guild_id);
-        if ((_channel == nullptr) && (_channel_id > 0))
-            _channel = BOT::bot->find_channel(_channel_id);
+            _channel = internal::bot->find_channel(_channel_id);
         if (_channel == nullptr)
             return;//fail
         if (_guild == nullptr)
-            _guild = BOT::bot->find_guild(_channel->get_guild_id());
+            _guild = internal::bot->find_guild(_channel->get_guild_id());
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
         if ((_member == nullptr) && (_author_id > 0))
-            _member = BOT::bot->find_member(_author_id);
+            _member = internal::bot->find_member(_author_id);
 #endif
     };
-#endif
+
     std::string _content;/**< String of the message contents */
     aegis::channel * _channel = nullptr;/**< Pointer to the channel this message belongs to */
     aegis::guild * _guild = nullptr;/**< Pointer to the guild this message belongs to */
