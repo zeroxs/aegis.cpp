@@ -110,6 +110,10 @@ private:
     std::string _host;
     std::unordered_map<std::string, asio::ip::basic_resolver<asio::ip::tcp>::results_type> _resolver_cache;
 
+    using rest_end_t = std::function<void(uint16_t)>;
+    using call_end_t = std::function<void(std::chrono::steady_clock::time_point)>;
+    rest_end_t rest_end;
+    call_end_t call_end;
 };
 
 }

@@ -196,6 +196,9 @@ private:
     t_on_connect i_on_connect;
     t_on_close i_on_close;
 
+    std::function<void(aegis::shards::shard*)> i_shard_disconnect;
+    std::function<void(aegis::shards::shard*)> i_shard_connect;
+
     AEGIS_DECL void _on_message(websocketpp::connection_hdl hdl, message_ptr msg, shard * _shard);
     AEGIS_DECL void _on_connect(websocketpp::connection_hdl hdl, shard * _shard);
     AEGIS_DECL void _on_close(websocketpp::connection_hdl hdl, shard * _shard);

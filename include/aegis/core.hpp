@@ -358,11 +358,12 @@ public:
     using call_end_t = std::function<void(std::chrono::steady_clock::time_point)>;
     using js_end_t = std::function<void(std::chrono::steady_clock::time_point, const std::string&)>;
     void set_on_message_end(message_end_t cb) { message_end = cb; }
-    void set_on_call_end(call_end_t cb) { call_end = cb; }
+    void set_on_call_end(call_end_t cb) { _rest->call_end = cb; }
     void set_on_js_end(js_end_t cb) { js_end = cb; }
     message_end_t message_end;
-    call_end_t call_end;
     js_end_t js_end;
+    using rest_end_t = std::function<void(uint16_t)>;
+    void set_on_rest_end(rest_end_t cb) { _rest->rest_end = cb; }
 #endif
 
     using typing_start_t = std::function<void(gateway::events::typing_start obj)>;
@@ -423,6 +424,9 @@ public:
     void set_on_presence_update(presence_update_t cb) { i_presence_update = cb; }/**< PRESENCE_UPDATE callback */
     void set_on_voice_state_update(voice_state_update_t cb) { i_voice_state_update = cb; }/**< VOICE_STATE_UPDATE callback */
     void set_on_voice_server_update(voice_server_update_t cb) { i_voice_server_update = cb; }/**< VOICE_SERVER_UPDATE callback */
+
+    void set_on_shard_disconnect(std::function<void(aegis::shards::shard*)> cb) { _shard_mgr->i_shard_disconnect = cb; };
+    void set_on_shard_connect(std::function<void(aegis::shards::shard*)> cb) { _shard_mgr->i_shard_connect = cb; };
 
     /// Send a websocket message to a single shard
     /**
