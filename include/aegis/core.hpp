@@ -15,6 +15,8 @@
 #include "aegis/snowflake.hpp"
 #include "aegis/futures.hpp"
 #include "aegis/ratelimit/ratelimit.hpp"
+#include "aegis/ratelimit/bucket.hpp"
+#include "aegis/rest/rest_controller.hpp"
 #include "aegis/shards/shard_mgr.hpp"
 #include "aegis/guild.hpp"
 #include "aegis/channel.hpp"
@@ -45,6 +47,16 @@ using shared_mutex = std::shared_mutex;
 using shared_mutex = std::shared_timed_mutex;
 #endif
 
+using rest_call = std::function<rest::rest_reply(rest::request_params)>;
+
+/// Type of a pointer to the Websocket++ TLS connection
+using connection_ptr = websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr;
+
+/// Type of a pointer to the Websocket++ message payload
+using message_ptr = websocketpp::config::asio_client::message_type::ptr;
+
+using ratelimit_mgr_t = aegis::ratelimit::ratelimit_mgr<rest_call, aegis::rest::rest_reply>;
+
 /// Primary class for managing a bot interface
 /**
  * Only one instance of this object can exist safely
@@ -52,14 +64,6 @@ using shared_mutex = std::shared_timed_mutex;
 class core
 {
 public:
-    /// Type of a pointer to the Websocket++ TLS connection
-    using connection_ptr = websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr;
-
-    /// Type of a pointer to the Websocket++ message payload
-    using message_ptr = websocketpp::config::asio_client::message_type::ptr;
-
-    using ratelimit_mgr_t = aegis::ratelimit::ratelimit_mgr<rest_call, aegis::rest::rest_reply>;
-  
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /// This constructor creates its own spdlog::logger and asio::io_context
     /**
@@ -308,28 +312,31 @@ public:
     /**
      * @returns std::string of `##h ##m ##s` formatted time
      */
-    AEGIS_DECL std::string uptime_str() const noexcept
-    {
-        return utility::uptime_str(starttime);
-    }
+    AEGIS_DECL std::string uptime_str() const noexcept;
 
     /// Return shard uptime as {days hours minutes seconds}
     /**
      * @returns Time in milliseconds since shard received ready
      */
-    int64_t uptime() const noexcept
-    {
-        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - starttime).count();
-    }
+    AEGIS_DECL int64_t uptime() const noexcept;
 
-    /// Performs an HTTP request on the path with content as the request body using the method method
+    /// Performs an immediate blocking HTTP request on the path with content as the request body using the method method
     /**
      * @see rest_reply
      * @see rest::request_params
      * @param params A struct of HTTP parameters to perform the request
      * @returns Response object
      */
-    AEGIS_DECL rest::rest_reply call(rest::request_params params);
+    AEGIS_DECL rest::rest_reply call(rest::request_params && params);
+
+    /// Performs an immediate blocking HTTP request on the path with content as the request body using the method method
+    /**
+     * @see rest_reply
+     * @see rest::request_params
+     * @param params A struct of HTTP parameters to perform the request
+     * @returns Response object
+     */
+    AEGIS_DECL rest::rest_reply call(rest::request_params & params);
 
     std::unordered_map<snowflake, std::unique_ptr<channel>> channels;
     std::unordered_map<snowflake, std::unique_ptr<guild>> guilds;
@@ -429,26 +436,11 @@ public:
     */
     AEGIS_DECL void send_all_shards(const json & msg);
 
-    shards::shard & get_shard_by_id(uint16_t shard_id)
-    {
-        return _shard_mgr->get_shard(shard_id);
-    }
+    AEGIS_DECL shards::shard & get_shard_by_id(uint16_t shard_id);
 
-    shards::shard & get_shard_by_guild(snowflake guild_id)
-    {
-        auto g = find_guild(guild_id);
-        if (g == nullptr)
-            throw std::out_of_range("get_shard_by_guild error - guild does not exist");
-        return _shard_mgr->get_shard(g->shard_id);
-    }
+    AEGIS_DECL shards::shard & get_shard_by_guild(snowflake guild_id);
 
-    uint64_t get_shard_transfer()
-    {
-        uint64_t count = 0;
-        for (auto & s : _shard_mgr->_shards)
-            count += s->get_transfer();
-        return count;
-    }
+    AEGIS_DECL uint64_t get_shard_transfer();
 
     const std::string & get_token() const noexcept { return _token; }
 
@@ -549,7 +541,7 @@ private:
     bot_status _status = bot_status::Uninitialized;
 
     std::unique_ptr<rest::rest_controller> _rest;
-    std::unique_ptr<ratelimit_mgr_t > _ratelimit;
+    std::unique_ptr<ratelimit_mgr_t> _ratelimit;
     std::unique_ptr<shards::shard_mgr> _shard_mgr;
 
     member * _self = nullptr;

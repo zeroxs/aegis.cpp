@@ -10,6 +10,9 @@
 #pragma once
 
 #include "aegis/config.hpp"
+#include "aegis/rest/rest_reply.hpp"
+#include "aegis/snowflake.hpp"
+#include "aegis/ratelimit/bucket.hpp"
 #include <chrono>
 #include <functional>
 #include <string>
@@ -17,9 +20,6 @@
 #include <map>
 #include <memory>
 #include <atomic>
-#include "aegis/rest/rest_reply.hpp"
-#include "aegis/snowflake.hpp"
-#include "aegis/ratelimit/bucket.hpp"
 #include <future>
 #include <thread>
 #include <mutex>

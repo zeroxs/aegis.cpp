@@ -12,6 +12,7 @@
 
 #include "aegis/config.hpp"
 #include "aegis/fwd.hpp"
+#include <condition_variable>
 #include <stdexcept>
 #include <type_traits>
 #include <memory>
@@ -19,7 +20,10 @@
 #include <chrono>
 #include <thread>
 #include <iostream>
-#include <asio.hpp>
+#include <asio/io_context.hpp>
+#include <asio/post.hpp>
+#include <asio/bind_executor.hpp>
+#include <asio/executor_work_guard.hpp>
 
 using namespace std::literals::chrono_literals;
 

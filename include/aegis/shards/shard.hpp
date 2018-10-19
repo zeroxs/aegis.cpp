@@ -11,16 +11,22 @@
 
 #include "aegis/config.hpp"
 #include "aegis/utility.hpp"
+#include "aegis/fwd.hpp"
 #include <memory>
 #include <map>
 #include <string>
 #include <chrono>
 #include <stdint.h>
-#include "aegis/push.hpp"
+#include <asio/io_context.hpp>
+#ifdef WIN32
+# include "aegis/push.hpp"
+#endif
 #include <websocketpp/config/asio_client.hpp>
 #include <websocketpp/common/connection_hdl.hpp>
 #include <websocketpp/client.hpp>
-#include "aegis/pop.hpp"
+#ifdef WIN32
+# include "aegis/pop.hpp"
+#endif
 #include <spdlog/fmt/fmt.h>
 #include "aegis/zstr/zstr.hpp"
 
@@ -182,23 +188,7 @@ public:
         keepalivefunc = fnkeepalive;
     }
 
-    void start_heartbeat(int32_t heartbeat) noexcept
-    {
-        heartbeattime = heartbeat;
-
-        if (!keepalivefunc || !_connection)
-            return;
-
-        keepalivetimer.expires_after(std::chrono::milliseconds(heartbeat));
-        keepalivetimer.async_wait(asio::bind_executor(*_connection->get_strand(), [=](const asio::error_code & ec)
-        {
-            if (ec == asio::error::operation_aborted)
-                return;
-
-            keepalivefunc(ec, std::chrono::milliseconds(heartbeat), this);
-            start_heartbeat(heartbeat);
-        }));
-    }
+    AEGIS_DECL void start_heartbeat(int32_t heartbeat) noexcept;
 
     std::deque<std::tuple<int64_t, std::string>> debug_messages;
     asio::steady_timer keepalivetimer;
@@ -236,9 +226,14 @@ public:
         return _connection;
     }
 
+    std::vector<std::string> get_trace() const noexcept
+    {
+        return _trace;
+    }
+
 private:
     friend class shard_mgr;
-    friend class core;
+    friend class aegis::core;
 
     AEGIS_DECL void process_writes(const asio::error_code & ec);
     AEGIS_DECL void _reset();
@@ -264,8 +259,13 @@ private:
 
     // Websocket++ socket connection
     websocketpp::connection_hdl hdl;
+    std::vector<std::string> _trace;
 };
 
 }
 
 }
+
+#if defined(AEGIS_HEADER_ONLY)
+#include "aegis/shards/impl/shard.cpp"
+#endif

@@ -158,8 +158,9 @@ public:
     int64_t reset = 0; /**< Rate limit reset time */
     int32_t retry = 0; /**< Rate limit retry time */
     std::string content; /**< REST call's reply body */
-    bool permissions = true; /**< Whether the call had proper permissions */
-    std::chrono::steady_clock::duration execution_time;
+    //bool permissions = true; /**< Whether the call had proper permissions */
+    std::chrono::steady_clock::duration execution_time; /**< Time it took to perform the request */
+    //TODO: std::map<std::string, std::string> headers; /**< Reply headers */
 };
 
 }

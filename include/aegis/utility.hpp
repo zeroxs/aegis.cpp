@@ -58,6 +58,7 @@ enum class shard_status
     Connecting,
     PreReady,
     Online,
+    Queued,
     Reconnecting,
     Closed,
     Shutdown

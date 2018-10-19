@@ -27,7 +27,7 @@
 namespace aegis
 {
 
-using rest_call = std::function<rest::rest_reply(rest::request_params params)>;
+using rest_call = std::function<rest::rest_reply(rest::request_params)>;
 
 namespace ratelimit
 {

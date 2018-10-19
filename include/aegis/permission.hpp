@@ -10,7 +10,7 @@
 #pragma once
 
 #include "aegis/config.hpp"
-#include <nlohmann/json.hpp>
+#include "aegis/fwd.hpp"
 #include <stdint.h>
 
 namespace aegis
@@ -94,21 +94,14 @@ private:
     int64_t _allow_permissions = 0;
 };
 
-/**\todo Needs documentation
- */
-inline void from_json(const nlohmann::json& j, permission& s)
-{
-    if (j.is_string())
-        s = std::stoll(j.get<std::string>());
-    else if (j.is_number())
-        s = j.get<int64_t>();
-}
+/// \cond TEMPLATES
+AEGIS_DECL void from_json(const nlohmann::json& j, permission& s);
 
-/**\todo Needs documentation
- */
-inline void to_json(nlohmann::json& j, const permission& s)
-{
-    j = nlohmann::json{ static_cast<int64_t>(s) };
-}
+AEGIS_DECL void to_json(nlohmann::json& j, const permission& s);
+/// \endcond
 
 }
+
+#if defined(AEGIS_HEADER_ONLY)
+#include "aegis/impl/permission.cpp"
+#endif

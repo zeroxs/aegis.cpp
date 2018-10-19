@@ -184,7 +184,7 @@ public:
     std::shared_ptr<spdlog::logger> log;
 
 private:
-    friend core;
+    friend aegis::core;
 
     std::chrono::time_point<std::chrono::steady_clock> _last_ready;
     std::chrono::time_point<std::chrono::steady_clock> _connect_time;
@@ -222,3 +222,7 @@ private:
 }
 
 }
+
+#if defined(AEGIS_HEADER_ONLY)
+#include "aegis/shards/impl/shard_mgr.cpp"
+#endif

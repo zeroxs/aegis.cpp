@@ -11,11 +11,11 @@
 
 #include "aegis/config.hpp"
 #include "aegis/utility.hpp"
-#include "aegis/objects/role.hpp"
+#include "aegis/gateway/objects/role.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/rest/rest_reply.hpp"
 #include "aegis/ratelimit/ratelimit.hpp"
-#include "aegis/objects/permission_overwrite.hpp"
+#include "aegis/gateway/objects/permission_overwrite.hpp"
 #include <future>
 #include <asio.hpp>
 #include <shared_mutex>

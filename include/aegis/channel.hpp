@@ -15,8 +15,8 @@
 #include "aegis/ratelimit/ratelimit.hpp"
 #include "aegis/permission.hpp"
 #include "aegis/snowflake.hpp"
-#include "aegis/objects/permission_overwrite.hpp"
-#include "aegis/objects/channel.hpp"
+#include "aegis/gateway/objects/permission_overwrite.hpp"
+#include "aegis/gateway/objects/channel.hpp"
 #include <shared_mutex>
 
 namespace aegis
