@@ -146,10 +146,8 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
         global = !(hresponse.get_header("X-RateLimit-Global").empty());
 
 #if defined(AEGIS_PROFILING)
-        if (call_end)
-            call_end(start_time);
         if (rest_end)
-            rest_end(static_cast<uint16_t>(hresponse.get_status_code()));
+            rest_end(start_time, static_cast<uint16_t>(hresponse.get_status_code()));
 #endif
 
         if (error != asio::error::eof && error != asio::ssl::error::stream_truncated)

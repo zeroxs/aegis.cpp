@@ -25,7 +25,6 @@ Libraries used (all are header-only with the exception of zlib and openssl):
 - Voice data send/recv
 - Finish documentation
 - Finish live example of library in use
-- Finish remaining API endpoints
 
 # Documentation #
 You can access the [documentation here](https://docs.aegisbot.io/). It is a work in progress itself and has some missing parts, but most of the library is now documented.
@@ -64,46 +63,51 @@ $ cmake ..
 // or to use C++17
 $ cmake -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_CXX_STANDARD=17 ..
 ```
-You can also add `-DBUILD_EXAMPLES=1` and it will build 3 examples within the ./src directory.</br>
-`example_main.cpp;example.cpp` will build a bot that runs out of its own class</br>
+You can also add `-DBUILD_EXAMPLES=1` and it will build 3 examples within the ./src directory.<br />
+`example_main.cpp;example.cpp` will build a bot that runs out of its own class<br />
 `minimal.cpp` will build two versions, one (aegis_minimal) will be with the shared/static library. The other (aegis_headeronly_no_cache) will be header-only but the lib will store no internal cache.
 
 
 ## Compiler Options ##
-You can pass these flags to CMake to change what it builds</br>
-`-DBUILD_EXAMPLES=1` will build the examples</br>
-`-DCMAKE_CXX_COMPILER=g++-7` will let you select the compiler used</br>
+You can pass these flags to CMake to change what it builds<br />
+`-DBUILD_EXAMPLES=1` will build the examples<br />
+`-DCMAKE_CXX_COMPILER=g++-7` will let you select the compiler used<br />
 `-DCMAKE_CXX_STANDARD=17` will let you select C++14 (default) or C++17
 
 ##### Library #####
-You can pass these flags to your compiler to alter how the library is built</br>
-`-DAEGIS_DISABLE_ALL_CACHE` will disable the internal caching of most objects such as member data reducing memory usage by a significant amount</br>
-`-DAEGIS_DEBUG_HISTORY` enables the saving of the last 5 messages sent on the shard's websocket. In the event of an uncaught exception, they are dumped to console.</br>
+You can pass these flags to your compiler (and/or CMake) to alter how the library is built<br />
+`-DAEGIS_DISABLE_ALL_CACHE` will disable the internal caching of most objects such as member data reducing memory usage by a significant amount<br />
+`-DAEGIS_DEBUG_HISTORY` enables the saving of the last 5 messages sent on the shard's websocket. In the event of an uncaught exception, they are dumped to console.<br />
+`-DAEGIS_PROFILING` enables the usage of 3 callbacks that can help track time spent within the library. See docs:<br />
+1. `aegis::core::set_on_message_end` Called when message handler is finished. Counts only your message handler time.
+2. `aegis::core::set_on_js_end` Called when the incoming json event is parsed. Counts only json parse time.
+3. `aegis::core::set_on_rest_end` Called when a REST (or any HTTP request is made) is finished. Counts only entire HTTP request time and includes response status code.
 
 ##### Your project #####
 Options above, as well as:
-`-DAEGIS_DYN_LINK` used when linking the library as a shared object</br>
-`-DAEGIS_HEADER_ONLY` to make library header-only (default option)</br>
-`-DAEGIS_SEPARATE_COMPILATION` used when linking the library as static or separate cpp file within your project</br>
+`-DAEGIS_DYN_LINK` used when linking the library as a shared object<br />
+`-DAEGIS_HEADER_ONLY` to make library header-only (default option)<br />
+`-DAEGIS_SEPARATE_COMPILATION` used when linking the library as static or separate cpp file within your project<br />
 
 ## CMake misc ##
-If configured with CMake, it will create a pkg-config file that may help with compiling your own project.</br>
-It can be used as such:</br>
-`g++ -std=c++14 myfile.cpp $(pkg-config --cflags --libs aegis)`</br>
+If configured with CMake, it will create a pkg-config file that may help with compiling your own project.<br />
+It can be used as such:<br />
+`g++ -std=c++14 myfile.cpp $(pkg-config --cflags --libs aegis)`<br />
 to link to the shared object
 
-`g++ -std=c++14 minimal.cpp $(pkg-config --cflags --libs aegis_static)`</br>
-to link to the static object</br>
+`g++ -std=c++14 myfile.cpp $(pkg-config --cflags --libs aegis_static)`<br />
+to link to the static object<br />
 
 You can also use this library within your own CMake project by adding `find_package(Aegis REQUIRED)` to your `CMakeLists.txt`.
 
 
 ## Config ##
-You can change basic configuration options within the `config.json` file that should be in the same directory as the executable when built.
+You can change basic configuration options within the `config.json` file. It should be in the same directory as the executable.
 ```
 {
 	"token": "BOTTOKENHERE",
 	"force-shard-count": 10,
-	"file-logging": false
+	"file-logging": false,
+	"log-format": "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v"
 }
 ```

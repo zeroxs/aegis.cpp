@@ -355,15 +355,13 @@ public:
 
 #ifdef AEGIS_PROFILING
     using message_end_t = std::function<void(std::chrono::steady_clock::time_point, const std::string&)>;
-    using call_end_t = std::function<void(std::chrono::steady_clock::time_point)>;
+    using rest_end_t = std::function<void(std::chrono::steady_clock::time_point, uint16_t)>;
     using js_end_t = std::function<void(std::chrono::steady_clock::time_point, const std::string&)>;
     void set_on_message_end(message_end_t cb) { message_end = cb; }
-    void set_on_call_end(call_end_t cb) { _rest->call_end = cb; }
+    void set_on_rest_end(rest_end_t cb) { _rest->rest_end = cb; }
     void set_on_js_end(js_end_t cb) { js_end = cb; }
     message_end_t message_end;
     js_end_t js_end;
-    using rest_end_t = std::function<void(uint16_t)>;
-    void set_on_rest_end(rest_end_t cb) { _rest->rest_end = cb; }
 #endif
 
     using typing_start_t = std::function<void(gateway::events::typing_start obj)>;
