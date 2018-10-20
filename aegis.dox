@@ -42,35 +42,10 @@ int main(int argc, char * argv[])
             {
                 _channel.create_message("Hello back");
             }
-            else if (content == "~React")
-            {
-                // use an emoji your bot has access to here
-                auto response = obj.msg.create_reaction("success:429554838083207169").get();
-                if (response)
-                {
-                    // reaction was a success. maybe chain another?
-                    auto response = obj.msg.create_reaction("fail:429554869611921408");
-
-                    // perhaps you'd like to leverage asio to respond
-                    bot.async([&_channel, fut = std::move(response)]() mutable
-                    {
-                        auto response = fut.get();
-                        if (response)
-                            _channel.create_message("React complete");
-                        else
-                            _channel.create_message("React failed");
-                    });
-                }
-            }
         });
 
-        // start the bot with 3 async threads. the function passed is executed after
-        // websocket gateway information is collected but before the websocket is connected
-        // allowing you to change any options such as shard count
-        bot.run(3, [&]
-        {
-            bot.log->info("Gateway says we need to use {} shards", bot.shard_max_count);
-        });
+        // start the bot
+        bot.run();
     }
     catch (std::exception & e)
     {

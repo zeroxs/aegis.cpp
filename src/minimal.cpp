@@ -103,8 +103,7 @@ int main(int argc, char * argv[])
             return;
         });
 
-        // start the bot. the function passed is executed after the internal logger is set up and the
-        // websocket gateway information is collected.
+        // start the bot
         bot.run();
     }
     catch (std::exception & e)
