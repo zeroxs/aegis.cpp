@@ -39,65 +39,115 @@ public:
      * @param value Text to be shown within field
      * @param is_inline Sets whether the field is inline
      */
-    embed & fields(std::vector<objects::field> flds)
+    embed & fields(const std::vector<objects::field> & flds) noexcept
     {
         _fields = flds;
         return *this;
     }
+
     /// Sets the title of the embed
     /**
      * @param str Title to set
      */
-    embed & title(const std::string & str)
+    embed & title(const std::string & str) noexcept
     {
         _title = str;
         return *this;
     }
+
     /// Sets the footer of the embed
     /**
      * @param str Footer to set
      */
-    embed & footer(const footer ftr)
+    embed & footer(const objects::footer ftr) noexcept
     {
         _footer = ftr;
         return *this;
     }
+
     /// Sets the description of the embed
     /**
      * @param str Description to set
      */
-    embed & description(const std::string & str)
+    embed & description(const std::string & str) noexcept
     {
         _description = str;
         return *this;
     }
+
     /// Sets the url of the embed
     /**
      * @param str Url to set
      */
-    embed & url(std::string & str)
+    embed & url(const std::string & str) noexcept
     {
         _url = str;
         return *this;
     }
+
     /// Sets the timestamp of the embed
     /**
      * @param str Timestamp to set
      */
-    embed & timestamp(const std::string & str)
+    embed & timestamp(const std::string & str) noexcept
     {
         _timestamp = str;
         return *this;
     }
+
     /// Sets the color of the embed
     /**
      * @param clr Color to set
      */
-    embed & color(const int32_t clr)
+    embed & color(const int32_t clr) noexcept
     {
         _color = clr;
         return *this;
     }
+
+    /// Get the fields
+    std::vector<objects::field> & fields() noexcept
+    {
+        return _fields;
+    }
+
+    /// Get the title
+    std::string & title() noexcept
+    {
+        return _title;
+    }
+    
+    /// Get the footer
+    objects::footer & footer() noexcept
+    {
+        return _footer;
+    }
+    
+    /// Get the description
+    std::string & description() noexcept
+    {
+        return _description;
+    }
+    
+    /// Get the url
+    std::string & url() noexcept
+    {
+        return _url;
+    }
+    
+    /// Get the timestamp
+    std::string & timestamp() noexcept
+    {
+        return _timestamp;
+    }
+    
+    /// Get the color
+    int32_t & color() noexcept
+    {
+        return _color;
+    }
+
+private:
     // Combined Limit: 6000
     std::string _title; /**<\todo Needs documentation */ // Limit: 256
     std::string _type; /**<\todo Needs documentation */
