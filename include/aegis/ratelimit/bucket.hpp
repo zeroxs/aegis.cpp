@@ -22,11 +22,12 @@
 #include <asio/io_context.hpp>
 #include <asio/use_future.hpp>
 #include <asio/post.hpp>
+#include "aegis/rest/rest_controller.hpp"
 
 namespace aegis
 {
 
-using rest_call = std::function<rest::rest_reply(const std::string & path, const std::string & content, const std::string & method, const std::string & host)>;
+using rest_call = std::function<rest::rest_reply(rest::request_params)>;
 
 namespace ratelimit
 {
@@ -76,7 +77,7 @@ public:
     /**
      * @returns true if globally ratelimited
      */
-    bool is_global() const AEGIS_NOEXCEPT
+    bool is_global() const noexcept
     {
         return _global_limit > 0;
     }
@@ -86,7 +87,7 @@ public:
     /**
      * @returns true if bucket ratelimits permit a message to be sent
      */
-    bool can_perform() const AEGIS_NOEXCEPT
+    bool can_perform() const noexcept
     {
         if (ignore_rates)
             return true;
@@ -100,7 +101,7 @@ public:
         return true;
     }
 
-    Result perform(const std::string & path, const std::string & content, const std::string & method, const std::string & host = "")
+    Result perform(rest::request_params params)
     {
         std::lock_guard<std::mutex> lock(m);
         while (!can_perform())
@@ -111,14 +112,14 @@ public:
             std::this_thread::sleep_for(seconds((reset.load(std::memory_order_relaxed)
                                                  - std::chrono::duration_cast<seconds>(std::chrono::system_clock::now().time_since_epoch()).count()) + 1));
         }
-        Result reply(_call(path, content, method, host));
+        Result reply(_call(params));
         limit.store(reply.limit, std::memory_order_relaxed);
         remaining.store(reply.remaining, std::memory_order_relaxed);
         reset.store(reply.reset, std::memory_order_relaxed);
         return reply;
     }
 
-    std::future<Result> post_task(const std::string & path, const std::string & method = "POST", const std::string & obj = "", const std::string & host = "")
+    std::future<Result> post_task(rest::request_params params)
     {
         using result = asio::async_result<asio::use_future_t<>, void(Result)>;
         using handler = typename result::completion_handler_type;
@@ -128,7 +129,7 @@ public:
 
         asio::post(_io_context, [=]() mutable
         {
-            exec(perform(path, obj, method, host));
+            exec(perform(params));
         });
         return ret.get();
     }

@@ -18,10 +18,6 @@ int main(int argc, char * argv[])
     {
         aegis::core bot(spdlog::level::trace);
 
-        std::mutex m_ping_test;
-        std::condition_variable cv_ping_test;
-        int64_t ws_checktime = 0;
-
         example_bot::example commands;
 
         commands.inject(bot);

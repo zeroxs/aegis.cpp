@@ -10,12 +10,13 @@
 #pragma once
 
 #include "aegis/config.hpp"
-#include "aegis/rest/rest_reply.hpp"
 #include "aegis/fwd.hpp"
-#include <string>
-#include <map>
+#include "aegis/rest/rest_reply.hpp"
 #include <asio/ip/basic_resolver.hpp>
 #include <asio/ip/tcp.hpp>
+#include <string>
+#include <map>
+#include <functional>
 
 namespace aegis
 {
@@ -23,82 +24,74 @@ namespace aegis
 namespace rest
 {
 
+enum RequestMethod
+{
+    Get,
+    Post,
+    Put,
+    Patch,
+    Delete,
+    MAX_METHODS
+};
+
+struct request_params
+{
+    std::string path;
+    RequestMethod method = Post;
+    std::string body;
+    std::string host;
+    std::string port = "443";
+    std::vector<std::string> headers;
+};
+
 class rest_controller
 {
 public:
-#if defined(AEGIS_PROFILING)
-    AEGIS_DECL rest_controller(const std::string & token, core * bot);
-    AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix, core * bot);
-    AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix, const std::string & host, core * bot);
-#else
     AEGIS_DECL rest_controller(const std::string & token);
     AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix);
     AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix, const std::string & host);
-#endif
-    AEGIS_DECL ~rest_controller();
+    ~rest_controller() = default;
 
     rest_controller(const rest_controller &) = delete;
     rest_controller(rest_controller &&) = delete;
     rest_controller & operator=(const rest_controller &) = delete;
 
-    /// Performs a GET request on the path
+    /// Performs an HTTP request using the params provided
     /**
      * @see rest_reply
-     * @param path A string of the uri path to get
-     *
-     * @returns Response object
+     * @see rest::request_params
+     * @param params A struct of HTTP parameters to perform the request
+     * @returns rest_reply
      */
-    AEGIS_DECL rest_reply get(const std::string & path);
+    AEGIS_DECL rest_reply execute(rest::request_params && params);
 
-    /// Performs a GET request on the path with content as the request body
+    /// Performs an HTTP request using the params provided
     /**
-    * @see rest_reply
-    * @param path A string of the uri path to get
-    *
-    * @param content JSON formatted string to send as the body
-    *
-    * @param host Provide only if the call should go to a different host
-    *
-    * @returns Response object
-    */
-    AEGIS_DECL rest_reply get(const std::string & path, const std::string & content, const std::string & host = "");
+     * @see rest_reply
+     * @see rest::request_params
+     * @param params A struct of HTTP parameters to perform the request
+     * @returns rest_reply
+     */
+    AEGIS_DECL rest_reply execute2(rest::request_params && params);
 
-    /// Performs a POST request on the path
-    /**
-    * @see rest_reply
-    * @param path A string of the uri path to post
-    *
-    * @returns Response object
-    */
-    AEGIS_DECL rest_reply post(const std::string & path);
-
-    /// Performs a POST request on the path with content as the request body
-    /**
-    * @see rest_reply
-    * @param path A string of the uri path to post
-    *
-    * @param content JSON formatted string to send as the body
-    *
-    * @param host Provide only if the call should go to a different host
-    *
-    * @returns Response object
-    */
-    AEGIS_DECL rest_reply post(const std::string & path, const std::string & content, const std::string & host = "");
-
-    /// Performs an HTTP request on the path with content as the request body using the method method
-    /**
-    * @see rest_reply
-    * @param path A string of the uri path to get
-    *
-    * @param content JSON formatted string to send as the body
-    *
-    * @param method The HTTP method of the request
-    *
-    * @param host Provide only if the call should go to a different host
-    *
-    * @returns Response object
-    */
-    AEGIS_DECL rest_reply execute(const std::string & path, const std::string & content, const std::string & method, const std::string & host = "");
+    std::string get_method(RequestMethod method)
+    {
+        switch (method)
+        {
+            case Get:
+                return "GET";
+            case Post:
+                return "POST";
+            case Put:
+                return "PUT";
+            case Patch:
+                return "PATCH";
+            case Delete:
+                return "DELETE";
+            default:
+                return "GET";
+        }
+    }
 
     void set_auth(const std::string & token)
     {
@@ -111,16 +104,20 @@ public:
     }
 
 private:
+    friend aegis::core;
     std::string _token;
     std::string _prefix;
     std::string _host;
     std::unordered_map<std::string, asio::ip::basic_resolver<asio::ip::tcp>::results_type> _resolver_cache;
-    asio::io_context _io_context;
-#if defined(AEGIS_PROFILING)
-    core * _bot;
-#endif
+
+    using rest_end_t = std::function<void(std::chrono::steady_clock::time_point, uint16_t)>;
+    rest_end_t rest_end;
 };
 
 }
 
 }
+
+#if defined(AEGIS_HEADER_ONLY)
+#include "aegis/rest/impl/rest_controller.cpp"
+#endif

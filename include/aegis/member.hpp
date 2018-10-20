@@ -13,6 +13,7 @@
 #include "aegis/utility.hpp"
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 #include "aegis/snowflake.hpp"
+#include "aegis/gateway/objects/presence.hpp"
 #include "aegis/fwd.hpp"
 #include <nlohmann/json.hpp>
 #include <string>
@@ -33,29 +34,23 @@ using shared_mutex = std::shared_timed_mutex;
 using json = nlohmann::json;
 
 /// Stores user-specific and guild-specific attributes of users
+///\todo Maybe rename this to the more appropriate `user`?
 class member
 {
 public:
+    using presence = aegis::gateway::objects::presence;
+  
     explicit member(snowflake id) : _member_id(id) {}
 
     /// Member owned guild information
     struct guild_info
     {
-        std::set<int64_t> roles;
-        std::string nickname;
-        //std::string joined_at;
-        uint64_t joined_at = 0;
-        bool deaf = false;
-        bool mute = false;
-    };
-
-    /// The statuses a member is able to be
-    enum member_status
-    {
-        Offline,
-        Online,
-        Idle,
-        DoNotDisturb
+        snowflake id;/**< Snowflake of the guild for this data */
+        std::vector<snowflake> roles;
+        std::string nickname;/**< Nickname of the user in this guild */
+        uint64_t joined_at = 0;/**< Unix timestamp of when member joined this guild */
+        bool deaf = false;/**< Whether member is deafened in a voice channel */
+        bool mute = false;/**< Whether member is muted in a voice channel */
     };
 
     /// Get the nickname of this user
@@ -63,22 +58,22 @@ public:
      * @param guild_id The snowflake for the guild to check if nickname is set
      * @returns string of the nickname or empty if no nickname is set
      */
-    AEGIS_DECL std::string get_name(snowflake guild_id) AEGIS_NOEXCEPT;
+    AEGIS_DECL const std::string & get_name(snowflake guild_id) noexcept;
 
     /// Get the nickname of this user
     /**
     * @returns string of the username
     */
-    std::string get_username() const AEGIS_NOEXCEPT
+    const std::string & get_username() const noexcept
     {
-        return std::string(_name);
+        return _name;
     }
 
     /// Get the discriminator of this user
     /**
     * @returns string of the discriminator
     */
-    uint16_t get_discriminator() const AEGIS_NOEXCEPT
+    uint16_t get_discriminator() const noexcept
     {
         return _discriminator;
     }
@@ -87,16 +82,16 @@ public:
     /**
     * @returns string of the discriminator
     */
-    std::string get_avatar() const AEGIS_NOEXCEPT
+    const std::string & get_avatar() const noexcept
     {
-        return std::string(_avatar);
+        return _avatar;
     }
 
     /// Check whether user is a bot
     /**
     * @returns bool of bot status
     */
-    bool is_bot() const AEGIS_NOEXCEPT
+    bool is_bot() const noexcept
     {
         return _is_bot;
     }
@@ -105,33 +100,65 @@ public:
     /**
     * @returns bool of mfa status
     */
-    bool is_mfa_enabled() const AEGIS_NOEXCEPT
+    bool is_mfa_enabled() const noexcept
     {
         return _mfa_enabled;
     }
 
+    /// Builds a mention for this user
+    /**
+    * @returns string of member mention
+    */
+    AEGIS_DECL std::string get_mention() const noexcept;
     /// Get the member owned guild information object
     /**
      * @param guild_id The snowflake for the guild
      * @returns Pointer to the member owned guild information object
      */
-    AEGIS_DECL guild_info & get_guild_info(snowflake guild_id) AEGIS_NOEXCEPT;
+    AEGIS_DECL guild_info & get_guild_info(snowflake guild_id) noexcept;
 
     /// Get the full name (username#discriminator) of this user
     /**
      * @returns string of the full username and discriminator
      */
-    AEGIS_DECL std::string get_full_name() const AEGIS_NOEXCEPT;
+    AEGIS_DECL std::string get_full_name() const noexcept;
 
     /// Get the snowflake of this user
     /**
      * @returns snowflake of the user
      */
-    snowflake get_id() const AEGIS_NOEXCEPT
+    snowflake get_id() const noexcept
     {
         return _member_id;
     }
 
+    /// Get the DM channel associated with this user
+    /// DM channels are obtained when a DM is sent
+    /**
+     * @returns snowflake of DM channel
+     */
+    snowflake get_dm_id() const noexcept
+    {
+        return _dm_id;
+    }
+
+    /// Set the DM channel id for the user
+    /**
+     * @param _id Snowflake of DM channel for this user
+     */
+    void set_dm_id(snowflake _id) noexcept
+    {
+        _dm_id = _id;
+    }
+
+    /// 
+    /**
+     * @returns shared_mutex The mutex for the user
+     */
+    shared_mutex & mtx() noexcept
+    {
+        return _m;
+    }
 
 private:
     friend class core;
@@ -141,13 +168,14 @@ private:
     AEGIS_DECL void load_data(gateway::objects::user mbr);
 
     snowflake _member_id = 0;
-    member_status _status = member_status::Offline; /**< Member _status */
+    snowflake _dm_id = 0;
+    presence::user_status _status = presence::user_status::Offline; /**< Member _status */
     std::string _name; /**< Username of member */
     uint16_t _discriminator = 0; /**< 4 digit discriminator (1-9999) */
     std::string _avatar; /**< Hash of member avatar */
     bool _is_bot = false; /**< true if member is a bot */
     bool _mfa_enabled = false; /**< true if member has Two-factor authentication enabled */
-    std::unordered_map<int64_t, guild_info> guilds; /**< Map of snowflakes to member owned guild information */
+    std::vector<guild_info> guilds; /**< Vector of snowflakes to member owned guild information */
     mutable shared_mutex _m;
 
     /// requires the caller to handle locking
@@ -156,11 +184,16 @@ private:
     /// requires the caller to handle locking
     AEGIS_DECL guild_info & join(snowflake guild_id);
 
-    AEGIS_DECL shared_mutex & mtx() { return _m; }
-
+    /// remove this member from the specified guild
     void leave(snowflake guild_id)
     {
-        guilds.erase(guild_id);
+        std::unique_lock<shared_mutex> l(mtx());
+        guilds.erase(std::find_if(std::begin(guilds), std::end(guilds), [&guild_id](const guild_info & gi)
+        {
+            if (gi.id == guild_id)
+                return true;
+            return false;
+        }));
     }
 };
 

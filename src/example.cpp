@@ -28,7 +28,7 @@ void example::MessageCreate(message_create obj)
     auto & _channel = obj.get_channel();
     auto & _guild = _channel.get_guild();
 
-    auto username = _member.get_username();
+    const auto & username = _member.get_username();
 
     std::string content{ obj.msg.get_content() };
 

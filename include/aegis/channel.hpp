@@ -15,8 +15,8 @@
 #include "aegis/ratelimit/ratelimit.hpp"
 #include "aegis/permission.hpp"
 #include "aegis/snowflake.hpp"
-#include "aegis/objects/permission_overwrite.hpp"
-#include "aegis/objects/channel.hpp"
+#include "aegis/gateway/objects/permission_overwrite.hpp"
+#include "aegis/gateway/objects/channel.hpp"
 #include <shared_mutex>
 
 namespace aegis
@@ -54,14 +54,14 @@ public:
     /**
      * @returns Reference to the guild this channel belongs to
      */
-    AEGIS_DECL guild & get_guild(std::error_code & ec) const AEGIS_NOEXCEPT;
+    AEGIS_DECL guild & get_guild(std::error_code & ec) const noexcept;
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     /// Get channel name
     /**
      * @returns String of channel name
      */
-    std::string get_name() const AEGIS_NOEXCEPT
+    std::string get_name() const noexcept
     {
         return name;
     }
@@ -70,7 +70,7 @@ public:
     /**
      * @returns An channel_type enum for this channel
      */
-    const gateway::objects::channel_type get_type() const AEGIS_NOEXCEPT
+    gateway::objects::channel::channel_type get_type() const noexcept
     {
         return type;
     }
@@ -92,7 +92,7 @@ public:
     * @param host String of remote host. Defaults to discordapp.com
     * @returns std::future<rest::rest_reply>
     */
-    AEGIS_DECL std::future<rest::rest_reply> post_task(const std::string & path, const std::string & method = "POST", const std::string & obj = "", const std::string & host = "");
+    AEGIS_DECL std::future<rest::rest_reply> post_task(rest::request_params params);
 
     /// Creates a task to make a REST call - preferable to use specific functions
     /// for interactions. This function is public for the case of any functionality
@@ -104,7 +104,7 @@ public:
     * @param host String of remote host. Defaults to discordapp.com
     * @returns std::future<rest::rest_reply>
     */
-    AEGIS_DECL std::future<rest::rest_reply> post_emoji_task(const std::string & path, const std::string & method = "POST", const std::string & obj = "", const std::string & host = "");
+    AEGIS_DECL std::future<rest::rest_reply> post_emoji_task(rest::request_params params);
 
     /// Send message to this channel
     /**
@@ -267,7 +267,8 @@ public:
      */
     AEGIS_DECL std::future<rest::rest_reply> modify_channel(std::error_code & ec, lib::optional<std::string> _name = {}, lib::optional<int> _position = {}, lib::optional<std::string> _topic = {},
                         lib::optional<bool> _nsfw = {}, lib::optional<int> _bitrate = {}, lib::optional<int> _user_limit = {},
-                        lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, lib::optional<snowflake> _parent_id = {});
+                        lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, lib::optional<snowflake> _parent_id = {},
+                        lib::optional<int> _rate_limit_per_user = {});
 
     /// Modify this channel (all parameters optional)
     /**
@@ -284,10 +285,11 @@ public:
      */
     std::future<rest::rest_reply> modify_channel(lib::optional<std::string> _name = {}, lib::optional<int> _position = {}, lib::optional<std::string> _topic = {},
                         lib::optional<bool> _nsfw = {}, lib::optional<int> _bitrate = {}, lib::optional<int> _user_limit = {},
-                        lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, lib::optional<snowflake> _parent_id = {})
+                        lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {}, lib::optional<snowflake> _parent_id = {},
+                        lib::optional<int> _rate_limit_per_user = {})
     {
         std::error_code ec;
-        auto res = modify_channel(ec, _name, _position, _topic, _nsfw, _bitrate, _user_limit, _permission_overwrites, _parent_id);
+        auto res = modify_channel(ec, _name, _position, _topic, _nsfw, _bitrate, _user_limit, _permission_overwrites, _parent_id, _rate_limit_per_user);
         if (ec)
             throw ec;
         return res;
@@ -671,7 +673,7 @@ public:
     /**
      * @returns A snowflake of the channel
      */
-    const snowflake get_id() const AEGIS_NOEXCEPT
+    snowflake get_id() const noexcept
     {
         return channel_id;
     }
@@ -680,7 +682,7 @@ public:
     /**
      * @returns A snowflake of this channel's guild
      */
-    const snowflake get_guild_id() const AEGIS_NOEXCEPT
+    snowflake get_guild_id() const noexcept
     {
         return guild_id;
     }
@@ -689,10 +691,22 @@ public:
     /**
      * @returns bool whether channel is a DM or belongs to a guild
      */
-    const bool is_dm() const AEGIS_NOEXCEPT
+    bool is_dm() const noexcept
     {
         return _guild == nullptr;
     }
+
+    shared_mutex & mtx() noexcept
+    {
+        return _m;
+    }
+
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    bool nsfw() const noexcept
+    {
+        return _nsfw;
+    }
+#endif
 
 private:
     friend class guild;
@@ -700,7 +714,6 @@ private:
 
     /// requires the caller to handle locking
     AEGIS_DECL void load_with_guild(guild & _guild, const json & obj, shards::shard * _shard);
-    shared_mutex & mtx() { return _m; }
 
     snowflake channel_id; /**< snowflake of this channel */
     snowflake guild_id; /**< snowflake of the guild this channel belongs to */
@@ -709,11 +722,13 @@ private:
     snowflake last_message_id = 0; /**< Snowflake of the last message sent in this channel */
     std::string name; /**< String of the name of this channel */
     std::string topic; /**< String of the topic of this channel */
+    bool _nsfw = false;
     uint32_t position = 0; /**< Position of channel in guild channel list */
-    gateway::objects::channel_type type = gateway::objects::channel_type::Text; /**< Type of channel */
+    gateway::objects::channel::channel_type type = gateway::objects::channel::channel_type::Text; /**< Type of channel */
     uint16_t bitrate = 0; /**< Bit rate of voice channel */
     uint16_t user_limit = 0; /**< User limit of voice channel */
     std::unordered_map<int64_t, gateway::objects::permission_overwrite> overrides; /**< Snowflake map of user/role to permission overrides */
+    uint16_t rate_limit_per_user = 0; /**< Limit of how many seconds sent messages must have between each */
 #endif
     asio::io_context & _io_context;
     mutable shared_mutex _m;

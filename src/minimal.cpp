@@ -27,15 +27,17 @@ int main(int argc, char * argv[])
             {
                 // C++17 version
                 //const auto [channel_id, guild_id, message_id, member_id] = obj.msg.get_related_ids();
-                auto rets = obj.msg.get_related_ids();
-
-                const aegis::snowflake channel_id = std::get<0>(rets);
-                const aegis::snowflake guild_id = std::get<1>(rets);
-                const aegis::snowflake message_id = std::get<2>(rets);
-                const aegis::snowflake member_id = std::get<3>(rets);
+                const aegis::snowflake channel_id = obj.msg.get_channel().get_id();
+                const aegis::snowflake guild_id = obj.msg.get_guild().get_id();
+                const aegis::snowflake message_id = obj.msg.get_id();
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+                const aegis::snowflake member_id = obj.msg.get_member().get_id();
+#else
+                const aegis::snowflake member_id = obj.msg.author.id;
+#endif
 
                 // Is message author myself?
-                if (obj.msg.author.user_id == obj.bot->get_id())
+                if (member_id == obj.bot->get_id())
                     return;
      
                 // Ignore bot messages and DMs
@@ -52,10 +54,6 @@ int main(int argc, char * argv[])
                 if (content == "~Hi")
                 {
                     _channel.create_message("Hello back");
-                }
-                else if (content == "?close")
-                {
-                    bot.get_shard_mgr().close(obj._shard, 1003);
                 }
                 else if (content == "~React")
                 {
@@ -107,15 +105,7 @@ int main(int argc, char * argv[])
 
         // start the bot. the function passed is executed after the internal logger is set up and the
         // websocket gateway information is collected.
-        bot.run(5, [&]
-        {
-            bot.log->trace("stuff");
-            bot.log->debug("stuff");
-            bot.log->info("stuff");
-            bot.log->warn("stuff");
-            bot.log->error("stuff");
-            bot.log->critical("stuff");
-        });
+        bot.run();
     }
     catch (std::exception & e)
     {

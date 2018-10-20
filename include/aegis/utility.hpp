@@ -19,6 +19,8 @@
 #include <iostream>
 #include <chrono>
 #include <sstream>
+#include <iomanip>
+#include <spdlog/fmt/fmt.h>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -57,6 +59,7 @@ enum class shard_status
     Connecting,
     PreReady,
     Online,
+    Queued,
     Reconnecting,
     Closed,
     Shutdown
@@ -78,6 +81,117 @@ std::string perf_run(const std::string & name, Func f)
 
     ss << "Time: [" << std::chrono::duration_cast<std::chrono::microseconds>(n_end - n).count() << "us]\n";
     return ss.str();
+}
+
+/// Returns the duration of the time since epoch for the timer.
+/**
+ * @param t The time_point to convert to the provided duration template parameter
+ * @returns std::chrono::duration of the time since epoch start until the provided time_point
+ */
+template<typename Duration, typename T>
+inline Duration to_t(const T & t)
+{
+    return std::chrono::duration_cast<Duration>(t.time_since_epoch());
+}
+
+/// Returns the duration of the time since epoch for the timer.
+/// Specialized template for conversions from nanoseconds.
+/**
+ * @param t The time_point to convert to the provided duration template parameter
+ * @returns std::chrono::duration of the time since epoch start until the provided time_point
+ */
+template<typename Duration>
+inline Duration to_t(const std::chrono::duration<int64_t, std::nano> & t)
+{
+    return std::chrono::duration_cast<Duration>(t);
+}
+
+/// Returns the value of the time since epoch for the timer.
+/// For steady_clock this is last reboot.
+/// For system_clock this is the Unix epoch.
+/**
+ * @param t The time_point to convert to milliseconds
+ * @returns int64_t of the time since epoch start until the provided time_point
+ */
+template<typename T>
+inline int64_t to_ms(const T & t)
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count();
+}
+
+/// Returns the value of the time since epoch for the timer.
+/// Specialized template for nanoseconds.
+/// For steady_clock this is last reboot.
+/// For system_clock this is the Unix epoch.
+/**
+ * @param t The time_point to convert to milliseconds
+ * @returns int64_t of the time since epoch start until the provided time_point
+ */
+template<>
+inline int64_t to_ms(const std::chrono::duration<int64_t, std::nano> & t)
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(t).count();
+}
+
+/// Converts an ISO8601 date string to an std::chrono::system_clock::time_point
+/// or other provided template parameter type
+/**
+ * @param _time_t String of the timestamp
+ * @returns std::chrono::system_clock::time_point String timestamp converted to time_point
+ */
+template<typename T = std::chrono::system_clock::time_point>
+T from_iso8601(const std::string & _time_t)
+{
+    std::tm tm = {};
+    std::istringstream ss(_time_t);
+    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+    return std::chrono::system_clock::from_time_t(std::mktime(&tm));
+}
+
+inline std::string uptime_str(std::chrono::steady_clock::time_point _start) noexcept
+{
+    using seconds = std::chrono::duration<int, std::ratio<1, 1>>;
+    using minutes = std::chrono::duration<int, std::ratio<60, 1>>;
+    using hours = std::chrono::duration<int, std::ratio<3600, 1>>;
+    using days = std::chrono::duration<int, std::ratio<24 * 3600, 1>>;
+
+    std::stringstream ss;
+    std::chrono::time_point<std::chrono::steady_clock> now_t = std::chrono::steady_clock::now();
+
+    auto time_is = now_t - _start;
+    auto d = std::chrono::duration_cast<days>(time_is).count();
+    time_is -= days(d);
+    auto h = std::chrono::duration_cast<hours>(time_is).count();
+    time_is -= hours(h);
+    auto m = std::chrono::duration_cast<minutes>(time_is).count();
+    time_is -= minutes(m);
+    auto s = std::chrono::duration_cast<seconds>(time_is).count();
+
+    if (d)
+        ss << d << "d ";
+    if (h)
+        ss << h << "h ";
+    if (m)
+        ss << m << "m ";
+    ss << s << "s ";
+    return ss.str();
+}
+
+inline std::string format_bytes(uint64_t size)
+{
+    if ((size > 1024ull * 5) && (size < 1024ull * 1024 * 5))// over 5KB and up to 5MB show KB
+    {
+        return fmt::format("{:.3f} KB", double(size) / 1024);
+    }
+    if ((size > 1024ull * 1024 * 5) && (size < 1024ull * 1024 * 1024 * 5))// over 5MB and up to 5GB show MB
+    {
+        return fmt::format("{:.3f} MB", (double(size) / 1024) / 1024);
+    }
+    if (size > 1024ull * 1024 * 1024 * 5)// over 5GB show GB
+    {
+        return fmt::format("{:.3f} GB", ((double(size) / 1024) / 1024) / 1024);
+    }
+    return fmt::format("{} B", size);
 }
 
 namespace platform

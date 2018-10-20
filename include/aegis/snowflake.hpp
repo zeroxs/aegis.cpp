@@ -9,10 +9,10 @@
 
 #pragma once
 
+#include "aegis/fwd.hpp"
 #include "aegis/config.hpp"
-#include <nlohmann/json.hpp>
-#include <stdint.h>
-#include <string>
+//#include <nlohmann/json.hpp>
+
 
 namespace aegis
 {
@@ -21,81 +21,134 @@ namespace aegis
 class snowflake
 {
 public:
-    constexpr snowflake() : snowflake_id(0) {}
-    constexpr snowflake(int64_t _snowflake) : snowflake_id(_snowflake) {}
+    constexpr snowflake() noexcept : _id(0) {}
+    constexpr snowflake(int64_t _snowflake) noexcept : _id(_snowflake) {}
+    constexpr snowflake(const snowflake & _snowflake) noexcept : _id(_snowflake._id) {}
 
     constexpr operator int64_t() const noexcept
     {
-        return snowflake_id;
+        return _id;
     }
 
+    /// Retrieve full snowflake value
+    /**
+     * @returns int64_t Snowflake
+     */
     constexpr int64_t get() const noexcept
     {
-        return snowflake_id;
+        return _id;
     };
 
+    /// Obtain all the snowflake values as a tuple
+    /**
+     * @returns std::tuple of all the snowflake parts
+     */
     constexpr std::tuple<int64_t, int8_t, int8_t, int16_t> get_all() const noexcept
     {
         return std::tuple<int64_t, int8_t, int8_t, int16_t>{ get_timestamp(), get_worker(), get_process(), get_count() };
     };
 
+    /// 
+    /**
+     * @returns int16_t Internal counter for snowflakes
+     */
     constexpr int16_t get_count() const noexcept
     {
-        return static_cast<int16_t>(snowflake_id & _countMask);
+        return static_cast<int16_t>(_id & _countMask);
     };
 
+    /// 
+    /**
+     * @returns int8_t Process ID of the snowflake generator
+     */
     constexpr int8_t get_process() const noexcept
     {
-        return static_cast<int8_t>((snowflake_id & _workerMask) >> 12);
+        return static_cast<int8_t>((_id & _workerMask) >> 12);
     };
 
+    /// 
+    /**
+     * @returns int8_t Worker ID of the snowflake generator
+     */
     constexpr int8_t get_worker() const noexcept
     {
-        return static_cast<int8_t>((snowflake_id & _workerMask) >> 17);
+        return static_cast<int8_t>((_id & _workerMask) >> 17);
     };
 
+    /// 
+    /**
+     * @returns int64_t The Discord epoch timestamp this snowflake was generated
+     */
     constexpr int64_t get_timestamp() const noexcept
     {
-        return (snowflake_id & _timestampMask) >> 22;
+        return (_id & _timestampMask) >> 22;
     };
 
-    static constexpr std::tuple<int64_t, int8_t, int8_t, int16_t> c_get_all(int64_t snowflake)
+    /// Obtain all the snowflake values as a tuple
+    /**
+     * @returns std::tuple of all the snowflake parts
+     */
+    static constexpr std::tuple<int64_t, int8_t, int8_t, int16_t> c_get_all(int64_t _snowflake) noexcept
     {
-        return std::tuple<int64_t, int8_t, int8_t, int16_t>{ c_get_timestamp(snowflake), c_get_worker(snowflake), c_get_process(snowflake), c_get_count(snowflake) };
+        return std::tuple<int64_t, int8_t, int8_t, int16_t>{ c_get_timestamp(_snowflake), c_get_worker(_snowflake), c_get_process(_snowflake), c_get_count(_snowflake) };
     };
 
-    static constexpr int16_t c_get_count(int64_t snowflake)
+    /// 
+    /**
+     * @returns int16_t Internal counter for snowflakes
+     */
+    static constexpr int16_t c_get_count(int64_t _snowflake) noexcept
     {
-        return static_cast<int16_t>(snowflake & _countMask);
+        return static_cast<int16_t>(_snowflake & _countMask);
     };
 
-    static constexpr int8_t c_get_process(int64_t snowflake)
+    /// 
+    /**
+     * @returns int8_t Process ID of the snowflake generator
+     */
+    static constexpr int8_t c_get_process(int64_t _snowflake) noexcept
     {
-        return static_cast<int8_t>((snowflake & _workerMask) >> 12);
+        return static_cast<int8_t>((_snowflake & _workerMask) >> 12);
     };
 
-    static constexpr int8_t c_get_worker(int64_t snowflake)
+    /// 
+    /**
+     * @returns int8_t Worker ID of the snowflake generator
+     */
+    static constexpr int8_t c_get_worker(int64_t _snowflake) noexcept
     {
-        return static_cast<int8_t>((snowflake & _workerMask) >> 17);
+        return static_cast<int8_t>((_snowflake & _workerMask) >> 17);
     };
 
-    static constexpr int64_t c_get_timestamp(int64_t snowflake)
+    /// 
+    /**
+     * @returns int64_t The Discord epoch timestamp this snowflake was generated
+     */
+    static constexpr int64_t c_get_timestamp(int64_t _snowflake) noexcept
     {
-        return (snowflake & _timestampMask) >> 22;
+        return (_snowflake & _timestampMask) >> 22;
     };
 
+    /// 
+    /**
+     * @returns int64_t Unix timestamp this snowflake was generated
+     */
     constexpr int64_t get_time() const noexcept
     {
         return get_timestamp() + _discordEpoch;
     };
 
-    static constexpr int64_t c_get_time(int64_t snowflake)
+    /// 
+    /**
+     * @returns int64_t Unix timestamp this snowflake was generated
+     */
+    static constexpr int64_t c_get_time(int64_t _snowflake) noexcept
     {
-        return c_get_timestamp(snowflake) + _discordEpoch;
+        return c_get_timestamp(_snowflake) + _discordEpoch;
     };
 
 private:
-    uint64_t snowflake_id;
+    uint64_t _id;
     static constexpr uint64_t _countMask = 0x0000000000000FFFL;
     static constexpr uint64_t _processMask = 0x000000000001F000L;
     static constexpr uint64_t _workerMask = 0x00000000003E0000L;
@@ -103,25 +156,14 @@ private:
     static constexpr uint64_t _discordEpoch = 1420070400000;
 };
 
-/**\todo Needs documentation
- */
-inline void from_json(const nlohmann::json& j, snowflake& s)
-{
-    if (j.is_string())
-        s = std::stoll(j.get<std::string>());
-    else if (j.is_number())
-        s = j.get<int64_t>();
-}
-
-/**\todo Needs documentation
- */
-inline void to_json(nlohmann::json& j, const snowflake& s)
-{
-    j = nlohmann::json{ static_cast<int64_t>(s) };
-}
+/// \cond TEMPLATES
+AEGIS_DECL void from_json(const nlohmann::json& j, snowflake& s);
+AEGIS_DECL void to_json(nlohmann::json& j, const snowflake& s);
+/// \endcond
 
 }
 
+/// \cond TEMPLATES
 namespace std
 {
 
@@ -135,3 +177,8 @@ struct hash<aegis::snowflake>
 };
 
 }
+/// \endcond
+
+#if defined(AEGIS_HEADER_ONLY)
+#include "aegis/impl/snowflake.cpp"
+#endif

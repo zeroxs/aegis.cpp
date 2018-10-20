@@ -86,35 +86,9 @@
 # endif
 #endif
 
-// Support noexcept on compilers known to allow it.
-#if !defined(AEGIS_NOEXCEPT)
-# if !defined(AEGIS_DISABLE_NOEXCEPT)
-#  if defined(__clang__)
-#   if __has_feature(__cxx_noexcept__)
-#    define AEGIS_NOEXCEPT noexcept(true)
-#    define AEGIS_NOEXCEPT_OR_NOTHROW noexcept(true)
-#   endif // __has_feature(__cxx_noexcept__)
-#  elif defined(__GNUC__)
-#   if ((__GNUC__ == 4) && (__GNUC_MINOR__ >= 7)) || (__GNUC__ > 4)
-#    if defined(__GXX_EXPERIMENTAL_CXX0X__)
-#      define AEGIS_NOEXCEPT noexcept(true)
-#      define AEGIS_NOEXCEPT_OR_NOTHROW noexcept(true)
-#    endif // defined(__GXX_EXPERIMENTAL_CXX0X__)
-#   endif // ((__GNUC__ == 4) && (__GNUC_MINOR__ >= 7)) || (__GNUC__ > 4)
-#  elif defined(AEGIS_MSVC)
-#   if (_MSC_VER >= 1900)
-#    define AEGIS_NOEXCEPT noexcept(true)
-#    define AEGIS_NOEXCEPT_OR_NOTHROW noexcept(true)
-#   endif // (_MSC_VER >= 1900)
-#  endif // defined(AEGIS_MSVC)
-# endif // !defined(AEGIS_DISABLE_NOEXCEPT)
-# if !defined(AEGIS_NOEXCEPT)
-#  define AEGIS_NOEXCEPT
-# endif // !defined(AEGIS_NOEXCEPT)
-# if !defined(AEGIS_NOEXCEPT_OR_NOTHROW)
-#  define AEGIS_NOEXCEPT_OR_NOTHROW throw()
-# endif // !defined(AEGIS_NOEXCEPT_OR_NOTHROW)
-#endif // !defined(AEGIS_NOEXCEPT)
+#if (__cplusplus >= 201703) || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703) || (defined(_HAS_CXX17) && _HAS_CXX17 != 0)
+# define AEGIS_CXX17
+#endif // (__cplusplus >= 201703) || (_MSVC_LANG >= 201703)
 
 // Support for std::optional over built-in
 #if !defined(AEGIS_HAS_STD_OPTIONAL)
@@ -152,17 +126,8 @@ using bad_optional_access = std::experimental::bad_optional_access;
 #  define AEGIS_HAS_STD_OPTIONAL 1
 # endif // (__cplusplus >= 201703)
 # if defined(AEGIS_MSVC)
-#  if (_MSC_VER >= 1910 && defined(_HAS_CXX17))
-#   include <optional>
-namespace aegis::lib
-{
-template<typename T> using optional = std::optional<T>;
-constexpr auto nullopt = std::nullopt;
-using bad_optional_access = std::bad_optional_access;
-}
-#   define AEGIS_HAS_STD_OPTIONAL
-# else
-#  include "aegis/optional.hpp"
+#  if (_MSVC_LANG < 201703)
+#   include "aegis/optional.hpp"
 namespace aegis
 {
 namespace lib
@@ -172,6 +137,16 @@ constexpr auto nullopt = std::experimental::nullopt;
 using bad_optional_access = std::experimental::bad_optional_access;
 }
 }
+#   define AEGIS_HAS_STD_OPTIONAL
+#  else
+#   include <optional>
+namespace aegis::lib
+{
+template<typename T> using optional = std::optional<T>;
+constexpr auto nullopt = std::nullopt;
+using bad_optional_access = std::bad_optional_access;
+}
+#   define AEGIS_HAS_STD_OPTIONAL
 #  endif // (_MSC_VER >= 1910 && _HAS_CXX17)
 # endif // defined(AEGIS_MSVC)
 #endif // !defined(AEGIS_HAS_STD_OPTIONAL)
@@ -179,14 +154,6 @@ using bad_optional_access = std::experimental::bad_optional_access;
 #if !defined(AEGIS_HAS_STD_OPTIONAL)
 # error Could not find a suitable optional library.
 #endif
-
-namespace aegis
-{
-namespace lib
-{
-using nullopt_t = decltype(nullopt);
-}
-}
 
 // use std::shared_timed_mutex on C++14 or shared_mutex on C++17
 #if !defined(AEGIS_HAS_STD_SHARED_MUTEX)
@@ -199,10 +166,6 @@ using nullopt_t = decltype(nullopt);
 #  define AEGIS_HAS_STD_SHARED_MUTEX 0
 # endif // !defined(AEGIS_HAS_STD_SHARED_MUTEX)
 #endif // !defined(AEGIS_HAS_STD_SHARED_MUTEX)
-
-#if (__cplusplus >= 201703) || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703) || (defined(_HAS_CXX17) && _HAS_CXX17 != 0)
-# define AEGIS_CXX17
-#endif // (__cplusplus >= 201703) || (_MSVC_LANG >= 201703)
 
 #if !defined(NDEBUG)
 #include <cassert>

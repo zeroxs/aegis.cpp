@@ -10,6 +10,9 @@
 #pragma once
 
 #include "aegis/config.hpp"
+#include "aegis/rest/rest_reply.hpp"
+#include "aegis/snowflake.hpp"
+#include "aegis/ratelimit/bucket.hpp"
 #include <chrono>
 #include <functional>
 #include <string>
@@ -17,9 +20,6 @@
 #include <map>
 #include <memory>
 #include <atomic>
-#include "aegis/rest/rest_reply.hpp"
-#include "aegis/snowflake.hpp"
-#include "aegis/ratelimit/bucket.hpp"
 #include <future>
 #include <thread>
 #include <mutex>
@@ -62,7 +62,7 @@ public:
     /**
      * @returns true if globally ratelimited
      */
-    bool is_global() const AEGIS_NOEXCEPT
+    bool is_global() const noexcept
     {
         return global_limit > 0;
     }
@@ -73,7 +73,7 @@ public:
     * @param id Snowflake of bucket object
     * @returns Reference to a bucket object
     */
-    bucket<Callable, Result> & get_bucket(const std::string & path) AEGIS_NOEXCEPT
+    bucket<Callable, Result> & get_bucket(const std::string & path) noexcept
     {
         // look for existing bucket
         auto bkt = _buckets.find(path);
@@ -84,9 +84,9 @@ public:
         return *_buckets.emplace(path, std::make_unique<bucket<Callable, Result>>(_call, _io_context, global_limit)).first->second;
     }
 
-    std::future<Result> post_task(const std::string & path, const std::string & method = "POST", const std::string & obj = "", const std::string & host = "")
+    std::future<Result> post_task(rest::request_params params)
     {
-        auto & bkt = get_bucket(path);
+        auto & bkt = get_bucket(params.path);
         using result = asio::async_result<asio::use_future_t<>, void(Result)>;
         using handler = typename result::completion_handler_type;
 
@@ -95,7 +95,7 @@ public:
 
         asio::post(_io_context, [=, &bkt]() mutable
         {
-            exec(bkt.perform(path, obj, method, host));
+            exec(bkt.perform(params));
         });
         return ret.get();
     }

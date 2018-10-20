@@ -41,9 +41,6 @@ using namespace std::literals;
 class shard_mgr
 {
 public:
-    /// Type of a pointer to the asio io_service
-    using io_service_ptr = asio::io_context *;
-
     /// Type of a pointer to the Websocket++ client
     using websocket = websocketpp::client<websocketpp::config::asio_tls_client>;
 
@@ -53,12 +50,6 @@ public:
     /// Type of a pointer to the Websocket++ message payload
     using message_ptr = websocketpp::config::asio_client::message_type::ptr;
 
-    /// Type of a work guard executor for keeping Asio services alive
-    using asio_exec = asio::executor_work_guard<asio::io_context::executor_type>;
-
-    /// Type of a shared pointer to an io_context work object
-    using work_ptr = std::shared_ptr<asio_exec>;
-
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /**
      * @see shard
@@ -66,6 +57,8 @@ public:
      * @see channel
      * @see member
      * @param token A string of the authentication token
+     * @param _io Reference to asio::io_context
+     * @param log std::shared_ptr of spdlog::logger
      */
     AEGIS_DECL shard_mgr(std::string token, asio::io_context & _io, std::shared_ptr<spdlog::logger> log);
 
@@ -83,10 +76,16 @@ public:
     AEGIS_DECL void setup_callbacks(shard * _shard);
 
     /// Outputs the last 5 messages received from the gateway
-    ///
+    /**
+     * @param _shard Pointer to shard
+     * @param extended Whether extended info is output
+     */
     AEGIS_DECL void debug_trace(shard * _shard, bool extended = false);
 
     /// Get the internal (or external) io_service object
+    /**
+     * @returns Asio io_context
+     */
     asio::io_context & get_io_context()
     {
         return _io_context;
@@ -96,25 +95,31 @@ public:
     /// and propagates the Shutdown state along with closing all websockets within the shard vector
     AEGIS_DECL void shutdown();
 
-    websocket & get_websocket() AEGIS_NOEXCEPT { return websocket_o; }
-    bot_status get_state() const AEGIS_NOEXCEPT { return _status; }
-    void set_state(bot_status s) AEGIS_NOEXCEPT { _status = s; }
-
-    /// Helper function for posting tasks to asio
+    /// Get the internal Websocket++ instance
     /**
-     * @param f A callable to execute within asio - signature should be void(void)
+     * @returns Websocket++ internal instance
      */
-    template<typename Func>
-    void async(Func f)
-    {
-        asio::post(_io_context, std::move(f));
-    }
+    websocket & get_websocket() noexcept { return websocket_o; }
+
+    /// Get the current state of the shard manager
+    /**
+     * @see aegis::bot_status
+     * @returns aegis::bot_status
+     */
+    bot_status get_state() const noexcept { return _status; }
+
+    /// Set the current shard manager state
+    /**
+     * @see aegis::bot_status
+     * @param s State to set the shard manager to
+     */
+    void set_state(bot_status s) noexcept { _status = s; }
 
     /// Return bot uptime as {days hours minutes seconds}
     /**
-     * @returns std::string of `##h ##m ##s` formatted time
+     * @returns std::string of `## h ## m ## s` formatted time
      */
-    AEGIS_DECL std::string uptime() const AEGIS_NOEXCEPT;
+    AEGIS_DECL std::string uptime() const noexcept;
 
     /// Send a websocket message to a single shard
     /**
@@ -128,74 +133,158 @@ public:
     */
     AEGIS_DECL void send_all_shards(const json & msg);
 
-    AEGIS_DECL void start(std::size_t count = 0);
+    /// Start shard connections and shard status timer
+    AEGIS_DECL void start();
 
+    /// Websocket on_message handler type
     using t_on_message = std::function<void(websocketpp::connection_hdl hdl, std::string msg, shard * _shard)>;
+    /// Websocket on_connect handler type
     using t_on_connect = std::function<void(websocketpp::connection_hdl hdl, shard * _shard)>;
+    /// Websocket on_close handler type
     using t_on_close = std::function<void(websocketpp::connection_hdl hdl, shard * _shard)>;
 
-    void set_on_message(t_on_message cb)
+    /// Set handler for websocket messages
+    /**
+     * @see t_on_message
+     * @param cb Callback
+     */
+    void set_on_message(t_on_message cb) noexcept
     {
         i_on_message = cb;
     }
 
-    void set_on_connect(t_on_connect cb)
+    /// Set handler for websocket connections
+    /**
+     * @see t_on_connect
+     * @param cb Callback
+     */
+    void set_on_connect(t_on_connect cb) noexcept
     {
         i_on_connect = cb;
     }
 
-    void set_on_close(t_on_close cb)
+    /// Set handler for websocket disconnections
+    /**
+     * @see t_on_close
+     * @param cb Callback
+     */
+    void set_on_close(t_on_close cb) noexcept
     {
         i_on_close = cb;
     }
 
-    void set_gateway_url(const std::string & url)
+    /// Set the gateway url the shards will connect to
+    /**
+     * @param url String to gateway url
+     */
+    void set_gateway_url(const std::string & url) noexcept
     {
         gateway_url = url;
     }
 
-    std::string get_gateway_url() const
+    /// Get the gateway url the shards will connect to
+    /**
+     * @returns std::string Shard connection url
+     */
+    std::string get_gateway_url() const noexcept
     {
         return gateway_url;
     }
 
+    /// Resets the shard's state
+    /**
+     * @param _shard Pointer to shard
+     */
     AEGIS_DECL void reset_shard(shard * _shard);
 
+    /// Queue the shard for reconnection. Typically only called internally
+    /**
+     * @param _shard Pointer to shard
+     */
     AEGIS_DECL void queue_reconnect(shard * _shard);
 
-    AEGIS_DECL void connect(shard * _shard);
-
+    /// Queue the shard for reconnection. Typically only called internally
+    /**
+     * @param _shard Reference to shard
+     */
     void queue_reconnect(shard & _shard)
     {
         queue_reconnect(&_shard);
     }
 
+    /// Connect the shard to the gateway. Typically only called internally
+    /**
+     * @param _shard Pointer to shard
+     */
+    AEGIS_DECL void connect(shard * _shard);
+
+    /// Get the shard object
+    /**
+     * @see aegis::shards::shard
+     * @param shard_id Internal index of shard to retrieve
+     * @returns reference to aegis::shards::shard object
+     */
     AEGIS_DECL shard & get_shard(uint16_t shard_id);
 
+    /// Get a const vector of all the shards
+    /**
+     * @returns const std::vector of all the shards as an std::unique_ptr
+     */
+    AEGIS_DECL const std::vector<std::unique_ptr<shard>> & get_shards() const noexcept
+    {
+        return _shards;
+    }
+
+    /// Close the shard's websocket connection
+    /**
+     * @see aegis::shard_status
+     * @param _shard Pointer to shard
+     * @param code Websocket close code (default: 1001)
+     * @param reason Websocket close reason (default: "")
+     * @param connection_state State the set the shard to after close (default: shard_status::Closed)
+     */
     AEGIS_DECL void close(shard * _shard, int32_t code = 1001, const std::string & reason = "", shard_status connection_state = shard_status::Closed);
 
+    /// Close the shard's websocket connection
+    /**
+     * @see aegis::shard_status
+     * @param _shard Reference to shard
+     * @param code Websocket close code (default: 1001)
+     * @param reason Websocket close reason (default: "")
+     * @param connection_state State the set the shard to after close (default: shard_status::Closed)
+     */
     void close(shard & _shard, int32_t code = 1001, const std::string & reason = "", shard_status connection_state = shard_status::Closed)
     {
         close(&_shard, code, reason, connection_state);
     }
 
-    std::mutex m;
-    std::condition_variable cv;
+    /// Get the amount of shards that exist
+    /**
+     * @returns uint32_t of shard count
+     */
+    uint32_t shard_count() const noexcept
+    {
+        return _shards.size();
+    }
+
+    /// Asio context
     asio::io_context & _io_context;
 
+    /// Gateway URL
     std::string ws_gateway;
 
+    /// Websocket event message counters
     std::unordered_map<std::string, uint64_t> message_count;
 
-    std::string self_presence;
+    /// Shard count to force manager to use
     uint32_t force_shard_count;
+    /// Shard count retrieved from gateway
     uint32_t shard_max_count;
-    bool wsdbg = false;
-    //std::unique_ptr<asio::io_context::strand> ws_open_strand;
+    /// Logging instance
     std::shared_ptr<spdlog::logger> log;
 
 private:
-    friend core;
+    friend aegis::core;
 
     std::chrono::time_point<std::chrono::steady_clock> _last_ready;
     std::chrono::time_point<std::chrono::steady_clock> _connect_time;
@@ -206,6 +295,9 @@ private:
     t_on_message i_on_message;
     t_on_connect i_on_connect;
     t_on_close i_on_close;
+
+    std::function<void(aegis::shards::shard*)> i_shard_disconnect;
+    std::function<void(aegis::shards::shard*)> i_shard_connect;
 
     AEGIS_DECL void _on_message(websocketpp::connection_hdl hdl, message_ptr msg, shard * _shard);
     AEGIS_DECL void _on_connect(websocketpp::connection_hdl hdl, shard * _shard);
@@ -228,10 +320,12 @@ private:
     std::shared_ptr<asio::steady_timer> ws_timer;
     std::shared_ptr<asio::steady_timer> ws_connect_timer;
     std::deque<shard*> _shards_to_connect;
-    work_ptr wrk;
-    std::vector<std::thread> threads;
 };
 
 }
 
 }
+
+#if defined(AEGIS_HEADER_ONLY)
+#include "aegis/shards/impl/shard_mgr.cpp"
+#endif

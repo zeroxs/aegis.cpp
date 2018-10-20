@@ -36,13 +36,45 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_BUILD_TYPE Release)
 
 set(AEGIS_FILES
-include/aegis/channel.cpp
-include/aegis/core.cpp
-include/aegis/guild.cpp
-include/aegis/member.cpp
-include/aegis/rest/rest_controller.cpp
-include/aegis/shards/shard.cpp
-include/aegis/shards/shard_mgr.cpp)
+include/aegis/impl/channel.cpp
+include/aegis/impl/core.cpp
+include/aegis/impl/guild.cpp
+include/aegis/impl/member.cpp
+include/aegis/impl/permission.cpp
+include/aegis/impl/snowflake.cpp
+include/aegis/rest/impl/rest_controller.cpp
+include/aegis/shards/impl/shard.cpp
+include/aegis/shards/impl/shard_mgr.cpp
+include/aegis/gateway/objects/impl/message.cpp
+include/aegis/gateway/events/impl/channel_create.cpp
+include/aegis/gateway/events/impl/channel_delete.cpp
+include/aegis/gateway/events/impl/channel_pins_update.cpp
+include/aegis/gateway/events/impl/channel_update.cpp
+include/aegis/gateway/events/impl/guild_ban_add.cpp
+include/aegis/gateway/events/impl/guild_ban_remove.cpp
+include/aegis/gateway/events/impl/guild_create.cpp
+include/aegis/gateway/events/impl/guild_delete.cpp
+include/aegis/gateway/events/impl/guild_emojis_update.cpp
+include/aegis/gateway/events/impl/guild_integrations_update.cpp
+include/aegis/gateway/events/impl/guild_member_add.cpp
+include/aegis/gateway/events/impl/guild_member_remove.cpp
+include/aegis/gateway/events/impl/guild_member_update.cpp
+include/aegis/gateway/events/impl/guild_members_chunk.cpp
+include/aegis/gateway/events/impl/guild_role_create.cpp
+include/aegis/gateway/events/impl/guild_role_delete.cpp
+include/aegis/gateway/events/impl/guild_role_update.cpp
+include/aegis/gateway/events/impl/guild_update.cpp
+include/aegis/gateway/events/impl/message_delete_bulk.cpp
+include/aegis/gateway/events/impl/message_reaction_add.cpp
+include/aegis/gateway/events/impl/message_reaction_remove.cpp
+include/aegis/gateway/events/impl/message_reaction_remove_all.cpp
+include/aegis/gateway/events/impl/message_update.cpp
+include/aegis/gateway/events/impl/presence_update.cpp
+include/aegis/gateway/events/impl/ready.cpp
+include/aegis/gateway/events/impl/resumed.cpp
+include/aegis/gateway/events/impl/user_update.cpp
+include/aegis/gateway/events/impl/voice_server_update.cpp
+include/aegis/gateway/events/impl/voice_state_update.cpp)
 
 if (AEGIS_DEBUG_HISTORY)
 set(AEGIS_FLAGS ${AEGIS_FLAGS} AEGIS_DEBUG_HISTORY)
@@ -75,8 +107,8 @@ set_target_properties(aegis_static PROPERTIES CXX_STANDARD 14)
 set_target_properties(aegis_static PROPERTIES CXX_STANDARD_REQUIRED ON)
 set_target_properties(aegis_static PROPERTIES LINKER_LANGUAGE CXX)
 
-target_compile_definitions(aegis PUBLIC -DAEGIS_DYN_LINK ${AEGIS_FLAGS})
-target_compile_definitions(aegis_static PUBLIC -DAEGIS_SEPARATE_COMPILATION ${AEGIS_FLAGS})
+target_compile_definitions(aegis PUBLIC AEGIS_DYN_LINK AEGIS_SOURCE ${AEGIS_FLAGS})
+target_compile_definitions(aegis_static PUBLIC AEGIS_SEPARATE_COMPILATION ${AEGIS_FLAGS})
 
 target_link_libraries(aegis PUBLIC ssl crypto z dl Threads::Threads)
 target_link_libraries(aegis_static INTERFACE ssl crypto z dl Threads::Threads)
@@ -103,6 +135,19 @@ target_include_directories(aegis_static
     ${AEGIS_PACKAGE_INCLUDE_DIRS}
 )
 
+if(MSVC)
+    add_compile_options("/W3" "$<$<CONFIG:RELEASE>:/O2>")
+else()
+	set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "-Wl,--no-undefined")
+	set(AEGIS_CFLAGS -Wno-sign-compare -Wno-unknown-pragmas -Wno-unused-variable -Wno-noexcept-type -Wno-unused-result -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-missing-field-initializers)
+    add_compile_options("-Wall" "-Wextra" "-Werror" "$<$<CONFIG:RELEASE>:-O3>")
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        add_compile_options("-stdlib=libc++")
+    else()
+        # nothing special for gcc at the moment
+    endif()
+endif()
+
 if ((CXX_STANDARD EQUAL "17") OR (CMAKE_CXX_STANDARD EQUAL "17"))
 target_compile_features(aegis PUBLIC cxx_std_17)
 target_compile_features(aegis_static PUBLIC cxx_std_17)
@@ -111,8 +156,6 @@ target_compile_features(aegis PUBLIC cxx_std_14)
 target_compile_features(aegis_static PUBLIC cxx_std_14)
 endif ()
 
-set(AEGIS_CFLAGS -Wall -Wno-sign-compare -Wno-unknown-pragmas -Wno-unused-variable -Wno-noexcept-type -Wno-unused-result)
-
 target_compile_options(aegis PRIVATE ${AEGIS_CFLAGS})
 target_compile_options(aegis_static PRIVATE ${AEGIS_CFLAGS})
 
@@ -120,7 +163,6 @@ include(GNUInstallDirs)
 set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Aegis)
 
 set_target_properties(aegis PROPERTIES EXPORT_NAME Aegis)
-SET(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "-Wl,--no-undefined")
 
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
@@ -203,7 +245,7 @@ if (BUILD_EXAMPLES)
 add_executable(aegis_example src/example_main.cpp src/example.cpp)
 add_executable(aegis_minimal src/minimal.cpp)
 add_executable(aegis_headeronly_no_cache src/minimal.cpp)
-target_compile_definitions(aegis_headeronly_no_cache PRIVATE -DAEGIS_DISABLE_ALL_CACHE)
+target_compile_definitions(aegis_headeronly_no_cache PRIVATE AEGIS_DISABLE_ALL_CACHE)
 
 set_property(TARGET aegis_example PROPERTY CXX_STANDARD 14)
 set_property(TARGET aegis_example PROPERTY CXX_STANDARD_REQUIRED ON)
@@ -213,9 +255,19 @@ set_property(TARGET aegis_headeronly_no_cache PROPERTY CXX_STANDARD 14)
 set_property(TARGET aegis_headeronly_no_cache PROPERTY CXX_STANDARD_REQUIRED ON)
 
 
-target_link_libraries(aegis_example PRIVATE aegis ssl crypto z dl Threads::Threads)
-target_link_libraries(aegis_minimal PRIVATE aegis ssl crypto z dl Threads::Threads)
-target_link_libraries(aegis_headeronly_no_cache PRIVATE aegis ssl crypto z dl Threads::Threads)
+if(MSVC)
+	target_link_libraries(aegis_example PRIVATE aegis ssleay32 libeay32 zlib Threads::Threads)
+	target_link_libraries(aegis_minimal PRIVATE aegis ssleay32 libeay32 zlib Threads::Threads)
+	target_link_libraries(aegis_headeronly_no_cache PRIVATE aegis ssleay32 libeay32 crypto zlib Threads::Threads)
+else()
+	target_link_libraries(aegis_example PRIVATE aegis ssl crypto z dl Threads::Threads)
+	target_link_libraries(aegis_minimal PRIVATE aegis ssl crypto z dl Threads::Threads)
+	target_link_libraries(aegis_headeronly_no_cache PRIVATE aegis ssl crypto z dl Threads::Threads)
+endif()
+
+target_compile_options(aegis_example PRIVATE ${AEGIS_CFLAGS})
+target_compile_options(aegis_minimal PRIVATE ${AEGIS_CFLAGS})
+target_compile_options(aegis_headeronly_no_cache PRIVATE ${AEGIS_CFLAGS})
 
 target_include_directories(aegis_example
   PUBLIC
