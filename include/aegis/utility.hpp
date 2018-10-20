@@ -20,6 +20,7 @@
 #include <chrono>
 #include <sstream>
 #include <iomanip>
+#include <spdlog/fmt/fmt.h>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -174,6 +175,23 @@ inline std::string uptime_str(std::chrono::steady_clock::time_point _start) noex
         ss << m << "m ";
     ss << s << "s ";
     return ss.str();
+}
+
+inline std::string format_bytes(uint64_t size)
+{
+    if ((size > 1024ull * 5) && (size < 1024ull * 1024 * 5))// over 5KB and up to 5MB show KB
+    {
+        return fmt::format("{:.3f} KB", double(size) / 1024);
+    }
+    if ((size > 1024ull * 1024 * 5) && (size < 1024ull * 1024 * 1024 * 5))// over 5MB and up to 5GB show MB
+    {
+        return fmt::format("{:.3f} MB", (double(size) / 1024) / 1024);
+    }
+    if (size > 1024ull * 1024 * 1024 * 5)// over 5GB show GB
+    {
+        return fmt::format("{:.3f} GB", ((double(size) / 1024) / 1024) / 1024);
+    }
+    return fmt::format("{} B", size);
 }
 
 namespace platform

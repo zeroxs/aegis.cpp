@@ -185,6 +185,7 @@ public:
 
 }
 
+/// \cond TEMPLATES
 namespace std
 {
 
@@ -194,3 +195,4 @@ template<> struct is_error_code_enum<aegis::error>
 };
 
 }
+/// \endcond

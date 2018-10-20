@@ -310,7 +310,7 @@ public:
 
     /// Return bot uptime as {days hours minutes seconds}
     /**
-     * @returns std::string of `##h ##m ##s` formatted time
+     * @returns std::string of `hh mm ss` formatted time
      */
     AEGIS_DECL std::string uptime_str() const noexcept;
 

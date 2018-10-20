@@ -96,19 +96,7 @@ public:
      */
     std::string get_transfer_str() const noexcept
     {
-        if ((transfer_bytes > 1024ull * 5) && (transfer_bytes < 1024ull * 1024 * 5))// over 5KB and up to 5MB show KB
-        {
-            return fmt::format("{:.3f} KB", double(transfer_bytes) / 1024);
-        }
-        if ((transfer_bytes > 1024ull * 1024 * 5) && (transfer_bytes < 1024ull * 1024 * 1024 * 5))// over 5MB and up to 5GB show MB
-        {
-            return fmt::format("{:.3f} MB", (double(transfer_bytes) / 1024) / 1024);
-        }
-        if (transfer_bytes > 1024ull * 1024 * 1024 * 5)// over 5GB show GB
-        {
-            return fmt::format("{:.3f} GB", ((double(transfer_bytes) / 1024) / 1024) / 1024);
-        }
-        return fmt::format("{} B", transfer_bytes);
+        return utility::format_bytes(transfer_bytes);
     }
 
     /// Returns a formatted string of uncompressed bytes received since library start
@@ -119,19 +107,7 @@ public:
      */
     std::string get_transfer_u_str() const noexcept
     {
-        if ((transfer_bytes_u > 1024ull * 5) && (transfer_bytes_u < 1024ull * 1024 * 5))// over 5KB and up to 5MB show KB
-        {
-            return fmt::format("{:.3f} KB", double(transfer_bytes_u) / 1024);
-        }
-        if ((transfer_bytes_u > 1024ull * 1024 * 5) && (transfer_bytes_u < 1024ull * 1024 * 1024 * 5))// over 5MB and up to 5GB show MB
-        {
-            return fmt::format("{:.3f} MB", (double(transfer_bytes_u) / 1024) / 1024);
-        }
-        if (transfer_bytes_u > 1024ull * 1024 * 1024 * 5)// over 5GB show GB
-        {
-            return fmt::format("{:.3f} GB", ((double(transfer_bytes_u) / 1024) / 1024) / 1024);
-        }
-        return fmt::format("{} B", transfer_bytes_u);
+        return utility::format_bytes(transfer_bytes_u);
     }
 
     /// Returns bytes transferred pre-inflation used to with post-inflation for
@@ -167,7 +143,7 @@ public:
 
     /// Return shard uptime as {days hours minutes seconds}
     /**
-     * @returns std::string of `##h ##m ##s` formatted time
+     * @returns std::string of `hh mm ss` formatted time
      */
     AEGIS_DECL std::string uptime_str() const noexcept
     {
