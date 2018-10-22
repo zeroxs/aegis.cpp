@@ -145,7 +145,7 @@ AEGIS_DECL void shard_mgr::_on_message(websocketpp::connection_hdl hdl, message_
         const std::string & pld = msg->get_payload();
         if (std::strcmp((pld.data() + pld.size() - 4), "\x00\x00\xff\xff"))
         {
-            log->trace("Shard#{}: zlib-stream incomplete", _shard->get_id());
+            log->error("Shard#{}: zlib-stream incomplete", _shard->get_id());
             return;
         }
 
@@ -188,7 +188,7 @@ AEGIS_DECL void shard_mgr::_on_message(websocketpp::connection_hdl hdl, message_
     }
 
     if (i_on_message)
-        i_on_message(hdl, payload, _shard);
+        i_on_message(hdl, std::move(payload), _shard);
 }
 
 AEGIS_DECL void shard_mgr::_on_connect(websocketpp::connection_hdl hdl, shard * _shard)
