@@ -1133,15 +1133,10 @@ aegis::future<V> async(T f)
     aegis::promise<V> pr;
     auto fut = pr.get_future();
 
-    aegis::promise<void> pc;
-    auto fut_c = pc.get_future();
-
-    asio::post(*aegis::internal::_io_context, [pc = std::move(pc), pr = std::move(pr), f = std::move(f)]() mutable
+    asio::post(*aegis::internal::_io_context, [pr = std::move(pr), f = std::move(f)]() mutable
     {
-        pc.set_value();
         pr.set_value(f());
     });
-    fut_c.get();
     return fut;
 }
 
@@ -1151,16 +1146,11 @@ aegis::future<V> async(T f)
     aegis::promise<V> pr;
     auto fut = pr.get_future();
 
-    aegis::promise<void> pc;
-    auto fut_c = pc.get_future();
-
-    asio::post(*aegis::internal::_io_context, [pc = std::move(pc), pr = std::move(pr), f = std::move(f)]() mutable
+    asio::post(*aegis::internal::_io_context, [pr = std::move(pr), f = std::move(f)]() mutable
     {
-        pc.set_value();
         f();
         pr.set_value();
     });
-    fut_c.get();
     return fut;
 }
 
