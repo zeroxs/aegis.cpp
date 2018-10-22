@@ -61,6 +61,7 @@ enum class shard_status
     Online,
     Queued,
     Reconnecting,
+    Closing,
     Closed,
     Shutdown
 };

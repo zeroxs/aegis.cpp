@@ -182,6 +182,7 @@ public:
     std::chrono::time_point<std::chrono::steady_clock> _ready_time;
     std::chrono::time_point<std::chrono::steady_clock> last_ws_write;
     std::chrono::time_point<std::chrono::steady_clock> connect_time;
+    std::chrono::time_point<std::chrono::steady_clock> closing_time;
 
     shard_status connection_state;
     std::string session_id;

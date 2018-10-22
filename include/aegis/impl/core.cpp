@@ -883,8 +883,6 @@ AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const std::chrono:
                        utility::to_ms(now - _shard->lastheartbeat),
                        _timeout);
             _shard_mgr->close(_shard, 1001, "");
-            _shard_mgr->reset_shard(_shard);
-            _shard_mgr->queue_reconnect(_shard);
             return;
         }
         json obj;

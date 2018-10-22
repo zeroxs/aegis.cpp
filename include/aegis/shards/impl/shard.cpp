@@ -36,6 +36,8 @@ AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp:
 {
 }
 
+//TODO: the current do_reset design where everything is calling this needs to be fixed.
+//this should only be called to reset state back to an initial point instead of before everything
 AEGIS_DECL void shard::do_reset(shard_status _status) noexcept
 {
     if (_connection == nullptr)
