@@ -119,7 +119,7 @@ AEGIS_DECL void channel::load_with_guild(guild & _guild, const json & obj, shard
     }
 }
 #else
-AEGIS_DECL void channel::load_with_guild(guild & _guild, const json & obj, shard * _shard)
+AEGIS_DECL void channel::load_with_guild(guild & _guild, const json & obj, shards::shard * _shard)
 {
     channel_id = obj["id"];
     guild_id = _guild.get_id();

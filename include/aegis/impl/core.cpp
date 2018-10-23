@@ -246,15 +246,16 @@ AEGIS_DECL std::future<T> core::post_task(P fn)
 
 AEGIS_DECL std::future<rest::rest_reply> core::create_dm_message(snowflake member_id, const std::string & content, int64_t nonce) noexcept
 {
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    channel * c = nullptr;
     auto m = find_member(member_id);
     if (!m) return {};
-    channel * c = nullptr;
     if (m->get_dm_id())
         c = channel_create(m->get_dm_id());
-
     if (c)
         return c->create_message(content, nonce);
     else
+#endif
     {
         return post_task([=]() -> rest::rest_reply
         {
@@ -268,7 +269,9 @@ AEGIS_DECL std::future<rest::rest_reply> core::create_dm_message(snowflake membe
                 snowflake channel_id = std::stoull(res["id"].get<std::string>());
                 auto c = channel_create(channel_id);
                 if (!c) return {};
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
                 m->set_dm_id(channel_id);
+#endif
                 return c->create_message(content, nonce).get();
             }
             catch (std::exception & e)
@@ -679,7 +682,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
 #endif
     try
     {
-        const json result = json::parse(msg);
+        json result = json::parse(msg);
 
         if (!result.is_null())
         {
@@ -1378,9 +1381,11 @@ AEGIS_DECL void core::ws_channel_create(const json & result, shards::shard * _sh
         {
             snowflake user_id = std::stoull(r.at(0)["id"].get<std::string>());
             snowflake dm_id = std::stoull(result["d"]["id"].get<std::string>());
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
             auto user = find_member(user_id);
             if (user)
                 user->set_dm_id(dm_id);
+#endif
         }
     }
 

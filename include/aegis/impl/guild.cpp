@@ -427,7 +427,7 @@ AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) noexcept
     }
 }
 #else
-AEGIS_DECL void guild::load(const json & obj, shard * _shard) noexcept
+AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) noexcept
 {
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
     snowflake g_id = obj["id"];
