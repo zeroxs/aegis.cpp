@@ -41,7 +41,7 @@ template<class T>
 struct V
 {
     static core * bot;
-    static std::unique_ptr<asio::io_context> _io_context;
+    static std::shared_ptr<asio::io_context> _io_context;
     static std::vector<std::thread> threads;
     static work_ptr wrk;
     static std::condition_variable cv;
@@ -56,7 +56,7 @@ struct V
 struct internal
 {
     static inline core * bot = nullptr;
-    static inline std::unique_ptr<asio::io_context> _io_context = nullptr;
+    static inline std::shared_ptr<asio::io_context> _io_context = nullptr;
     static inline std::vector<std::thread> threads;
     static inline work_ptr wrk = nullptr;
     static inline std::condition_variable cv;
@@ -71,7 +71,7 @@ struct internal
 template<class T>
 core * V<T>::bot = nullptr;
 template<class T>
-std::unique_ptr<asio::io_context> V<T>::_io_context = nullptr;
+std::shared_ptr<asio::io_context> V<T>::_io_context = nullptr;
 template<class T>
 std::vector<std::thread> V<T>::threads;
 template<class T>

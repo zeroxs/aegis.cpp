@@ -78,7 +78,7 @@ public:
     /**
      * @param loglevel The level of logging to use
      */
-    AEGIS_DECL explicit core(std::unique_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel = spdlog::level::level_enum::info);
+    AEGIS_DECL explicit core(std::shared_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel = spdlog::level::level_enum::info);
 
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /// This constructor creates its own asio::io_context and expects you to create the spdlog::logger
@@ -95,7 +95,7 @@ public:
      * @param _io Your pre-constructed asio::io_context object
      * @param _log Your pre-constructed spdlog::logger object
      */
-    AEGIS_DECL explicit core(std::unique_ptr<asio::io_context> _io, std::shared_ptr<spdlog::logger> _log);
+    AEGIS_DECL explicit core(std::shared_ptr<asio::io_context> _io, std::shared_ptr<spdlog::logger> _log);
 
     /// Destroys the shards, stops the asio::work object, destroys the websocket object
     AEGIS_DECL ~core();

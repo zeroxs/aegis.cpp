@@ -92,7 +92,7 @@ AEGIS_DECL void core::setup_context()
         thread_count = 2;
 
     external_io_context = false;
-    internal::_io_context = std::make_unique<asio::io_context>();
+    internal::_io_context = std::make_shared<asio::io_context>();
 
     internal::wrk = std::make_unique<asio_exec>(asio::make_work_guard(*internal::_io_context));
     for (std::size_t i = 0; i < thread_count; ++i)
@@ -137,7 +137,7 @@ AEGIS_DECL core::core(spdlog::level::level_enum loglevel, std::size_t count)
     setup_shard_mgr();
 }
 
-AEGIS_DECL core::core(std::unique_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel)
+AEGIS_DECL core::core(std::shared_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel)
     : _loglevel(loglevel)
 {
     if (internal::bot != nullptr)
@@ -169,7 +169,7 @@ AEGIS_DECL core::core(std::shared_ptr<spdlog::logger> _log, std::size_t count)
     setup_shard_mgr();
 }
 
-AEGIS_DECL core::core(std::unique_ptr<asio::io_context> _io, std::shared_ptr<spdlog::logger> _log)
+AEGIS_DECL core::core(std::shared_ptr<asio::io_context> _io, std::shared_ptr<spdlog::logger> _log)
 {
     if (internal::bot != nullptr)
         throw std::runtime_error("Instance of bot already exists");
