@@ -203,7 +203,7 @@ public:
         return _connection;
     }
 
-    std::vector<std::string> get_trace() const noexcept
+    const std::vector<std::string> & get_trace() const noexcept
     {
         return _trace;
     }

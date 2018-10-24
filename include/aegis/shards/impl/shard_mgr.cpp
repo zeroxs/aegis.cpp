@@ -274,7 +274,7 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
     if ((ec == asio::error::operation_aborted) || (_status == bot_status::Shutdown))
         return;
 
-    ws_timer = websocket_o.set_timer(1000, std::bind(&shard_mgr::ws_status, this, std::placeholders::_1));
+    ws_timer = websocket_o.set_timer(100, std::bind(&shard_mgr::ws_status, this, std::placeholders::_1));
 
     using namespace std::chrono_literals;
 
@@ -293,7 +293,6 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
                 // a try should the 'worst' happen
                 try
                 {
-
                     if (utility::to_ms(_shard->lastwsevent) > 0)
                     {
                         // heartbeat system should typically pick up any dead sockets. this is sort of redundant at the moment
@@ -305,7 +304,6 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
                             reset_shard(_shard.get());
                         }
                     }
-
                 }
                 catch (std::exception & e)
                 {
@@ -354,9 +352,10 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
         }
 
         // check if not all shards connected
+        //TODO: speed clear this list if shard is in resume state
         if (!_shards_to_connect.empty())
         {
-            if (utility::to_t<std::chrono::seconds>(now - _last_ready) >= 6s)
+            if (utility::to_t<std::chrono::seconds>(now - _last_identify) >= 6s)
             {
                 if (_connect_time != std::chrono::steady_clock::time_point())
                 {

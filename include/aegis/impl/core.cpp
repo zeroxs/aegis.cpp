@@ -792,6 +792,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                                 }
                             }
                         };
+                        _shard_mgr->_last_identify = std::chrono::steady_clock::now();
                         if (!self_presence.empty())
                         {
                             obj["d"]["presence"] = json({
@@ -943,6 +944,7 @@ AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shards::shard 
                     }
                 }
             };
+            _shard_mgr->_last_identify = std::chrono::steady_clock::now();
         }
         else
         {
@@ -1313,7 +1315,7 @@ AEGIS_DECL void core::ws_resumed(const json & result, shards::shard * _shard)
     _shard_mgr->_connecting_shard = nullptr;
     _shard->connection_state = shard_status::Online;
     _shard_mgr->_connect_time = std::chrono::steady_clock::time_point();
-    _shard->_ready_time = _shard_mgr->_last_ready = std::chrono::steady_clock::now();
+    //_shard->_ready_time = _shard_mgr->_last_ready = std::chrono::steady_clock::now();
     log->info("Shard#{} RESUMED Processed", _shard->get_id());
     _shard->keepalivetimer.cancel();
     _shard->set_heartbeat(std::bind(&core::keep_alive, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));

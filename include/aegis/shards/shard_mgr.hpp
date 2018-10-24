@@ -287,6 +287,7 @@ private:
     friend aegis::core;
 
     std::chrono::time_point<std::chrono::steady_clock> _last_ready;
+    std::chrono::time_point<std::chrono::steady_clock> _last_identify;
     std::chrono::time_point<std::chrono::steady_clock> _connect_time;
     shard * _connecting_shard;
 
