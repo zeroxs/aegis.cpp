@@ -70,7 +70,7 @@ AEGIS_DECL void shard_mgr::start()
                 return;
             }
 
-            log->trace("Shard#{}: added to connect list", _shard->get_id());
+            AEGIS_TRACE(log, "Shard#{}: added to connect list", _shard->get_id());
             _shards_to_connect.push_back(_shard.get());
             _shards.push_back(std::move(_shard));
         }
@@ -391,7 +391,7 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
                     }
                     else
                     {
-                        log->debug("Shard#{}: already connected {} {} {} {}",
+                        AEGIS_DEBUG(log, "Shard#{}: already connected {} {} {} {}",
                                    _shard->get_id(),
                                    _shard->_connection->get_state(),
                                    static_cast<int>(_shard->connection_state),
@@ -435,7 +435,7 @@ AEGIS_DECL void shard_mgr::queue_reconnect(shard * _shard)
         log->error("Shard#{}: shard to be connected already on connect list", _shard->get_id());
         return;
     }
-    log->debug("Shard#{}: added to connect list", _shard->get_id());
+    AEGIS_DEBUG(log, "Shard#{}: added to connect list", _shard->get_id());
     //_shard->connection_state = shard_status::Queued;
     _shards_to_connect.push_back(_shard);
 }

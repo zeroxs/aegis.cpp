@@ -70,7 +70,6 @@ AEGIS_DECL void channel::load_with_guild(guild & _guild, const json & obj, shard
     guild_id = _guild.get_id();
     try
     {
-        //log->debug("Shard#{} : Channel[{}] created for guild[{}]", shard.m_shardid, channel_id, _channel.m_guild_id);
         if (!obj["name"].is_null()) name = obj["name"].get<std::string>();
         position = obj["position"];
         type = static_cast<gateway::objects::channel::channel_type>(obj["type"].get<int>());// 0 = text, 2 = voice

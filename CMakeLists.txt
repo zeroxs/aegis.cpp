@@ -289,47 +289,47 @@ export(PACKAGE Aegis)
 
 if (BUILD_EXAMPLES)
 
-add_executable(aegis_example src/example_main.cpp src/example.cpp)
-add_executable(aegis_minimal src/minimal.cpp)
-add_executable(aegis_headeronly_no_cache src/minimal.cpp)
-target_compile_definitions(aegis_headeronly_no_cache PRIVATE AEGIS_DISABLE_ALL_CACHE)
+	add_executable(aegis_example src/example_main.cpp src/example.cpp)
+	add_executable(aegis_minimal src/minimal.cpp)
+	add_executable(aegis_headeronly_no_cache src/minimal.cpp)
+	target_compile_definitions(aegis_headeronly_no_cache PRIVATE AEGIS_DISABLE_ALL_CACHE)
 
-set_property(TARGET aegis_example PROPERTY CXX_STANDARD 14)
-set_property(TARGET aegis_example PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET aegis_minimal PROPERTY CXX_STANDARD 14)
-set_property(TARGET aegis_minimal PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET aegis_headeronly_no_cache PROPERTY CXX_STANDARD 14)
-set_property(TARGET aegis_headeronly_no_cache PROPERTY CXX_STANDARD_REQUIRED ON)
+	set_property(TARGET aegis_example PROPERTY CXX_STANDARD 14)
+	set_property(TARGET aegis_example PROPERTY CXX_STANDARD_REQUIRED ON)
+	set_property(TARGET aegis_minimal PROPERTY CXX_STANDARD 14)
+	set_property(TARGET aegis_minimal PROPERTY CXX_STANDARD_REQUIRED ON)
+	set_property(TARGET aegis_headeronly_no_cache PROPERTY CXX_STANDARD 14)
+	set_property(TARGET aegis_headeronly_no_cache PROPERTY CXX_STANDARD_REQUIRED ON)
 
 
-if(MSVC)
-	target_link_libraries(aegis_example PRIVATE aegis ssleay32 libeay32 zlib Threads::Threads)
-	target_link_libraries(aegis_minimal PRIVATE aegis ssleay32 libeay32 zlib Threads::Threads)
-	target_link_libraries(aegis_headeronly_no_cache PRIVATE aegis ssleay32 libeay32 crypto zlib Threads::Threads)
-else()
-	target_link_libraries(aegis_example PRIVATE aegis ssl crypto z dl Threads::Threads)
-	target_link_libraries(aegis_minimal PRIVATE aegis ssl crypto z dl Threads::Threads)
-	target_link_libraries(aegis_headeronly_no_cache PRIVATE aegis ssl crypto z dl Threads::Threads)
-endif()
+	if(MSVC)
+		target_link_libraries(aegis_example PRIVATE aegis ssleay32 libeay32 zlib Threads::Threads)
+		target_link_libraries(aegis_minimal PRIVATE aegis ssleay32 libeay32 zlib Threads::Threads)
+		target_link_libraries(aegis_headeronly_no_cache PRIVATE aegis ssleay32 libeay32 crypto zlib Threads::Threads)
+	else()
+		target_link_libraries(aegis_example PRIVATE aegis ssl crypto z dl Threads::Threads)
+		target_link_libraries(aegis_minimal PRIVATE aegis ssl crypto z dl Threads::Threads)
+		target_link_libraries(aegis_headeronly_no_cache PRIVATE aegis ssl crypto z dl Threads::Threads)
+	endif()
 
-target_compile_options(aegis_example PRIVATE ${AEGIS_CFLAGS})
-target_compile_options(aegis_minimal PRIVATE ${AEGIS_CFLAGS})
-target_compile_options(aegis_headeronly_no_cache PRIVATE ${AEGIS_CFLAGS})
+	target_compile_options(aegis_example PRIVATE ${AEGIS_CFLAGS})
+	target_compile_options(aegis_minimal PRIVATE ${AEGIS_CFLAGS})
+	target_compile_options(aegis_headeronly_no_cache PRIVATE ${AEGIS_CFLAGS})
 
-target_include_directories(aegis_example
-  PUBLIC
-    $<INSTALL_INTERFACE:include>    
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-)
-target_include_directories(aegis_minimal
-  PUBLIC
-    $<INSTALL_INTERFACE:include>    
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-)
-target_include_directories(aegis_headeronly_no_cache
-  PUBLIC
-    $<INSTALL_INTERFACE:include>    
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-)
+	target_include_directories(aegis_example
+	  PUBLIC
+		$<INSTALL_INTERFACE:include>    
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+	)
+	target_include_directories(aegis_minimal
+	  PUBLIC
+		$<INSTALL_INTERFACE:include>    
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+	)
+	target_include_directories(aegis_headeronly_no_cache
+	  PUBLIC
+		$<INSTALL_INTERFACE:include>    
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+	)
 
 endif ()

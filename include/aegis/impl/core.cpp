@@ -354,7 +354,7 @@ AEGIS_DECL void core::remove_channel(snowflake channel_id) noexcept
     auto it = channels.find(channel_id);
     if (it == channels.end())
     {
-        log->debug("Unable to remove channel [{}] (does not exist)", channel_id);
+        AEGIS_DEBUG(log, "Unable to remove channel [{}] (does not exist)", channel_id);
         return;
     }
     channels.erase(it);
@@ -367,7 +367,7 @@ AEGIS_DECL void core::remove_member(snowflake member_id) noexcept
     auto it = members.find(member_id);
     if (it == members.end())
     {
-        log->debug("Unable to remove member [{}] (does not exist)", member_id);
+        AEGIS_DEBUG(log, "Unable to remove member [{}] (does not exist)", member_id);
         return;
     }
     members.erase(it);
@@ -608,7 +608,7 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
         {
             std::unique_lock<shared_mutex> l(_guild->mtx());
             _guild->load(guildobj, _shard);
-            log->debug("Shard#{} : CREATED Guild: {} [T:{}] [{}]"
+            AEGIS_DEBUG(log, "Shard#{} : CREATED Guild: {} [T:{}] [{}]"
                       , _shard->get_id()
                       , _guild->guild_id
                       , guilds.size()
@@ -656,7 +656,7 @@ AEGIS_DECL channel * core::dm_channel_create(const json & obj, shards::shard * _
     {
         std::unique_lock<shared_mutex> l(_channel->mtx());
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-        log->debug("Shard#{} : Channel[{}] created for DirectMessage", _shard->get_id(), channel_id);
+        AEGIS_DEBUG(log, "Shard#{} : Channel[{}] created for DirectMessage", _shard->get_id(), channel_id);
         if (obj.count("name") && !obj["name"].is_null()) _channel->name = obj["name"].get<std::string>();
         _channel->type = static_cast<gateway::objects::channel::channel_type>(obj["type"].get<int>());// 0 = text, 2 = voice
 
@@ -700,7 +700,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                     && ((result["t"] != "GUILD_CREATE"
                            && result["t"] != "PRESENCE_UPDATE"
                            && result["t"] != "GUILD_MEMBERS_CHUNK")))
-                    log->trace("Shard#{}: {}", _shard->get_id(), msg);
+                    AEGIS_TRACE(log, "Shard#{}: {}", _shard->get_id(), msg);
 
                 int64_t t_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 

@@ -62,7 +62,7 @@ AEGIS_DECL void guild::remove_member(snowflake member_id) noexcept
     auto _member = members.find(member_id);
     if (_member == members.end())
     {
-        get_bot().log->debug("Unable to remove member [{}] from guild [{}] (does not exist)", member_id, guild_id);
+        AEGIS_DEBUG(get_bot().log, "Unable to remove member [{}] from guild [{}] (does not exist)", member_id, guild_id);
         return;
     }
     _member->second->leave(guild_id);
@@ -464,7 +464,7 @@ AEGIS_DECL void guild::remove_channel(snowflake channel_id) noexcept
     auto it = channels.find(channel_id);
     if (it == channels.end())
     {
-        get_bot().log->debug("Unable to remove channel [{}] from guild [{}] (does not exist)", channel_id, guild_id);
+        AEGIS_DEBUG(get_bot().log, "Unable to remove channel [{}] from guild [{}] (does not exist)", channel_id, guild_id);
         return;
     }
     channels.erase(it);
