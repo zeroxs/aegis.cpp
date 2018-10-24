@@ -12,6 +12,7 @@
 
 #include "aegis/config.hpp"
 #include "aegis/fwd.hpp"
+#include "aegis/error.hpp"
 #include <condition_variable>
 #include <stdexcept>
 #include <type_traits>
@@ -1114,17 +1115,10 @@ inline void future_state<void>::forward_to(promise<void>& pr) noexcept
     _u.st = state::invalid;
 }
 
-template<typename Duration>
-inline aegis::future<void> sleep(const Duration& dur)
+template <typename T = rest::rest_reply>
+inline future<T> make_exception_future(aegis::error ec)
 {
-    aegis::promise<void> pr;
-    auto fut = pr.get_future();
-    std::thread t1([pr = std::move(pr), dur = dur]() mutable {
-        std::this_thread::sleep_for(dur);
-        pr.set_value();
-    });
-    t1.detach();
-    return fut;
+    return aegis::make_exception_future<rest::rest_reply>(std::make_exception_ptr(aegis::exception(make_error_code(ec))));
 }
 
 template<typename T, typename V = std::result_of_t<T()>, typename = std::enable_if_t<!std::is_void<V>::value>>
@@ -1133,10 +1127,22 @@ aegis::future<V> async(T f)
     aegis::promise<V> pr;
     auto fut = pr.get_future();
 
-    asio::post(*aegis::internal::_io_context, [pr = std::move(pr), f = std::move(f)]() mutable
+    aegis::promise<void> pr2;
+    auto fut2 = pr2.get_future();
+
+    asio::post(*aegis::internal::_io_context, [pr2 = std::move(pr2), pr = std::move(pr), f = std::move(f)]() mutable
     {
-        pr.set_value(f());
+        pr2.set_value();
+        try
+        {
+            pr.set_value(f());
+        }
+        catch (std::exception & e)
+        {
+            pr.set_exception(make_exception_ptr(e));
+        }
     });
+    fut2.get();
     return fut;
 }
 
@@ -1146,11 +1152,23 @@ aegis::future<V> async(T f)
     aegis::promise<V> pr;
     auto fut = pr.get_future();
 
-    asio::post(*aegis::internal::_io_context, [pr = std::move(pr), f = std::move(f)]() mutable
+    aegis::promise<void> pr2;
+    auto fut2 = pr2.get_future();
+
+    asio::post(*aegis::internal::_io_context, [pr2 = std::move(pr2), pr = std::move(pr), f = std::move(f)]() mutable
     {
-        f();
-        pr.set_value();
+        pr2.set_value();
+        try
+        {
+            f();
+            pr.set_value();
+        }
+        catch (std::exception & e)
+        {
+            pr.set_exception(make_exception_ptr(e));
+        }
     });
+    fut2.get();
     return fut;
 }
 

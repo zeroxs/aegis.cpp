@@ -151,29 +151,17 @@ public:
     AEGIS_DECL aegis::member & get_member();
 #endif
 
-    AEGIS_DECL std::future<rest::rest_reply> delete_message(std::error_code & ec) noexcept;
+    AEGIS_DECL aegis::future<rest::rest_reply> delete_message();
 
-    AEGIS_DECL std::future<rest::rest_reply> delete_message();
+    AEGIS_DECL aegis::future<rest::rest_reply> edit(const std::string & content);
 
-    AEGIS_DECL std::future<rest::rest_reply> edit(std::error_code & ec, const std::string & content) noexcept;
+    AEGIS_DECL aegis::future<rest::rest_reply> create_reaction(const std::string & content);
 
-    AEGIS_DECL std::future<rest::rest_reply> edit(const std::string & content);
+    AEGIS_DECL aegis::future<rest::rest_reply> delete_own_reaction(const std::string & content);
 
-    AEGIS_DECL std::future<rest::rest_reply> create_reaction(std::error_code & ec, const std::string & content) noexcept;
+    AEGIS_DECL aegis::future<rest::rest_reply> delete_user_reaction(const std::string & content, const snowflake member_id);
 
-    AEGIS_DECL std::future<rest::rest_reply> create_reaction(const std::string & content);
-
-    AEGIS_DECL std::future<rest::rest_reply> delete_own_reaction(std::error_code & ec, const std::string & content) noexcept;
-
-    AEGIS_DECL std::future<rest::rest_reply> delete_own_reaction(const std::string & content);
-
-    AEGIS_DECL std::future<rest::rest_reply> delete_user_reaction(std::error_code & ec, const std::string & content, const snowflake member_id) noexcept;
-
-    AEGIS_DECL std::future<rest::rest_reply> delete_user_reaction(const std::string & content, const snowflake member_id);
-
-    AEGIS_DECL std::future<rest::rest_reply> delete_all_reactions(std::error_code & ec) noexcept;
-
-    AEGIS_DECL std::future<rest::rest_reply> delete_all_reactions();
+    AEGIS_DECL aegis::future<rest::rest_reply> delete_all_reactions();
 
     /// Obtain the relevant snowflakes related to this message
     /**

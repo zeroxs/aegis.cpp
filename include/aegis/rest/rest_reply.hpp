@@ -138,6 +138,9 @@ public:
     {
     }
 
+    rest_reply(rest_reply &&) = default;
+    rest_reply & operator=(const rest_reply &) = default;
+
     operator bool()
     {
         if (reply_code == http_code::ok || reply_code == http_code::created || reply_code == http_code::accepted || reply_code == http_code::no_content)
@@ -146,6 +149,13 @@ public:
     }
 
     ~rest_reply() = default;
+
+    bool success()
+    {
+        if (reply_code >= http_code::ok && reply_code <= http_code::partial_content)
+            return true;
+        return false;
+    }
 
 private:
     std::string _msg;

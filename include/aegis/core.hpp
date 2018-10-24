@@ -57,6 +57,27 @@ using message_ptr = websocketpp::config::asio_client::message_type::ptr;
 
 using ratelimit_mgr_t = aegis::ratelimit::ratelimit_mgr<rest_call, aegis::rest::rest_reply>;
 
+struct create_guild_t
+{
+    create_guild_t & name(const std::string & param) { _name = param; return *this; }
+    create_guild_t & voice_region(const std::string & param) { _voice_region = param; return *this; }
+    create_guild_t & verification_level(int param) { _verification_level = param; return *this; }
+    create_guild_t & default_message_notifications(int param) { _default_message_notifications = param; return *this; }
+    create_guild_t & explicit_content_filter(int param) { _explicit_content_filter = param; return *this; }
+    create_guild_t & roles(const std::vector<gateway::objects::role> & param)
+    { _roles = param; return *this; }
+    create_guild_t & channels(const std::vector<std::tuple<std::string, int>> & param)
+    { _channels = param; return *this; }
+    std::string _name;
+    lib::optional<std::string> _voice_region;
+    lib::optional<int> _verification_level;
+    lib::optional<int> _default_message_notifications;
+    lib::optional<int> _explicit_content_filter;
+    lib::optional<std::string> _icon;
+    lib::optional<std::vector<gateway::objects::role>> _roles;
+    lib::optional<std::vector<std::tuple<std::string, int>>> _channels;
+};
+
 /// Primary class for managing a bot interface
 /**
  * Only one instance of this object can exist safely
@@ -155,9 +176,8 @@ public:
      * @param channels vector of channels to create
      * @returns rest_reply
      */
-    AEGIS_DECL rest::rest_reply create_guild(
-        std::error_code & ec, std::string name,
-        lib::optional<std::string> voice_region = {}, lib::optional<int> verification_level = {},
+    AEGIS_DECL aegis::future<rest::rest_reply> create_guild(
+        std::string name, lib::optional<std::string> voice_region = {}, lib::optional<int> verification_level = {},
         lib::optional<int> default_message_notifications = {}, lib::optional<int> explicit_content_filter = {},
         lib::optional<std::string> icon = {}, lib::optional<std::vector<gateway::objects::role>> roles = {},
         lib::optional<std::vector<std::tuple<std::string, int>>> channels = {}
@@ -167,28 +187,11 @@ public:
     /// directly on the same thread and does not attempt to manage ratelimits due to the already
     /// existing requirement that the bot must be in less than 10 guilds for this call to succeed
     /**
-     * @param name Set name of guild
-     * @param voice_region Set region for voice
-     * @param verification_level Set verification level from unrestricted level to verified phone level
-     * (NONE=0, LOW(verified email)=1, MEDIUM(registered >5m)=2, HIGH(member of server >10m)=3 VERY_HIGH(verified phone)=4
-     * @param default_message_notifications Set default notification level for new members
-     * @param explicit_content_filter Set filter level for new content
-     * (DISABLED=0, MEMBERS_WITHOUT_ROLES=1, ALL_MEMBERS=2)
-     * @param afk_channel_id Set channel for idle voice connections to be moved to
-     * @param afk_timeout Set time where voice connections are considered to be idle
-     * @param icon Set icon \todo
-     * @param roles vector of roles to create
-     * @param channels vector of channels to create
-     * @throws aegiscpp::exception Thrown on failure.
+     * @see aegis::create_guild_t
+     * @param obj Struct of the contents of the request
      * @returns rest::rest_reply
      */
-    AEGIS_DECL rest::rest_reply create_guild(
-        std::string name,
-        lib::optional<std::string> voice_region = {}, lib::optional<int> verification_level = {},
-        lib::optional<int> default_message_notifications = {}, lib::optional<int> explicit_content_filter = {},
-        lib::optional<std::string> icon = {}, lib::optional<std::vector<gateway::objects::role>> roles = {},
-        lib::optional<std::vector<std::tuple<std::string, int>>> channels = {}
-    );
+    AEGIS_DECL aegis::future<rest::rest_reply> create_guild(create_guild_t obj);
 
     AEGIS_DECL std::future<rest::rest_reply> modify_bot_user(const std::string & username = "", const std::string & avatar = "");
 
@@ -220,19 +223,6 @@ public:
     shards::shard_mgr & get_shard_mgr() noexcept { return *_shard_mgr; }
     bot_status get_state() const noexcept { return _status; }
     void set_state(bot_status s) noexcept { _status = s; }
-
-    /// Helper function for posting tasks to asio
-    /**
-     * @param f A callable to execute within asio - signature should be void(void)
-     */
-    template<typename T>
-    void async(T f)
-    {
-        asio::post(*internal::_io_context, std::move(f));
-    }
-
-    template<typename T = aegis::rest::rest_reply, typename P>
-    AEGIS_DECL std::future<T> post_task(P fn);
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 
@@ -306,7 +296,7 @@ public:
      */
     AEGIS_DECL channel * dm_channel_create(const json & obj, shards::shard * _shard);
 
-    AEGIS_DECL std::future<rest::rest_reply> create_dm_message(snowflake member_id, const std::string & content, int64_t nonce = 0) noexcept;
+    AEGIS_DECL aegis::future<rest::rest_reply> create_dm_message(snowflake member_id, const std::string & content, int64_t nonce = 0);
 
     /// Return bot uptime as {days hours minutes seconds}
     /**

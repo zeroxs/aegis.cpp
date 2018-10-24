@@ -228,28 +228,13 @@ AEGIS_DECL member * core::member_create(snowflake id) noexcept
 }
 #endif
 
-template<typename T, typename P>
-AEGIS_DECL std::future<T> core::post_task(P fn)
-{
-    using result = asio::async_result<asio::use_future_t<>, void(T)>;
-    using handler = typename result::completion_handler_type;
-
-    handler exec(asio::use_future);
-    result ret(exec);
-
-    asio::post(*internal::_io_context, [=]() mutable
-    {
-        exec(fn());
-    });
-    return ret.get();
-}
-
-AEGIS_DECL std::future<rest::rest_reply> core::create_dm_message(snowflake member_id, const std::string & content, int64_t nonce) noexcept
+AEGIS_DECL aegis::future<rest::rest_reply> core::create_dm_message(snowflake member_id, const std::string & content, int64_t nonce)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     channel * c = nullptr;
     auto m = find_member(member_id);
-    if (!m) return {};
+    if (!m)
+        throw aegis::exception(make_error_code(error::member_error));
     if (m->get_dm_id())
         c = channel_create(m->get_dm_id());
     if (c)
@@ -257,29 +242,44 @@ AEGIS_DECL std::future<rest::rest_reply> core::create_dm_message(snowflake membe
     else
 #endif
     {
-        return post_task([=]() -> rest::rest_reply
-        {
-            try
+        rest::request_params params{ "/users/@me/channels", rest::Post, fmt::format(R"({{ "recipient_id": "{}" }})", member_id), "", {}, {} };
+        return get_ratelimit().post_task(params)
+            .then([&](rest::rest_reply && reply)
             {
-                rest::request_params params{ "/users/@me/channels", rest::Post, fmt::format(R"({{ "recipient_id": "{}" }})", member_id), "", {}, {} };
-                auto res = json::parse(get_ratelimit()
-                                       .post_task(params)
-                                       .get()
-                                       .content);
+                auto res = json::parse(reply.content);
                 snowflake channel_id = std::stoull(res["id"].get<std::string>());
                 auto c = channel_create(channel_id);
-                if (!c) return {};
+                if (!c) return rest::rest_reply();
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
                 m->set_dm_id(channel_id);
 #endif
                 return c->create_message(content, nonce).get();
-            }
-            catch (std::exception & e)
-            {
-            	
-            }
-            return {};
-        });
+            });
+
+
+//         return async([=]() -> rest::rest_reply
+//         {
+//             try
+//             {
+//                 rest::request_params params{ "/users/@me/channels", rest::Post, fmt::format(R"({{ "recipient_id": "{}" }})", member_id), "", {}, {} };
+//                 auto res = json::parse(get_ratelimit()
+//                                        .post_task(params)
+//                                        .get()
+//                                        .content);
+//                 snowflake channel_id = std::stoull(res["id"].get<std::string>());
+//                 auto c = channel_create(channel_id);
+//                 if (!c) return {};
+// #if !defined(AEGIS_DISABLE_ALL_CACHE)
+//                 m->set_dm_id(channel_id);
+// #endif
+//                 return c->create_message(content, nonce).get();
+//             }
+//             catch (std::exception & e)
+//             {
+//             	
+//             }
+//             return {};
+//         });
     }
 }
 
@@ -617,20 +617,10 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
     }
 }
 
-AEGIS_DECL rest::rest_reply core::create_guild(
-    std::string name,
-    lib::optional<std::string> voice_region, lib::optional<int> verification_level,
-    lib::optional<int> default_message_notifications, lib::optional<int> explicit_content_filter,
-    lib::optional<std::string> icon, lib::optional<std::vector<gateway::objects::role>> roles,
-    lib::optional<std::vector<std::tuple<std::string, int>>> channels
-)
+AEGIS_DECL aegis::future<rest::rest_reply> core::create_guild(create_guild_t obj)
 {
-    std::error_code ec;
-    auto res = create_guild(ec, name, voice_region, verification_level, default_message_notifications,
-                            explicit_content_filter, icon, roles, channels);
-    if (ec)
-        throw ec;
-    return res;
+    return create_guild(obj._name, obj._voice_region, obj._verification_level, obj._default_message_notifications,
+                        obj._explicit_content_filter, obj._icon, obj._roles, obj._channels);
 }
 
 AEGIS_DECL std::future<rest::rest_reply> core::modify_bot_user(const std::string & username, const std::string & avatar)
@@ -1704,9 +1694,8 @@ AEGIS_DECL void core::ws_voice_server_update(const json & result, shards::shard 
         i_voice_server_update(obj);
 }
 
-AEGIS_DECL rest::rest_reply core::create_guild(
-    std::error_code & ec, std::string name,
-    lib::optional<std::string> voice_region, lib::optional<int> verification_level,
+AEGIS_DECL aegis::future<rest::rest_reply> core::create_guild(
+    std::string name, lib::optional<std::string> voice_region, lib::optional<int> verification_level,
     lib::optional<int> default_message_notifications, lib::optional<int> explicit_content_filter,
     lib::optional<std::string> icon, lib::optional<std::vector<gateway::objects::role>> roles,
     lib::optional<std::vector<std::tuple<std::string, int>>> channels
@@ -1730,20 +1719,10 @@ AEGIS_DECL rest::rest_reply core::create_guild(
         for (auto & c : channels.value())
             obj["channels"].push_back(json({ { "name", std::get<0>(c) }, { "type", std::get<1>(c) } }));
 
-    try
+    return async([&]
     {
         return _rest->execute({ "/guilds", rest::Post, obj.dump() });
-    }
-    catch (nlohmann::json::type_error& e)
-    {
-        log->critical("json::type_error guild::post_task() exception : {}", e.what());
-    }
-    catch (...)
-    {
-        log->critical("Uncaught post_task exception");
-    }
-    ec = make_error_code(error::general);
-    return {};
+    });
 }
 
 }

@@ -13,15 +13,13 @@
 #include "aegis/rest/rest_reply.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/ratelimit/bucket.hpp"
+#include "aegis/futures.hpp"
 #include <chrono>
 #include <functional>
 #include <string>
 #include <queue>
 #include <map>
-#include <memory>
 #include <atomic>
-#include <future>
-#include <thread>
 #include <mutex>
 
 namespace aegis
@@ -84,20 +82,13 @@ public:
         return *_buckets.emplace(path, std::make_unique<bucket<Callable, Result>>(_call, _io_context, global_limit)).first->second;
     }
 
-    std::future<Result> post_task(rest::request_params params)
+    aegis::future<Result> post_task(rest::request_params params)
     {
-        auto & bkt = get_bucket(params.path);
-        using result = asio::async_result<asio::use_future_t<>, void(Result)>;
-        using handler = typename result::completion_handler_type;
-
-        handler exec(asio::use_future);
-        result ret(exec);
-
-        asio::post(_io_context, [=, &bkt]() mutable
+        return aegis::async([=]() -> Result
         {
-            exec(bkt.perform(params));
+            auto & bkt = get_bucket(params.path);
+            return bkt.perform(params);
         });
-        return ret.get();
     }
 
 private:
