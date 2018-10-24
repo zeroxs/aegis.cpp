@@ -66,7 +66,7 @@ int main(int argc, char * argv[])
                         auto response = obj.msg.create_reaction("fail:429554869611921408");
 
                         // perhaps you'd like to leverage asio to respond
-                        bot.async([&_channel, fut = std::move(response)]() mutable
+                        aegis::async([&_channel, fut = std::move(response)]() mutable
                         {
                             auto response = fut.get();
                             if (response)
