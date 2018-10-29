@@ -23,6 +23,7 @@ int main(int argc, char * argv[])
         commands.inject(bot);
 
         bot.run();
+        bot.yield();
 
         std::cout << "Press any key to continue...\n";
         std::cin.ignore();
