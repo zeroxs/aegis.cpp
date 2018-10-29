@@ -70,7 +70,7 @@ AEGIS_DECL void shard_mgr::start()
                 return;
             }
 
-            AEGIS_TRACE(log, "Shard#{}: added to connect list", _shard->get_id());
+            AEGIS_DEBUG(log, "Shard#{}: added to connect list", _shard->get_id());
             _shards_to_connect.push_back(_shard.get());
             _shards.push_back(std::move(_shard));
         }

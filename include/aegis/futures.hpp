@@ -1143,7 +1143,7 @@ aegis::future<V> async(T f)
         }
     });
     fut2.get();
-    return fut;
+    return std::move(fut);
 }
 
 template<typename T, typename V = std::enable_if_t<std::is_void<std::result_of_t<T()>>::value>>
@@ -1169,7 +1169,7 @@ aegis::future<V> async(T f)
         }
     });
     fut2.get();
-    return fut;
+    return std::move(fut);
 }
 
 }

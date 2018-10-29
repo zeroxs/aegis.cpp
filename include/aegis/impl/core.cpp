@@ -89,7 +89,7 @@ AEGIS_DECL void core::setup_context()
     // this will not protect against faulty usercode entirely, but will at least provide some leeway
     // to allow a single blocking message to not halt operations
     if (thread_count == 1)
-        thread_count = 2;
+        thread_count = std::thread::hardware_concurrency()*2;
 
     external_io_context = false;
     internal::_io_context = std::make_shared<asio::io_context>();
@@ -376,6 +376,12 @@ AEGIS_DECL void core::remove_member(snowflake member_id) noexcept
 
 AEGIS_DECL void core::run()
 {
+    if (!state_valid)
+    {
+        std::cout << "Library state invalid. Errors occurred on creation. Exiting core::run()\n";
+        return;
+    }
+
     set_state(bot_status::Running);
 
     starttime = std::chrono::steady_clock::now();
@@ -387,84 +393,107 @@ AEGIS_DECL void core::run()
 
 AEGIS_DECL void core::load_config()
 {
-    auto configfile = std::fopen("config.json", "r+");
-
-    if (!configfile)
+    try
     {
-        std::perror("File opening failed");
-        throw std::runtime_error("config.json does not exist");
-    }
+        auto configfile = std::fopen("config.json", "r+");
 
-    std::fseek(configfile, 0, SEEK_END);
-    std::size_t filesize = std::ftell(configfile);
-
-    std::fseek(configfile, 0, SEEK_SET);
-    std::vector<char> buffer(filesize+1);
-    std::memset(buffer.data(), 0, filesize+1);
-    size_t rd = std::fread(buffer.data(), sizeof(char), buffer.size()-1, configfile);
-
-    std::fclose(configfile);
-
-    json cfg = json::parse(buffer.data());
-
-    if (!cfg["token"].is_null())
-        _token = cfg["token"].get<std::string>();
-    else
-        throw std::runtime_error("\"token\" not set in config.json");
-
-    if (!cfg["force-shard-count"].is_null())
-        force_shard_count = cfg["force-shard-count"].get<int16_t>();
-
-    if (!cfg["log-level"].is_null())
-    {
-        if (cfg["log-level"].is_number_integer())
+        if (!configfile)
         {
-            auto l = static_cast<spdlog::level::level_enum>(cfg["log-level"].get<int32_t>());
-            std::string s;
-            switch (cfg["log-level"].get<int32_t>())
-            {
-                case 0: s = "trace"; break;
-                case 1: s = "debug"; break;
-                case 2: s = "info"; break;
-                case 3: s = "warn"; break;
-                case 4: s = "err"; break;
-                case 5: s = "critical"; break;
-                case 6: s = "off"; break;
-                default: s = "info"; l = spdlog::level::level_enum::info; break;
-            }
-            _loglevel = l;
+            std::perror("File opening failed");
+            throw std::runtime_error("config.json does not exist");
         }
-        else if (cfg["log-level"].is_string())
+
+        std::fseek(configfile, 0, SEEK_END);
+        std::size_t filesize = std::ftell(configfile);
+
+        std::fseek(configfile, 0, SEEK_SET);
+        std::vector<char> buffer(filesize + 1);
+        std::memset(buffer.data(), 0, filesize + 1);
+        size_t rd = std::fread(buffer.data(), sizeof(char), buffer.size() - 1, configfile);
+
+        std::fclose(configfile);
+
+        json cfg = json::parse(buffer.data());
+
+        if (!cfg["token"].is_null())
         {
-            std::string s = cfg["log-level"].get<std::string>();
-            if (s == "trace")
-                _loglevel = spdlog::level::level_enum::trace;
-            else if (s == "debug")
-                _loglevel = spdlog::level::level_enum::debug;
-            else if (s == "info")
-                _loglevel = spdlog::level::level_enum::info;
-            else if (s == "warn")
-                _loglevel = spdlog::level::level_enum::warn;
-            else if (s == "err")
-                _loglevel = spdlog::level::level_enum::err;
-            else if (s == "critical")
-                _loglevel = spdlog::level::level_enum::critical;
-            else if (s == "off")
-                _loglevel = spdlog::level::level_enum::off;
+            if (cfg["log-level"].is_string())
+                _token = cfg["token"].get<std::string>();
             else
-                _loglevel = spdlog::level::level_enum::info;
+                throw std::runtime_error("\"token\" must be string");
         }
+        else
+            throw std::runtime_error("\"token\" not set");
+
+        if (!cfg["force-shard-count"].is_null())
+        {
+            if (cfg["force-shard-count"].is_number_integer())
+                force_shard_count = cfg["force-shard-count"].get<int16_t>();
+            else
+                std::cout << "Cannot read \"force-shard-count\" from config.json.\n";
+        }
+
+        if (!cfg["log-level"].is_null())
+        {
+            if (cfg["log-level"].is_number_integer())
+            {
+                auto l = static_cast<spdlog::level::level_enum>(cfg["log-level"].get<int32_t>());
+                std::string s;
+                switch (cfg["log-level"].get<int32_t>())
+                {
+                    case 0: s = "trace"; break;
+                    case 1: s = "debug"; break;
+                    case 2: s = "info"; break;
+                    case 3: s = "warn"; break;
+                    case 4: s = "err"; break;
+                    case 5: s = "critical"; break;
+                    case 6: s = "off"; break;
+                    default: s = "info"; l = spdlog::level::level_enum::info; break;
+                }
+                _loglevel = l;
+            }
+            else if (cfg["log-level"].is_string())
+            {
+                std::string s = cfg["log-level"].get<std::string>();
+                if (s == "trace")
+                    _loglevel = spdlog::level::level_enum::trace;
+                else if (s == "debug")
+                    _loglevel = spdlog::level::level_enum::debug;
+                else if (s == "info")
+                    _loglevel = spdlog::level::level_enum::info;
+                else if (s == "warn")
+                    _loglevel = spdlog::level::level_enum::warn;
+                else if (s == "err")
+                    _loglevel = spdlog::level::level_enum::err;
+                else if (s == "critical")
+                    _loglevel = spdlog::level::level_enum::critical;
+                else if (s == "off")
+                    _loglevel = spdlog::level::level_enum::off;
+                else
+                    _loglevel = spdlog::level::level_enum::info;
+            }
+            else
+            {
+                std::cout << "Cannot read \"log-level\" from config.json. Default: info\n";
+                _loglevel = spdlog::level::level_enum::info;
+            }
+        }
+        else
+            _loglevel = spdlog::level::level_enum::info;
+
+        if (!cfg["file-logging"].is_null())
+            file_logging = cfg["file-logging"].get<bool>();
+
+        if (!cfg["log-format"].is_null())
+            log_formatting = cfg["log-format"].get<std::string>();
+        else
+            log_formatting = "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v";
     }
-    else
-        _loglevel = spdlog::level::level_enum::info;
-
-    if (!cfg["file-logging"].is_null())
-        file_logging = cfg["file-logging"].get<bool>();
-
-    if (!cfg["log-format"].is_null())
-        log_formatting = cfg["file-format"].get<std::string>();
-    else
-        log_formatting = "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v";
+    catch (std::exception & e)
+    {
+        std::cout << "Error loading config.json : " << e.what() << '\n';
+        state_valid = false;
+    }
 }
 
 AEGIS_DECL void core::setup_callbacks()

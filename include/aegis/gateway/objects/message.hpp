@@ -85,6 +85,9 @@ public:
     }
 
     explicit message() = default;
+    message & operator=(const message &) = default;
+    message(message&&) = default;
+    message(const message&) = default;
 
     std::string timestamp; /**<\todo Needs documentation */
     std::string edited_timestamp; /**<\todo Needs documentation */
