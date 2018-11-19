@@ -178,9 +178,7 @@ AEGIS_DECL permission guild::get_permissions(member * _member, channel * _channe
 
     int64_t _base_permissions = base_permissions(_member);
 
-    int64_t _compute_overwrites = compute_overwrites(_base_permissions, *_member, *_channel);
-
-    return _base_permissions | _compute_overwrites;
+    return compute_overwrites(_base_permissions, *_member, *_channel);
 }
 
 AEGIS_DECL int64_t guild::base_permissions(member & _member) const noexcept
@@ -240,6 +238,8 @@ AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, member &
         auto g = _member.get_guild_info(guild_id);
         for (auto & rl : g.roles)
         {
+            if (rl == guild_id)
+                continue;
             if (overwrites.count(rl))
             {
                 auto & ow_role = overwrites[rl];
@@ -248,15 +248,15 @@ AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, member &
             }
         }
 
+        permissions &= ~deny;
+        permissions |= allow;
+
         if (overwrites.count(_member._member_id))
         {
             auto & ow_role = overwrites[_member._member_id];
-            allow |= ow_role.allow;
-            deny |= ow_role.deny;
+            permissions &= ~ow_role.deny;
+            permissions |= ow_role.allow;
         }
-
-        permissions &= ~deny;
-        permissions |= allow;
 
         return permissions;
     }
