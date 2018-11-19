@@ -55,7 +55,7 @@ AEGIS_DECL void shard::do_reset(shard_status _status) noexcept
             if (_connection != nullptr)
             {
                 // if socket is being set to a closed/shutdown state then it may be intentional to be closing an open socket
-                if (_connection->get_state() == websocketpp::session::state::open && _status <= shard_status::Reconnecting)
+                if (_connection->get_state() == websocketpp::session::state::open)
                 {
                     _connection->close(1001, "");
                     std::cout << "Shard#" << get_id() << ": had to close socket on a reset\n";
