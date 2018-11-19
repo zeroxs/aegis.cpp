@@ -976,12 +976,12 @@ AEGIS_DECL void core::send_all_shards(const json & msg)
     _shard_mgr->send_all_shards(msg);
 }
 
-aegis::shards::shard & core::get_shard_by_id(uint16_t shard_id)
+AEGIS_DECL aegis::shards::shard & core::get_shard_by_id(uint16_t shard_id)
 {
     return _shard_mgr->get_shard(shard_id);
 }
 
-aegis::shards::shard & core::get_shard_by_guild(snowflake guild_id)
+AEGIS_DECL aegis::shards::shard & core::get_shard_by_guild(snowflake guild_id)
 {
     auto g = find_guild(guild_id);
     if (g == nullptr)
@@ -989,7 +989,7 @@ aegis::shards::shard & core::get_shard_by_guild(snowflake guild_id)
     return _shard_mgr->get_shard(g->shard_id);
 }
 
-uint64_t core::get_shard_transfer()
+AEGIS_DECL uint64_t core::get_shard_transfer()
 {
     uint64_t count = 0;
     for (auto & s : _shard_mgr->_shards)
