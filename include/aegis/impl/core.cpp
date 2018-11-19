@@ -462,7 +462,7 @@ AEGIS_DECL void core::load_config()
         file_logging = cfg["file-logging"].get<bool>();
 
     if (!cfg["log-format"].is_null())
-        log_formatting = cfg["file-format"].get<std::string>();
+        log_formatting = cfg["log-format"].get<std::string>();
     else
         log_formatting = "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v";
 }
