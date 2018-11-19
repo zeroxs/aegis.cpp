@@ -330,7 +330,6 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
                          && utility::to_ms(now - _shard->closing_time) > 5000)
                 {
                     std::error_code ec;
-                    _shard->_connection->terminate(ec);
                     _shard->_connection.reset();
                     _shard->do_reset();
                 }
