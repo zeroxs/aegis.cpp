@@ -207,6 +207,8 @@ AEGIS_DECL void shard::send_now(const std::string & payload, websocketpp::frame:
     asio::post(asio::bind_executor(*_connection->get_strand(), [=]()
     {
         last_ws_write = std::chrono::steady_clock::now();
+        if (!_connection)
+            return;
         _connection->send(payload, op);
     }));
 }
