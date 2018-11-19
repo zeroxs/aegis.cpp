@@ -166,7 +166,9 @@ public:
 
     AEGIS_DECL void start_heartbeat(int32_t heartbeat) noexcept;
 
-    std::deque<std::tuple<int64_t, std::string>> debug_messages;
+#if defined(AEGIS_DEBUG_HISTORY)
+    std::deque<std::tuple<std::chrono::steady_clock::time_point, std::string>> debug_messages;
+#endif
     asio::steady_timer keepalivetimer;
     asio::steady_timer delayedauth;
     asio::steady_timer write_timer;

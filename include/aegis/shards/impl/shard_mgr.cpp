@@ -187,6 +187,10 @@ AEGIS_DECL void shard_mgr::_on_message(websocketpp::connection_hdl hdl, message_
         debug_trace(_shard);
     }
 
+#if defined(AEGIS_DEBUG_HISTORY)
+    _shard->debug_messages.emplace_back(std::tuple<std::chrono::steady_clock::time_point, std::string>{ std::chrono::steady_clock::now(), payload });
+#endif
+
     if (i_on_message)
         i_on_message(hdl, std::move(payload), _shard);
 }

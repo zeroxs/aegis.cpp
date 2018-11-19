@@ -681,6 +681,8 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
 
             if (!result["t"].is_null())
             {
+                const std::string & cmd = result["t"];
+
 #if defined(AEGIS_PROFILING)
                 if (js_end)
                     js_end(s_t, result["t"]);
@@ -696,8 +698,10 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
 
                 _shard->lastwsevent = std::chrono::steady_clock::now();
 
-                std::string cmd = result["t"];
-
+#if defined(AEGIS_DEBUG_HISTORY)
+                if (_shard->debug_messages.size() > 5)
+                    _shard->debug_messages.pop_front();
+#endif
                 //log->info("Shard#{}: {}", _shard->get_id(), cmd);
 
                 const auto it = ws_handlers.find(cmd);
