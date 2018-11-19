@@ -17,6 +17,7 @@
 #include <string>
 #include <queue>
 #include <atomic>
+#include <spdlog/spdlog.h>
 #include "aegis/rest/rest_reply.hpp"
 #include "aegis/snowflake.hpp"
 #include <asio/io_context.hpp>
@@ -109,29 +110,16 @@ public:
             //TODO: find a better solution - wrap asio execution handling, poll ratelimit object to track ordering and execution
             // not an ideal scenario, but by current design rescheduling a message that would be ratelimited
             // would cause out of order messages
-            std::this_thread::sleep_for(seconds((reset.load(std::memory_order_relaxed)
-                                                 - std::chrono::duration_cast<seconds>(std::chrono::system_clock::now().time_since_epoch()).count()) + 1));
+            auto waitfor = milliseconds(((reset.load(std::memory_order_relaxed) * 1000)
+                                         - std::chrono::duration_cast<milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()) + 250);
+            spdlog::get("aegis")->warn("Ratelimit hit performing: {}({}) - waiting {}ms", rest::rest_controller::get_method(params.method), params.path, waitfor.count());
+            std::this_thread::sleep_for(waitfor);
         }
         Result reply(_call(params));
         limit.store(reply.limit, std::memory_order_relaxed);
         remaining.store(reply.remaining, std::memory_order_relaxed);
         reset.store(reply.reset, std::memory_order_relaxed);
         return reply;
-    }
-
-    std::future<Result> post_task(rest::request_params params)
-    {
-        using result = asio::async_result<asio::use_future_t<>, void(Result)>;
-        using handler = typename result::completion_handler_type;
-
-        handler exec(asio::use_future);
-        result ret(exec);
-
-        asio::post(_io_context, [=]() mutable
-        {
-            exec(perform(params));
-        });
-        return ret.get();
     }
 
     bool ignore_rates = false;
