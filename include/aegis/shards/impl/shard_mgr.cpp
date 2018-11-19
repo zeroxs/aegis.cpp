@@ -268,7 +268,7 @@ AEGIS_DECL void shard_mgr::send_all_shards(const json & msg)
         s->send(msg.dump());
 }
 
-AEGIS_DECL void shard_mgr::reset_shard(shard * _shard, shard_status _status)
+AEGIS_DECL void shard_mgr::reset_shard(shard * _shard, shard_status _status) noexcept
 {
     _shard->do_reset(_status);
 }
@@ -292,31 +292,19 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
 
             if (_shard->is_connected())
             {
-                // a try should the 'worst' happen
-                try
+                if (utility::to_ms(_shard->lastwsevent) > 0)
                 {
-                    if (utility::to_ms(_shard->lastwsevent) > 0)
+                    // heartbeat system should typically pick up any dead sockets. this is sort of redundant at the moment
+                    if (_shard->lastwsevent < (now - 90s))
                     {
-                        // heartbeat system should typically pick up any dead sockets. this is sort of redundant at the moment
-                        if (_shard->lastwsevent < (now - 90s))
-                        {
-                            _shard->lastwsevent = now;
-                            log->error("Shard#{}: Websocket had no events in last 90s - reconnecting", _shard->get_id());
-                            debug_trace(_shard.get());
-                            reset_shard(_shard.get());
-                        }
+                        _shard->lastwsevent = now;
+                        log->error("Shard#{}: Websocket had no events in last 90s - reconnecting", _shard->get_id());
+                        close(*_shard);
+                        debug_trace(_shard.get());
+                        reset_shard(_shard.get());
                     }
                 }
-                catch (std::exception & e)
-                {
-                    log->error("Shard#{}: worst happened std::exception {}", _shard->get_id(), e.what());
-                    reset_shard(_shard.get());
-                }
-                catch (asio::error_code & e)
-                {
-                    log->error("Shard#{}: worst happened asio::error_code {}:{}", _shard->get_id(), e.value(), e.message());
-                    reset_shard(_shard.get());
-                }
+
             }
             else
             {
@@ -442,7 +430,7 @@ AEGIS_DECL void shard_mgr::queue_reconnect(shard * _shard)
     _shards_to_connect.push_back(_shard);
 }
 
-AEGIS_DECL void shard_mgr::debug_trace(shard * _shard, bool extended)
+AEGIS_DECL void shard_mgr::debug_trace(shard * _shard, bool extended) noexcept
 {
 #if defined(AEGIS_DEBUG_HISTORY)
     fmt::MemoryWriter w;
@@ -485,7 +473,7 @@ AEGIS_DECL shard & shard_mgr::get_shard(uint16_t shard_id)
     return *_shards[shard_id];
 }
 
-AEGIS_DECL void shard_mgr::close(shard * _shard, int32_t code, const std::string & reason, shard_status connection_state)
+AEGIS_DECL void shard_mgr::close(shard * _shard, int32_t code, const std::string & reason, shard_status connection_state) noexcept
 {
     _shard->connection_state = connection_state;
     _shard->closing_time = std::chrono::steady_clock::now();
