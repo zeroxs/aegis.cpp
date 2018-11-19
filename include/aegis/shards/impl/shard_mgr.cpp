@@ -453,7 +453,7 @@ AEGIS_DECL void shard_mgr::debug_trace(shard * _shard, bool extended)
         << "Seq: " << _shard->get_sequence() << '\n';
 
     for (auto & msg : _shard->debug_messages)
-        w << std::get<0>(msg) << " - " << std::get<1>(msg) << '\n';
+        w << utility::to_ms(std::get<0>(msg)) << " - " << std::get<1>(msg) << '\n';
 
     /// in most cases the entire shard list shouldn't be dumped
     if (extended)
