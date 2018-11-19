@@ -50,7 +50,6 @@ AEGIS_DECL void shard::do_reset(shard_status _status) noexcept
     {
         try
         {
-            connect_time = std::chrono::steady_clock::time_point();
             connection_state = _status;
             if (_connection != nullptr)
             {
