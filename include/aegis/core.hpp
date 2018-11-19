@@ -91,7 +91,7 @@ public:
      * @param loglevel The level of logging to use
      * @param count Amount of threads to start
      */
-    AEGIS_DECL explicit core(spdlog::level::level_enum loglevel = spdlog::level::level_enum::info, std::size_t count = 2);
+    AEGIS_DECL explicit core(spdlog::level::level_enum loglevel = spdlog::level::level_enum::info, std::size_t count = 10);
 
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /// This constructor creates its own spdlog::logger and expects you to create the asio::io_context.

@@ -88,8 +88,10 @@ AEGIS_DECL void core::setup_context()
     // ensure any sort of single blocking call in message processing usercode doesn't block everything
     // this will not protect against faulty usercode entirely, but will at least provide some leeway
     // to allow a single blocking message to not halt operations
-    if (thread_count == 1)
-        thread_count = 2;
+    // recommended amount would depend on how much your bot is interacted with multiplied with how
+    // extensive you make use of the async and futures.
+    if (thread_count <= 2)
+        thread_count = 10;
 
     external_io_context = false;
     internal::_io_context = std::make_shared<asio::io_context>();
