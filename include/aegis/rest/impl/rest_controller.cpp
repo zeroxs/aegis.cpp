@@ -107,10 +107,7 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
         request_stream << get_method(params.method) << " " << _prefix << params.path << " HTTP/1.0\r\n";
         request_stream << "Host: " << tar_host << "\r\n";
         request_stream << "Accept: */*\r\n";
-        if (tar_host == "discordapp.com")
-            request_stream << "Authorization: Bot " << _token << "\r\n";
-        else
-            request_stream << "Authorization: " << _token << "\r\n";
+        request_stream << "Authorization: Bot " << _token << "\r\n";
         request_stream << "User-Agent: DiscordBot (https://github.com/zeroxs/aegis.cpp, " << AEGIS_VERSION_LONG << ")\r\n";
         request_stream << "Content-Length: " << params.body.size() << "\r\n";
         request_stream << "Content-Type: application/json\r\n";
