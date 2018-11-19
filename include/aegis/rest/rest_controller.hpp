@@ -74,7 +74,7 @@ public:
      */
     AEGIS_DECL rest_reply execute2(rest::request_params && params);
 
-    std::string get_method(RequestMethod method)
+    static std::string get_method(RequestMethod method)
     {
         switch (method)
         {
