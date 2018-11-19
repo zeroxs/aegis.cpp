@@ -278,8 +278,6 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
     if ((ec == asio::error::operation_aborted) || (_status == bot_status::Shutdown))
         return;
 
-    ws_timer = websocket_o.set_timer(100, std::bind(&shard_mgr::ws_status, this, std::placeholders::_1));
-
     using namespace std::chrono_literals;
 
     try
@@ -414,6 +412,8 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
     {
         log->error("ws_status() error : unknown");
     }
+
+    ws_timer = websocket_o.set_timer(100, std::bind(&shard_mgr::ws_status, this, std::placeholders::_1));
 }
 
 AEGIS_DECL void shard_mgr::connect(shard * _shard)
