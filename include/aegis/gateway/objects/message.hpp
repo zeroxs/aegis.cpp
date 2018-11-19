@@ -126,6 +126,21 @@ public:
         return _message_id;
     }
 
+    snowflake get_channel_id() const noexcept
+    {
+        return _channel_id;
+    }
+
+    snowflake get_guild_id() const noexcept
+    {
+        return _guild_id;
+    }
+
+    snowflake get_author_id() const noexcept
+    {
+        return _author_id;
+    }
+
     bool has_guild() const noexcept
     {
         return _guild != nullptr || _guild_id != 0;
