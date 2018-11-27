@@ -551,6 +551,7 @@ private:
     bool external_io_context = true;
     std::size_t thread_count = 0;
     std::string log_formatting;
+    bool state_valid = true;
 };
 
 }
