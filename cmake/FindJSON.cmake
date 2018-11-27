@@ -2,16 +2,12 @@ find_package(PkgConfig)
 pkg_check_modules(PC_JSON QUIET JSON)
 
 find_path(JSON_INCLUDE_DIR
-    NAMES json.hpp
+    NAMES "nlohmann/json.hpp"
     PATHS ${PC_JSON_INCLUDE_DIRS}
-    PATH_SUFFIXES nlohmann
 )
 
 if (JSON_INCLUDE_DIR STREQUAL "JSON_INCLUDE_DIR-NOTFOUND")
-  message(WARNING "Using git-module path for JSON")
-  set(JSON_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/json/include)
-else ()
-  get_filename_component(JSON_INCLUDE_DIR ${JSON_INCLUDE_DIR} DIRECTORY)
+  message(FATAL_ERROR "Cannot find JSON")
 endif ()
 
 file(READ ${JSON_INCLUDE_DIR}/nlohmann/json.hpp json_hpp)

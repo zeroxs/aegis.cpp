@@ -38,6 +38,8 @@ find_package(Websocketpp 0.7.0 REQUIRED MODULE)
 find_package(OpenSSL 1.0.1 REQUIRED MODULE)
 find_package(ZLIB REQUIRED MODULE)
 
+set(REQUIRED_LIBS OpenSSL::SSL ZLIB::ZLIB Spdlog::Spdlog JSON::JSON Asio::Asio dl Threads::Threads)
+
 option(BUILD_SHARED_LIBS "Build the shared library" ON)
 option(BUILD_EXAMPLES "Build example programs" OFF)
 
@@ -107,7 +109,7 @@ endif ()
 
 set(AEGIS_PACKAGE_INCLUDE_DIRS
     $<BUILD_INTERFACE:${Asio_INCLUDE_DIR}>
-    $<BUILD_INTERFACE:${JSON_INCLUDE_DIR}>
+    $<BUILD_INTERFACE:${nlohmann_json_INCLUDE_DIR}>
     $<BUILD_INTERFACE:${Spdlog_INCLUDE_DIR}>
     $<BUILD_INTERFACE:${Websocketpp_INCLUDE_DIR}>
     $<BUILD_INTERFACE:${OpenSSL_INCLUDE_DIR}>
@@ -135,13 +137,13 @@ if (BUILD_SHARED_LIBS)
 	add_library(Aegis::aegis ALIAS aegis)
 
 	set_target_properties(aegis PROPERTIES POSITION_INDEPENDENT_CODE 1)
-	set_target_properties(aegis PROPERTIES SOVERSION 3)
+	set_target_properties(aegis PROPERTIES SOVERSION 4)
 	set_target_properties(aegis PROPERTIES LINKER_LANGUAGE CXX)
 
 	target_compile_definitions(aegis PUBLIC AEGIS_DYN_LINK AEGIS_SOURCE ${AEGIS_FLAGS})
 	target_compile_definitions(aegis PRIVATE AEGIS_SOURCE)
 
-	target_link_libraries(aegis PUBLIC ssl crypto z dl Threads::Threads)
+	target_link_libraries(aegis PUBLIC ${REQUIRED_LIBS})
 	target_include_directories(aegis
 	  PUBLIC
 		$<INSTALL_INTERFACE:include>    
@@ -191,7 +193,7 @@ else ()
 	set_target_properties(aegis_static PROPERTIES OUTPUT_NAME "aegis")
 	set_target_properties(aegis_static PROPERTIES LINKER_LANGUAGE CXX)
 	target_compile_definitions(aegis_static PUBLIC AEGIS_SEPARATE_COMPILATION ${AEGIS_FLAGS})
-	target_link_libraries(aegis_static INTERFACE ssl crypto z dl Threads::Threads)
+	target_link_libraries(aegis_static INTERFACE ${REQUIRED_LIBS})
 	target_include_directories(aegis_static
 	  PUBLIC
 		$<INSTALL_INTERFACE:include>    
@@ -301,15 +303,14 @@ if (BUILD_EXAMPLES)
 	set_property(TARGET aegis_headeronly_no_cache PROPERTY CXX_STANDARD 14)
 	set_property(TARGET aegis_headeronly_no_cache PROPERTY CXX_STANDARD_REQUIRED ON)
 
-
 	if(MSVC)
-		target_link_libraries(aegis_example PRIVATE aegis ssleay32 libeay32 zlib Threads::Threads)
-		target_link_libraries(aegis_minimal PRIVATE aegis ssleay32 libeay32 zlib Threads::Threads)
-		target_link_libraries(aegis_headeronly_no_cache PRIVATE aegis ssleay32 libeay32 crypto zlib Threads::Threads)
+		target_link_libraries(aegis_example PRIVATE Aegis::aegis ${REQUIRED_LIBS})
+		target_link_libraries(aegis_minimal PRIVATE Aegis::aegis ${REQUIRED_LIBS})
+		target_link_libraries(aegis_headeronly_no_cache PRIVATE Aegis::aegis ${REQUIRED_LIBS})
 	else()
-		target_link_libraries(aegis_example PRIVATE aegis ssl crypto z dl Threads::Threads)
-		target_link_libraries(aegis_minimal PRIVATE aegis ssl crypto z dl Threads::Threads)
-		target_link_libraries(aegis_headeronly_no_cache PRIVATE aegis ssl crypto z dl Threads::Threads)
+		target_link_libraries(aegis_example PRIVATE Aegis::aegis ${REQUIRED_LIBS})
+		target_link_libraries(aegis_minimal PRIVATE Aegis::aegis ${REQUIRED_LIBS})
+		target_link_libraries(aegis_headeronly_no_cache PRIVATE Aegis::aegis ${REQUIRED_LIBS})
 	endif()
 
 	target_compile_options(aegis_example PRIVATE ${AEGIS_CFLAGS})

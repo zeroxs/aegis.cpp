@@ -2,16 +2,12 @@ find_package(PkgConfig)
 pkg_check_modules(PC_Websocketpp QUIET Websocketpp)
 
 find_path(Websocketpp_INCLUDE_DIR
-    NAMES endpoint_base.hpp
+    NAMES "websocketpp/endpoint_base.hpp"
     PATHS ${PC_Websocketpp_INCLUDE_DIRS}
-    PATH_SUFFIXES websocketpp
 )
 
 if (Websocketpp_INCLUDE_DIR STREQUAL "Websocketpp_INCLUDE_DIR-NOTFOUND")
-  message(WARNING "Using git-module path for Websocketpp")
-  set(Websocketpp_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/websocketpp)
-else ()
-  get_filename_component(Websocketpp_INCLUDE_DIR ${Websocketpp_INCLUDE_DIR} DIRECTORY)
+  message(FATAL_ERROR "Cannot find Websocket++")
 endif ()
 
 file(READ ${Websocketpp_INCLUDE_DIR}/websocketpp/version.hpp version_hpp)

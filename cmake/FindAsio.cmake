@@ -4,12 +4,10 @@ pkg_check_modules(PC_Asio QUIET Asio)
 find_path(Asio_INCLUDE_DIR
     NAMES asio.hpp
     PATHS ${PC_Asio_INCLUDE_DIRS}
-    PATH_SUFFIXES asio
 )
 
 if (Asio_INCLUDE_DIR STREQUAL "Asio_INCLUDE_DIR-NOTFOUND")
-  message(WARNING "Using git-module path for Asio")
-  set(Asio_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/asio/asio/include)
+  message(FATAL_ERROR "Cannot find ASIO")
 endif ()
 
 file(READ ${Asio_INCLUDE_DIR}/asio/version.hpp version_hpp)
