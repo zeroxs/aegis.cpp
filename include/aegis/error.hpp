@@ -73,6 +73,9 @@ enum error
     /// Shard related error
     shard_error,
 
+    /// Bad request
+    bad_request,
+
     /// Malformed Redis request
     bad_redis_request,
 
@@ -127,6 +130,8 @@ public:
                 return "Guild related error";
             case error::shard_error:
                 return "Shard related error";
+            case error::bad_request:
+                return "Bad request";
             case error::bad_redis_request:
                 return "Bad Redis request";
             default:

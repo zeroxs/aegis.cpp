@@ -440,6 +440,8 @@ public:
 
 private:
 
+    AEGIS_DECL void _thread_track(thread_state * t_state);
+
     typing_start_t i_typing_start;
     message_create_t i_message_create;
     message_create_t i_message_create_dm;
