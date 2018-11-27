@@ -433,7 +433,7 @@ AEGIS_DECL void shard_mgr::queue_reconnect(shard * _shard)
 AEGIS_DECL void shard_mgr::debug_trace(shard * _shard, bool extended) noexcept
 {
 #if defined(AEGIS_DEBUG_HISTORY)
-    fmt::MemoryWriter w;
+    std::stringstream w;
 
     w << "~~ERROR~~ extended(" << extended << ")"
         << "\n==========<Start Error Trace>==========\n"

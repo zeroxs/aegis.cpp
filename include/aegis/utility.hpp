@@ -21,6 +21,7 @@
 #include <sstream>
 #include <iomanip>
 #include <spdlog/fmt/fmt.h>
+#include <stdint.h>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -135,19 +136,31 @@ inline int64_t to_ms(const std::chrono::duration<int64_t, std::nano> & t)
 }
 
 /// Converts an ISO8601 date string to an std::chrono::system_clock::time_point
-/// or other provided template parameter type
 /**
  * @param _time_t String of the timestamp
  * @returns std::chrono::system_clock::time_point String timestamp converted to time_point
  */
-template<typename T = std::chrono::system_clock::time_point>
-T from_iso8601(const std::string & _time_t)
+inline std::chrono::system_clock::time_point from_iso8601(const std::string & _time_t)
 {
     std::tm tm = {};
     std::istringstream ss(_time_t);
     ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
     return std::chrono::system_clock::from_time_t(std::mktime(&tm));
 }
+
+/// Converts an Day, DD, Mth YYYY HH:MM:SS GMT date string to an std::chrono::system_clock::time_point
+/**
+ * @param _time_t String of the timestamp
+ * @returns std::chrono::system_clock::time_point String timestamp converted to time_point
+ */
+inline std::chrono::system_clock::time_point from_http_date(const std::string & _time_t)
+{
+    std::tm tm = {};
+    std::istringstream ss(_time_t);
+    ss >> std::get_time(&tm, "%a, %d %b %Y %T");
+    return std::chrono::system_clock::from_time_t(std::mktime(&tm));
+}
+//Mon, 19 Nov 2018 06:51 : 17 GMT
 
 inline std::string uptime_str(std::chrono::steady_clock::time_point _start) noexcept
 {

@@ -10,7 +10,7 @@
 #pragma once
 
 #include "aegis/config.hpp"
-#include "aegis/rest/rest_reply.hpp"
+#include "aegis/rest/rest_controller.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/ratelimit/bucket.hpp"
 #include "aegis/futures.hpp"
@@ -36,7 +36,6 @@ using namespace std::chrono;
  * Different callables and results require different instances. Global limit is not
  * shared between instances.
  */
-template<typename Callable, typename Result>
 class ratelimit_mgr
 {
 public:
@@ -44,7 +43,7 @@ public:
     /**
      * @param call Function pointer to the REST API function
      */
-    explicit ratelimit_mgr(Callable call, asio::io_context & _io)
+    explicit ratelimit_mgr(rest_call call, asio::io_context & _io)
         : global_limit(0)
         , _call(call)
         , _io_context(_io)
@@ -71,7 +70,7 @@ public:
     * @param id Snowflake of bucket object
     * @returns Reference to a bucket object
     */
-    bucket<Callable, Result> & get_bucket(const std::string & path) noexcept
+    bucket & get_bucket(const std::string & path) noexcept
     {
         // look for existing bucket
         auto bkt = _buckets.find(path);
@@ -79,25 +78,34 @@ public:
                 return *bkt->second;// found
 
         // create new bucket and return
-        return *_buckets.emplace(path, std::make_unique<bucket<Callable, Result>>(_call, _io_context, global_limit)).first->second;
+        return *_buckets.emplace(path, std::make_unique<bucket>(_call, _io_context, global_limit)).first->second;
     }
 
-    aegis::future<Result> post_task(rest::request_params params)
+    aegis::future<rest::rest_reply> post_task(rest::request_params params)
     {
-        return aegis::async([=]() -> Result
+        return aegis::async([=]() -> rest::rest_reply
         {
             auto & bkt = get_bucket(params.path);
             return bkt.perform(params);
         });
     }
 
+    aegis::future<rest::rest_reply> post_task(std::string _bucket, rest::request_params params)
+    {
+        return aegis::async([=]() -> rest::rest_reply
+        {
+            auto & bkt = get_bucket(_bucket);
+            return bkt.perform(params);
+        });
+    }
+
 private:
-    friend class bucket<Callable, Result>;
+    friend class bucket;
 
     std::atomic<int64_t> global_limit; /**< Timestamp in seconds when global ratelimit expires */
 
-    std::unordered_map<std::string, std::unique_ptr<bucket<Callable, Result>>> _buckets;
-    Callable _call;
+    std::unordered_map<std::string, std::unique_ptr<bucket>> _buckets;
+    rest_call _call;
     asio::io_context & _io_context;
 };
 

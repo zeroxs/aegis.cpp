@@ -55,7 +55,7 @@ using connection_ptr = websocketpp::client<websocketpp::config::asio_tls_client>
 /// Type of a pointer to the Websocket++ message payload
 using message_ptr = websocketpp::config::asio_client::message_type::ptr;
 
-using ratelimit_mgr_t = aegis::ratelimit::ratelimit_mgr<rest_call, aegis::rest::rest_reply>;
+using ratelimit_mgr_t = aegis::ratelimit::ratelimit_mgr;
 
 struct create_guild_t
 {
@@ -435,6 +435,8 @@ public:
     AEGIS_DECL uint64_t get_shard_transfer();
 
     const std::string & get_token() const noexcept { return _token; }
+
+    AEGIS_DECL std::size_t add_run_thread() noexcept;
 
 private:
 

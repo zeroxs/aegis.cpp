@@ -66,6 +66,7 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
     int32_t remaining = 0;
     int64_t reset = 0;
     int32_t retry = 0;
+    std::chrono::system_clock::time_point http_date;
     bool global = false;
 
     auto start_time = std::chrono::steady_clock::now();
@@ -104,7 +105,7 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
 
         asio::streambuf request;
         std::ostream request_stream(&request);
-        request_stream << get_method(params.method) << " " << _prefix << params.path << " HTTP/1.0\r\n";
+        request_stream << get_method(params.method) << " " << _prefix << params.path << params._path_ex << " HTTP/1.0\r\n";
         request_stream << "Host: " << tar_host << "\r\n";
         request_stream << "Accept: */*\r\n";
         request_stream << "Authorization: Bot " << _token << "\r\n";
@@ -140,6 +141,8 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
         if (!test.empty())
             retry = std::stoul(test);
 
+        http_date = utility::from_http_date(hresponse.get_header("Date")) - internal::tz_bias;
+
         global = !(hresponse.get_header("X-RateLimit-Global").empty());
 
 #if defined(AEGIS_PROFILING)
@@ -156,7 +159,7 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
     }
 
     return { static_cast<http_code>(hresponse.get_status_code()),
-        global, limit, remaining, reset, retry, hresponse.get_body(),
+        global, limit, remaining, reset, retry, hresponse.get_body(), http_date,
         std::chrono::steady_clock::now() - start_time };
 }
 
@@ -171,6 +174,7 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
     int32_t remaining = 0;
     int64_t reset = 0;
     int32_t retry = 0;
+    std::chrono::system_clock::time_point http_date;
     bool global = false;
 
     auto start_time = std::chrono::steady_clock::now();
@@ -235,6 +239,8 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
             std::istringstream istrm(response_content.str());
             hresponse.consume(istrm);
 
+            http_date = utility::from_http_date(hresponse.get_header("Date"));
+
             if (error != asio::error::eof && error != asio::ssl::error::stream_truncated)
                 throw asio::system_error(error);
 
@@ -266,6 +272,8 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
             std::istringstream istrm(response_content.str());
             hresponse.consume(istrm);
 
+            http_date = utility::from_http_date(hresponse.get_header("Date"));
+
             //TODO: return reply headers
         }
     }
@@ -275,7 +283,7 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
     }
 
     return { static_cast<http_code>(hresponse.get_status_code()),
-        global, limit, remaining, reset, retry, hresponse.get_body(),
+        global, limit, remaining, reset, retry, hresponse.get_body(), http_date,
         std::chrono::steady_clock::now() - start_time };
 }
 

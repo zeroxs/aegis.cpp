@@ -15,12 +15,8 @@ namespace aegis
 {
 namespace ratelimit
 {
-template<typename Callable, typename Result>
 class ratelimit_mgr;
-template<typename Callable, typename Result>
 class bucket;
-template<typename Callable, typename Result>
-class bucket_factory;
 }
 namespace rest
 {

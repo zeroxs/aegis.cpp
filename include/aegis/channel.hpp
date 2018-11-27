@@ -236,11 +236,7 @@ public:
      * @param obj Struct of the contents of the request
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_message_embed(create_message_embed_t obj)
-    {
-        return create_message_embed(obj._content, obj._embed, obj._nonce);
-    }
-
+    AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(create_message_embed_t obj);
     /// Edit a message in this channel
     /**
      * @param ec Indicates what error occurred, if any
@@ -293,10 +289,18 @@ public:
     /// Delete up to 100 messages at once
     /**
      * @param ec Indicates what error occurred, if any
-     * @param message Vector of up to 100 message snowflakes to delete
+     * @param message Vector of up to 100 message int64_t to delete
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> bulk_delete_message(const std::vector<int64_t> & messages);
+
+    /// Delete up to 100 messages at once
+    /**
+     * @param ec Indicates what error occurred, if any
+     * @param message Vector of up to 100 message snowflakes to delete
+     * @returns std::future<rest::rest_reply>
+     */
+    AEGIS_DECL aegis::future<rest::rest_reply> bulk_delete_message(const std::vector<snowflake> & messages);
 
     /// Modify this channel (all parameters optional)
     /**
@@ -465,7 +469,10 @@ public:
      * @param unique Is this invite code a unique one-use
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_channel_invite(const lib::optional<int> max_age, const lib::optional<int> max_uses, const lib::optional<bool> temporary, const lib::optional<bool> unique);
+    AEGIS_DECL aegis::future<rest::rest_reply> create_channel_invite(const lib::optional<int> max_age,
+                                                                     const lib::optional<int> max_uses,
+                                                                     const lib::optional<bool> temporary,
+                                                                     const lib::optional<bool> unique);
 
     /// Create a new channel invite
     /**

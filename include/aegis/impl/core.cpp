@@ -98,7 +98,7 @@ AEGIS_DECL void core::setup_context()
 
     internal::wrk = std::make_unique<asio_exec>(asio::make_work_guard(*internal::_io_context));
     for (std::size_t i = 0; i < thread_count; ++i)
-        internal::threads.emplace_back(std::bind(static_cast<asio::io_context::count_type(asio::io_context::*)()>(&asio::io_context::run), internal::_io_context.get()));
+        add_run_thread();
 }
 
 AEGIS_DECL void core::setup_shard_mgr()
@@ -194,7 +194,7 @@ AEGIS_DECL core::~core()
         if (internal::_io_context)
             internal::_io_context->stop();
     for (auto & t : internal::threads)
-        t.join();
+        t->thd.join();
 }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
@@ -488,6 +488,8 @@ AEGIS_DECL void core::setup_gateway(std::error_code & ec)
     log->info("Creating websocket");
 
     rest::rest_reply res = _rest->execute({ "/gateway/bot", rest::Get });
+
+    aegis::internal::tz_bias = std::chrono::hours(int(std::round(double((std::chrono::duration_cast<std::chrono::minutes>(res.date - std::chrono::system_clock::now()) / 60).count()))));
 
     if (res.content.empty())
     {
@@ -999,6 +1001,30 @@ AEGIS_DECL uint64_t core::get_shard_transfer()
     return count;
 }
 
+AEGIS_DECL void core::_thread_track(thread_state * t_state)
+{
+    try
+    {
+        t_state->fn();
+    }
+    catch (std::exception & e)
+    {
+        log->critical("Scheduler thread exit due to exception: {}", e.what());
+    }
+    t_state->active = false;
+}
+
+AEGIS_DECL std::size_t core::add_run_thread() noexcept
+{
+    std::unique_ptr<thread_state> t = std::make_unique<thread_state>();
+    t->active = true;
+    t->start_time = std::chrono::steady_clock::now();
+    t->fn = std::bind(static_cast<asio::io_context::count_type(asio::io_context::*)()>(&asio::io_context::run),
+                      internal::_io_context.get());
+    t->thd = std::thread(std::bind(&core::_thread_track, this, t.get()));
+    internal::threads.emplace_back(std::move(t));
+    return internal::threads.size();
+}
 AEGIS_DECL void core::on_close(websocketpp::connection_hdl hdl, shards::shard * _shard)
 {
     if (_status == bot_status::Shutdown)

@@ -42,6 +42,7 @@ struct request_params
     std::string host;
     std::string port = "443";
     std::vector<std::string> headers;
+    std::string _path_ex;
 };
 
 class rest_controller
