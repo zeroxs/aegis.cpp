@@ -40,6 +40,13 @@ AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp:
 //this should only be called to reset state back to an initial point instead of before everything
 AEGIS_DECL void shard::do_reset(shard_status _status) noexcept
 {
+    if (!_connection)
+    {
+        connection_state = _status;
+        _reset();
+        ++counters.reconnects;
+        return;
+    }
     asio::post(asio::bind_executor(*_connection->get_strand(), [this, _status]()
     {
         try
