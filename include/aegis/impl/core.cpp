@@ -920,7 +920,7 @@ AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const std::chrono:
         obj["d"] = _shard->get_sequence();
         obj["op"] = 1;
         _shard->send_now(obj.dump());
-        _shard->lastheartbeat = now;
+        _shard->heartbeat_ack = _shard->lastheartbeat = now;
     }
     catch (websocketpp::exception & e)
     {

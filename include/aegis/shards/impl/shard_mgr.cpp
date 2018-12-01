@@ -292,19 +292,15 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
 
             if (_shard->is_connected())
             {
-                if (utility::to_ms(_shard->lastwsevent) > 0)
+                // 
+                if ((_shard->lastheartbeat == _shard->heartbeat_ack) && ((now - _shard->lastheartbeat) > 10s))
                 {
-                    // heartbeat system should typically pick up any dead sockets. this is sort of redundant at the moment
-                    if (_shard->lastwsevent < (now - 90s))
-                    {
-                        _shard->lastwsevent = now;
-                        log->error("Shard#{}: Websocket had no events in last 90s - reconnecting", _shard->get_id());
-                        close(*_shard);
-                        debug_trace(_shard.get());
-                        reset_shard(_shard.get());
-                    }
+                    log->error("Shard#{}: Heartbeat timeout (10s) - reconnecting", _shard->get_id());
+                    close(*_shard);
+                    debug_trace(_shard.get());
+                    reset_shard(_shard.get());
+                    continue;
                 }
-
             }
             else
             {
@@ -409,7 +405,8 @@ AEGIS_DECL void shard_mgr::connect(shard * _shard)
     {
         setup_callbacks(_shard);
         _shard->connection_state = shard_status::Connecting;
-        _shard->lastheartbeat =
+        _shard->heartbeat_ack = std::chrono::steady_clock::time_point();
+        _shard->lastheartbeat = 
             _shard->last_status_time =
             _shard->lastwsevent =
             std::chrono::steady_clock::now();
