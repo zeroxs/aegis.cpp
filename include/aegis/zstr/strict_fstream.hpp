@@ -17,32 +17,6 @@
 namespace strict_fstream
 {
 
-/// Overload of error-reporting function, to enable use with VS.
-/// Ref: http://stackoverflow.com/a/901316/717706
-static std::string strerror()
-{
-    std::string buff(80, '\0');
-#ifdef _WIN32
-    if (strerror_s(&buff[0], buff.size(), errno) != 0)
-    {
-        buff = "Unknown error";
-    }
-#elif (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE
-// XSI-compliant strerror_r()
-    if (strerror_r(errno, &buff[0], buff.size()) != 0)
-    {
-        buff = "Unknown error";
-    }
-#else
-// GNU-specific strerror_r()
-    auto p = strerror_r(errno, &buff[0], buff.size());
-    std::string tmp(p, std::strlen(p));
-    std::swap(buff, tmp);
-#endif
-    buff.resize(buff.find('\0'));
-    return buff;
-}
-
 /// Exception class thrown by failed operations.
 class Exception
     : public std::exception
@@ -114,7 +88,7 @@ struct static_method_holder
         {
             throw Exception(std::string("strict_fstream: open('")
                             + filename + "'," + mode_to_string(mode) + "): open failed: "
-                            + strerror());
+                            + std::strerror(errno));
         }
     }
     static void check_peek(std::istream * is_p, const std::string& filename, std::ios_base::openmode mode)
@@ -130,7 +104,7 @@ struct static_method_holder
         {
             throw Exception(std::string("strict_fstream: open('")
                             + filename + "'," + mode_to_string(mode) + "): peek failed: "
-                            + strerror());
+                            + std::strerror(errno));
         }
         is_p->clear();
     }
