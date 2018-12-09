@@ -438,6 +438,8 @@ public:
 
     AEGIS_DECL std::size_t add_run_thread() noexcept;
 
+    AEGIS_DECL void reduce_threads(std::size_t count) noexcept;
+
 private:
 
     AEGIS_DECL void _thread_track(thread_state * t_state);

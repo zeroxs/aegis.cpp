@@ -1034,7 +1034,8 @@ AEGIS_DECL void core::_thread_track(thread_state * t_state)
 {
     try
     {
-        t_state->fn();
+        while (t_state->active)
+            t_state->fn();
     }
     catch (std::exception & e)
     {
@@ -1048,12 +1049,33 @@ AEGIS_DECL std::size_t core::add_run_thread() noexcept
     std::unique_ptr<thread_state> t = std::make_unique<thread_state>();
     t->active = true;
     t->start_time = std::chrono::steady_clock::now();
-    t->fn = std::bind(static_cast<asio::io_context::count_type(asio::io_context::*)()>(&asio::io_context::run),
-                      internal::_io_context.get());
+    t->fn = std::bind(static_cast<asio::io_context::count_type(asio::io_context::*)(const std::chrono::duration<int64_t, std::nano>&)>(&asio::io_context::run_one_for),
+                      internal::_io_context.get(), 20ms);
     t->thd = std::thread(std::bind(&core::_thread_track, this, t.get()));
     internal::threads.emplace_back(std::move(t));
     return internal::threads.size();
 }
+
+AEGIS_DECL void core::reduce_threads(std::size_t count) noexcept
+{
+    for (auto it = internal::threads.begin(); it != internal::threads.end() && count > 0; --count)
+    {
+        if ((*it)->thd.get_id() == std::this_thread::get_id())
+        {
+            ++it;
+            continue;
+        }
+        if ((*it)->active)
+        {
+            (*it)->active = false;
+            (*it)->thd.join();
+            it = internal::threads.erase(it);
+        }
+        else
+            ++it;
+    }
+}
+
 AEGIS_DECL void core::on_close(websocketpp::connection_hdl hdl, shards::shard * _shard)
 {
     if (_status == bot_status::Shutdown)
