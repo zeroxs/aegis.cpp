@@ -384,7 +384,7 @@ AEGIS_DECL void core::run()
         return;
     }
 
-    set_state(bot_status::Running);
+    set_state(bot_status::running);
 
     starttime = std::chrono::steady_clock::now();
     
@@ -397,29 +397,21 @@ AEGIS_DECL void core::load_config()
 {
     try
     {
-        auto configfile = std::fopen("config.json", "r+");
+        std::ifstream config_file("config.json");
 
-        if (!configfile)
+        
+        if (!config_file.is_open())
         {
             std::perror("File opening failed");
             throw std::runtime_error("config.json does not exist");
         }
 
-        std::fseek(configfile, 0, SEEK_END);
-        std::size_t filesize = std::ftell(configfile);
-
-        std::fseek(configfile, 0, SEEK_SET);
-        std::vector<char> buffer(filesize + 1);
-        std::memset(buffer.data(), 0, filesize + 1);
-        size_t rd = std::fread(buffer.data(), sizeof(char), buffer.size() - 1, configfile);
-
-        std::fclose(configfile);
-
-        json cfg = json::parse(buffer.data());
+        json cfg;
+        config_file >> cfg;
 
         if (!cfg["token"].is_null())
         {
-            if (cfg["log-level"].is_string())
+            if (cfg["token"].is_string())
                 _token = cfg["token"].get<std::string>();
             else
                 throw std::runtime_error("\"token\" must be string");
@@ -507,7 +499,7 @@ AEGIS_DECL void core::setup_callbacks()
 
 AEGIS_DECL void core::shutdown()
 {
-    set_state(bot_status::Shutdown);
+    set_state(bot_status::shutdown);
     _shard_mgr->shutdown();
     internal::cv.notify_all();
 }
@@ -721,7 +713,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                     js_end(s_t, result["t"]);
 #endif
 
-                if ((log->level() == spdlog::level::level_enum::trace && wsdbg)
+                if ((wsdbg && log->level() == spdlog::level::level_enum::trace)
                     && ((result["t"] != "GUILD_CREATE"
                            && result["t"] != "PRESENCE_UPDATE"
                            && result["t"] != "GUILD_MEMBERS_CHUNK")))
@@ -855,6 +847,8 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
             }
             if (result["op"] == 10)
             {
+                _shard->_heartbeat_status = heartbeat_status::normal;
+                _shard->heartbeat_ack = std::chrono::steady_clock::now();
                 int32_t heartbeat = result["d"]["heartbeat_interval"];
                 _shard->set_heartbeat(std::bind(&core::keep_alive, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
                 _shard->start_heartbeat(heartbeat);
@@ -863,6 +857,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
             if (result["op"] == 11)
             {
                 //heartbeat ACK
+                _shard->_heartbeat_status = heartbeat_status::normal;
                 _shard->heartbeat_ack = std::chrono::steady_clock::now();
                 return;
             }
@@ -897,30 +892,17 @@ AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const std::chrono:
         return;
     try
     {
-        if (_shard->connection_state == shard_status::Shutdown || !_shard->is_connected())
+        if ((_shard->connection_state != shard_status::preready
+             && _shard->connection_state != shard_status::online)
+            || !_shard->is_connected())
             return;
 
-        auto now = std::chrono::steady_clock::now();
-        auto _timeout = int32_t(ms.count() * 1.5);
-
-        using milli = std::chrono::milliseconds;
-
-        if (utility::to_ms(_shard->heartbeat_ack) > 0
-            && utility::to_t<milli>(now - _shard->lastheartbeat) >= milli(_timeout))
-        {
-            log->error("Shard#{}: Heartbeat ack timeout. Reconnecting. Last Ack:{}ms Last Sent:{}ms Timeout:{}ms",
-                       _shard->get_id(),
-                       utility::to_ms(now - _shard->heartbeat_ack),
-                       utility::to_ms(now - _shard->lastheartbeat),
-                       _timeout);
-            _shard_mgr->close(_shard, 1001, "");
-            return;
-        }
         json obj;
         obj["d"] = _shard->get_sequence();
         obj["op"] = 1;
         _shard->send_now(obj.dump());
-        _shard->heartbeat_ack = _shard->lastheartbeat = now;
+        _shard->_heartbeat_status = heartbeat_status::waiting;
+        _shard->lastheartbeat = std::chrono::steady_clock::now();
     }
     catch (websocketpp::exception & e)
     {
@@ -1078,7 +1060,7 @@ AEGIS_DECL void core::reduce_threads(std::size_t count) noexcept
 
 AEGIS_DECL void core::on_close(websocketpp::connection_hdl hdl, shards::shard * _shard)
 {
-    if (_status == bot_status::Shutdown)
+    if (_status == bot_status::shutdown)
         return;
 }
 
@@ -1386,7 +1368,7 @@ AEGIS_DECL void core::ws_voice_state_update(const json & result, shards::shard *
 AEGIS_DECL void core::ws_resumed(const json & result, shards::shard * _shard)
 {
     _shard_mgr->_connecting_shard = nullptr;
-    _shard->connection_state = shard_status::Online;
+    _shard->connection_state = shard_status::online;
     _shard_mgr->_connect_time = std::chrono::steady_clock::time_point();
     //_shard->_ready_time = _shard_mgr->_last_ready = std::chrono::steady_clock::now();
     log->info("Shard#{} RESUMED Processed", _shard->get_id());
@@ -1408,7 +1390,7 @@ AEGIS_DECL void core::ws_resumed(const json & result, shards::shard * _shard)
 AEGIS_DECL void core::ws_ready(const json & result, shards::shard * _shard)
 {
     _shard_mgr->_connecting_shard = nullptr;
-    _shard->connection_state = shard_status::Online;
+    _shard->connection_state = shard_status::online;
     _shard_mgr->_connect_time = std::chrono::steady_clock::time_point();
     _shard->_ready_time = _shard_mgr->_last_ready = std::chrono::steady_clock::now();
     process_ready(result["d"], _shard);

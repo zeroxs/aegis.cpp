@@ -203,7 +203,7 @@ public:
      */
     void yield() const noexcept
     {
-        if (_status == bot_status::Shutdown)
+        if (_status == bot_status::shutdown)
             return;
         std::mutex m;
         std::unique_lock<std::mutex> l(m);
@@ -536,7 +536,7 @@ private:
     // Bot's token
     std::string _token;
 
-    bot_status _status = bot_status::Uninitialized;
+    bot_status _status = bot_status::uninitialized;
 
     std::unique_ptr<rest::rest_controller> _rest;
     std::unique_ptr<ratelimit_mgr_t> _ratelimit;

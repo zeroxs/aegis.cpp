@@ -955,7 +955,7 @@ public:
         const future_state<T> * _st = state();
         assert(_st);
         auto res = _st->available();
-        std::atomic_thread_fence(std::memory_order_acquire);
+        std::atomic_thread_fence(std::memory_order_release);
         return res;
     }
 
@@ -966,7 +966,7 @@ public:
         if (!_st)
             return false;
         bool f = _st->failed();
-        std::atomic_thread_fence(std::memory_order_acquire);
+        std::atomic_thread_fence(std::memory_order_release);
         return f;
     }
 

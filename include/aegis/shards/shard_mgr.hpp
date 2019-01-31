@@ -195,7 +195,7 @@ public:
     /**
      * @param _shard Pointer to shard
      */
-    AEGIS_DECL void reset_shard(shard * _shard, shard_status _status = shard_status::Closing) noexcept;
+    AEGIS_DECL void reset_shard(shard * _shard, shard_status _status = shard_status::closing) noexcept;
 
     /// Queue the shard for reconnection. Typically only called internally
     /**
@@ -243,7 +243,7 @@ public:
      * @param reason Websocket close reason (default: "")
      * @param connection_state State the set the shard to after close (default: shard_status::Closing)
      */
-    AEGIS_DECL void close(shard * _shard, int32_t code = 1001, const std::string & reason = "", shard_status connection_state = shard_status::Closing) noexcept;
+    AEGIS_DECL void close(shard * _shard, int32_t code = 1001, const std::string & reason = "", shard_status connection_state = shard_status::closing) noexcept;
 
     /// Close the shard's websocket connection
     /**
@@ -253,7 +253,7 @@ public:
      * @param reason Websocket close reason (default: "")
      * @param connection_state State the set the shard to after close (default: shard_status::Closing)
      */
-    void close(shard & _shard, int32_t code = 1001, const std::string & reason = "", shard_status connection_state = shard_status::Closing) noexcept
+    void close(shard & _shard, int32_t code = 1001, const std::string & reason = "", shard_status connection_state = shard_status::closing) noexcept
     {
         close(&_shard, code, reason, connection_state);
     }
