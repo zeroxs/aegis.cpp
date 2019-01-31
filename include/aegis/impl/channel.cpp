@@ -204,7 +204,12 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const st
         return aegis::make_exception_future(error::bad_request);
 #endif
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/channels/{}/messages/bulk-delete", channel_id), rest::Post, json(messages).dump() });
+    json obj;
+    json & msgs = obj["messages"];
+    for (auto id : messages)
+        msgs.push_back(std::to_string(id));
+
+    return _bot->get_ratelimit().post_task({ fmt::format("/channels/{}/messages/bulk-delete", channel_id), rest::Post, obj.dump() });
 }
 
 AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const std::vector<snowflake> & messages)
@@ -214,7 +219,12 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const st
         return aegis::make_exception_future(error::no_permission);
 #endif
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/channels/{}/messages/bulk-delete", channel_id), rest::Post, json(messages).dump() });
+    json obj;
+    json & msgs = obj["messages"];
+    for (auto id : messages)
+        msgs.push_back(std::to_string(id));
+
+    return _bot->get_ratelimit().post_task({ fmt::format("/channels/{}/messages/bulk-delete", channel_id), rest::Post, obj.dump() });
 }
 
 AEGIS_DECL aegis::future<rest::rest_reply> channel::modify_channel(lib::optional<std::string> _name, lib::optional<int> _position, lib::optional<std::string> _topic,
