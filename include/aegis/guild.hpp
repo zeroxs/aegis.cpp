@@ -502,7 +502,7 @@ public:
      * @param delete_message_days How many days to delete member message history (0-7)
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_guild_ban(snowflake user_id, int8_t delete_message_days, const std::string & reason = "");
+    AEGIS_DECL aegis::future<rest::rest_reply> create_guild_ban(snowflake user_id, int8_t delete_message_days = 0, const std::string & reason = "");
 
     /// Create a new guild ban
     /**

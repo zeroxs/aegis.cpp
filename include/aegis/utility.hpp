@@ -166,6 +166,30 @@ inline std::chrono::system_clock::time_point from_http_date(const std::string & 
 }
 //Mon, 19 Nov 2018 06:51 : 17 GMT
 
+inline std::string url_encode(const std::string & value)
+{
+    std::ostringstream escaped;
+    escaped.fill('0');
+    escaped << std::hex;
+
+    for (std::string::value_type c : value)
+    {
+        // Keep alphanumeric and other accepted characters intact
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
+        {
+            escaped << c;
+            continue;
+        }
+
+        // Any other characters are percent-encoded
+        escaped << std::uppercase;
+        escaped << '%' << std::setw(2) << int((unsigned char)c);
+        escaped << std::nouppercase;
+    }
+
+    return escaped.str();
+}
+
 inline std::string uptime_str(std::chrono::steady_clock::time_point _start) noexcept
 {
     using seconds = std::chrono::duration<int, std::ratio<1, 1>>;

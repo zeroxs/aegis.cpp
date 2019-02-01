@@ -711,13 +711,11 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::create_guild_ban(snowflake use
         return aegis::make_exception_future(error::no_permission);
 #endif
 
-    json obj;
-    if (reason.empty())
-        obj = { "delete-message-days", delete_message_days };
-    else
-        obj = { { "delete-message-days", delete_message_days }, { "reason", reason } };
+    std::string query_params = fmt::format("?delete-message-days={}", delete_message_days);
+    if (!reason.empty())
+        query_params += fmt::format("&reason={}", utility::url_encode(reason));
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/bans/{}", guild_id, user_id), rest::Put, obj.dump() });
+    return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/bans/{}", guild_id, user_id), rest::Put, {}, {}, {}, {}, query_params });
 }
 
 AEGIS_DECL aegis::future<rest::rest_reply> guild::remove_guild_ban(snowflake user_id)
