@@ -28,7 +28,7 @@ before_install:
   - eval "${MATRIX_EVAL}"
 
 script:
-  - ./install-deps.sh
+  - sudo ./install-deps.sh
   - mkdir -p build
   - cd build
   - cmake -DBUILD_EXAMPLES=1 -DCMAKE_CXX_COMPILER=${COMPILER} -DCXX_STANDARD=${CXX_STANDARD} ..
