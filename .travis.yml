@@ -9,7 +9,7 @@ matrix:
       env: COMPILER=g++-7 CXX_STANDARD=17
       addons:
         apt:
-          packages: libcrypto++-dev g++-7
+          packages: libcrypto++-dev g++-7 libasio-dev
           sources: &sources
             - ubuntu-toolchain-r-test
     # GCC 5 C++14
@@ -18,12 +18,12 @@ matrix:
       env: COMPILER=g++-5 CXX_STANDARD=14
       addons:
         apt:
-          packages: libcrypto++-dev g++-5
+          packages: libcrypto++-dev g++-5 libasio-dev
           sources: &sources
             - ubuntu-toolchain-r-test
 
 script:
-  - sudo ./install-deps.sh
+  - ./install-deps.sh
   - mkdir -p build
   - cd build
   - cmake -DBUILD_EXAMPLES=1 -DCMAKE_CXX_COMPILER=${COMPILER} -DCXX_STANDARD=${CXX_STANDARD} ..
