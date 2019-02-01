@@ -9,7 +9,7 @@ matrix:
       env: COMPILER=g++-7 CXX_STANDARD=17
       addons:
         apt:
-          packages: libcrypto++-dev g++-7 libasio-dev
+          packages: libcrypto++-dev g++-7
           sources: &sources
             - ubuntu-toolchain-r-test
     # GCC 5 C++14
@@ -18,7 +18,7 @@ matrix:
       env: COMPILER=g++-5 CXX_STANDARD=14
       addons:
         apt:
-          packages: libcrypto++-dev g++-5 libasio-dev
+          packages: libcrypto++-dev g++-5
           sources: &sources
             - ubuntu-toolchain-r-test
 
