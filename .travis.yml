@@ -6,7 +6,8 @@ matrix:
     # GCC 7 C++17
     - os: linux
       compiler: gcc
-      env: COMPILER=g++-7 CXX=g++-7 CXX_STANDARD=17
+      env:
+        - MATRIX_EVAL="COMPILER=g++-7 && CXX=g++-7 && CXX_STANDARD=17"
       addons:
         apt:
           packages: libcrypto++-dev g++-7
@@ -15,12 +16,16 @@ matrix:
     # GCC 6 C++14
     - os: linux
       compiler: gcc
-      env: COMPILER=g++-6 CXX=g++-6 CXX_STANDARD=14
+      env:
+        - MATRIX_EVAL="COMPILER=g++-6 && CXX=g++-6 && CXX_STANDARD=14"
       addons:
         apt:
           packages: libcrypto++-dev g++-6
           sources: &sources
             - ubuntu-toolchain-r-test
+
+before_install:
+  - eval "${MATRIX_EVAL}"
 
 script:
   - ./install-deps.sh
