@@ -206,7 +206,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const st
 
     json obj;
     json & msgs = obj["messages"];
-    for (auto id : messages)
+    for (const auto & id : messages)
         msgs.push_back(std::to_string(id));
 
     return _bot->get_ratelimit().post_task({ fmt::format("/channels/{}/messages/bulk-delete", channel_id), rest::Post, obj.dump() });
@@ -221,7 +221,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const st
 
     json obj;
     json & msgs = obj["messages"];
-    for (auto id : messages)
+    for (const auto & id : messages)
         msgs.push_back(std::to_string(id));
 
     return _bot->get_ratelimit().post_task({ fmt::format("/channels/{}/messages/bulk-delete", channel_id), rest::Post, obj.dump() });

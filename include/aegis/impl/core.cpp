@@ -774,7 +774,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                 if (result["d"] == false)
                 {
                     _shard->set_sequence(0);
-                    log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->get_id());
+                    log->warn("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->get_id());
                     _shard->session_id.clear();
 
                     _shard->delayedauth.expires_after(std::chrono::milliseconds((rand() % 2000) + 5000));
@@ -786,7 +786,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                         if (_shard->get_connection() == nullptr)
                         {
                             //debug?
-                            log->error("Shard#{} : Invalid session received with an invalid connection state state: {}", _shard->get_id(), static_cast<int32_t>(_shard->connection_state));
+                            log->error("Shard#{} : Invalid session received with an invalid connection state: {}", _shard->get_id(), static_cast<int32_t>(_shard->connection_state));
                             _shard_mgr->reset_shard(_shard);
                             _shard->session_id.clear();
                             return;
@@ -957,7 +957,7 @@ AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shards::shard 
         }
         else
         {
-            log->info("Attempting RESUME with id : {}", _shard->session_id);
+            log->debug("Attempting RESUME with id : {}", _shard->session_id);
             obj = {
                 { "op", 6 },
                 { "d",
@@ -1036,8 +1036,6 @@ AEGIS_DECL std::size_t core::add_run_thread() noexcept
     t->start_time = std::chrono::steady_clock::now();
     t->fn = std::bind(static_cast<asio::io_context::count_type(asio::io_context::*)()>(&asio::io_context::run),
                       internal::_io_context.get());
-//     t->fn = std::bind(static_cast<asio::io_context::count_type(asio::io_context::*)(const std::chrono::duration<int64_t, std::nano>&)>(&asio::io_context::run_one_for),
-//                       internal::_io_context.get(), 20ms);
     t->thd = std::thread(std::bind(&core::_thread_track, this, t.get()));
     internal::threads.emplace_back(std::move(t));
     return internal::threads.size();
@@ -1046,28 +1044,10 @@ AEGIS_DECL std::size_t core::add_run_thread() noexcept
 AEGIS_DECL void core::reduce_threads(std::size_t count) noexcept
 {
     for (int i = 0; i < count; ++i)
-    {
         asio::post(*internal::_io_context, []
         {
             throw 1;
         });
-    }
-//     for (auto it = internal::threads.begin(); it != internal::threads.end() && count > 0; --count)
-//     {
-//         if ((*it)->thd.get_id() == std::this_thread::get_id())
-//         {
-//             ++it;
-//             continue;
-//         }
-//         if ((*it)->active)
-//         {
-//             (*it)->active = false;
-//             (*it)->thd.join();
-//             it = internal::threads.erase(it);
-//         }
-//         else
-//             ++it;
-//     }
 }
 
 AEGIS_DECL void core::on_close(websocketpp::connection_hdl hdl, shards::shard * _shard)
@@ -1093,7 +1073,7 @@ AEGIS_DECL void core::ws_presence_update(const json & result, shards::shard * _s
     auto  _guild = find_guild(guild_id);
     if (_guild == nullptr)
     {
-        log->error("Shard#{}: member without guild M:{} G:{} null:{}", _shard->get_id(), member_id, guild_id, _member == nullptr);
+        log->warn("Shard#{}: member without guild M:{} G:{} null:{}", _shard->get_id(), member_id, guild_id, _member == nullptr);
         return;
     }
     std::unique_lock<shared_mutex> l(_member->mtx(), std::defer_lock);
@@ -1152,7 +1132,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
     //assert(c != nullptr);
     if (c == nullptr)
     {
-        log->error("Shard#{} - channel == nullptr - {} {} {}", _shard->get_id(), c_id, result["d"]["author"]["id"].get<std::string>(), result["d"]["content"].get<std::string>());
+        log->warn("Shard#{} - channel == nullptr - {} {} {}", _shard->get_id(), c_id, result["d"]["author"]["id"].get<std::string>(), result["d"]["content"].get<std::string>());
     }
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     else if (c->get_guild_id() == 0)//DM
