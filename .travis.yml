@@ -6,19 +6,19 @@ matrix:
     # GCC 7 C++17
     - os: linux
       compiler: gcc
-      env: COMPILER=g++-7 CXX_STANDARD=17
+      env: COMPILER=g++-7 CXX=g++-7 CXX_STANDARD=17
       addons:
         apt:
           packages: libcrypto++-dev g++-7
           sources: &sources
             - ubuntu-toolchain-r-test
-    # GCC 5 C++14
+    # GCC 6 C++14
     - os: linux
       compiler: gcc
-      env: COMPILER=g++-5 CXX_STANDARD=14
+      env: COMPILER=g++-6 CXX=g++-6 CXX_STANDARD=14
       addons:
         apt:
-          packages: libcrypto++-dev g++-5
+          packages: libcrypto++-dev g++-6
           sources: &sources
             - ubuntu-toolchain-r-test
 
