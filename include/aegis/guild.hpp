@@ -16,6 +16,7 @@
 #include "aegis/rest/rest_reply.hpp"
 #include "aegis/ratelimit/ratelimit.hpp"
 #include "aegis/gateway/objects/permission_overwrite.hpp"
+#include "aegis/gateway/objects/member.hpp"
 #include <future>
 #include <asio.hpp>
 #include <shared_mutex>
@@ -308,7 +309,7 @@ public:
      * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> get_guild();
+    AEGIS_DECL aegis::future<gateway::objects::guild> get_guild();
 
     /// Modify guild information
     /**
@@ -327,7 +328,7 @@ public:
      * @param splash \todo
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> modify_guild(
+    AEGIS_DECL aegis::future<gateway::objects::guild> modify_guild(
         lib::optional<std::string> name = {},
         lib::optional<std::string> voice_region = {}, lib::optional<int> verification_level = {},
         lib::optional<int> default_message_notifications = {}, lib::optional<int> explicit_content_filter = {},
@@ -342,7 +343,7 @@ public:
      * @param obj Struct of the contents of the request
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> modify_guild(modify_guild_t obj)
+    AEGIS_DECL aegis::future<gateway::objects::guild> modify_guild(modify_guild_t obj)
     {
         return modify_guild(obj._name, obj._voice_region, obj._verification_level, obj._default_message_notifications,
                             obj._explicit_content_filter, obj._afk_channel_id, obj._afk_timeout, obj._icon,
@@ -365,7 +366,7 @@ public:
      * @param permission_overwrites Array of permission overwrites to apply to the channel
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_text_channel(const std::string & name, int64_t parent_id = 0, bool nsfw = false,
+    AEGIS_DECL aegis::future<gateway::objects::channel> create_text_channel(const std::string & name, int64_t parent_id = 0, bool nsfw = false,
                                             const std::vector<gateway::objects::permission_overwrite> & permission_overwrites = {});
     
     /// Create a text channel
@@ -374,7 +375,7 @@ public:
      * @param obj Struct of the contents of the request
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_text_channel(create_text_channel_t obj)
+    AEGIS_DECL aegis::future<gateway::objects::channel> create_text_channel(create_text_channel_t obj)
     {
         return create_text_channel(obj._name, obj._parent_id, obj._nsfw, obj._permission_overwrites);
     }
@@ -390,7 +391,7 @@ public:
      * @param permission_overwrites Array of permission overwrites to apply to the channel
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_voice_channel(const std::string & name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
+    AEGIS_DECL aegis::future<gateway::objects::channel> create_voice_channel(const std::string & name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
                                              const std::vector<gateway::objects::permission_overwrite> & permission_overwrites = {});
 
     /// Create a voice channel
@@ -399,7 +400,7 @@ public:
      * @param obj Struct of the contents of the request
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_voice_channel(create_voice_channel_t obj)
+    AEGIS_DECL aegis::future<gateway::objects::channel> create_voice_channel(create_voice_channel_t obj)
     {
         return create_voice_channel(obj._name, obj._bitrate, obj._user_limit, obj._parent_id, obj._permission_overwrites);
     }
@@ -412,7 +413,7 @@ public:
      * @param permission_overwrites Array of permission overwrites to apply to the channel
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_category_channel(const std::string & name, int64_t parent_id,
+    AEGIS_DECL aegis::future<gateway::objects::channel> create_category_channel(const std::string & name, int64_t parent_id,
                                                 const std::vector<gateway::objects::permission_overwrite> & permission_overwrites);
 
     /// Create a category
@@ -421,7 +422,7 @@ public:
      * @param obj Struct of the contents of the request
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_category_channel(create_category_channel_t obj)
+    AEGIS_DECL aegis::future<gateway::objects::channel> create_category_channel(create_category_channel_t obj)
     {
         return create_category_channel(obj._name, obj._parent_id, obj._permission_overwrites);
     }
@@ -445,7 +446,7 @@ public:
      * @param channel_id Snowflake of the channel to move user to
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> modify_guild_member(snowflake user_id, lib::optional<std::string> nick, lib::optional<bool> mute,
+    AEGIS_DECL aegis::future<gateway::objects::member> modify_guild_member(snowflake user_id, lib::optional<std::string> nick, lib::optional<bool> mute,
                                             lib::optional<bool> deaf, lib::optional<std::vector<snowflake>> roles,
                                             lib::optional<snowflake> channel_id);
 
@@ -456,7 +457,7 @@ public:
      * @param obj Struct of the contents of the request
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> modify_guild_member(modify_guild_member_t obj)
+    AEGIS_DECL aegis::future<gateway::objects::member> modify_guild_member(modify_guild_member_t obj)
     {
         return modify_guild_member(obj._user_id, obj._nick, obj._mute, obj._deaf, obj._roles, obj._channel_id);
     }

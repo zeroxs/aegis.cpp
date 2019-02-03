@@ -13,6 +13,8 @@
 #include <asio/streambuf.hpp>
 #include <asio/connect.hpp>
 #include "aegis/shards/shard.hpp"
+#include "aegis/guild.hpp"
+#include "aegis/channel.hpp"
 #include "aegis/member.hpp"
 
 #include <nlohmann/json.hpp>
@@ -94,29 +96,29 @@ AEGIS_DECL void core::setup_context()
         thread_count = 10;
 
     external_io_context = false;
-    internal::_io_context = std::make_shared<asio::io_context>();
+    _io_context = std::make_shared<asio::io_context>();
 
-    internal::wrk = std::make_unique<asio_exec>(asio::make_work_guard(*internal::_io_context));
+    wrk = std::make_unique<asio_exec>(asio::make_work_guard(*_io_context));
     for (std::size_t i = 0; i < thread_count; ++i)
         add_run_thread();
 }
 
 AEGIS_DECL void core::setup_shard_mgr()
 {
-    _shard_mgr = std::make_unique<shards::shard_mgr>(_token, *internal::_io_context, log);
+    _shard_mgr = std::make_shared<shards::shard_mgr>(_token, *_io_context, log);
 
-    _rest = std::make_unique<rest::rest_controller>(_token, "/api/v6", "discordapp.com");
+    _rest = std::make_shared<rest::rest_controller>(_token, "/api/v6", "discordapp.com", &get_io_context());
 
     std::error_code ec;
     setup_gateway(ec);
     if (ec)
         throw ec;
 
-    _ratelimit = std::make_unique<ratelimit_mgr_t>(
+    _ratelimit = std::make_shared<ratelimit_mgr_t>(
         std::bind(&aegis::rest::rest_controller::execute,
                   _rest.get(),
                   std::placeholders::_1),
-        get_io_context());
+        get_io_context(), this);
 
     setup_callbacks();
 }
@@ -125,10 +127,6 @@ AEGIS_DECL core::core(spdlog::level::level_enum loglevel, std::size_t count)
     : _loglevel(loglevel)
     , thread_count(count)
 {
-    if (internal::bot != nullptr)
-        throw std::runtime_error("Instance of bot already exists");
-    internal::bot = this;
-
     if (thread_count == 0)
         thread_count = std::thread::hardware_concurrency();
 
@@ -142,10 +140,6 @@ AEGIS_DECL core::core(spdlog::level::level_enum loglevel, std::size_t count)
 AEGIS_DECL core::core(std::shared_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel)
     : _loglevel(loglevel)
 {
-    if (internal::bot != nullptr)
-        throw std::runtime_error("Instance of bot already exists");
-    internal::bot = this;
-
     load_config();
 
     setup_logging();
@@ -156,10 +150,6 @@ AEGIS_DECL core::core(std::shared_ptr<asio::io_context> _io, spdlog::level::leve
 AEGIS_DECL core::core(std::shared_ptr<spdlog::logger> _log, std::size_t count)
     : thread_count(count)
 {
-    if (internal::bot != nullptr)
-        throw std::runtime_error("Instance of bot already exists");
-    internal::bot = this;
-
     if (thread_count == 0)
         thread_count = std::thread::hardware_concurrency();
 
@@ -173,15 +163,11 @@ AEGIS_DECL core::core(std::shared_ptr<spdlog::logger> _log, std::size_t count)
 
 AEGIS_DECL core::core(std::shared_ptr<asio::io_context> _io, std::shared_ptr<spdlog::logger> _log)
 {
-    if (internal::bot != nullptr)
-        throw std::runtime_error("Instance of bot already exists");
-    internal::bot = this;
-
     load_config();
 
     log = _log;
     _loglevel = log->level();
-    internal::_io_context = std::move(_io);
+    _io_context = std::move(_io);
     setup_shard_mgr();
 }
 
@@ -189,11 +175,11 @@ AEGIS_DECL core::~core()
 {
     if (_shard_mgr)
         _shard_mgr->shutdown();
-    internal::wrk.reset();
+    wrk.reset();
     if (!external_io_context)
-        if (internal::_io_context)
-            internal::_io_context->stop();
-    for (auto & t : internal::threads)
+        if (_io_context)
+            _io_context->stop();
+    for (auto & t : threads)
         t->thd.join();
 }
 
@@ -230,13 +216,13 @@ AEGIS_DECL member * core::member_create(snowflake id) noexcept
 }
 #endif
 
-AEGIS_DECL aegis::future<rest::rest_reply> core::create_dm_message(snowflake member_id, const std::string & content, int64_t nonce)
+AEGIS_DECL aegis::future<gateway::objects::message> core::create_dm_message(snowflake member_id, const std::string & content, int64_t nonce)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     channel * c = nullptr;
     auto m = find_member(member_id);
     if (!m)
-        throw aegis::exception(make_error_code(error::member_error));
+        return aegis::make_exception_future<gateway::objects::message>(aegis::error::member_error);
     if (m->get_dm_id())
         c = channel_create(m->get_dm_id());
     if (c)
@@ -245,15 +231,14 @@ AEGIS_DECL aegis::future<rest::rest_reply> core::create_dm_message(snowflake mem
 #endif
     {
         rest::request_params params{ "/users/@me/channels", rest::Post, fmt::format(R"({{ "recipient_id": "{}" }})", member_id), "", {}, {} };
-        return get_ratelimit().post_task(params)
-            .then([&](rest::rest_reply && reply)
+        return get_ratelimit().post_task<gateway::objects::message>(params)
+            .then([=](gateway::objects::message && reply)
             {
-                auto res = json::parse(reply.content);
-                snowflake channel_id = std::stoull(res["id"].get<std::string>());
-                auto c = channel_create(channel_id);
-                if (!c) return rest::rest_reply();
+                auto c = channel_create(reply.get_channel_id());
+                if (!c) //return aegis::make_exception_future<gateway::objects::message>(aegis::error::general)
+                    throw aegis::exception(make_error_code(error::member_error));
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-                m->set_dm_id(channel_id);
+                m->set_dm_id(reply.get_channel_id());
 #endif
                 return c->create_message(content, nonce).get();
             });
@@ -320,7 +305,7 @@ AEGIS_DECL channel * core::channel_create(snowflake id) noexcept
     auto it = channels.find(id);
     if (it == channels.end())
     {
-        auto g = std::make_unique<channel>(id, 0, this, *internal::_io_context);
+        auto g = std::make_unique<channel>(id, 0, this, *_io_context);
         auto ptr = g.get();
         channels.emplace(id, std::move(g));
         return ptr;
@@ -343,7 +328,7 @@ AEGIS_DECL guild * core::guild_create(snowflake id, shards::shard * _shard) noex
     auto it = guilds.find(id);
     if (it == guilds.end())
     {
-        auto g = std::make_unique<guild>(_shard->get_id(), id, this, *internal::_io_context);
+        auto g = std::make_unique<guild>(_shard->get_id(), id, this, *_io_context);
         auto ptr = g.get();
         guilds.emplace(id, std::move(g));
         return ptr;
@@ -501,7 +486,7 @@ AEGIS_DECL void core::shutdown()
 {
     set_state(bot_status::shutdown);
     _shard_mgr->shutdown();
-    internal::cv.notify_all();
+    cv.notify_all();
 }
 
 AEGIS_DECL void core::setup_gateway(std::error_code & ec)
@@ -510,7 +495,7 @@ AEGIS_DECL void core::setup_gateway(std::error_code & ec)
 
     rest::rest_reply res = _rest->execute({ "/gateway/bot", rest::Get });
 
-    aegis::internal::tz_bias = std::chrono::hours(int(std::round(double((std::chrono::duration_cast<std::chrono::minutes>(res.date - std::chrono::system_clock::now()) / 60).count()))));
+    _rest->tz_bias = tz_bias = std::chrono::hours(int(std::round(double((std::chrono::duration_cast<std::chrono::minutes>(res.date - std::chrono::system_clock::now()) / 60).count()))));
 
     if (res.content.empty())
     {
@@ -642,23 +627,28 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
     }
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> core::create_guild(create_guild_t obj)
+AEGIS_DECL aegis::future<gateway::objects::guild> core::create_guild(create_guild_t obj)
 {
     return create_guild(obj._name, obj._voice_region, obj._verification_level, obj._default_message_notifications,
                         obj._explicit_content_filter, obj._icon, obj._roles, obj._channels);
 }
 
-AEGIS_DECL std::future<rest::rest_reply> core::modify_bot_user(const std::string & username, const std::string & avatar)
+AEGIS_DECL aegis::future<gateway::objects::member> core::modify_bot_username(const std::string & username)
 {
     if (!username.empty())
     {
-        return {};
+        return make_ready_future<gateway::objects::member>();
     }
+    return make_ready_future<gateway::objects::member>();
+}
+
+AEGIS_DECL aegis::future<gateway::objects::member> core::modify_bot_avatar(const std::string & avatar)
+{
     if (!avatar.empty())
     {
-        return {};
+        return make_ready_future<gateway::objects::member>();
     }
-    return {};
+    return make_ready_future<gateway::objects::member>();
 }
 
 ///\todo
@@ -734,7 +724,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                 {
                     //message id found
                     ++message_count[cmd];
-                    asio::post(*internal::_io_context, [=, res = std::move(result)]()
+                    asio::post(*_io_context, [=, res = std::move(result)]()
                     {
                         try
                         {
@@ -1035,16 +1025,16 @@ AEGIS_DECL std::size_t core::add_run_thread() noexcept
     t->active = true;
     t->start_time = std::chrono::steady_clock::now();
     t->fn = std::bind(static_cast<asio::io_context::count_type(asio::io_context::*)()>(&asio::io_context::run),
-                      internal::_io_context.get());
+                      _io_context.get());
     t->thd = std::thread(std::bind(&core::_thread_track, this, t.get()));
-    internal::threads.emplace_back(std::move(t));
-    return internal::threads.size();
+    threads.emplace_back(std::move(t));
+    return threads.size();
 }
 
 AEGIS_DECL void core::reduce_threads(std::size_t count) noexcept
 {
     for (int i = 0; i < count; ++i)
-        asio::post(*internal::_io_context, []
+        asio::post(*_io_context, []
         {
             throw 1;
         });
@@ -1138,7 +1128,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
     else if (c->get_guild_id() == 0)//DM
     {
         auto m = find_member(result["d"]["author"]["id"]);
-        gateway::events::message_create obj(result["d"], c, m);
+        gateway::events::message_create obj(result["d"], c, m, this);
         obj.bot = this;
         obj._shard = _shard;
 
@@ -1149,7 +1139,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
     {
         auto m = find_member(result["d"]["author"]["id"]);
         auto g = &c->get_guild();
-        gateway::events::message_create obj(result["d"], g, c, m);
+        gateway::events::message_create obj(result["d"], g, c, m, this);
         obj.bot = this;
         obj._shard = _shard;
         if (i_message_create)
@@ -1157,7 +1147,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
     }
 #else
     auto g = &c->get_guild();
-    gateway::events::message_create obj(result["d"], g, c);
+    gateway::events::message_create obj(result["d"], g, c, this);
     obj.bot = this;
     obj._shard = _shard;
     if (i_message_create)
@@ -1751,7 +1741,7 @@ AEGIS_DECL void core::ws_voice_server_update(const json & result, shards::shard 
         i_voice_server_update(obj);
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> core::create_guild(
+AEGIS_DECL aegis::future<gateway::objects::guild> core::create_guild(
     std::string name, lib::optional<std::string> voice_region, lib::optional<int> verification_level,
     lib::optional<int> default_message_notifications, lib::optional<int> explicit_content_filter,
     lib::optional<std::string> icon, lib::optional<std::vector<gateway::objects::role>> roles,
@@ -1778,7 +1768,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> core::create_guild(
 
     return async([&]
     {
-        return _rest->execute({ "/guilds", rest::Post, obj.dump() });
+        return gateway::objects::guild(json::parse(_rest->execute({ "/guilds", rest::Post, obj.dump() }).content));
     });
 }
 

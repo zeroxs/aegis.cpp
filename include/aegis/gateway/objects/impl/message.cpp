@@ -8,9 +8,12 @@
 //
 
 #include "aegis/config.hpp"
+#include "aegis/member.hpp"
+#include "aegis/channel.hpp"
+#include "aegis/guild.hpp"
+#include "aegis/core.hpp"
 #include "aegis/gateway/objects/message.hpp"
 #include <nlohmann/json.hpp>
-#include "aegis/core.hpp"
 #include "aegis/futures.hpp"
 
 namespace aegis
@@ -25,7 +28,7 @@ namespace objects
 AEGIS_DECL aegis::guild & message::get_guild()
 {
     if (_guild == nullptr)
-        _guild = internal::bot->find_guild(_guild_id);
+        _guild = _bot->find_guild(_guild_id);
     assert(_guild != nullptr);
     if (_guild == nullptr)
         throw exception("message::get_guild() _guild = nullptr", make_error_code(error::guild_not_found));
@@ -35,7 +38,7 @@ AEGIS_DECL aegis::guild & message::get_guild()
 AEGIS_DECL aegis::channel & message::get_channel()
 {
     if (_channel == nullptr)
-        _channel = internal::bot->find_channel(_channel_id);
+        _channel = _bot->find_channel(_channel_id);
     assert(_channel != nullptr);
     if (_channel == nullptr)
         throw exception("message::get_channel() _channel == nullptr", make_error_code(error::channel_not_found));
@@ -46,13 +49,13 @@ AEGIS_DECL aegis::channel & message::get_channel()
 AEGIS_DECL aegis::member & message::get_member()
 {
     if (_member == nullptr)
-        _member = internal::bot->find_member(_author_id);
+        _member = _bot->find_member(_author_id);
     if (_member == nullptr)
     {
         if (_author_id == 0)
             throw exception("message::get_member() _member|_author_id == nullptr", make_error_code(error::member_not_found));
 
-        _member = internal::bot->member_create(_author_id);
+        _member = _bot->member_create(_author_id);
         _member->load_data(author);
     }
     return *_member;
@@ -69,12 +72,12 @@ AEGIS_DECL aegis::future<rest::rest_reply> message::delete_message()
     return get_channel().delete_message(_message_id);
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> message::edit(const std::string & content)
+AEGIS_DECL aegis::future<message> message::edit(const std::string & content)
 {
     populate_self();
     assert(_channel != nullptr);
     if (_channel == nullptr)
-        return aegis::make_exception_future<rest::rest_reply>(std::make_exception_ptr(aegis::exception(make_error_code(error::channel_error))));
+        return aegis::make_exception_future<message>(std::make_exception_ptr(aegis::exception(make_error_code(error::channel_error))));
 
     return get_channel().edit_message(_message_id, content);
 }
@@ -122,16 +125,16 @@ AEGIS_DECL aegis::future<rest::rest_reply> message::delete_all_reactions()
 AEGIS_DECL void message::populate_self()
 {
     if ((_guild == nullptr) && (_guild_id > 0))
-        _guild = internal::bot->find_guild(_guild_id);
+        _guild = _bot->find_guild(_guild_id);
     if ((_channel == nullptr) && (_channel_id > 0))
-        _channel = internal::bot->find_channel(_channel_id);
+        _channel = _bot->find_channel(_channel_id);
     if (_channel == nullptr)
         return;//fail
     if (_guild == nullptr)
-        _guild = internal::bot->find_guild(_channel->get_guild_id());
+        _guild = _bot->find_guild(_channel->get_guild_id());
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if ((_member == nullptr) && (_author_id > 0))
-        _member = internal::bot->find_member(_author_id);
+        _member = _bot->find_member(_author_id);
 #endif
 }
 

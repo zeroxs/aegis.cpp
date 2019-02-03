@@ -33,68 +33,6 @@ using namespace std::literals::chrono_literals;
 
 namespace aegis
 {
-/// Type of a work guard executor for keeping Asio services alive
-using asio_exec = asio::executor_work_guard<asio::io_context::executor_type>;
-
-/// Type of a shared pointer to an io_context work object
-using work_ptr = std::unique_ptr<asio_exec>;
-
-struct thread_state
-{
-    std::thread thd;
-    bool active;
-    std::chrono::steady_clock::time_point start_time;
-    std::function<void(void)> fn;
-};
-
-#if defined(AEGIS_CXX17)
-struct internal
-{
-    static inline core * bot = nullptr;
-    static inline std::shared_ptr<asio::io_context> _io_context = nullptr;
-    static inline std::vector<std::unique_ptr<thread_state>> threads;
-    static inline work_ptr wrk = nullptr;
-    static inline std::condition_variable cv;
-    static inline std::recursive_mutex _global_m;
-    static inline std::chrono::hours tz_bias;
-    static inline void shutdown()
-    {
-        cv.notify_all();
-    }
-};
-#else
-template<class T>
-struct V
-{
-    static core * bot;
-    static std::shared_ptr<asio::io_context> _io_context;
-    static std::vector<std::unique_ptr<thread_state>> threads;
-    static work_ptr wrk;
-    static std::condition_variable cv;
-    static std::recursive_mutex _global_m;
-    static std::chrono::hours tz_bias;
-    static void shutdown()
-    {
-        cv.notify_all();
-    }
-};
-template<class T>
-core * V<T>::bot = nullptr;
-template<class T>
-std::shared_ptr<asio::io_context> V<T>::_io_context = nullptr;
-template<class T>
-std::vector<std::unique_ptr<thread_state>> V<T>::threads;
-template<class T>
-work_ptr V<T>::wrk = nullptr;
-template<class T>
-std::condition_variable V<T>::cv;
-template<class T>
-std::recursive_mutex V<T>::_global_m;
-template<class T>
-std::chrono::hours V<T>::tz_bias;
-
-using internal = V<void>;
-#endif
 
 template <class T>
 class promise;
@@ -200,8 +138,16 @@ struct future_state
         T value;
         std::exception_ptr ex;
     } _u;
+    asio::io_context * _io_context = nullptr;
+    std::recursive_mutex * _global_m = nullptr;
     future_state() noexcept {}
+    future_state(asio::io_context * _io_context, std::recursive_mutex * _global_m) noexcept 
+        : _io_context(_io_context)
+        , _global_m(_global_m)
+    {}
     future_state(future_state&& x) noexcept
+        : _io_context(x._io_context)
+        , _global_m(x._global_m)
     {
         std::atomic_thread_fence(std::memory_order_acquire);
         state _x = x._state.load(std::memory_order_acquire);
@@ -401,8 +347,13 @@ struct future_state<void>
         std::exception_ptr ex;
     } _u;
     std::recursive_mutex _m;
+    asio::io_context * _io_context = nullptr;
+    std::recursive_mutex * _global_m = nullptr;
     future_state() noexcept {}
-    future_state(future_state&& x) noexcept
+    future_state(asio::io_context * _io_context, std::recursive_mutex * _global_m) noexcept 
+        : _io_context(_io_context)
+        , _global_m(_global_m)
+    {}    future_state(future_state&& x) noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
         if (x._u.st < state::exception_min)
@@ -574,11 +525,21 @@ class promise
     future_state<T>* _state;
     std::unique_ptr<continuation_base<T>> _task;
     std::recursive_mutex _m;
+    asio::io_context * _io_context = nullptr;
+    std::recursive_mutex * _global_m = nullptr;
     static constexpr bool copy_noexcept = future_state<T>::copy_noexcept;
 public:
-    promise() noexcept : _state(&_local_state) {}
+    promise(asio::io_context * _io_context, std::recursive_mutex * _global_m) noexcept
+        : _local_state(future_state<T>(_io_context, _global_m))
+        , _state(&_local_state)
+        , _io_context(_io_context)
+        , _global_m(_global_m)
+    {}
 
     promise(promise&& x) noexcept
+        : _local_state(future_state<T>(x._io_context, x._global_m))
+        , _io_context(x._io_context)
+        , _global_m(x._global_m)
     {
         std::atomic_thread_fence(std::memory_order_acquire);
         //std::lock_guard<std::recursive_mutex> gl(internal::_global_m);
@@ -620,7 +581,7 @@ public:
     ~promise() noexcept
     {
         std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
-        std::unique_lock<std::recursive_mutex> l2(internal::_global_m, std::defer_lock);
+        std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
         std::lock(l, l2);
         abandoned();
     }
@@ -710,12 +671,17 @@ class future
     promise<T>* _promise;
     future_state<T> _local_state;
     mutable std::recursive_mutex _m;
+    asio::io_context * _io_context = nullptr;
+    std::recursive_mutex * _global_m = nullptr;
     static constexpr bool copy_noexcept = future_state<T>::copy_noexcept;
 private:
     future(promise<T>* pr) noexcept
+        : _local_state(future_state<T>(pr->_io_context, pr->_global_m))
     {
+        _io_context = pr->_io_context;
+        _global_m = pr->_global_m;
         std::atomic_thread_fence(std::memory_order_acquire);
-        std::unique_lock<std::recursive_mutex> l(internal::_global_m, std::defer_lock);
+        std::unique_lock<std::recursive_mutex> l(*_global_m, std::defer_lock);
         std::unique_lock<std::recursive_mutex> l2(_m, std::defer_lock);
         std::unique_lock<std::recursive_mutex> l3(pr->_m, std::defer_lock);
         std::lock(l, l2, l3);
@@ -725,15 +691,22 @@ private:
         std::atomic_thread_fence(std::memory_order_release);
     }
     template <typename... A>
-    future(ready_future_marker, A&&... a) : _promise(nullptr)
+    future(ready_future_marker, A&&... a)
+        : _promise(nullptr)
+        , _local_state(future_state<T>(nullptr, nullptr))
     {
         _local_state.set(std::forward<A>(a)...);
     }
-    future(exception_future_marker, std::exception_ptr ex) noexcept : _promise(nullptr)
+    future(exception_future_marker, std::exception_ptr ex) noexcept
+        : _promise(nullptr)
+        , _local_state(future_state<T>(nullptr, nullptr))
     {
         _local_state.set_exception(std::move(ex));
     }
-    explicit future(future_state<T>&& state) noexcept
+    explicit future(future_state<T>&& state, asio::io_context * _io_context, std::recursive_mutex * _global_m) noexcept
+        : _local_state(future_state<T>(_io_context, _global_m))
+        , _io_context(_io_context)
+        , _global_m(_global_m)
     {
         std::atomic_thread_fence(std::memory_order_acquire);
         _local_state = std::move(state);
@@ -743,11 +716,12 @@ private:
     future_state<T> * state() noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
-        std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
-        std::unique_lock<std::recursive_mutex> l2(internal::_global_m, std::defer_lock);
-        std::lock(l, l2);
         if (_promise)
         {
+            std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
+            std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
+            std::lock(l, l2);
+            
             //std::lock_guard<std::recursive_mutex> l(_promise->_m);
             future_state<T> * _st = _promise->_state;
             std::atomic_thread_fence(std::memory_order_release);
@@ -763,11 +737,12 @@ private:
     const future_state<T> * state() const noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
-        std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
-        std::unique_lock<std::recursive_mutex> l2(internal::_global_m, std::defer_lock);
-        std::lock(l, l2);
         if (_promise)
         {
+            std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
+            std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
+            std::lock(l, l2);
+
             //std::lock_guard<std::recursive_mutex> l(_promise->_m);
             const future_state<T> * _st = _promise->_state;
             std::atomic_thread_fence(std::memory_order_release);
@@ -787,7 +762,7 @@ private:
         future_state<T> * _st = state();
         if (state()->available())
         {
-            asio::post(*aegis::internal::_io_context, [func = std::move(func), _state = std::move(*state())]() mutable
+            asio::post(*_io_context, [func = std::move(func), _state = std::move(*state())]() mutable
             {
                 func(std::move(_state));
             });
@@ -846,6 +821,9 @@ public:
     using value_type = T;
     using promise_type = promise<T>;
     future(future&& x) noexcept
+        : _local_state(future_state<T>(x._io_context, x._global_m))
+        , _io_context(x._io_context)
+        , _global_m(x._global_m)
     {
         std::atomic_thread_fence(std::memory_order_acquire);
         std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
@@ -881,8 +859,9 @@ public:
     ~future()
     {
         std::atomic_thread_fence(std::memory_order_acquire);
+        if (_promise)
         {
-            std::lock_guard<std::recursive_mutex> l(internal::_global_m);
+            std::lock_guard<std::recursive_mutex> l(*_global_m);
             if (_promise)
             {
                 std::lock_guard<std::recursive_mutex> l(_promise->_m);
@@ -911,7 +890,7 @@ public:
             std::atomic_thread_fence(std::memory_order_acquire);
 
             std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
-            std::unique_lock<std::recursive_mutex> l2(internal::_global_m, std::defer_lock);
+            std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
             std::lock(l, l2);
 
             future_state<T> _st(get_available_state());
@@ -987,7 +966,7 @@ public:
             }
         }
         std::atomic_thread_fence(std::memory_order_release);
-        promise<inner_type> pr;
+        promise<inner_type> pr(_io_context, _global_m);
         auto fut = pr.get_future();
         try
         {
@@ -1018,16 +997,16 @@ public:
         std::atomic_thread_fence(std::memory_order_acquire);
         if (available())
         {
-            return detail::call_future<inner_type>(std::forward<Func>(func), future(get_available_state()));
+            return detail::call_future<inner_type>(std::forward<Func>(func), future(get_available_state(), _io_context, _global_m));
         }
         std::atomic_thread_fence(std::memory_order_release);
-        promise<inner_type> pr;
+        promise<inner_type> pr(_io_context, _global_m);
         auto fut = pr.get_future();
         try
         {
-            this->schedule([pr = std::move(pr), func = std::forward<Func>(func)](auto&& state) mutable {
+            this->schedule([pr = std::move(pr), func = std::forward<Func>(func), this](auto&& state) mutable {
                 std::atomic_thread_fence(std::memory_order_acquire);
-                detail::call_future<inner_type>(std::forward<Func>(func), future(std::move(state))).forward_to(std::move(pr));
+                detail::call_future<inner_type>(std::forward<Func>(func), future(std::move(state), _io_context, _global_m)).forward_to(std::move(pr));
                 std::atomic_thread_fence(std::memory_order_release);
             });
         }
@@ -1170,7 +1149,7 @@ inline void promise<T>::make_ready() noexcept
         }
         else
         {
-            asio::post(*aegis::internal::_io_context, [_task = std::move(_task)]
+            asio::post(*_io_context, [_task = std::move(_task)]
             {
                 _task->run();
             });
@@ -1314,51 +1293,6 @@ template <typename T = rest::rest_reply>
 inline future<T> make_exception_future(aegis::error ec)
 {
     return aegis::make_exception_future<T>(std::make_exception_ptr(aegis::exception(make_error_code(ec))));
-}
-
-template<typename T, typename V = std::result_of_t<T()>, typename = std::enable_if_t<!std::is_void<V>::value>>
-inline aegis::future<V> async(T f)
-{
-    std::atomic_thread_fence(std::memory_order_acquire);
-    aegis::promise<V> pr;
-    auto fut = pr.get_future();
-
-    asio::post(*aegis::internal::_io_context, [pr = std::move(pr), f = std::move(f)]() mutable
-    {
-        try
-        {
-            pr.set_value(f());
-        }
-        catch (std::exception & e)
-        {
-            pr.set_exception(make_exception_ptr(e));
-        }
-    });
-    std::atomic_thread_fence(std::memory_order_release);
-    return fut;
-}
-
-template<typename T, typename V = std::enable_if_t<std::is_void<std::result_of_t<T()>>::value>>
-inline aegis::future<V> async(T f)
-{
-    std::atomic_thread_fence(std::memory_order_acquire);
-    aegis::promise<V> pr;
-    auto fut = pr.get_future();
-
-    asio::post(*aegis::internal::_io_context, [pr = std::move(pr), f = std::move(f)]() mutable
-    {
-        try
-        {
-            f();
-            pr.set_value();
-        }
-        catch (std::exception & e)
-        {
-            pr.set_exception(make_exception_ptr(e));
-        }
-    });
-    std::atomic_thread_fence(std::memory_order_release);
-    return fut;
 }
 
 }

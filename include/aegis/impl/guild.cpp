@@ -481,18 +481,18 @@ AEGIS_DECL channel * guild::get_channel(snowflake id) const noexcept
 
 /**\todo Incomplete. Signature may change. Location may change.
  */
-AEGIS_DECL aegis::future<rest::rest_reply> guild::get_guild()
+AEGIS_DECL aegis::future<gateway::objects::guild> guild::get_guild()
 {
-    return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}", guild_id), rest::Get });
+    return _bot->get_ratelimit().post_task<gateway::objects::guild>({ fmt::format("/guilds/{}", guild_id), rest::Get });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_guild(lib::optional<std::string> name, lib::optional<std::string> voice_region, lib::optional<int> verification_level,
+AEGIS_DECL aegis::future<gateway::objects::guild> guild::modify_guild(lib::optional<std::string> name, lib::optional<std::string> voice_region, lib::optional<int> verification_level,
                     lib::optional<int> default_message_notifications, lib::optional<int> explicit_content_filter, lib::optional<snowflake> afk_channel_id, lib::optional<int> afk_timeout,
                     lib::optional<std::string> icon, lib::optional<snowflake> owner_id, lib::optional<std::string> splash)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if ((!perms().can_manage_guild()) || (owner_id.has_value() && owner_id != self()->_member_id))
-        return aegis::make_exception_future(error::no_permission);
+        return aegis::make_exception_future<gateway::objects::guild>(error::no_permission);
 #endif
 
     json obj;
@@ -517,7 +517,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_guild(lib::optional<std
     if (splash.has_value())//VIP only
         obj["splash"] = splash.value();
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}", guild_id), rest::Patch, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::guild>({ fmt::format("/guilds/{}", guild_id), rest::Patch, obj.dump() });
 }
 
 AEGIS_DECL aegis::future<rest::rest_reply> guild::delete_guild()
@@ -531,13 +531,13 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::delete_guild()
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}", guild_id), rest::Delete });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> guild::create_text_channel(const std::string & name,
+AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_text_channel(const std::string & name,
                 int64_t parent_id, bool nsfw, const std::vector<gateway::objects::permission_overwrite> & permission_overwrites)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     //requires MANAGE_CHANNELS
     if (!perms().can_manage_channels())
-        return aegis::make_exception_future(error::no_permission);
+        return aegis::make_exception_future<gateway::objects::channel>(error::no_permission);
 #endif
 
     json obj;
@@ -551,16 +551,16 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::create_text_channel(const std:
         obj["permission_overwrites"].push_back(p_ow);
     }
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> guild::create_voice_channel(const std::string & name,
+AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_voice_channel(const std::string & name,
                 int32_t bitrate, int32_t user_limit, int64_t parent_id,
                 const std::vector<gateway::objects::permission_overwrite> & permission_overwrites)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_channels())
-        return aegis::make_exception_future(error::no_permission);
+        return aegis::make_exception_future<gateway::objects::channel>(error::no_permission);
 #endif
 
     json obj;
@@ -575,15 +575,15 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::create_voice_channel(const std
         obj["permission_overwrites"].push_back(p_ow);
     }
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> guild::create_category_channel(const std::string & name,
+AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_category_channel(const std::string & name,
                 int64_t parent_id, const std::vector<gateway::objects::permission_overwrite> & permission_overwrites)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_channels())
-        return aegis::make_exception_future(error::no_permission);
+        return aegis::make_exception_future<gateway::objects::channel>(error::no_permission);
 #endif
 
     json obj;
@@ -595,7 +595,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::create_category_channel(const 
         obj["permission_overwrites"].push_back(p_ow);
     }
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
 }
 
 /**\todo Incomplete. Signature may change
@@ -610,7 +610,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_channel_positions()
     return aegis::make_exception_future(error::not_implemented);
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_guild_member(snowflake user_id, lib::optional<std::string> nick, lib::optional<bool> mute,
+AEGIS_DECL aegis::future<gateway::objects::member> guild::modify_guild_member(snowflake user_id, lib::optional<std::string> nick, lib::optional<bool> mute,
                             lib::optional<bool> deaf, lib::optional<std::vector<snowflake>> roles, lib::optional<snowflake> channel_id)
 {
     json obj;
@@ -619,32 +619,32 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_guild_member(snowflake 
     if (nick.has_value())
     {
         if (!perm.can_manage_names())
-            return aegis::make_exception_future(error::no_permission);
+            return aegis::make_exception_future<gateway::objects::member>(error::no_permission);
         obj["nick"] = nick.value();//requires MANAGE_NICKNAMES
     }
     if (mute.has_value())
     {
         if (!perm.can_voice_mute())
-            return aegis::make_exception_future(error::no_permission);
+            return aegis::make_exception_future<gateway::objects::member>(error::no_permission);
         obj["mute"] = mute.value();//requires MUTE_MEMBERS
     }
     if (deaf.has_value())
     {
         if (!perm.can_voice_deafen())
-            return aegis::make_exception_future(error::no_permission);
+            return aegis::make_exception_future<gateway::objects::member>(error::no_permission);
         obj["deaf"] = deaf.value();//requires DEAFEN_MEMBERS
     }
     if (roles.has_value())
     {
         if (!perm.can_manage_roles())
-            return aegis::make_exception_future(error::no_permission);
+            return aegis::make_exception_future<gateway::objects::member>(error::no_permission);
         obj["roles"] = roles.value();//requires MANAGE_ROLES
     }
     if (channel_id.has_value())
     {
         //TODO: This needs to calculate whether or not the bot has access to the voice channel as well
         if (!perm.can_voice_move())
-            return aegis::make_exception_future(error::no_permission);
+            return aegis::make_exception_future<gateway::objects::member>(error::no_permission);
         obj["channel_id"] = channel_id.value();//requires MOVE_MEMBERS
     }
 #else
@@ -660,7 +660,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_guild_member(snowflake 
         obj["channel_id"] = channel_id.value();//requires MOVE_MEMBERS
 #endif
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/members/{}", guild_id, user_id), rest::Patch, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::member>({ fmt::format("/guilds/{}/members/{}", guild_id, user_id), rest::Patch, obj.dump() });
 }
 
 AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_my_nick(const std::string & newname)

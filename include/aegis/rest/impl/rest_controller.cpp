@@ -11,7 +11,6 @@
 #include "aegis/fwd.hpp"
 
 #include "aegis/rest/rest_controller.hpp"
-#include "aegis/core.hpp"
 
 #ifdef WIN32
 # include "aegis/push.hpp"
@@ -34,23 +33,26 @@ namespace aegis
 namespace rest
 {
 
-AEGIS_DECL rest_controller::rest_controller(const std::string & token)
+AEGIS_DECL rest_controller::rest_controller(const std::string & token, asio::io_context * _io_context)
     : _token(token)
+    , _io_context(_io_context)
 {
 
 }
 
-AEGIS_DECL rest_controller::rest_controller(const std::string & token, const std::string & prefix)
+AEGIS_DECL rest_controller::rest_controller(const std::string & token, const std::string & prefix, asio::io_context * _io_context)
     : _token(token)
     , _prefix(prefix)
+    , _io_context(_io_context)
 {
 
 }
 
-AEGIS_DECL rest_controller::rest_controller(const std::string & token, const std::string & prefix, const std::string & host)
+AEGIS_DECL rest_controller::rest_controller(const std::string & token, const std::string & prefix, const std::string & host, asio::io_context * _io_context)
     : _token(token)
     , _prefix(prefix)
     , _host(host)
+    , _io_context(_io_context)
 {
 
 }
@@ -81,7 +83,7 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
         auto it = _resolver_cache.find(tar_host);
         if (it == _resolver_cache.end())
         {
-            asio::ip::tcp::resolver resolver(*internal::_io_context);
+            asio::ip::tcp::resolver resolver(*_io_context);
             r = resolver.resolve(tar_host, params.port);
             _resolver_cache.emplace(tar_host, r);
         }
@@ -95,7 +97,7 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
             | asio::ssl::context::no_sslv2
             | asio::ssl::context::no_sslv3);
 
-        asio::ssl::stream<asio::ip::tcp::socket> socket(*internal::_io_context, ctx);
+        asio::ssl::stream<asio::ip::tcp::socket> socket(*_io_context, ctx);
         SSL_set_tlsext_host_name(socket.native_handle(), tar_host.data());
 
         asio::connect(socket.lowest_layer(), r);
@@ -141,7 +143,7 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
         if (!test.empty())
             retry = std::stoul(test);
 
-        http_date = utility::from_http_date(hresponse.get_header("Date")) - internal::tz_bias;
+        http_date = utility::from_http_date(hresponse.get_header("Date")) - tz_bias;
 
         global = !(hresponse.get_header("X-RateLimit-Global").empty());
 
@@ -189,7 +191,7 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
         auto it = _resolver_cache.find(tar_host);
         if (it == _resolver_cache.end())
         {
-            asio::ip::tcp::resolver resolver(*internal::_io_context);
+            asio::ip::tcp::resolver resolver(*_io_context);
             r = resolver.resolve(tar_host, params.port);
             _resolver_cache.emplace(tar_host, r);
         }
@@ -206,7 +208,7 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
                 | asio::ssl::context::no_sslv2
                 | asio::ssl::context::no_sslv3);
 
-            asio::ssl::stream<asio::ip::tcp::socket> socket(*internal::_io_context, ctx);
+            asio::ssl::stream<asio::ip::tcp::socket> socket(*_io_context, ctx);
             SSL_set_tlsext_host_name(socket.native_handle(), tar_host.data());
 
             asio::connect(socket.lowest_layer(), r);
@@ -248,7 +250,7 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
         }
         else
         {
-            asio::ip::tcp::socket socket(*internal::_io_context);
+            asio::ip::tcp::socket socket(*_io_context);
             asio::connect(socket, r);
 
             asio::streambuf request;

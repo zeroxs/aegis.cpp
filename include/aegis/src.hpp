@@ -9,6 +9,8 @@
 
 #pragma once
 
+#error TODO: needs fixing
+
 #include <aegis/config.hpp>
 
 #if defined(AEGIS_HEADER_ONLY)
@@ -21,7 +23,7 @@
 #include <aegis/utility.hpp>
 
 #include <aegis/snowflake.hpp>
-#include <aegis/objects/role.hpp>
+#include <aegis/gateway/objects/role.hpp>
 #include <aegis/error.hpp>
 #include <aegis/rest/rest_reply.hpp>
 

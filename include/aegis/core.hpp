@@ -14,13 +14,14 @@
 #include "aegis/utility.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/futures.hpp"
-#include "aegis/ratelimit/ratelimit.hpp"
-#include "aegis/ratelimit/bucket.hpp"
+//#include "aegis/ratelimit/ratelimit.hpp"
+//#include "aegis/ratelimit/bucket.hpp"
 #include "aegis/rest/rest_controller.hpp"
 #include "aegis/shards/shard_mgr.hpp"
-#include "aegis/guild.hpp"
-#include "aegis/channel.hpp"
-#include "aegis/member.hpp"
+#include "aegis/gateway/objects/role.hpp"
+#include "aegis/gateway/objects/member.hpp"
+#include "aegis/gateway/objects/channel.hpp"
+#include "aegis/gateway/objects/guild.hpp"
 
 #include <asio/io_context.hpp>
 #include <asio/bind_executor.hpp>
@@ -41,13 +42,20 @@
 
 namespace aegis
 {
+using namespace nlohmann;
 #if (AEGIS_HAS_STD_SHARED_MUTEX == 1)
 using shared_mutex = std::shared_mutex;
 #else
 using shared_mutex = std::shared_timed_mutex;
 #endif
 
-using rest_call = std::function<rest::rest_reply(rest::request_params)>;
+/// Type of a work guard executor for keeping Asio services alive
+using asio_exec = asio::executor_work_guard<asio::io_context::executor_type>;
+
+/// Type of a shared pointer to an io_context work object
+using work_ptr = std::unique_ptr<asio_exec>;
+
+//using rest_call = std::function<rest::rest_reply(rest::request_params)>;
 
 /// Type of a pointer to the Websocket++ TLS connection
 using connection_ptr = websocketpp::client<websocketpp::config::asio_tls_client>::connection_type::ptr;
@@ -56,6 +64,14 @@ using connection_ptr = websocketpp::client<websocketpp::config::asio_tls_client>
 using message_ptr = websocketpp::config::asio_client::message_type::ptr;
 
 using ratelimit_mgr_t = aegis::ratelimit::ratelimit_mgr;
+
+struct thread_state
+{
+    std::thread thd;
+    bool active;
+    std::chrono::steady_clock::time_point start_time;
+    std::function<void(void)> fn;
+};
 
 struct create_guild_t
 {
@@ -138,19 +154,9 @@ public:
     AEGIS_DECL void setup_shard_mgr();
 
     /// Get the internal (or external) io_service object
-//     asio::io_context & get_io_context()
-//     {
-//         return *_io_context;
-//     }
-
-    static asio::io_context & get_io_context()
+    asio::io_context & get_io_context()
     {
-        return *internal::_io_context;
-    }
-
-    static core & get_bot()
-    {
-        return *internal::bot;
+        return *_io_context;
     }
 
     /// Invokes a shutdown on the entire lib. Sets internal state to `Shutdown` and propagates the
@@ -176,7 +182,7 @@ public:
      * @param channels vector of channels to create
      * @returns rest_reply
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_guild(
+    AEGIS_DECL aegis::future<gateway::objects::guild> create_guild(
         std::string name, lib::optional<std::string> voice_region = {}, lib::optional<int> verification_level = {},
         lib::optional<int> default_message_notifications = {}, lib::optional<int> explicit_content_filter = {},
         lib::optional<std::string> icon = {}, lib::optional<std::vector<gateway::objects::role>> roles = {},
@@ -191,9 +197,11 @@ public:
      * @param obj Struct of the contents of the request
      * @returns rest::rest_reply
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_guild(create_guild_t obj);
+    AEGIS_DECL aegis::future<gateway::objects::guild> create_guild(create_guild_t obj);
 
-    AEGIS_DECL std::future<rest::rest_reply> modify_bot_user(const std::string & username = "", const std::string & avatar = "");
+    AEGIS_DECL aegis::future<gateway::objects::member> modify_bot_username(const std::string & username);
+
+    AEGIS_DECL aegis::future<gateway::objects::member> modify_bot_avatar(const std::string & avatar);
 
     /// Starts the shard manager, creates the shards, and connects to the gateway
     AEGIS_DECL void run();
@@ -201,20 +209,20 @@ public:
     /**
      * Yields operation of the current thread until library shutdown is detected
      */
-    void yield() const noexcept
+    void yield() noexcept
     {
         if (_status == bot_status::shutdown)
             return;
         std::mutex m;
         std::unique_lock<std::mutex> l(m);
-        internal::cv.wait(l);
+        cv.wait(l);
 
         log->info("Closing bot");
     
         if (!external_io_context)
         {
-            internal::wrk.reset();
-            internal::_io_context->stop();
+            wrk.reset();
+            _io_context->stop();
         }
     }
 
@@ -223,6 +231,7 @@ public:
     shards::shard_mgr & get_shard_mgr() noexcept { return *_shard_mgr; }
     bot_status get_state() const noexcept { return _status; }
     void set_state(bot_status s) noexcept { _status = s; }
+    std::chrono::hours get_tz_bias() const noexcept { return tz_bias; }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 
@@ -296,7 +305,7 @@ public:
      */
     AEGIS_DECL channel * dm_channel_create(const json & obj, shards::shard * _shard);
 
-    AEGIS_DECL aegis::future<rest::rest_reply> create_dm_message(snowflake member_id, const std::string & content, int64_t nonce = 0);
+    AEGIS_DECL aegis::future<gateway::objects::message> create_dm_message(snowflake member_id, const std::string & content, int64_t nonce = 0);
 
     /// Return bot uptime as {days hours minutes seconds}
     /**
@@ -440,6 +449,51 @@ public:
 
     AEGIS_DECL void reduce_threads(std::size_t count) noexcept;
 
+    template<typename T, typename V = std::result_of_t<T()>, typename = std::enable_if_t<!std::is_void<V>::value>>
+    aegis::future<V> async(T f)
+    {
+        std::atomic_thread_fence(std::memory_order_acquire);
+        aegis::promise<V> pr(_io_context.get(), &_global_m);
+        auto fut = pr.get_future();
+
+        asio::post(*_io_context, [pr = std::move(pr), f = std::move(f)]() mutable
+        {
+            try
+            {
+                pr.set_value(f());
+            }
+            catch (std::exception & e)
+            {
+                pr.set_exception(make_exception_ptr(e));
+            }
+        });
+        std::atomic_thread_fence(std::memory_order_release);
+        return fut;
+    }
+
+    template<typename T, typename V = std::enable_if_t<std::is_void<std::result_of_t<T()>>::value>>
+    aegis::future<V> async(T f)
+    {
+        std::atomic_thread_fence(std::memory_order_acquire);
+        aegis::promise<V> pr(_io_context.get(), &_global_m);
+        auto fut = pr.get_future();
+
+        asio::post(*_io_context, [pr = std::move(pr), f = std::move(f)]() mutable
+        {
+            try
+            {
+                f();
+                pr.set_value();
+            }
+            catch (std::exception & e)
+            {
+                pr.set_exception(make_exception_ptr(e));
+            }
+        });
+        std::atomic_thread_fence(std::memory_order_release);
+        return fut;
+    }
+
 private:
 
     AEGIS_DECL void _thread_track(thread_state * t_state);
@@ -538,9 +592,9 @@ private:
 
     bot_status _status = bot_status::uninitialized;
 
-    std::unique_ptr<rest::rest_controller> _rest;
-    std::unique_ptr<ratelimit_mgr_t> _ratelimit;
-    std::unique_ptr<shards::shard_mgr> _shard_mgr;
+    std::shared_ptr<rest::rest_controller> _rest;
+    std::shared_ptr<ratelimit_mgr_t> _ratelimit;
+    std::shared_ptr<shards::shard_mgr> _shard_mgr;
 
     member * _self = nullptr;
 
@@ -556,6 +610,15 @@ private:
     std::size_t thread_count = 0;
     std::string log_formatting;
     bool state_valid = true;
+
+
+    std::shared_ptr<asio::io_context> _io_context = nullptr;
+    work_ptr wrk = nullptr;
+    std::condition_variable cv;
+    std::chrono::hours tz_bias;
+public:
+    std::vector<std::unique_ptr<thread_state>> threads;
+    std::recursive_mutex _global_m;
 };
 
 }

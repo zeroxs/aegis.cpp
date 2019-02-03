@@ -116,12 +116,12 @@ AEGIS_DECL void channel::load_with_guild(guild & _guild, const json & obj, shard
 }
 #endif
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::create_message(const std::string & content, int64_t nonce)
+AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message(const std::string & content, int64_t nonce)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild != nullptr)//probably a DM
         if (!perms().can_send_messages())
-            return aegis::make_exception_future(error::no_permission);
+            return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
 #endif
 
     json obj;
@@ -130,15 +130,20 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::create_message(const std::st
     if (nonce)
         obj["nonce"] = nonce;
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/channels/{}/messages", channel_id), rest::Post, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::message>({ fmt::format("/channels/{}/messages", channel_id), rest::Post, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::create_message_embed(const std::string & content, const json & embed, int64_t nonce)
+AEGIS_DECL aegis::future<aegis::gateway::objects::message> channel::create_message(create_message_t obj)
+{
+    return create_message(obj._content, obj._nonce);
+};
+
+AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embed(const std::string & content, const json & embed, int64_t nonce)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild != nullptr)//probably a DM
         if (!perms().can_send_messages())
-            return aegis::make_exception_future(error::no_permission);
+            return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
 #endif
 
     json obj;
@@ -149,30 +154,28 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::create_message_embed(const s
     if (nonce)
         obj["nonce"] = nonce;
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/channels/{}/messages", channel_id), rest::Post, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::message>({ fmt::format("/channels/{}/messages", channel_id), rest::Post, obj.dump() });
 }
 
 AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embed(create_message_embed_t obj)
 {
-    return create_message_embed(obj._content, obj._embed, obj._nonce).then([](rest::rest_reply && rp)
-    {
-        if (rp.success())
-        {
-            return aegis::make_ready_future<gateway::objects::message>(std::move(gateway::objects::message(json::parse(rp.content))));
-        }
-        return aegis::make_exception_future<gateway::objects::message>(aegis::error::general);
-    });
+    return create_message_embed(obj._content, obj._embed, obj._nonce);
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::edit_message(snowflake message_id, const std::string & content)
+AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message(snowflake message_id, const std::string & content)
 {
     json obj;
     obj["content"] = content;
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/channels/{}/messages/{}", channel_id, message_id), rest::Patch, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::message>({ fmt::format("/channels/{}/messages/{}", channel_id, message_id), rest::Patch, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::edit_message_embed(snowflake message_id, const std::string & content, const json & embed)
+AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message_embed(edit_message_embed_t obj)
+{
+    return edit_message_embed(obj._message_id, obj._content, obj._embed);
+}
+
+AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message_embed(snowflake message_id, const std::string & content, const json & embed)
 {
     json obj;
     if (!content.empty())
@@ -180,7 +183,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::edit_message_embed(snowflake
     obj["embed"] = embed;
     obj["content"] = content;
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/channels/{}/messages/{}", channel_id, message_id), rest::Patch, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::message>({ fmt::format("/channels/{}/messages/{}", channel_id, message_id), rest::Patch, obj.dump() });
 }
 
 /**\todo can delete your own messages freely - provide separate function or keep history of messages
@@ -227,14 +230,14 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const st
     return _bot->get_ratelimit().post_task({ fmt::format("/channels/{}/messages/bulk-delete", channel_id), rest::Post, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::modify_channel(lib::optional<std::string> _name, lib::optional<int> _position, lib::optional<std::string> _topic,
+AEGIS_DECL aegis::future<gateway::objects::channel> channel::modify_channel(lib::optional<std::string> _name, lib::optional<int> _position, lib::optional<std::string> _topic,
                                     lib::optional<bool> _nsfw, lib::optional<int> _bitrate, lib::optional<int> _user_limit,
                                     lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites, lib::optional<snowflake> _parent_id,
                                     lib::optional<int> _rate_limit_per_user)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_channels())
-        return aegis::make_exception_future(error::no_permission);
+        return aegis::make_exception_future<gateway::objects::channel>(error::no_permission);
 #endif
 
     json obj;
@@ -271,7 +274,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::modify_channel(lib::optional
     if (_rate_limit_per_user.has_value())
         obj["rate_limit_per_user"] = _rate_limit_per_user.value();
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/channels/{}", channel_id), rest::Patch, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/channels/{}", channel_id), rest::Patch, obj.dump() });
 }
 
 AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_channel()

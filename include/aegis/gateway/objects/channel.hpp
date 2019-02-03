@@ -24,10 +24,29 @@ namespace gateway
 namespace objects
 {
 
+/// \cond TEMPLATES
+void from_json(const nlohmann::json& j, channel& m);
+void to_json(nlohmann::json& j, const channel& m);
+/// \endcond
+
 /**\todo Needs documentation
  */
 struct channel
 {
+    channel(const std::string & _json, aegis::core * bot) noexcept
+    {
+        from_json(nlohmann::json::parse(_json), *this);
+    }
+
+    channel(const nlohmann::json & _json, aegis::core * bot) noexcept
+    {
+        from_json(_json, *this);
+    }
+
+    channel(aegis::core * bot) noexcept {}
+
+    channel() noexcept {}
+
     /**\todo Needs documentation
      */
     enum channel_type
@@ -93,9 +112,7 @@ inline void from_json(const nlohmann::json& j, channel& m)
         for (const auto & i : j["recipients"])
             m.recipients.push_back(i);
 }
-/// \endcond
 
-/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const channel& m)
 {
     if (m.channel_id)

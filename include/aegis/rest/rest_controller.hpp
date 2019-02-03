@@ -48,9 +48,9 @@ struct request_params
 class rest_controller
 {
 public:
-    AEGIS_DECL rest_controller(const std::string & token);
-    AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix);
-    AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix, const std::string & host);
+    AEGIS_DECL rest_controller(const std::string & token, asio::io_context * _io_context);
+    AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix, asio::io_context * _io_context);
+    AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix, const std::string & host, asio::io_context * _io_context);
     ~rest_controller() = default;
 
     rest_controller(const rest_controller &) = delete;
@@ -113,6 +113,8 @@ private:
 
     using rest_end_t = std::function<void(std::chrono::steady_clock::time_point, uint16_t)>;
     rest_end_t rest_end;
+    asio::io_context * _io_context = nullptr;
+    std::chrono::hours tz_bias;
 };
 
 }

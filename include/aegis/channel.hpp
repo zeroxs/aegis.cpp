@@ -10,7 +10,7 @@
 #pragma once
 
 #include "aegis/config.hpp"
-#include <future>
+//#include "aegis/fwd.hpp"
 #include "aegis/utility.hpp"
 #include "aegis/ratelimit/ratelimit.hpp"
 #include "aegis/permission.hpp"
@@ -161,7 +161,7 @@ public:
      * @param ratelimit Reference to bucket factory that manages ratelimits for this channel
      * @param emoji Reference to bucket factory that manages ratelimits for emoji messages
      */
-    AEGIS_DECL explicit channel(const snowflake channel_id, const snowflake guild_id, core * _bot, asio::io_context & _io);
+    AEGIS_DECL channel(const snowflake channel_id, const snowflake guild_id, core * _bot, asio::io_context & _io);
 
     /// Get a reference to the guild object this channel belongs to
     /**
@@ -208,7 +208,7 @@ public:
      * @param content A string of the message to send
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_message(const std::string & content, int64_t nonce = 0);
+    AEGIS_DECL aegis::future<gateway::objects::message> create_message(const std::string & content, int64_t nonce = 0);
 
     /// Send message to this channel
     /**
@@ -216,10 +216,7 @@ public:
      * @param obj Struct of the contents of the request
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_message(create_message_t obj)
-    {
-        return create_message(obj._content, obj._nonce);
-    };
+    AEGIS_DECL aegis::future<gateway::objects::message> create_message(create_message_t obj);
 
     /// Send an embed message to this channel
     /**
@@ -228,7 +225,7 @@ public:
      * @param embed A json object of the embed object itself
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_message_embed(const std::string & content, const json & embed, int64_t nonce = 0);
+    AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(const std::string & content, const json & embed, int64_t nonce = 0);
 
     /// Send an embed message to this channel
     /**
@@ -244,7 +241,7 @@ public:
      * @param content A string of the message to set
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> edit_message(snowflake message_id, const std::string & content);
+    AEGIS_DECL aegis::future<gateway::objects::message> edit_message(snowflake message_id, const std::string & content);
 
     /// Edit a message in this channel
     /**
@@ -252,10 +249,7 @@ public:
      * @param obj Struct of the contents of the request
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> edit_message(edit_message_t obj)
-    {
-        return edit_message(obj._message_id, obj._content);
-    }
+    AEGIS_DECL aegis::future<gateway::objects::message> edit_message(edit_message_t obj);
 
     /// Edit an embed message in this channel
     /**
@@ -265,7 +259,7 @@ public:
      * @param embed A json object of the embed object itself
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> edit_message_embed(snowflake message_id, const std::string & content, const json & embed);
+    AEGIS_DECL aegis::future<gateway::objects::message> edit_message_embed(snowflake message_id, const std::string & content, const json & embed);
 
     /// Edit an embed message in this channel
     /**
@@ -273,10 +267,7 @@ public:
      * @param obj Struct of the contents of the request
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> edit_message_embed(edit_message_embed_t obj)
-    {
-        return edit_message_embed(obj._message_id, obj._content, obj._embed);
-    }
+    AEGIS_DECL aegis::future<gateway::objects::message> edit_message_embed(edit_message_embed_t obj);
 
     /// Delete a message
     /**
@@ -315,7 +306,7 @@ public:
      * @param _parent_id Snowflake of category channel belongs in (empty parent puts channel in no category)
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> modify_channel(lib::optional<std::string> _name = {},
+    AEGIS_DECL aegis::future<gateway::objects::channel> modify_channel(lib::optional<std::string> _name = {},
                         lib::optional<int> _position = {}, lib::optional<std::string> _topic = {},
                         lib::optional<bool> _nsfw = {}, lib::optional<int> _bitrate = {},
                         lib::optional<int> _user_limit = {},
@@ -328,7 +319,7 @@ public:
      * @param obj Struct of the contents of the request
      * @returns std::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> modify_channel(modify_channel_t obj)
+    AEGIS_DECL aegis::future<gateway::objects::channel> modify_channel(modify_channel_t obj)
     {
         return modify_channel(obj._name, obj._position, obj._topic, obj._nsfw,
                               obj._bitrate, obj._user_limit, obj._permission_overwrites,

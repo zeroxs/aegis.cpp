@@ -14,6 +14,8 @@
 #include "aegis/snowflake.hpp"
 #include "aegis/ratelimit/bucket.hpp"
 #include "aegis/futures.hpp"
+#include "aegis/core.hpp"
+
 #include <chrono>
 #include <functional>
 #include <string>
@@ -21,7 +23,7 @@
 #include <map>
 #include <atomic>
 #include <mutex>
-
+#include <type_traits>
 namespace aegis
 {
 
@@ -43,10 +45,11 @@ public:
     /**
      * @param call Function pointer to the REST API function
      */
-    explicit ratelimit_mgr(rest_call call, asio::io_context & _io)
+    explicit ratelimit_mgr(rest_call call, asio::io_context & _io, core * _b)
         : global_limit(0)
         , _call(call)
         , _io_context(_io)
+        , _bot(_b)
     {
 
     }
@@ -81,18 +84,40 @@ public:
         return *_buckets.emplace(path, std::make_unique<bucket>(_call, _io_context, global_limit)).first->second;
     }
 
+    template<typename ResultType, typename V = std::enable_if_t<!std::is_same<ResultType, rest::rest_reply>::value>>
+    aegis::future<ResultType> post_task(rest::request_params params)
+    {
+        return _bot->async([=]() -> ResultType
+        {
+            auto & bkt = get_bucket(params.path);
+            auto res = bkt.perform(params);
+            return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
+        });
+    }
+
     aegis::future<rest::rest_reply> post_task(rest::request_params params)
     {
-        return aegis::async([=]() -> rest::rest_reply
+        return _bot->async([=]() -> rest::rest_reply
         {
             auto & bkt = get_bucket(params.path);
             return bkt.perform(params);
         });
     }
 
+    template<typename ResultType, typename V = std::enable_if_t<!std::is_same<ResultType, rest::rest_reply>::value>>
+    aegis::future<ResultType> post_task(std::string _bucket, rest::request_params params)
+    {
+        return _bot->async([=]() -> ResultType
+        {
+            auto & bkt = get_bucket(_bucket);
+            auto res = bkt.perform(params);
+            return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
+        });
+    }
+
     aegis::future<rest::rest_reply> post_task(std::string _bucket, rest::request_params params)
     {
-        return aegis::async([=]() -> rest::rest_reply
+        return _bot->async([=]() -> rest::rest_reply
         {
             auto & bkt = get_bucket(_bucket);
             return bkt.perform(params);
@@ -107,6 +132,7 @@ private:
     std::unordered_map<std::string, std::unique_ptr<bucket>> _buckets;
     rest_call _call;
     asio::io_context & _io_context;
+    core * _bot;
 };
 
 }
