@@ -307,7 +307,7 @@ public:
     /// Get guild information
     /**
      * @param ec Indicates what error occurred, if any
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::guild>
      */
     AEGIS_DECL aegis::future<gateway::objects::guild> get_guild();
 
@@ -326,7 +326,7 @@ public:
      * @param icon Set icon \todo
      * @param owner_id Transfer owner to someone else
      * @param splash \todo
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::guild>
      */
     AEGIS_DECL aegis::future<gateway::objects::guild> modify_guild(
         lib::optional<std::string> name = {},
@@ -341,7 +341,7 @@ public:
     /**
      * @see aegis::modify_guild_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::guild>
      */
     AEGIS_DECL aegis::future<gateway::objects::guild> modify_guild(modify_guild_t obj)
     {
@@ -364,7 +364,7 @@ public:
      * @param parent_id The channel or category to place this channel below
      * @param nsfw Whether the channel will be labeled as not safe for work
      * @param permission_overwrites Array of permission overwrites to apply to the channel
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::channel>
      */
     AEGIS_DECL aegis::future<gateway::objects::channel> create_text_channel(const std::string & name, int64_t parent_id = 0, bool nsfw = false,
                                             const std::vector<gateway::objects::permission_overwrite> & permission_overwrites = {});
@@ -373,7 +373,7 @@ public:
     /**
      * @see aegis::create_text_channel_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::channel>
      */
     AEGIS_DECL aegis::future<gateway::objects::channel> create_text_channel(create_text_channel_t obj)
     {
@@ -389,7 +389,7 @@ public:
      * @param parent_id The channel or category to place this channel below
      * @param nsfw Whether the channel will be labeled as not safe for work
      * @param permission_overwrites Array of permission overwrites to apply to the channel
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::channel>
      */
     AEGIS_DECL aegis::future<gateway::objects::channel> create_voice_channel(const std::string & name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
                                              const std::vector<gateway::objects::permission_overwrite> & permission_overwrites = {});
@@ -398,7 +398,7 @@ public:
     /**
      * @see aegis::create_voice_channel_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::channel>
      */
     AEGIS_DECL aegis::future<gateway::objects::channel> create_voice_channel(create_voice_channel_t obj)
     {
@@ -411,7 +411,7 @@ public:
      * @param name String of the name for the channel
      * @param parent_id The channel or category to place this channel below
      * @param permission_overwrites Array of permission overwrites to apply to the channel
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::channel>
      */
     AEGIS_DECL aegis::future<gateway::objects::channel> create_category_channel(const std::string & name, int64_t parent_id,
                                                 const std::vector<gateway::objects::permission_overwrite> & permission_overwrites);
@@ -420,7 +420,7 @@ public:
     /**
      * @see aegis::create_category_channel_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::channel>
      */
     AEGIS_DECL aegis::future<gateway::objects::channel> create_category_channel(create_category_channel_t obj)
     {
@@ -444,7 +444,7 @@ public:
      * @param deaf Whether or not to voice deafen the member
      * @param roles Array of roles to apply to the member
      * @param channel_id Snowflake of the channel to move user to
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::member>
      */
     AEGIS_DECL aegis::future<gateway::objects::member> modify_guild_member(snowflake user_id, lib::optional<std::string> nick, lib::optional<bool> mute,
                                             lib::optional<bool> deaf, lib::optional<std::vector<snowflake>> roles,
@@ -455,7 +455,7 @@ public:
     /**
      * @see aegis::modify_guild_member_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::member>
      */
     AEGIS_DECL aegis::future<gateway::objects::member> modify_guild_member(modify_guild_member_t obj)
     {
@@ -533,7 +533,7 @@ public:
      * @param color 32bit integer of the color
      * @param hoist Whether the role should be separated from other roles
      * @param mentionable Whether the role can be specifically mentioned
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::role>
      */
     AEGIS_DECL aegis::future<gateway::objects::role> create_guild_role(const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable);
 
@@ -542,7 +542,7 @@ public:
      * @see aegis::permission
      * @see aegis::create_guild_role_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::role>
      */
     AEGIS_DECL aegis::future<gateway::objects::role> create_guild_role(create_guild_role_t obj)
     {
@@ -568,7 +568,7 @@ public:
      * @param color 32bit integer of the color
      * @param hoist Whether the role should be separated from other roles
      * @param mentionable Whether the role can be specifically mentioned
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::role>
      */
     AEGIS_DECL aegis::future<gateway::objects::role> modify_guild_role(snowflake role_id, const std::string & name, permission _perms, int32_t color,
                                           bool hoist, bool mentionable);
@@ -578,7 +578,7 @@ public:
      * @see aegis::permission
      * @see aegis::modify_guild_role_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::role>
      */
     AEGIS_DECL aegis::future<gateway::objects::role> modify_guild_role(modify_guild_role_t obj)
     {
