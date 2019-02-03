@@ -535,7 +535,7 @@ public:
      * @param mentionable Whether the role can be specifically mentioned
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_guild_role(const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable);
+    AEGIS_DECL aegis::future<gateway::objects::role> create_guild_role(const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable);
 
     /// Create a guild role
     /**
@@ -544,7 +544,7 @@ public:
      * @param obj Struct of the contents of the request
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_guild_role(create_guild_role_t obj)
+    AEGIS_DECL aegis::future<gateway::objects::role> create_guild_role(create_guild_role_t obj)
     {
         return create_guild_role(obj._name, obj._perms, obj._color, obj._hoist, obj._mentionable);
     }
@@ -570,7 +570,7 @@ public:
      * @param mentionable Whether the role can be specifically mentioned
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> modify_guild_role(snowflake role_id, const std::string & name, permission _perms, int32_t color,
+    AEGIS_DECL aegis::future<gateway::objects::role> modify_guild_role(snowflake role_id, const std::string & name, permission _perms, int32_t color,
                                           bool hoist, bool mentionable);
 
     /// Modify a guild role
@@ -580,7 +580,7 @@ public:
      * @param obj Struct of the contents of the request
      * @returns aegis::future<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> modify_guild_role(modify_guild_role_t obj)
+    AEGIS_DECL aegis::future<gateway::objects::role> modify_guild_role(modify_guild_role_t obj)
     {
         return modify_guild_role(obj._role_id, obj._name, obj._perms, obj._color, obj._hoist, obj._mentionable);
     }

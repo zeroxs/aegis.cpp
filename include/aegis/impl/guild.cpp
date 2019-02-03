@@ -728,15 +728,15 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::remove_guild_ban(snowflake use
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/bans/{}", guild_id, user_id), rest::Delete });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> guild::create_guild_role(const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable)
+AEGIS_DECL aegis::future<gateway::objects::role> guild::create_guild_role(const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_roles())
-        return aegis::make_exception_future(error::no_permission);
+        return aegis::make_exception_future<gateway::objects::role>(error::no_permission);
 #endif
 
     json obj = { { "name", name },{ "permissions", _perms },{ "color", color },{ "hoist", hoist },{ "mentionable", mentionable } };
-    return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/roles", guild_id), rest::Post, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::role>({ fmt::format("/guilds/{}/roles", guild_id), rest::Post, obj.dump() });
 }
 
 AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_guild_role_positions(snowflake role_id, int16_t position)
@@ -750,15 +750,15 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_guild_role_positions(sn
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/roles", guild_id), rest::Patch, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_guild_role(snowflake role_id, const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable)
+AEGIS_DECL aegis::future<gateway::objects::role> guild::modify_guild_role(snowflake role_id, const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_roles())
-        return aegis::make_exception_future(error::no_permission);
+        return aegis::make_exception_future<gateway::objects::role>(error::no_permission);
 #endif
 
     json obj = { { "name", name },{ "permissions", _perms },{ "color", color },{ "hoist", hoist },{ "mentionable", mentionable } };
-    return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/roles/{}", guild_id, role_id), rest::Post, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::role>({ fmt::format("/guilds/{}/roles/{}", guild_id, role_id), rest::Post, obj.dump() });
 }
 
 AEGIS_DECL aegis::future<rest::rest_reply> guild::delete_guild_role(snowflake role_id)

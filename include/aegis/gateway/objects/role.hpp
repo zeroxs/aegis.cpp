@@ -23,9 +23,30 @@ namespace gateway
 namespace objects
 {
 
+struct role;
+
+/// \cond TEMPLATES
+void from_json(const nlohmann::json& j, role& m);
+void to_json(nlohmann::json& j, const role& m);
+/// \endcond
+
 /// Stores info pertaining to guild roles
 struct role
 {
+    role(const std::string & _json, aegis::core * bot) noexcept
+    {
+        from_json(nlohmann::json::parse(_json), *this);
+    }
+
+    role(const nlohmann::json & _json, aegis::core * bot) noexcept
+    {
+        from_json(_json, *this);
+    }
+
+    role(aegis::core * bot) noexcept {}
+
+    role() noexcept {}
+
     uint32_t color = 0;
     snowflake role_id;
     std::string name;
@@ -54,9 +75,7 @@ inline void from_json(const nlohmann::json& j, role& m)
     if (j.count("mentionable") && !j["mentionable"].is_null())
         m.mentionable = j["mentionable"];
 }
-/// \endcond
 
-/// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const role& m)
 {
     j["color"] = m.color;
