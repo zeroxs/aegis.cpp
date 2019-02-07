@@ -20,7 +20,7 @@ int main(int argc, char * argv[])
 
         example_bot::example commands;
 
-        commands.inject(bot);
+        commands.attach(bot);
 
         bot.run();
         bot.yield();

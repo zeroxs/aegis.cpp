@@ -48,7 +48,7 @@ public:
     }
 
     // Messages you want to process
-    void inject(core & bot)
+    void attach(core & bot)
     {
         bot.set_on_message_create(std::bind(&example::MessageCreate, this, std::placeholders::_1));
     }

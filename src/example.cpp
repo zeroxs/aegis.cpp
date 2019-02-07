@@ -14,6 +14,8 @@ namespace example_bot
 
 void example::MessageCreate(message_create obj)
 {
+    using aegis::rest::rest_reply;
+
     auto rets = obj.msg.get_related_ids();
 
     const aegis::snowflake channel_id = std::get<0>(rets);
@@ -74,19 +76,19 @@ void example::MessageCreate(message_create obj)
                 _channel.create_message(fmt::format("User not found: {}", toks[1]));
             }
 
-            auto reply = _guild.remove_guild_member(tar).get();
-            if (!reply)
+            _guild.remove_guild_member(tar).then([&](rest_reply reply)
             {
-                _channel.create_message(fmt::format("Unable to kick: {}", tar));
-            }
-            else
-            {
-                auto tmem = obj.bot->find_member(tar);
-                if (!tmem)
-                    _channel.create_message(fmt::format("Kicked: {}", tar));
+                if (!reply)
+                    _channel.create_message(fmt::format("Unable to kick: {}", tar));
                 else
-                    _channel.create_message(fmt::format("Kicked: <@{}>", tar));
-            }
+                {
+                    auto tmem = obj.bot->find_member(tar);
+                    if (!tmem)
+                        _channel.create_message(fmt::format("Kicked: {}", tar));
+                    else
+                        _channel.create_message(fmt::format("Kicked: <@{}>", tar));
+                }
+            });
         }
         else if (toks[0] == "shard")
         {
