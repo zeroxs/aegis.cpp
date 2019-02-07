@@ -7,7 +7,9 @@ find_path(JSON_INCLUDE_DIR
 )
 
 if (JSON_INCLUDE_DIR STREQUAL "JSON_INCLUDE_DIR-NOTFOUND")
-  message(FATAL_ERROR "Cannot find JSON")
+  message(WARNING "Using git-module path for JSON")
+  set(JSON_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/json/include)
+  set(JSON_SUBDIR true)
 endif ()
 
 file(READ ${JSON_INCLUDE_DIR}/nlohmann/json.hpp json_hpp)
@@ -30,8 +32,12 @@ find_package_handle_standard_args(JSON
     VERSION_VAR JSON_VERSION
 )
 
-if(JSON_FOUND)
+if (JSON_SUBDIR)
+  set(JSON_INCLUDE_DIRS ${JSON_INCLUDE_DIR})
+else()
+  if(JSON_FOUND)
     get_filename_component(JSON_INCLUDE_DIRS ${JSON_INCLUDE_DIR} DIRECTORY)
+  endif()
 endif()
 
 if(JSON_FOUND AND NOT TARGET JSON::JSON)
