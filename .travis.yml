@@ -1,4 +1,4 @@
-sudo: true
+sudo: false
 language: cpp
 
 matrix:
@@ -13,14 +13,14 @@ matrix:
           packages: libcrypto++-dev g++-7
           sources: &sources
             - ubuntu-toolchain-r-test
-    # GCC 6 C++14
+    # GCC 5 C++14
     - os: linux
       compiler: gcc
       env:
-        - MATRIX_EVAL="COMPILER=g++-6 && CXX=g++-6 && CXX_STANDARD=14"
+        - MATRIX_EVAL="COMPILER=g++-5 && CXX=g++-5 && CXX_STANDARD=14"
       addons:
         apt:
-          packages: libcrypto++-dev g++-6
+          packages: libcrypto++-dev g++-5
           sources: &sources
             - ubuntu-toolchain-r-test
 
@@ -28,7 +28,6 @@ before_install:
   - eval "${MATRIX_EVAL}"
 
 script:
-  - sudo ./install-deps.sh
   - mkdir -p build
   - cd build
   - cmake -DBUILD_EXAMPLES=1 -DCMAKE_CXX_COMPILER=${COMPILER} -DCXX_STANDARD=${CXX_STANDARD} ..
