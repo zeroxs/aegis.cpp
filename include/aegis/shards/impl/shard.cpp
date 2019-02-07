@@ -2,7 +2,7 @@
 // shard.cpp
 // *********
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -36,8 +36,6 @@ AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp:
 {
 }
 
-//TODO: the current do_reset design where everything is calling this needs to be fixed.
-//this should only be called to reset state back to an initial point instead of before everything
 AEGIS_DECL void shard::do_reset(shard_status _status) noexcept
 {
     if (!state_valid())
@@ -87,7 +85,7 @@ AEGIS_DECL void shard::do_reset(shard_status _status) noexcept
 
 AEGIS_DECL void shard::_reset()
 {
-    last_status_time = lastwsevent = //std::chrono::steady_clock::now();
+    last_status_time = lastwsevent =
     heartbeat_ack = lastheartbeat = connect_time = std::chrono::steady_clock::time_point();
     _connection.reset();
 
