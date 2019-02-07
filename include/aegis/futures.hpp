@@ -130,7 +130,7 @@ struct future_state
         result,
         exception,
     };// _state = state::future;
-    std::atomic<state> _state = state::future;
+    std::atomic<state> _state;
     union any
     {
         any() {}
@@ -142,11 +142,13 @@ struct future_state
     std::recursive_mutex * _global_m = nullptr;
     future_state() noexcept {}
     future_state(asio::io_context * _io_context, std::recursive_mutex * _global_m) noexcept 
-        : _io_context(_io_context)
+        : _state(state::future)
+        , _io_context(_io_context)
         , _global_m(_global_m)
     {}
     future_state(future_state&& x) noexcept
-        : _io_context(x._io_context)
+        : _state(state::future)
+        , _io_context(x._io_context)
         , _global_m(x._global_m)
     {
         std::atomic_thread_fence(std::memory_order_acquire);

@@ -91,7 +91,7 @@ AEGIS_DECL void shard::_reset()
     heartbeat_ack = lastheartbeat = connect_time = std::chrono::steady_clock::time_point();
     _connection.reset();
 
-    write_queue = {};
+    write_queue = std::queue<std::tuple<std::string, websocketpp::frame::opcode::value>>();
     delayedauth.cancel();
     keepalivetimer.cancel();
     write_timer.cancel();
