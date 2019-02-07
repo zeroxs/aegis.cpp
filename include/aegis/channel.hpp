@@ -206,7 +206,7 @@ public:
     /**
      * @param ec Indicates what error occurred, if any
      * @param content A string of the message to send
-     * @returns std::future<rest::rest_reply>
+     * @returns std::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_message(const std::string & content, int64_t nonce = 0);
 
@@ -214,7 +214,7 @@ public:
     /**
      * @see aegis::create_message_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<rest::rest_reply>
+     * @returns std::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_message(create_message_t obj);
 
@@ -223,7 +223,7 @@ public:
      * @param ec Indicates what error occurred, if any
      * @param content A string of the message to send
      * @param embed A json object of the embed object itself
-     * @returns std::future<rest::rest_reply>
+     * @returns std::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(const std::string & content, const json & embed, int64_t nonce = 0);
 
@@ -231,7 +231,7 @@ public:
     /**
      * @see aegis::create_message_embed_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<rest::rest_reply>
+     * @returns std::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(create_message_embed_t obj);
     /// Edit a message in this channel
@@ -239,7 +239,7 @@ public:
      * @param ec Indicates what error occurred, if any
      * @param message_id Snowflake of the message to replace. Must be your own message
      * @param content A string of the message to set
-     * @returns std::future<rest::rest_reply>
+     * @returns std::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> edit_message(snowflake message_id, const std::string & content);
 
@@ -247,7 +247,7 @@ public:
     /**
      * @see aegis::edit_message_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<rest::rest_reply>
+     * @returns std::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> edit_message(edit_message_t obj);
 
@@ -257,7 +257,7 @@ public:
      * @param message_id Snowflake of the message to replace. Must be your own message
      * @param content A string of the message to set
      * @param embed A json object of the embed object itself
-     * @returns std::future<rest::rest_reply>
+     * @returns std::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> edit_message_embed(snowflake message_id, const std::string & content, const json & embed);
 
@@ -265,7 +265,7 @@ public:
     /**
      * @see aegis::edit_message_embed_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<rest::rest_reply>
+     * @returns std::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> edit_message_embed(edit_message_embed_t obj);
 
@@ -304,7 +304,7 @@ public:
      * @param _user_limit Integer of the channel max user limit (VOICE CHANNEL ONLY)
      * @param _permission_overwrites Vector of permission_overwrite objects for overriding permissions
      * @param _parent_id Snowflake of category channel belongs in (empty parent puts channel in no category)
-     * @returns std::future<rest::rest_reply>
+     * @returns std::future<gateway::objects::channel>
      */
     AEGIS_DECL aegis::future<gateway::objects::channel> modify_channel(lib::optional<std::string> _name = {},
                         lib::optional<int> _position = {}, lib::optional<std::string> _topic = {},
@@ -317,7 +317,7 @@ public:
     /**
      * @see aegis::modify_channel_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<rest::rest_reply>
+     * @returns std::future<gateway::objects::channel>
      */
     AEGIS_DECL aegis::future<gateway::objects::channel> modify_channel(modify_channel_t obj)
     {
