@@ -24,7 +24,7 @@ int main(int argc, char * argv[])
         // Create bot object with a minimum log level of trace
         aegis::core bot(spdlog::level::trace);
 
-        bot.log->trace("Bot object created");
+        AEGIS_TRACE(bot.log, "Bot object created");
 
         // With min log level set to trace and wsdbg (websocket debug) set to true
         // the bot will dump all websocket messages to console
@@ -46,6 +46,8 @@ int main(int argc, char * argv[])
 
         // start the bot
         bot.run();
+		// yield thread execution to the library
+		bot.yield();
     }
     catch (std::exception & e)
     {

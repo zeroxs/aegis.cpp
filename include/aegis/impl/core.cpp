@@ -2,7 +2,7 @@
 // core.cpp
 // ********
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
@@ -13,6 +13,8 @@
 #include <asio/streambuf.hpp>
 #include <asio/connect.hpp>
 #include "aegis/shards/shard.hpp"
+#include "aegis/guild.hpp"
+#include "aegis/channel.hpp"
 #include "aegis/member.hpp"
 
 #include <nlohmann/json.hpp>
@@ -88,33 +90,35 @@ AEGIS_DECL void core::setup_context()
     // ensure any sort of single blocking call in message processing usercode doesn't block everything
     // this will not protect against faulty usercode entirely, but will at least provide some leeway
     // to allow a single blocking message to not halt operations
-    if (thread_count == 1)
-        thread_count = 2;
+    // recommended amount would depend on how much your bot is interacted with multiplied with how
+    // extensive you make use of the async and futures.
+    if (thread_count <= 2)
+        thread_count = 10;
 
     external_io_context = false;
-    internal::_io_context = std::make_unique<asio::io_context>();
+    _io_context = std::make_shared<asio::io_context>();
 
-    internal::wrk = std::make_unique<asio_exec>(asio::make_work_guard(*internal::_io_context));
+    wrk = std::make_unique<asio_exec>(asio::make_work_guard(*_io_context));
     for (std::size_t i = 0; i < thread_count; ++i)
-        internal::threads.emplace_back(std::bind(static_cast<asio::io_context::count_type(asio::io_context::*)()>(&asio::io_context::run), internal::_io_context.get()));
+        add_run_thread();
 }
 
 AEGIS_DECL void core::setup_shard_mgr()
 {
-    _shard_mgr = std::make_unique<shards::shard_mgr>(_token, *internal::_io_context, log);
+    _shard_mgr = std::make_shared<shards::shard_mgr>(_token, *_io_context, log);
 
-    _rest = std::make_unique<rest::rest_controller>(_token, "/api/v6", "discordapp.com");
+    _rest = std::make_shared<rest::rest_controller>(_token, "/api/v6", "discordapp.com", &get_io_context());
 
     std::error_code ec;
     setup_gateway(ec);
     if (ec)
         throw ec;
 
-    _ratelimit = std::make_unique<ratelimit_mgr_t>(
+    _ratelimit = std::make_shared<ratelimit_mgr_t>(
         std::bind(&aegis::rest::rest_controller::execute,
                   _rest.get(),
                   std::placeholders::_1),
-        get_io_context());
+        get_io_context(), this);
 
     setup_callbacks();
 }
@@ -123,10 +127,6 @@ AEGIS_DECL core::core(spdlog::level::level_enum loglevel, std::size_t count)
     : _loglevel(loglevel)
     , thread_count(count)
 {
-    if (internal::bot != nullptr)
-        throw std::runtime_error("Instance of bot already exists");
-    internal::bot = this;
-
     if (thread_count == 0)
         thread_count = std::thread::hardware_concurrency();
 
@@ -137,13 +137,9 @@ AEGIS_DECL core::core(spdlog::level::level_enum loglevel, std::size_t count)
     setup_shard_mgr();
 }
 
-AEGIS_DECL core::core(std::unique_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel)
+AEGIS_DECL core::core(std::shared_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel)
     : _loglevel(loglevel)
 {
-    if (internal::bot != nullptr)
-        throw std::runtime_error("Instance of bot already exists");
-    internal::bot = this;
-
     load_config();
 
     setup_logging();
@@ -154,10 +150,6 @@ AEGIS_DECL core::core(std::unique_ptr<asio::io_context> _io, spdlog::level::leve
 AEGIS_DECL core::core(std::shared_ptr<spdlog::logger> _log, std::size_t count)
     : thread_count(count)
 {
-    if (internal::bot != nullptr)
-        throw std::runtime_error("Instance of bot already exists");
-    internal::bot = this;
-
     if (thread_count == 0)
         thread_count = std::thread::hardware_concurrency();
 
@@ -169,17 +161,13 @@ AEGIS_DECL core::core(std::shared_ptr<spdlog::logger> _log, std::size_t count)
     setup_shard_mgr();
 }
 
-AEGIS_DECL core::core(std::unique_ptr<asio::io_context> _io, std::shared_ptr<spdlog::logger> _log)
+AEGIS_DECL core::core(std::shared_ptr<asio::io_context> _io, std::shared_ptr<spdlog::logger> _log)
 {
-    if (internal::bot != nullptr)
-        throw std::runtime_error("Instance of bot already exists");
-    internal::bot = this;
-
     load_config();
 
     log = _log;
     _loglevel = log->level();
-    internal::_io_context = std::move(_io);
+    _io_context = std::move(_io);
     setup_shard_mgr();
 }
 
@@ -187,12 +175,12 @@ AEGIS_DECL core::~core()
 {
     if (_shard_mgr)
         _shard_mgr->shutdown();
-    internal::wrk.reset();
+    wrk.reset();
     if (!external_io_context)
-        if (internal::_io_context)
-            internal::_io_context->stop();
-    for (auto & t : internal::threads)
-        t.join();
+        if (_io_context)
+            _io_context->stop();
+    for (auto & t : threads)
+        t->thd.join();
 }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
@@ -228,55 +216,57 @@ AEGIS_DECL member * core::member_create(snowflake id) noexcept
 }
 #endif
 
-template<typename T, typename P>
-AEGIS_DECL std::future<T> core::post_task(P fn)
+AEGIS_DECL aegis::future<gateway::objects::message> core::create_dm_message(snowflake member_id, const std::string & content, int64_t nonce)
 {
-    using result = asio::async_result<asio::use_future_t<>, void(T)>;
-    using handler = typename result::completion_handler_type;
-
-    handler exec(asio::use_future);
-    result ret(exec);
-
-    asio::post(*internal::_io_context, [=]() mutable
-    {
-        exec(fn());
-    });
-    return ret.get();
-}
-
-AEGIS_DECL std::future<rest::rest_reply> core::create_dm_message(snowflake member_id, const std::string & content, int64_t nonce) noexcept
-{
-    auto m = find_member(member_id);
-    if (!m) return {};
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
     channel * c = nullptr;
+    auto m = find_member(member_id);
+    if (!m)
+        return aegis::make_exception_future<gateway::objects::message>(aegis::error::member_error);
     if (m->get_dm_id())
         c = channel_create(m->get_dm_id());
-
     if (c)
         return c->create_message(content, nonce);
     else
+#endif
     {
-        return post_task([=]() -> rest::rest_reply
-        {
-            try
+        rest::request_params params{ "/users/@me/channels", rest::Post, fmt::format(R"({{ "recipient_id": "{}" }})", member_id), "", {}, {} };
+        return get_ratelimit().post_task<gateway::objects::message>(params)
+            .then([=](gateway::objects::message && reply)
             {
-                rest::request_params params{ "/users/@me/channels", rest::Post, fmt::format(R"({{ "recipient_id": "{}" }})", member_id), "", {}, {} };
-                auto res = json::parse(get_ratelimit()
-                                       .post_task(params)
-                                       .get()
-                                       .content);
-                snowflake channel_id = std::stoull(res["id"].get<std::string>());
-                auto c = channel_create(channel_id);
-                if (!c) return {};
-                m->set_dm_id(channel_id);
+                auto c = channel_create(reply.get_channel_id());
+                if (!c) //return aegis::make_exception_future<gateway::objects::message>(aegis::error::general)
+                    throw aegis::exception(make_error_code(error::member_error));
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+                m->set_dm_id(reply.get_channel_id());
+#endif
                 return c->create_message(content, nonce).get();
-            }
-            catch (std::exception & e)
-            {
-            	
-            }
-            return {};
-        });
+            });
+
+
+//         return async([=]() -> rest::rest_reply
+//         {
+//             try
+//             {
+//                 rest::request_params params{ "/users/@me/channels", rest::Post, fmt::format(R"({{ "recipient_id": "{}" }})", member_id), "", {}, {} };
+//                 auto res = json::parse(get_ratelimit()
+//                                        .post_task(params)
+//                                        .get()
+//                                        .content);
+//                 snowflake channel_id = std::stoull(res["id"].get<std::string>());
+//                 auto c = channel_create(channel_id);
+//                 if (!c) return {};
+// #if !defined(AEGIS_DISABLE_ALL_CACHE)
+//                 m->set_dm_id(channel_id);
+// #endif
+//                 return c->create_message(content, nonce).get();
+//             }
+//             catch (std::exception & e)
+//             {
+//             	
+//             }
+//             return {};
+//         });
     }
 }
 
@@ -315,7 +305,7 @@ AEGIS_DECL channel * core::channel_create(snowflake id) noexcept
     auto it = channels.find(id);
     if (it == channels.end())
     {
-        auto g = std::make_unique<channel>(id, 0, this, *internal::_io_context);
+        auto g = std::make_unique<channel>(id, 0, this, *_io_context);
         auto ptr = g.get();
         channels.emplace(id, std::move(g));
         return ptr;
@@ -338,7 +328,7 @@ AEGIS_DECL guild * core::guild_create(snowflake id, shards::shard * _shard) noex
     auto it = guilds.find(id);
     if (it == guilds.end())
     {
-        auto g = std::make_unique<guild>(_shard->get_id(), id, this, *internal::_io_context);
+        auto g = std::make_unique<guild>(_shard->get_id(), id, this, *_io_context);
         auto ptr = g.get();
         guilds.emplace(id, std::move(g));
         return ptr;
@@ -351,7 +341,7 @@ AEGIS_DECL void core::remove_channel(snowflake channel_id) noexcept
     auto it = channels.find(channel_id);
     if (it == channels.end())
     {
-        log->debug("Unable to remove channel [{}] (does not exist)", channel_id);
+        AEGIS_DEBUG(log, "Unable to remove channel [{}] (does not exist)", channel_id);
         return;
     }
     channels.erase(it);
@@ -364,7 +354,7 @@ AEGIS_DECL void core::remove_member(snowflake member_id) noexcept
     auto it = members.find(member_id);
     if (it == members.end())
     {
-        log->debug("Unable to remove member [{}] (does not exist)", member_id);
+        AEGIS_DEBUG(log, "Unable to remove member [{}] (does not exist)", member_id);
         return;
     }
     members.erase(it);
@@ -373,7 +363,13 @@ AEGIS_DECL void core::remove_member(snowflake member_id) noexcept
 
 AEGIS_DECL void core::run()
 {
-    set_state(bot_status::Running);
+    if (!state_valid)
+    {
+        std::cout << "Library state invalid. Errors occurred on creation. Exiting core::run()\n";
+        return;
+    }
+
+    set_state(bot_status::running);
 
     starttime = std::chrono::steady_clock::now();
     
@@ -384,84 +380,99 @@ AEGIS_DECL void core::run()
 
 AEGIS_DECL void core::load_config()
 {
-    auto configfile = std::fopen("config.json", "r+");
-
-    if (!configfile)
+    try
     {
-        std::perror("File opening failed");
-        throw std::runtime_error("config.json does not exist");
-    }
+        std::ifstream config_file("config.json");
 
-    std::fseek(configfile, 0, SEEK_END);
-    std::size_t filesize = std::ftell(configfile);
-
-    std::fseek(configfile, 0, SEEK_SET);
-    std::vector<char> buffer(filesize+1);
-    std::memset(buffer.data(), 0, filesize+1);
-    size_t rd = std::fread(buffer.data(), sizeof(char), buffer.size()-1, configfile);
-
-    std::fclose(configfile);
-
-    json cfg = json::parse(buffer.data());
-
-    if (!cfg["token"].is_null())
-        _token = cfg["token"].get<std::string>();
-    else
-        throw std::runtime_error("\"token\" not set in config.json");
-
-    if (!cfg["force-shard-count"].is_null())
-        force_shard_count = cfg["force-shard-count"].get<int16_t>();
-
-    if (!cfg["log-level"].is_null())
-    {
-        if (cfg["log-level"].is_number_integer())
+        
+        if (!config_file.is_open())
         {
-            auto l = static_cast<spdlog::level::level_enum>(cfg["log-level"].get<int32_t>());
-            std::string s;
-            switch (cfg["log-level"].get<int32_t>())
-            {
-                case 0: s = "trace"; break;
-                case 1: s = "debug"; break;
-                case 2: s = "info"; break;
-                case 3: s = "warn"; break;
-                case 4: s = "err"; break;
-                case 5: s = "critical"; break;
-                case 6: s = "off"; break;
-                default: s = "info"; l = spdlog::level::level_enum::info; break;
-            }
-            _loglevel = l;
+            std::perror("File opening failed");
+            throw std::runtime_error("config.json does not exist");
         }
-        else if (cfg["log-level"].is_string())
+
+        json cfg;
+        config_file >> cfg;
+
+        if (!cfg["token"].is_null())
         {
-            std::string s = cfg["log-level"].get<std::string>();
-            if (s == "trace")
-                _loglevel = spdlog::level::level_enum::trace;
-            else if (s == "debug")
-                _loglevel = spdlog::level::level_enum::debug;
-            else if (s == "info")
-                _loglevel = spdlog::level::level_enum::info;
-            else if (s == "warn")
-                _loglevel = spdlog::level::level_enum::warn;
-            else if (s == "err")
-                _loglevel = spdlog::level::level_enum::err;
-            else if (s == "critical")
-                _loglevel = spdlog::level::level_enum::critical;
-            else if (s == "off")
-                _loglevel = spdlog::level::level_enum::off;
+            if (cfg["token"].is_string())
+                _token = cfg["token"].get<std::string>();
             else
-                _loglevel = spdlog::level::level_enum::info;
+                throw std::runtime_error("\"token\" must be string");
         }
+        else
+            throw std::runtime_error("\"token\" not set");
+
+        if (!cfg["force-shard-count"].is_null())
+        {
+            if (cfg["force-shard-count"].is_number_integer())
+                force_shard_count = cfg["force-shard-count"].get<int16_t>();
+            else
+                std::cout << "Cannot read \"force-shard-count\" from config.json.\n";
+        }
+
+        if (!cfg["log-level"].is_null())
+        {
+            if (cfg["log-level"].is_number_integer())
+            {
+                auto l = static_cast<spdlog::level::level_enum>(cfg["log-level"].get<int32_t>());
+                std::string s;
+                switch (cfg["log-level"].get<int32_t>())
+                {
+                    case 0: s = "trace"; break;
+                    case 1: s = "debug"; break;
+                    case 2: s = "info"; break;
+                    case 3: s = "warn"; break;
+                    case 4: s = "err"; break;
+                    case 5: s = "critical"; break;
+                    case 6: s = "off"; break;
+                    default: s = "info"; l = spdlog::level::level_enum::info; break;
+                }
+                _loglevel = l;
+            }
+            else if (cfg["log-level"].is_string())
+            {
+                std::string s = cfg["log-level"].get<std::string>();
+                if (s == "trace")
+                    _loglevel = spdlog::level::level_enum::trace;
+                else if (s == "debug")
+                    _loglevel = spdlog::level::level_enum::debug;
+                else if (s == "info")
+                    _loglevel = spdlog::level::level_enum::info;
+                else if (s == "warn")
+                    _loglevel = spdlog::level::level_enum::warn;
+                else if (s == "err")
+                    _loglevel = spdlog::level::level_enum::err;
+                else if (s == "critical")
+                    _loglevel = spdlog::level::level_enum::critical;
+                else if (s == "off")
+                    _loglevel = spdlog::level::level_enum::off;
+                else
+                    _loglevel = spdlog::level::level_enum::info;
+            }
+            else
+            {
+                std::cout << "Cannot read \"log-level\" from config.json. Default: info\n";
+                _loglevel = spdlog::level::level_enum::info;
+            }
+        }
+        else
+            _loglevel = spdlog::level::level_enum::info;
+
+        if (!cfg["file-logging"].is_null())
+            file_logging = cfg["file-logging"].get<bool>();
+
+        if (!cfg["log-format"].is_null())
+            log_formatting = cfg["log-format"].get<std::string>();
+        else
+            log_formatting = "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v";
     }
-    else
-        _loglevel = spdlog::level::level_enum::info;
-
-    if (!cfg["file-logging"].is_null())
-        file_logging = cfg["file-logging"].get<bool>();
-
-    if (!cfg["log-format"].is_null())
-        log_formatting = cfg["file-format"].get<std::string>();
-    else
-        log_formatting = "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v";
+    catch (std::exception & e)
+    {
+        std::cout << "Error loading config.json : " << e.what() << '\n';
+        state_valid = false;
+    }
 }
 
 AEGIS_DECL void core::setup_callbacks()
@@ -473,9 +484,9 @@ AEGIS_DECL void core::setup_callbacks()
 
 AEGIS_DECL void core::shutdown()
 {
-    set_state(bot_status::Shutdown);
+    set_state(bot_status::shutdown);
     _shard_mgr->shutdown();
-    internal::cv.notify_all();
+    cv.notify_all();
 }
 
 AEGIS_DECL void core::setup_gateway(std::error_code & ec)
@@ -483,6 +494,8 @@ AEGIS_DECL void core::setup_gateway(std::error_code & ec)
     log->info("Creating websocket");
 
     rest::rest_reply res = _rest->execute({ "/gateway/bot", rest::Get });
+
+    _rest->tz_bias = tz_bias = std::chrono::hours(int(std::round(double((std::chrono::duration_cast<std::chrono::minutes>(res.date - std::chrono::system_clock::now()) / 60).count()))));
 
     if (res.content.empty())
     {
@@ -605,7 +618,7 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
         {
             std::unique_lock<shared_mutex> l(_guild->mtx());
             _guild->load(guildobj, _shard);
-            log->debug("Shard#{} : CREATED Guild: {} [T:{}] [{}]"
+            AEGIS_DEBUG(log, "Shard#{} : CREATED Guild: {} [T:{}] [{}]"
                       , _shard->get_id()
                       , _guild->guild_id
                       , guilds.size()
@@ -614,33 +627,28 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
     }
 }
 
-AEGIS_DECL rest::rest_reply core::create_guild(
-    std::string name,
-    lib::optional<std::string> voice_region, lib::optional<int> verification_level,
-    lib::optional<int> default_message_notifications, lib::optional<int> explicit_content_filter,
-    lib::optional<std::string> icon, lib::optional<std::vector<gateway::objects::role>> roles,
-    lib::optional<std::vector<std::tuple<std::string, int>>> channels
-)
+AEGIS_DECL aegis::future<gateway::objects::guild> core::create_guild(create_guild_t obj)
 {
-    std::error_code ec;
-    auto res = create_guild(ec, name, voice_region, verification_level, default_message_notifications,
-                            explicit_content_filter, icon, roles, channels);
-    if (ec)
-        throw ec;
-    return res;
+    return create_guild(obj._name, obj._voice_region, obj._verification_level, obj._default_message_notifications,
+                        obj._explicit_content_filter, obj._icon, obj._roles, obj._channels);
 }
 
-AEGIS_DECL std::future<rest::rest_reply> core::modify_bot_user(const std::string & username, const std::string & avatar)
+AEGIS_DECL aegis::future<gateway::objects::member> core::modify_bot_username(const std::string & username)
 {
     if (!username.empty())
     {
-        return {};
+        return make_ready_future<gateway::objects::member>();
     }
+    return make_ready_future<gateway::objects::member>();
+}
+
+AEGIS_DECL aegis::future<gateway::objects::member> core::modify_bot_avatar(const std::string & avatar)
+{
     if (!avatar.empty())
     {
-        return {};
+        return make_ready_future<gateway::objects::member>();
     }
-    return {};
+    return make_ready_future<gateway::objects::member>();
 }
 
 ///\todo
@@ -653,7 +661,7 @@ AEGIS_DECL channel * core::dm_channel_create(const json & obj, shards::shard * _
     {
         std::unique_lock<shared_mutex> l(_channel->mtx());
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-        log->debug("Shard#{} : Channel[{}] created for DirectMessage", _shard->get_id(), channel_id);
+        AEGIS_DEBUG(log, "Shard#{} : Channel[{}] created for DirectMessage", _shard->get_id(), channel_id);
         if (obj.count("name") && !obj["name"].is_null()) _channel->name = obj["name"].get<std::string>();
         _channel->type = static_cast<gateway::objects::channel::channel_type>(obj["type"].get<int>());// 0 = text, 2 = voice
 
@@ -679,7 +687,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
 #endif
     try
     {
-        const json result = json::parse(msg);
+        json result = json::parse(msg);
 
         if (!result.is_null())
         {
@@ -688,23 +696,27 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
 
             if (!result["t"].is_null())
             {
+                const std::string & cmd = result["t"];
+
 #if defined(AEGIS_PROFILING)
                 if (js_end)
                     js_end(s_t, result["t"]);
 #endif
 
-                if ((log->level() == spdlog::level::level_enum::trace && wsdbg)
+                if ((wsdbg && log->level() == spdlog::level::level_enum::trace)
                     && ((result["t"] != "GUILD_CREATE"
                            && result["t"] != "PRESENCE_UPDATE"
                            && result["t"] != "GUILD_MEMBERS_CHUNK")))
-                    log->trace("Shard#{}: {}", _shard->get_id(), msg);
+                    AEGIS_TRACE(log, "Shard#{}: {}", _shard->get_id(), msg);
 
                 int64_t t_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
                 _shard->lastwsevent = std::chrono::steady_clock::now();
 
-                std::string cmd = result["t"];
-
+#if defined(AEGIS_DEBUG_HISTORY)
+                if (_shard->debug_messages.size() > 5)
+                    _shard->debug_messages.pop_front();
+#endif
                 //log->info("Shard#{}: {}", _shard->get_id(), cmd);
 
                 const auto it = ws_handlers.find(cmd);
@@ -712,7 +724,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                 {
                     //message id found
                     ++message_count[cmd];
-                    asio::post(*internal::_io_context, [=, res = std::move(result)]()
+                    asio::post(*_io_context, [=, res = std::move(result)]()
                     {
                         try
                         {
@@ -752,7 +764,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                 if (result["d"] == false)
                 {
                     _shard->set_sequence(0);
-                    log->error("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->get_id());
+                    log->warn("Shard#{} : Unable to resume or invalid connection. Starting new", _shard->get_id());
                     _shard->session_id.clear();
 
                     _shard->delayedauth.expires_after(std::chrono::milliseconds((rand() % 2000) + 5000));
@@ -764,7 +776,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                         if (_shard->get_connection() == nullptr)
                         {
                             //debug?
-                            log->error("Shard#{} : Invalid session received with an invalid connection state state: {}", _shard->get_id(), static_cast<int32_t>(_shard->connection_state));
+                            log->error("Shard#{} : Invalid session received with an invalid connection state: {}", _shard->get_id(), static_cast<int32_t>(_shard->connection_state));
                             _shard_mgr->reset_shard(_shard);
                             _shard->session_id.clear();
                             return;
@@ -789,6 +801,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                                 }
                             }
                         };
+                        _shard_mgr->_last_identify = std::chrono::steady_clock::now();
                         if (!self_presence.empty())
                         {
                             obj["d"]["presence"] = json({
@@ -824,6 +837,8 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
             }
             if (result["op"] == 10)
             {
+                _shard->_heartbeat_status = heartbeat_status::normal;
+                _shard->heartbeat_ack = std::chrono::steady_clock::now();
                 int32_t heartbeat = result["d"]["heartbeat_interval"];
                 _shard->set_heartbeat(std::bind(&core::keep_alive, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
                 _shard->start_heartbeat(heartbeat);
@@ -832,6 +847,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
             if (result["op"] == 11)
             {
                 //heartbeat ACK
+                _shard->_heartbeat_status = heartbeat_status::normal;
                 _shard->heartbeat_ack = std::chrono::steady_clock::now();
                 return;
             }
@@ -866,32 +882,17 @@ AEGIS_DECL void core::keep_alive(const asio::error_code & ec, const std::chrono:
         return;
     try
     {
-        if (_shard->connection_state == shard_status::Shutdown || !_shard->is_connected())
+        if ((_shard->connection_state != shard_status::preready
+             && _shard->connection_state != shard_status::online)
+            || !_shard->is_connected())
             return;
 
-        auto now = std::chrono::steady_clock::now();
-        auto _timeout = int32_t(ms.count() * 1.5);
-
-        using milli = std::chrono::milliseconds;
-
-        if (utility::to_ms(_shard->heartbeat_ack) > 0
-            && utility::to_t<milli>(now - _shard->lastheartbeat) >= milli(_timeout))
-        {
-            log->error("Shard#{}: Heartbeat ack timeout. Reconnecting. Last Ack:{}ms Last Sent:{}ms Timeout:{}ms",
-                       _shard->get_id(),
-                       utility::to_ms(now - _shard->heartbeat_ack),
-                       utility::to_ms(now - _shard->lastheartbeat),
-                       _timeout);
-            _shard_mgr->close(_shard, 1001, "");
-            _shard_mgr->reset_shard(_shard);
-            _shard_mgr->queue_reconnect(_shard);
-            return;
-        }
         json obj;
         obj["d"] = _shard->get_sequence();
         obj["op"] = 1;
         _shard->send_now(obj.dump());
-        _shard->lastheartbeat = now;
+        _shard->_heartbeat_status = heartbeat_status::waiting;
+        _shard->lastheartbeat = std::chrono::steady_clock::now();
     }
     catch (websocketpp::exception & e)
     {
@@ -942,10 +943,11 @@ AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shards::shard 
                     }
                 }
             };
+            _shard_mgr->_last_identify = std::chrono::steady_clock::now();
         }
         else
         {
-            log->info("Attempting RESUME with id : {}", _shard->session_id);
+            log->debug("Attempting RESUME with id : {}", _shard->session_id);
             obj = {
                 { "op", 6 },
                 { "d",
@@ -979,12 +981,12 @@ AEGIS_DECL void core::send_all_shards(const json & msg)
     _shard_mgr->send_all_shards(msg);
 }
 
-aegis::shards::shard & core::get_shard_by_id(uint16_t shard_id)
+AEGIS_DECL aegis::shards::shard & core::get_shard_by_id(uint16_t shard_id)
 {
     return _shard_mgr->get_shard(shard_id);
 }
 
-aegis::shards::shard & core::get_shard_by_guild(snowflake guild_id)
+AEGIS_DECL aegis::shards::shard & core::get_shard_by_guild(snowflake guild_id)
 {
     auto g = find_guild(guild_id);
     if (g == nullptr)
@@ -992,7 +994,7 @@ aegis::shards::shard & core::get_shard_by_guild(snowflake guild_id)
     return _shard_mgr->get_shard(g->shard_id);
 }
 
-uint64_t core::get_shard_transfer()
+AEGIS_DECL uint64_t core::get_shard_transfer()
 {
     uint64_t count = 0;
     for (auto & s : _shard_mgr->_shards)
@@ -1000,9 +1002,47 @@ uint64_t core::get_shard_transfer()
     return count;
 }
 
+AEGIS_DECL void core::_thread_track(thread_state * t_state)
+{
+    try
+    {
+//        while (t_state->active)
+        t_state->fn();
+    }
+    catch (std::exception & e)
+    {
+        log->critical("Scheduler thread exit due to exception: {}", e.what());
+    }
+    catch (int)
+    {
+    }
+    t_state->active = false;
+}
+
+AEGIS_DECL std::size_t core::add_run_thread() noexcept
+{
+    std::unique_ptr<thread_state> t = std::make_unique<thread_state>();
+    t->active = true;
+    t->start_time = std::chrono::steady_clock::now();
+    t->fn = std::bind(static_cast<asio::io_context::count_type(asio::io_context::*)()>(&asio::io_context::run),
+                      _io_context.get());
+    t->thd = std::thread(std::bind(&core::_thread_track, this, t.get()));
+    threads.emplace_back(std::move(t));
+    return threads.size();
+}
+
+AEGIS_DECL void core::reduce_threads(std::size_t count) noexcept
+{
+    for (int i = 0; i < count; ++i)
+        asio::post(*_io_context, []
+        {
+            throw 1;
+        });
+}
+
 AEGIS_DECL void core::on_close(websocketpp::connection_hdl hdl, shards::shard * _shard)
 {
-    if (_status == bot_status::Shutdown)
+    if (_status == bot_status::shutdown)
         return;
 }
 
@@ -1023,7 +1063,7 @@ AEGIS_DECL void core::ws_presence_update(const json & result, shards::shard * _s
     auto  _guild = find_guild(guild_id);
     if (_guild == nullptr)
     {
-        log->error("Shard#{}: member without guild M:{} G:{} null:{}", _shard->get_id(), member_id, guild_id, _member == nullptr);
+        log->warn("Shard#{}: member without guild M:{} G:{} null:{}", _shard->get_id(), member_id, guild_id, _member == nullptr);
         return;
     }
     std::unique_lock<shared_mutex> l(_member->mtx(), std::defer_lock);
@@ -1082,13 +1122,13 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
     //assert(c != nullptr);
     if (c == nullptr)
     {
-        log->error("Shard#{} - channel == nullptr - {} {} {}", _shard->get_id(), c_id, result["d"]["author"]["id"].get<std::string>(), result["d"]["content"].get<std::string>());
+        log->warn("Shard#{} - channel == nullptr - {} {} {}", _shard->get_id(), c_id, result["d"]["author"]["id"].get<std::string>(), result["d"]["content"].get<std::string>());
     }
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     else if (c->get_guild_id() == 0)//DM
     {
         auto m = find_member(result["d"]["author"]["id"]);
-        gateway::events::message_create obj(result["d"], c, m);
+        gateway::events::message_create obj(result["d"], c, m, this);
         obj.bot = this;
         obj._shard = _shard;
 
@@ -1099,7 +1139,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
     {
         auto m = find_member(result["d"]["author"]["id"]);
         auto g = &c->get_guild();
-        gateway::events::message_create obj(result["d"], g, c, m);
+        gateway::events::message_create obj(result["d"], g, c, m, this);
         obj.bot = this;
         obj._shard = _shard;
         if (i_message_create)
@@ -1107,7 +1147,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
     }
 #else
     auto g = &c->get_guild();
-    gateway::events::message_create obj(result["d"], g, c);
+    gateway::events::message_create obj(result["d"], g, c, this);
     obj.bot = this;
     obj._shard = _shard;
     if (i_message_create)
@@ -1310,9 +1350,9 @@ AEGIS_DECL void core::ws_voice_state_update(const json & result, shards::shard *
 AEGIS_DECL void core::ws_resumed(const json & result, shards::shard * _shard)
 {
     _shard_mgr->_connecting_shard = nullptr;
-    _shard->connection_state = shard_status::Online;
+    _shard->connection_state = shard_status::online;
     _shard_mgr->_connect_time = std::chrono::steady_clock::time_point();
-    _shard->_ready_time = _shard_mgr->_last_ready = std::chrono::steady_clock::now();
+    //_shard->_ready_time = _shard_mgr->_last_ready = std::chrono::steady_clock::now();
     log->info("Shard#{} RESUMED Processed", _shard->get_id());
     _shard->keepalivetimer.cancel();
     _shard->set_heartbeat(std::bind(&core::keep_alive, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -1332,7 +1372,7 @@ AEGIS_DECL void core::ws_resumed(const json & result, shards::shard * _shard)
 AEGIS_DECL void core::ws_ready(const json & result, shards::shard * _shard)
 {
     _shard_mgr->_connecting_shard = nullptr;
-    _shard->connection_state = shard_status::Online;
+    _shard->connection_state = shard_status::online;
     _shard_mgr->_connect_time = std::chrono::steady_clock::time_point();
     _shard->_ready_time = _shard_mgr->_last_ready = std::chrono::steady_clock::now();
     process_ready(result["d"], _shard);
@@ -1380,9 +1420,11 @@ AEGIS_DECL void core::ws_channel_create(const json & result, shards::shard * _sh
         {
             snowflake user_id = std::stoull(r.at(0)["id"].get<std::string>());
             snowflake dm_id = std::stoull(result["d"]["id"].get<std::string>());
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
             auto user = find_member(user_id);
             if (user)
                 user->set_dm_id(dm_id);
+#endif
         }
     }
 
@@ -1699,9 +1741,8 @@ AEGIS_DECL void core::ws_voice_server_update(const json & result, shards::shard 
         i_voice_server_update(obj);
 }
 
-AEGIS_DECL rest::rest_reply core::create_guild(
-    std::error_code & ec, std::string name,
-    lib::optional<std::string> voice_region, lib::optional<int> verification_level,
+AEGIS_DECL aegis::future<gateway::objects::guild> core::create_guild(
+    std::string name, lib::optional<std::string> voice_region, lib::optional<int> verification_level,
     lib::optional<int> default_message_notifications, lib::optional<int> explicit_content_filter,
     lib::optional<std::string> icon, lib::optional<std::vector<gateway::objects::role>> roles,
     lib::optional<std::vector<std::tuple<std::string, int>>> channels
@@ -1725,20 +1766,10 @@ AEGIS_DECL rest::rest_reply core::create_guild(
         for (auto & c : channels.value())
             obj["channels"].push_back(json({ { "name", std::get<0>(c) }, { "type", std::get<1>(c) } }));
 
-    try
+    return async([&]
     {
-        return _rest->execute({ "/guilds", rest::Post, obj.dump() });
-    }
-    catch (nlohmann::json::type_error& e)
-    {
-        log->critical("json::type_error guild::post_task() exception : {}", e.what());
-    }
-    catch (...)
-    {
-        log->critical("Uncaught post_task exception");
-    }
-    ec = make_error_code(error::general);
-    return {};
+        return gateway::objects::guild(json::parse(_rest->execute({ "/guilds", rest::Post, obj.dump() }).content));
+    });
 }
 
 }

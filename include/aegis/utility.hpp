@@ -2,7 +2,7 @@
 // utility.hpp
 // ***********
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -21,6 +21,7 @@
 #include <sstream>
 #include <iomanip>
 #include <spdlog/fmt/fmt.h>
+#include <stdint.h>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -48,21 +49,28 @@ namespace aegis
  */
 enum class bot_status
 {
-    Uninitialized = 0,
-    Running,
-    Shutdown
+    uninitialized = 0,
+    running,
+    shutdown
 };
 
 enum class shard_status
 {
-    Uninitialized = 0,
-    Connecting,
-    PreReady,
-    Online,
-    Queued,
-    Reconnecting,
-    Closed,
-    Shutdown
+    uninitialized = 0,
+    connecting,
+    preready,
+    online,
+    queued,
+    reconnecting,
+    closing,
+    closed,
+    shutdown
+};
+
+enum class heartbeat_status
+{
+    normal,
+    waiting
 };
 
 namespace utility
@@ -88,64 +96,98 @@ std::string perf_run(const std::string & name, Func f)
  * @param t The time_point to convert to the provided duration template parameter
  * @returns std::chrono::duration of the time since epoch start until the provided time_point
  */
-template<typename Duration, typename T>
-inline Duration to_t(const T & t)
-{
-    return std::chrono::duration_cast<Duration>(t.time_since_epoch());
-}
-
-/// Returns the duration of the time since epoch for the timer.
-/// Specialized template for conversions from nanoseconds.
-/**
- * @param t The time_point to convert to the provided duration template parameter
- * @returns std::chrono::duration of the time since epoch start until the provided time_point
- */
-template<typename Duration>
-inline Duration to_t(const std::chrono::duration<int64_t, std::nano> & t)
+template<class Duration, class int_type, typename ratio = std::nano>
+constexpr Duration to_t(const std::chrono::duration<int_type, ratio> & t)
 {
     return std::chrono::duration_cast<Duration>(t);
 }
 
-/// Returns the value of the time since epoch for the timer.
-/// For steady_clock this is last reboot.
-/// For system_clock this is the Unix epoch.
+/// Returns the duration of the time since epoch for the timer.
 /**
- * @param t The time_point to convert to milliseconds
- * @returns int64_t of the time since epoch start until the provided time_point
+ * @param t The time_point to convert to the provided duration template parameter
+ * @returns std::chrono::duration of the time since epoch start until the provided time_point
  */
-template<typename T>
-inline int64_t to_ms(const T & t)
+template<typename Duration, typename T = std::chrono::steady_clock::time_point>
+constexpr Duration to_t(const T & t)
 {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count();
+    return std::chrono::duration_cast<Duration>(t.time_since_epoch());
 }
 
 /// Returns the value of the time since epoch for the timer.
-/// Specialized template for nanoseconds.
+/// For steady_clock this is last reboot.
+/// For system_clock this is the Unix epoch.
+/**
+ * @param t The duration to convert to milliseconds
+ * @returns int64_t of the time since epoch start until the provided time_point
+ */
+template<class S, typename ratio = std::nano>
+constexpr S to_ms(const std::chrono::duration<S, ratio> & t)
+{
+    return to_t<std::chrono::milliseconds>(t).count();
+}
+
+/// Returns the value of the time since epoch for the timer.
 /// For steady_clock this is last reboot.
 /// For system_clock this is the Unix epoch.
 /**
  * @param t The time_point to convert to milliseconds
  * @returns int64_t of the time since epoch start until the provided time_point
  */
-template<>
-inline int64_t to_ms(const std::chrono::duration<int64_t, std::nano> & t)
+template<typename T = std::chrono::steady_clock::time_point>
+constexpr typename T::rep to_ms(const T & t)
 {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(t).count();
+    return to_t<std::chrono::duration<typename T::rep, std::milli>>(t.time_since_epoch()).count();
 }
 
 /// Converts an ISO8601 date string to an std::chrono::system_clock::time_point
-/// or other provided template parameter type
 /**
  * @param _time_t String of the timestamp
  * @returns std::chrono::system_clock::time_point String timestamp converted to time_point
  */
-template<typename T = std::chrono::system_clock::time_point>
-T from_iso8601(const std::string & _time_t)
+inline std::chrono::system_clock::time_point from_iso8601(const std::string & _time_t)
 {
     std::tm tm = {};
     std::istringstream ss(_time_t);
     ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
     return std::chrono::system_clock::from_time_t(std::mktime(&tm));
+}
+
+/// Converts an Day, DD, Mth YYYY HH:MM:SS GMT date string to an std::chrono::system_clock::time_point
+/**
+ * @param _time_t String of the timestamp
+ * @returns std::chrono::system_clock::time_point String timestamp converted to time_point
+ */
+inline std::chrono::system_clock::time_point from_http_date(const std::string & _time_t)
+{
+    std::tm tm = {};
+    std::istringstream ss(_time_t);
+    ss >> std::get_time(&tm, "%a, %d %b %Y %T");
+    return std::chrono::system_clock::from_time_t(std::mktime(&tm));
+}
+//Mon, 19 Nov 2018 06:51 : 17 GMT
+
+inline std::string url_encode(const std::string & value)
+{
+    std::ostringstream escaped;
+    escaped.fill('0');
+    escaped << std::hex;
+
+    for (std::string::value_type c : value)
+    {
+        // Keep alphanumeric and other accepted characters intact
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
+        {
+            escaped << c;
+            continue;
+        }
+
+        // Any other characters are percent-encoded
+        escaped << std::uppercase;
+        escaped << '%' << std::setw(2) << int((unsigned char)c);
+        escaped << std::nouppercase;
+    }
+
+    return escaped.str();
 }
 
 inline std::string uptime_str(std::chrono::steady_clock::time_point _start) noexcept

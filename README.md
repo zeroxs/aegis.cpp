@@ -46,6 +46,7 @@ int main()
             obj.msg.get_channel().create_message(fmt::format("Hello {}", obj.msg.author.username));
     });
     bot.run();
+	bot.yield();
 }
 ```
 

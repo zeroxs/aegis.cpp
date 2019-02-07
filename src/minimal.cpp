@@ -2,7 +2,7 @@
 // minimal.cpp
 // ***********
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -11,6 +11,8 @@
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
+using aegis::rest::rest_reply;
+using aegis::gateway::objects::message;
 
 int main(int argc, char * argv[])
 {
@@ -25,6 +27,7 @@ int main(int argc, char * argv[])
         {
             try
             {
+                //get snowflakes related to this message
                 // C++17 version
                 //const auto [channel_id, guild_id, message_id, member_id] = obj.msg.get_related_ids();
                 const aegis::snowflake channel_id = obj.msg.get_channel().get_id();
@@ -57,37 +60,29 @@ int main(int argc, char * argv[])
                 }
                 else if (content == "~React")
                 {
-                    auto response = obj.msg.create_reaction("success:429554838083207169").get();
-                    if (response)
+                    obj.msg.create_reaction("success:429554838083207169").then([&, msg = obj.msg](aegis::rest::rest_reply reply) mutable
                     {
-                        // reaction was a success. maybe chain another?
-                        // without any sleep/wait, an instant reaction may fail due to ratelimits
-                        std::this_thread::sleep_for(250ms);
-                        auto response = obj.msg.create_reaction("fail:429554869611921408");
-
-                        // perhaps you'd like to leverage asio to respond
-                        bot.async([&_channel, fut = std::move(response)]() mutable
+                        if (reply)
                         {
-                            auto response = fut.get();
-                            if (response)
-                                _channel.create_message("React complete");
-                            else
-                                _channel.create_message("React failed");
-                        });
-                    }
+                            // reaction was a success. chain another?
+                            msg.create_reaction("fail:429554869611921408").then([&](aegis::rest::rest_reply reply)
+                            {
+                                if (reply)
+                                    _channel.create_message("React complete");
+                                else
+                                    _channel.create_message("React failed");
+                            });
+                        }
+                    });
                 }
                 // Send a message, wait for message to successfully be sent, then react to that message
                 else if (content == "~Delay")
                 {
-                    auto reply = _channel.create_message("First message").get();
-                    // bool tests true if the http code returned was 200, 201, 202, or 204
-                    if (reply)
+                    _channel.create_message("First message").then([](message msg)
                     {
-                        // parse the message object returned by the first message
-                        aegis::gateway::objects::message msg = json::parse(reply.content);
                         // add a reaction to that new message
                         msg.create_reaction("success:429554838083207169");
-                    }
+                    });
                 }
                 else if (content == "~exit")
                 {
@@ -98,13 +93,15 @@ int main(int argc, char * argv[])
             }
             catch (std::exception & e)
             {
-
+                std::cout << "Error: " << e.what() << '\n';
             }
             return;
         });
 
         // start the bot
         bot.run();
+        // yield thread execution to the library
+        bot.yield();
     }
     catch (std::exception & e)
     {

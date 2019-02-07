@@ -2,7 +2,7 @@
 // message_update.hpp
 // ******************
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -12,6 +12,7 @@
 #include "aegis/config.hpp"
 #include "aegis/fwd.hpp"
 #include "aegis/gateway/objects/message.hpp"
+#include <nlohmann/json.hpp>
 
 namespace aegis
 {
@@ -27,10 +28,10 @@ namespace events
 struct message_update
 {
     objects::message msg; /**<\todo Needs documentation */
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
-    message_update(const json & j, aegis::channel * c, aegis::member * m) : msg(j), _channel(c), _member(m) {};
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    message_update(const nlohmann::json & j, aegis::channel * c, aegis::member * m) : msg(j), _channel(c), _member(m) {};
     aegis::channel * const _channel = nullptr; /**<\todo Needs documentation */
     aegis::member * const _member = nullptr; /**<\todo Needs documentation */
 #else

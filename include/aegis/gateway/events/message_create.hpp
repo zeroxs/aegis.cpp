@@ -2,7 +2,7 @@
 // message_create.hpp
 // ******************
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -60,12 +60,12 @@ struct message_create
         return *_member;
     }
 
-    message_create(const json & j, aegis::channel * c, aegis::member * m) : msg(j), _channel(c), _member(m) { msg.set_channel(c); };
-    message_create(const json & j, aegis::guild * g, aegis::channel * c, aegis::member * m) : msg(j), _channel(c), _member(m) { msg.set_channel(c); msg.set_guild(g); };
+    message_create(const json & j, aegis::channel * c, aegis::member * m, aegis::core * b) : msg(j, b), _channel(c), _member(m) { msg.set_channel(c); };
+    message_create(const json & j, aegis::guild * g, aegis::channel * c, aegis::member * m, aegis::core * b) : msg(j, b), _channel(c), _member(m) { msg.set_channel(c); msg.set_guild(g); };
 #else
     bool has_member() { return false; }
-    message_create(const json & j, aegis::channel * c) : msg(j), _channel(c) { msg.set_channel(c); };
-    message_create(const json & j, aegis::guild * g, aegis::channel * c) : msg(j), _channel(c) { msg.set_channel(c); msg.set_guild(g); };
+    message_create(const json & j, aegis::channel * c, aegis::core * b) : msg(j, b), _channel(c) { msg.set_channel(c); };
+    message_create(const json & j, aegis::guild * g, aegis::channel * c, aegis::core * b) : msg(j, b), _channel(c) { msg.set_channel(c); msg.set_guild(g); };
 #endif
 };
 

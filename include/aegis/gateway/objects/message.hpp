@@ -2,7 +2,7 @@
 // message.hpp
 // ***********
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -18,7 +18,6 @@
 #include "aegis/gateway/objects/reaction.hpp"
 #include "aegis/gateway/objects/user.hpp"
 #include <nlohmann/json.hpp>
-#include "aegis/guild.hpp"
 #include "aegis/futures.hpp"
 
 namespace aegis
@@ -29,6 +28,14 @@ namespace gateway
 
 namespace objects
 {
+
+class message;
+
+/// \cond TEMPLATES
+AEGIS_DECL void from_json(const nlohmann::json& j, objects::message& m);
+
+AEGIS_DECL void to_json(nlohmann::json& j, const objects::message& m);
+/// \endcond
 
 /// Type of message
 enum message_type
@@ -62,6 +69,26 @@ public:
     {
     }
 
+    message(const std::string & _json, aegis::core * bot) noexcept
+        : _bot(bot)
+    {
+        from_json(nlohmann::json::parse(_json), *this);
+        populate_self();
+    }
+
+    message(const nlohmann::json & _json, aegis::core * bot) noexcept
+        : _bot(bot)
+    {
+        from_json(_json, *this);
+        populate_self();
+    }
+
+    message(aegis::core * bot) noexcept
+        : _bot(bot)
+    {
+        populate_self();
+    }
+
     /// Constructor for the message object
     /**
      * @param _shard Pointer to the shard this message is being handled by
@@ -84,7 +111,10 @@ public:
         _guild = _g;
     }
 
-    explicit message() = default;
+    message() = default;
+    message & operator=(const message &) = default;
+    message(const message&) = default;
+    message(message && msg) = default;
 
     std::string timestamp; /**<\todo Needs documentation */
     std::string edited_timestamp; /**<\todo Needs documentation */
@@ -126,6 +156,21 @@ public:
         return _message_id;
     }
 
+    snowflake get_channel_id() const noexcept
+    {
+        return _channel_id;
+    }
+
+    snowflake get_guild_id() const noexcept
+    {
+        return _guild_id;
+    }
+
+    snowflake get_author_id() const noexcept
+    {
+        return _author_id;
+    }
+
     bool has_guild() const noexcept
     {
         return _guild != nullptr || _guild_id != 0;
@@ -151,29 +196,17 @@ public:
     AEGIS_DECL aegis::member & get_member();
 #endif
 
-    AEGIS_DECL std::future<rest::rest_reply> delete_message(std::error_code & ec) noexcept;
+    AEGIS_DECL aegis::future<rest::rest_reply> delete_message();
 
-    AEGIS_DECL std::future<rest::rest_reply> delete_message();
+    AEGIS_DECL aegis::future<message> edit(const std::string & content);
 
-    AEGIS_DECL std::future<rest::rest_reply> edit(std::error_code & ec, const std::string & content) noexcept;
+    AEGIS_DECL aegis::future<rest::rest_reply> create_reaction(const std::string & content);
 
-    AEGIS_DECL std::future<rest::rest_reply> edit(const std::string & content);
+    AEGIS_DECL aegis::future<rest::rest_reply> delete_own_reaction(const std::string & content);
 
-    AEGIS_DECL std::future<rest::rest_reply> create_reaction(std::error_code & ec, const std::string & content) noexcept;
+    AEGIS_DECL aegis::future<rest::rest_reply> delete_user_reaction(const std::string & content, const snowflake member_id);
 
-    AEGIS_DECL std::future<rest::rest_reply> create_reaction(const std::string & content);
-
-    AEGIS_DECL std::future<rest::rest_reply> delete_own_reaction(std::error_code & ec, const std::string & content) noexcept;
-
-    AEGIS_DECL std::future<rest::rest_reply> delete_own_reaction(const std::string & content);
-
-    AEGIS_DECL std::future<rest::rest_reply> delete_user_reaction(std::error_code & ec, const std::string & content, const snowflake member_id) noexcept;
-
-    AEGIS_DECL std::future<rest::rest_reply> delete_user_reaction(const std::string & content, const snowflake member_id);
-
-    AEGIS_DECL std::future<rest::rest_reply> delete_all_reactions(std::error_code & ec) noexcept;
-
-    AEGIS_DECL std::future<rest::rest_reply> delete_all_reactions();
+    AEGIS_DECL aegis::future<rest::rest_reply> delete_all_reactions();
 
     /// Obtain the relevant snowflakes related to this message
     /**
@@ -199,17 +232,12 @@ private:
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     aegis::member * _member = nullptr;/**< Pointer to the author of this message */
 #endif
+    aegis::core * _bot = nullptr;
     snowflake _message_id = 0; /**< snowflake of the message */
     snowflake _channel_id = 0; /**< snowflake of the channel this message belongs to */
     snowflake _guild_id = 0; /**< snowflake of the guild this message belongs to */
     snowflake _author_id = 0; /**< snowflake of the author of this message */
 };
-
-/// \cond TEMPLATES
-AEGIS_DECL void from_json(const nlohmann::json& j, objects::message& m);
-
-AEGIS_DECL void to_json(nlohmann::json& j, const objects::message& m);
-/// \endcond
 
 }
 

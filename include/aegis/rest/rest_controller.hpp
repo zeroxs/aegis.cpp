@@ -2,7 +2,7 @@
 // rest_controller.hpp
 // *******************
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
@@ -42,14 +42,15 @@ struct request_params
     std::string host;
     std::string port = "443";
     std::vector<std::string> headers;
+    std::string _path_ex;
 };
 
 class rest_controller
 {
 public:
-    AEGIS_DECL rest_controller(const std::string & token);
-    AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix);
-    AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix, const std::string & host);
+    AEGIS_DECL rest_controller(const std::string & token, asio::io_context * _io_context);
+    AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix, asio::io_context * _io_context);
+    AEGIS_DECL rest_controller(const std::string & token, const std::string & prefix, const std::string & host, asio::io_context * _io_context);
     ~rest_controller() = default;
 
     rest_controller(const rest_controller &) = delete;
@@ -74,7 +75,7 @@ public:
      */
     AEGIS_DECL rest_reply execute2(rest::request_params && params);
 
-    std::string get_method(RequestMethod method)
+    static std::string get_method(RequestMethod method)
     {
         switch (method)
         {
@@ -112,6 +113,8 @@ private:
 
     using rest_end_t = std::function<void(std::chrono::steady_clock::time_point, uint16_t)>;
     rest_end_t rest_end;
+    asio::io_context * _io_context = nullptr;
+    std::chrono::hours tz_bias;
 };
 
 }

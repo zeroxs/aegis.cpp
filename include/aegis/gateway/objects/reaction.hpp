@@ -2,7 +2,7 @@
 // reaction.hpp
 // ************
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -37,7 +37,7 @@ inline void from_json(const nlohmann::json& j, reaction& m)
 {
     m.count = j["count"];
     m.me = j["me"];
-    m.emoji_ = j["emoji_"];
+    m.emoji_ = j["emoji"];
 }
 /// \endcond
 
@@ -46,7 +46,7 @@ inline void to_json(nlohmann::json& j, const reaction& m)
 {
     j["count"] = m.count;
     j["me"] = m.me;
-    j["emoji_"] = m.emoji_;
+    j["emoji"] = m.emoji_;
 }
 /// \endcond
 

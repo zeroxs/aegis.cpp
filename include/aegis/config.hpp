@@ -2,7 +2,7 @@
 // config.hpp
 // **********
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
@@ -169,4 +169,20 @@ using bad_optional_access = std::bad_optional_access;
 
 #if !defined(NDEBUG)
 #include <cassert>
+#endif
+
+/// spdlog defines
+#if defined(DEBUG) || defined(_DEBUG)
+#define AEGIS_DEBUG(logger, ...) if (logger->should_log(spdlog::level::level_enum::debug)) logger->debug(__VA_ARGS__)
+#define SPDLOG_STR_H(x) #x
+#define SPDLOG_STR_HELPER(x) SPDLOG_STR_H(x)
+#ifdef AEGIS_MSVC
+#define AEGIS_TRACE(logger, ...) if (logger->should_log(spdlog::level::level_enum::trace)) logger->trace("[ " __FILE__ "(" SPDLOG_STR_HELPER(__LINE__) ") ] " __VA_ARGS__)
+#else
+#define AEGIS_TRACE(logger, ...) if (logger->should_log(spdlog::level::level_enum::trace)) logger->trace("[ " __FILE__ ":" SPDLOG_STR_HELPER(__LINE__) " ] " __VA_ARGS__)
+#endif
+
+#else
+#define AEGIS_DEBUG(logger, ...) (void)0
+#define AEGIS_TRACE(logger, ...) (void)0
 #endif

@@ -2,7 +2,7 @@
 // shard.hpp
 // *********
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -47,7 +47,7 @@ public:
     AEGIS_DECL shard(asio::io_context & _io, websocketpp::client<websocketpp::config::asio_tls_client> & _ws, int32_t id);
 
     /// Resets connection, heartbeat, and timer related objects to allow reconnection
-    AEGIS_DECL void do_reset(shard_status _status = shard_status::Closed) noexcept;
+    AEGIS_DECL void do_reset(shard_status _status = shard_status::closed) noexcept;
 
     /// Get this shard's websocket message sequence counter
     /**
@@ -166,7 +166,9 @@ public:
 
     AEGIS_DECL void start_heartbeat(int32_t heartbeat) noexcept;
 
-    std::deque<std::tuple<int64_t, std::string>> debug_messages;
+#if defined(AEGIS_DEBUG_HISTORY)
+    std::deque<std::tuple<std::chrono::steady_clock::time_point, std::string>> debug_messages;
+#endif
     asio::steady_timer keepalivetimer;
     asio::steady_timer delayedauth;
     asio::steady_timer write_timer;
@@ -175,13 +177,14 @@ public:
 
     int32_t heartbeattime;
 
-    std::chrono::time_point<std::chrono::steady_clock> heartbeat_ack;
-    std::chrono::time_point<std::chrono::steady_clock> lastheartbeat;
-    std::chrono::time_point<std::chrono::steady_clock> lastwsevent;
-    std::chrono::time_point<std::chrono::steady_clock> last_status_time;
-    std::chrono::time_point<std::chrono::steady_clock> _ready_time;
-    std::chrono::time_point<std::chrono::steady_clock> last_ws_write;
-    std::chrono::time_point<std::chrono::steady_clock> connect_time;
+    std::chrono::steady_clock::time_point heartbeat_ack;
+    std::chrono::steady_clock::time_point lastheartbeat;
+    std::chrono::steady_clock::time_point lastwsevent;
+    std::chrono::steady_clock::time_point last_status_time;
+    std::chrono::steady_clock::time_point _ready_time;
+    std::chrono::steady_clock::time_point last_ws_write;
+    std::chrono::steady_clock::time_point connect_time;
+    std::chrono::steady_clock::time_point closing_time;
 
     shard_status connection_state;
     std::string session_id;
@@ -202,7 +205,7 @@ public:
         return _connection;
     }
 
-    std::vector<std::string> get_trace() const noexcept
+    const std::vector<std::string> & get_trace() const noexcept
     {
         return _trace;
     }
@@ -210,6 +213,13 @@ public:
 private:
     friend class shard_mgr;
     friend class aegis::core;
+
+    bool state_valid()
+    {
+        if (_connection == nullptr || _strand == nullptr)
+            return false;
+        return true;
+    }
 
     AEGIS_DECL void process_writes(const asio::error_code & ec);
     AEGIS_DECL void _reset();
@@ -236,6 +246,9 @@ private:
     // Websocket++ socket connection
     websocketpp::connection_hdl hdl;
     std::vector<std::string> _trace;
+    std::shared_ptr<asio::io_context::strand> _strand;
+
+    heartbeat_status _heartbeat_status = heartbeat_status::normal;
 };
 
 }

@@ -2,7 +2,7 @@
 // rest_reply.hpp
 // **************
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
@@ -113,7 +113,7 @@ public:
 
     }
 
-    rest_reply(http_code reply_code, bool global, int32_t limit, int32_t remaining, int64_t reset, int32_t retry, const std::string & content, std::chrono::steady_clock::duration exec_time = 0ms) noexcept
+    rest_reply(http_code reply_code, bool global, int32_t limit, int32_t remaining, int64_t reset, int32_t retry, const std::string & content, std::chrono::system_clock::time_point date, std::chrono::steady_clock::duration exec_time = 0ms) noexcept
         : reply_code(reply_code)
         , global(global)
         , limit(limit)
@@ -121,6 +121,7 @@ public:
         , reset(reset)
         , retry(retry)
         , content(content)
+        , date(date)
         , execution_time(exec_time)
     {
     }
@@ -138,6 +139,10 @@ public:
     {
     }
 
+    rest_reply(rest_reply &&) = default;
+    rest_reply & operator=(const rest_reply &) = default;
+    rest_reply(const aegis::rest::rest_reply &) = default;
+
     operator bool()
     {
         if (reply_code == http_code::ok || reply_code == http_code::created || reply_code == http_code::accepted || reply_code == http_code::no_content)
@@ -146,6 +151,13 @@ public:
     }
 
     ~rest_reply() = default;
+
+    bool success()
+    {
+        if (reply_code >= http_code::ok && reply_code <= http_code::partial_content)
+            return true;
+        return false;
+    }
 
 private:
     std::string _msg;
@@ -159,6 +171,7 @@ public:
     int32_t retry = 0; /**< Rate limit retry time */
     std::string content; /**< REST call's reply body */
     //bool permissions = true; /**< Whether the call had proper permissions */
+    std::chrono::system_clock::time_point date; /**< Current time from the remote server */
     std::chrono::steady_clock::duration execution_time; /**< Time it took to perform the request */
     //TODO: std::map<std::string, std::string> headers; /**< Reply headers */
 };

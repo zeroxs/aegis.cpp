@@ -2,7 +2,7 @@
 // bucket.hpp
 // **********
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -10,19 +10,14 @@
 #pragma once
 
 #include "aegis/config.hpp"
+#include "aegis/rest/rest_controller.hpp"
+#include "aegis/snowflake.hpp"
 #include <mutex>
 #include <future>
 #include <chrono>
-#include <functional>
-#include <string>
 #include <queue>
 #include <atomic>
-#include "aegis/rest/rest_reply.hpp"
-#include "aegis/snowflake.hpp"
-#include <asio/io_context.hpp>
-#include <asio/use_future.hpp>
-#include <asio/post.hpp>
-#include "aegis/rest/rest_controller.hpp"
+#include <spdlog/spdlog.h>
 
 namespace aegis
 {
@@ -51,14 +46,13 @@ enum bucket_type
  * Each bucket tracks a single major parameter and a single snowflake
  * Current major parameters are GUILD, CHANNEL, and EMOJI
  */
-template<typename Callable, typename Result>
 class bucket
 {
 public:
     /**
      * Construct a bucket object for tracking ratelimits per major parameter of the REST API (guild/channel/emoji)
      */
-    bucket(Callable & call, asio::io_context & _io_context, std::atomic<int64_t> & global_limit)
+    bucket(rest_call & call, asio::io_context & _io_context, std::atomic<int64_t> & global_limit)
         : limit(0)
         , remaining(1)
         , reset(0)
@@ -91,17 +85,17 @@ public:
     {
         if (ignore_rates)
             return true;
-        if (limit.load(std::memory_order_relaxed) == 0)
+        if (limit == 0)
             return true;
-        if (remaining.load(std::memory_order_relaxed) > 0)
+        if (remaining > 0)
             return true;
-        int64_t time = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-        if (time < reset.load(std::memory_order_relaxed))
+        int64_t time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+        if (time < (reset/* + _time_delay*/))
             return false;
         return true;
     }
 
-    Result perform(rest::request_params params)
+    rest::rest_reply perform(rest::request_params params)
     {
         std::lock_guard<std::mutex> lock(m);
         while (!can_perform())
@@ -109,39 +103,53 @@ public:
             //TODO: find a better solution - wrap asio execution handling, poll ratelimit object to track ordering and execution
             // not an ideal scenario, but by current design rescheduling a message that would be ratelimited
             // would cause out of order messages
-            std::this_thread::sleep_for(seconds((reset.load(std::memory_order_relaxed)
-                                                 - std::chrono::duration_cast<seconds>(std::chrono::system_clock::now().time_since_epoch()).count()) + 1));
+            auto waitfor = milliseconds((reset.load(std::memory_order_relaxed)
+                                         - std::chrono::duration_cast<milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())/* + _time_delay*/);
+            spdlog::get("aegis")->debug("Ratelimit almost hit: {}({}) - waiting {}ms", rest::rest_controller::get_method(params.method), params.path, waitfor.count());
+            std::this_thread::sleep_for(waitfor);
         }
-        Result reply(_call(params));
+        rest::rest_reply reply(_call(params));
+        auto _now = std::chrono::duration_cast<milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+        if (reply.reply_code == 429)
+        {
+            if (reset_bypass)
+            {
+                spdlog::get("aegis")->warn("Ratelimit hit - retrying in {}ms...", reset_bypass);
+                std::this_thread::sleep_for(milliseconds(reset_bypass));
+            }
+            else
+            {
+                spdlog::get("aegis")->warn("Ratelimit hit - retrying in {}s...", reply.retry / 1000);
+                std::this_thread::sleep_for(milliseconds(reply.retry));
+            }
+            reply = _call(params);
+            if (reply.reply_code == 429)
+                spdlog::get("aegis")->error("Ratelimit hit twice. Giving up.");
+        }
+
         limit.store(reply.limit, std::memory_order_relaxed);
         remaining.store(reply.remaining, std::memory_order_relaxed);
-        reset.store(reply.reset, std::memory_order_relaxed);
-        return reply;
-    }
-
-    std::future<Result> post_task(rest::request_params params)
-    {
-        using result = asio::async_result<asio::use_future_t<>, void(Result)>;
-        using handler = typename result::completion_handler_type;
-
-        handler exec(asio::use_future);
-        result ret(exec);
-
-        asio::post(_io_context, [=]() mutable
+        auto http_date = std::chrono::duration_cast<milliseconds>(reply.date.time_since_epoch());
+        if (reset_bypass)
+            reset.store((_now + milliseconds(reset_bypass)).count(), std::memory_order_relaxed);
+        else
         {
-            exec(perform(params));
-        });
-        return ret.get();
+            reset.store(reply.reset*1000, std::memory_order_relaxed);
+            _time_delay = (http_date - _now).count();
+        }
+        return reply;
     }
 
     bool ignore_rates = false;
     std::mutex m;
-    Callable & _call;
-    std::queue<std::tuple<std::string, std::string, std::string, std::function<void(Result)>>> _queue;
+    rest_call & _call;
+    std::queue<std::tuple<std::string, std::string, std::string, std::function<void(rest::rest_reply)>>> _queue;
+    int32_t reset_bypass = 0;
 
 private:
     asio::io_context & _io_context;
     std::atomic<int64_t> & _global_limit;
+    std::atomic<int64_t> _time_delay;
 };
 
 }

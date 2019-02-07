@@ -2,7 +2,7 @@
 // rest_controller.cpp
 // *******************
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
@@ -11,7 +11,6 @@
 #include "aegis/fwd.hpp"
 
 #include "aegis/rest/rest_controller.hpp"
-#include "aegis/core.hpp"
 
 #ifdef WIN32
 # include "aegis/push.hpp"
@@ -34,23 +33,26 @@ namespace aegis
 namespace rest
 {
 
-AEGIS_DECL rest_controller::rest_controller(const std::string & token)
+AEGIS_DECL rest_controller::rest_controller(const std::string & token, asio::io_context * _io_context)
     : _token(token)
+    , _io_context(_io_context)
 {
 
 }
 
-AEGIS_DECL rest_controller::rest_controller(const std::string & token, const std::string & prefix)
+AEGIS_DECL rest_controller::rest_controller(const std::string & token, const std::string & prefix, asio::io_context * _io_context)
     : _token(token)
     , _prefix(prefix)
+    , _io_context(_io_context)
 {
 
 }
 
-AEGIS_DECL rest_controller::rest_controller(const std::string & token, const std::string & prefix, const std::string & host)
+AEGIS_DECL rest_controller::rest_controller(const std::string & token, const std::string & prefix, const std::string & host, asio::io_context * _io_context)
     : _token(token)
     , _prefix(prefix)
     , _host(host)
+    , _io_context(_io_context)
 {
 
 }
@@ -66,6 +68,7 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
     int32_t remaining = 0;
     int64_t reset = 0;
     int32_t retry = 0;
+    std::chrono::system_clock::time_point http_date;
     bool global = false;
 
     auto start_time = std::chrono::steady_clock::now();
@@ -80,7 +83,7 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
         auto it = _resolver_cache.find(tar_host);
         if (it == _resolver_cache.end())
         {
-            asio::ip::tcp::resolver resolver(*internal::_io_context);
+            asio::ip::tcp::resolver resolver(*_io_context);
             r = resolver.resolve(tar_host, params.port);
             _resolver_cache.emplace(tar_host, r);
         }
@@ -94,7 +97,7 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
             | asio::ssl::context::no_sslv2
             | asio::ssl::context::no_sslv3);
 
-        asio::ssl::stream<asio::ip::tcp::socket> socket(*internal::_io_context, ctx);
+        asio::ssl::stream<asio::ip::tcp::socket> socket(*_io_context, ctx);
         SSL_set_tlsext_host_name(socket.native_handle(), tar_host.data());
 
         asio::connect(socket.lowest_layer(), r);
@@ -104,13 +107,10 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
 
         asio::streambuf request;
         std::ostream request_stream(&request);
-        request_stream << get_method(params.method) << " " << _prefix << params.path << " HTTP/1.0\r\n";
+        request_stream << get_method(params.method) << " " << _prefix << params.path << params._path_ex << " HTTP/1.0\r\n";
         request_stream << "Host: " << tar_host << "\r\n";
         request_stream << "Accept: */*\r\n";
-        if (tar_host == "discordapp.com")
-            request_stream << "Authorization: Bot " << _token << "\r\n";
-        else
-            request_stream << "Authorization: " << _token << "\r\n";
+        request_stream << "Authorization: Bot " << _token << "\r\n";
         request_stream << "User-Agent: DiscordBot (https://github.com/zeroxs/aegis.cpp, " << AEGIS_VERSION_LONG << ")\r\n";
         request_stream << "Content-Length: " << params.body.size() << "\r\n";
         request_stream << "Content-Type: application/json\r\n";
@@ -143,6 +143,8 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
         if (!test.empty())
             retry = std::stoul(test);
 
+        http_date = utility::from_http_date(hresponse.get_header("Date")) - tz_bias;
+
         global = !(hresponse.get_header("X-RateLimit-Global").empty());
 
 #if defined(AEGIS_PROFILING)
@@ -159,7 +161,7 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
     }
 
     return { static_cast<http_code>(hresponse.get_status_code()),
-        global, limit, remaining, reset, retry, hresponse.get_body(),
+        global, limit, remaining, reset, retry, hresponse.get_body(), http_date,
         std::chrono::steady_clock::now() - start_time };
 }
 
@@ -174,6 +176,7 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
     int32_t remaining = 0;
     int64_t reset = 0;
     int32_t retry = 0;
+    std::chrono::system_clock::time_point http_date;
     bool global = false;
 
     auto start_time = std::chrono::steady_clock::now();
@@ -188,7 +191,7 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
         auto it = _resolver_cache.find(tar_host);
         if (it == _resolver_cache.end())
         {
-            asio::ip::tcp::resolver resolver(*internal::_io_context);
+            asio::ip::tcp::resolver resolver(*_io_context);
             r = resolver.resolve(tar_host, params.port);
             _resolver_cache.emplace(tar_host, r);
         }
@@ -205,7 +208,7 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
                 | asio::ssl::context::no_sslv2
                 | asio::ssl::context::no_sslv3);
 
-            asio::ssl::stream<asio::ip::tcp::socket> socket(*internal::_io_context, ctx);
+            asio::ssl::stream<asio::ip::tcp::socket> socket(*_io_context, ctx);
             SSL_set_tlsext_host_name(socket.native_handle(), tar_host.data());
 
             asio::connect(socket.lowest_layer(), r);
@@ -238,6 +241,8 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
             std::istringstream istrm(response_content.str());
             hresponse.consume(istrm);
 
+            http_date = utility::from_http_date(hresponse.get_header("Date"));
+
             if (error != asio::error::eof && error != asio::ssl::error::stream_truncated)
                 throw asio::system_error(error);
 
@@ -245,7 +250,7 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
         }
         else
         {
-            asio::ip::tcp::socket socket(*internal::_io_context);
+            asio::ip::tcp::socket socket(*_io_context);
             asio::connect(socket, r);
 
             asio::streambuf request;
@@ -269,6 +274,8 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
             std::istringstream istrm(response_content.str());
             hresponse.consume(istrm);
 
+            http_date = utility::from_http_date(hresponse.get_header("Date"));
+
             //TODO: return reply headers
         }
     }
@@ -278,7 +285,7 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
     }
 
     return { static_cast<http_code>(hresponse.get_status_code()),
-        global, limit, remaining, reset, retry, hresponse.get_body(),
+        global, limit, remaining, reset, retry, hresponse.get_body(), http_date,
         std::chrono::steady_clock::now() - start_time };
 }
 

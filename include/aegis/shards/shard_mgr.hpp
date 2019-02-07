@@ -2,7 +2,7 @@
 // shard_mgr.hpp
 // *************
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
@@ -80,7 +80,7 @@ public:
      * @param _shard Pointer to shard
      * @param extended Whether extended info is output
      */
-    AEGIS_DECL void debug_trace(shard * _shard, bool extended = false);
+    AEGIS_DECL void debug_trace(shard * _shard, bool extended = false) noexcept;
 
     /// Get the internal (or external) io_service object
     /**
@@ -195,7 +195,7 @@ public:
     /**
      * @param _shard Pointer to shard
      */
-    AEGIS_DECL void reset_shard(shard * _shard);
+    AEGIS_DECL void reset_shard(shard * _shard, shard_status _status = shard_status::closing) noexcept;
 
     /// Queue the shard for reconnection. Typically only called internally
     /**
@@ -241,9 +241,9 @@ public:
      * @param _shard Pointer to shard
      * @param code Websocket close code (default: 1001)
      * @param reason Websocket close reason (default: "")
-     * @param connection_state State the set the shard to after close (default: shard_status::Closed)
+     * @param connection_state State the set the shard to after close (default: shard_status::Closing)
      */
-    AEGIS_DECL void close(shard * _shard, int32_t code = 1001, const std::string & reason = "", shard_status connection_state = shard_status::Closed);
+    AEGIS_DECL void close(shard * _shard, int32_t code = 1001, const std::string & reason = "", shard_status connection_state = shard_status::closing) noexcept;
 
     /// Close the shard's websocket connection
     /**
@@ -251,9 +251,9 @@ public:
      * @param _shard Reference to shard
      * @param code Websocket close code (default: 1001)
      * @param reason Websocket close reason (default: "")
-     * @param connection_state State the set the shard to after close (default: shard_status::Closed)
+     * @param connection_state State the set the shard to after close (default: shard_status::Closing)
      */
-    void close(shard & _shard, int32_t code = 1001, const std::string & reason = "", shard_status connection_state = shard_status::Closed)
+    void close(shard & _shard, int32_t code = 1001, const std::string & reason = "", shard_status connection_state = shard_status::closing) noexcept
     {
         close(&_shard, code, reason, connection_state);
     }
@@ -287,6 +287,7 @@ private:
     friend aegis::core;
 
     std::chrono::time_point<std::chrono::steady_clock> _last_ready;
+    std::chrono::time_point<std::chrono::steady_clock> _last_identify;
     std::chrono::time_point<std::chrono::steady_clock> _connect_time;
     shard * _connecting_shard;
 

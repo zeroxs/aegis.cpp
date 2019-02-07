@@ -2,7 +2,7 @@
 // member.hpp
 // **********
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -23,18 +23,36 @@ namespace gateway
 namespace objects
 {
 
+struct member;
+
+/// \cond TEMPLATES
+void from_json(const nlohmann::json& j, member& m);
+void to_json(nlohmann::json& j, const member& m);
+/// \endcond
+
 /**\todo Needs documentation
  */
 struct member
 {
+    member(const std::string & _json, aegis::core * bot) noexcept
+    {
+        from_json(nlohmann::json::parse(_json), *this);
+    }
+
+    member(const nlohmann::json & _json, aegis::core * bot) noexcept
+    {
+        from_json(_json, *this);
+    }
+
+    member(aegis::core * bot) noexcept {}
+
+    member() noexcept {}
+
     std::vector<objects::role> roles;
     std::string nick; /**< nick of user */
     std::string joined_at;
     bool mute = false;
     bool deaf = false;
-private:
-    friend void from_json(const nlohmann::json& j, user& m);
-    friend void to_json(nlohmann::json& j, const user& m);
 };
 
 /// \cond TEMPLATES

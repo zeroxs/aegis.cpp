@@ -2,12 +2,14 @@
 // src.hpp
 // *******
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
 
 #pragma once
+
+#error TODO: needs fixing
 
 #include <aegis/config.hpp>
 
@@ -21,7 +23,7 @@
 #include <aegis/utility.hpp>
 
 #include <aegis/snowflake.hpp>
-#include <aegis/objects/role.hpp>
+#include <aegis/gateway/objects/role.hpp>
 #include <aegis/error.hpp>
 #include <aegis/rest/rest_reply.hpp>
 

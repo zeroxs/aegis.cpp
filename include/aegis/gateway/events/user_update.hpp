@@ -2,7 +2,7 @@
 // user_update.hpp
 // ***************
 //
-// Copyright (c) 2018 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -29,10 +29,10 @@ namespace events
 struct user_update
 {
     objects::user _user; /**<\todo Needs documentation */
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
-    explicit user_update(aegis::member * m) : _member(m) {}
     shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
     core * bot = nullptr; /**< Pointer to the main bot object */
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    explicit user_update(aegis::member * m) : _member(m) {}
     aegis::member * const _member = nullptr; /**<\todo Needs documentation */
 #endif
 };
