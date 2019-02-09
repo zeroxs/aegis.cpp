@@ -462,6 +462,9 @@ protected:
     using promise_type = promise<T>;
 public:
     continuation_base() = default;
+    explicit continuation_base(asio::io_context * _io_context, std::recursive_mutex * _global_m)
+        : _state(_io_context, _global_m) {}
+
     explicit continuation_base(future_state<T>&& state) : _state(std::move(state)) {}
 
     void set_state(T&& state)
@@ -490,6 +493,8 @@ protected:
     using promise_type = promise<void>;
 public:
     continuation_base() = default;
+    explicit continuation_base(asio::io_context * _io_context, std::recursive_mutex * _global_m)
+        : _state(_io_context, _global_m) {}
     explicit continuation_base(future_state<void>&& state) : _state(std::move(state)) {}
     void set_state(future_state<void>&& state)
     {
@@ -508,7 +513,10 @@ template <typename Func, typename T>
 struct continuation final : continuation_base<T>
 {
     continuation(Func&& func, future_state<T>&& state) : continuation_base<T>(std::move(state)), _func(std::move(func)) {}
-    continuation(Func&& func) : _func(std::move(func)) {}
+    continuation(Func&& func, asio::io_context * _io_context, std::recursive_mutex * _global_m)
+        : continuation_base<T>(_io_context, _global_m)
+        , _func(std::move(func))
+    {}
     virtual void run() noexcept override
     {
         _func(std::move(this->_state));
@@ -652,7 +660,7 @@ private:
     template <typename Func>
     void schedule(Func&& func)
     {
-        auto tws = std::make_unique<continuation<Func, T>>(std::move(func));
+        auto tws = std::make_unique<continuation<Func, T>>(std::move(func), _io_context, _global_m);
         _state = &tws->_state;
         _task = std::move(tws);
     }
