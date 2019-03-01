@@ -376,12 +376,16 @@ public:
     using guild_create_t = std::function<void(gateway::events::guild_create obj)>;
     using guild_update_t = std::function<void(gateway::events::guild_update obj)>;
     using guild_delete_t = std::function<void(gateway::events::guild_delete obj)>;
+    using message_reaction_add_t = std::function<void(gateway::events::message_reaction_add obj)>;
+    using message_reaction_remove_t = std::function<void(gateway::events::message_reaction_remove obj)>;
+    using message_reaction_remove_all_t = std::function<void(gateway::events::message_reaction_remove_all obj)>;
     using user_update_t = std::function<void(gateway::events::user_update obj)>;
     using ready_t = std::function<void(gateway::events::ready obj)>;
     using resumed_t = std::function<void(gateway::events::resumed obj)>;
     using channel_create_t = std::function<void(gateway::events::channel_create obj)>;
     using channel_update_t = std::function<void(gateway::events::channel_update obj)>;
     using channel_delete_t = std::function<void(gateway::events::channel_delete obj)>;
+    using channel_pins_update_t = std::function<void(gateway::events::channel_pins_update obj)>;
     using guild_ban_add_t = std::function<void(gateway::events::guild_ban_add obj)>;
     using guild_ban_remove_t = std::function<void(gateway::events::guild_ban_remove obj)>;
     using guild_emojis_update_t = std::function<void(gateway::events::guild_emojis_update obj)>;
@@ -396,6 +400,7 @@ public:
     using presence_update_t = std::function<void(gateway::events::presence_update obj)>;
     using voice_state_update_t = std::function<void(gateway::events::voice_state_update obj)>;
     using voice_server_update_t = std::function<void(gateway::events::voice_server_update obj)>;
+    using webhooks_update_t = std::function<void(gateway::events::webhooks_update obj)>;
 
     void set_on_typing_start(typing_start_t cb) { i_typing_start = cb; }/**< TYPING_START callback */
     void set_on_message_create(message_create_t cb) { i_message_create = cb; }/**< MESSAGE_CREATE callback */
@@ -406,12 +411,16 @@ public:
     void set_on_guild_create(guild_create_t cb) { i_guild_create = cb; }/**< GUILD_CREATE callback */
     void set_on_guild_update(guild_update_t cb) { i_guild_update = cb; }/**< GUILD_UPDATE callback */
     void set_on_guild_delete(guild_delete_t cb) { i_guild_delete = cb; }/**< GUILD_DELETE callback */
+    void set_on_message_reaction_add(message_reaction_add_t cb) { i_message_reaction_add = cb; }/**< MESSAGE_REACTION_ADD callback */
+    void set_on_message_reaction_remove(message_reaction_remove_t cb) { i_message_reaction_remove = cb; }/**< MESSAGE_REACTION_REMOVE callback */
+    void set_on_message_reaction_remove_all(message_reaction_remove_all_t cb) { i_message_reaction_remove_all = cb; }/**< MESSAGE_REACTION_REMOVE_ALL callback */
     void set_on_user_update(user_update_t cb) { i_user_update = cb; }/**< USER_UPDATE callback */
     void set_on_ready(ready_t cb) { i_ready = cb; }/**< READY callback */
     void set_on_resumed(resumed_t cb) { i_resumed = cb; }/**< RESUME callback */
     void set_on_channel_create(channel_create_t cb) { i_channel_create = cb; }/**< CHANNEL_CREATE callback */
     void set_on_channel_update(channel_update_t cb) { i_channel_update = cb; }/**< CHANNEL_UPDATE callback */
     void set_on_channel_delete(channel_delete_t cb) { i_channel_delete = cb; }/**< CHANNEL_DELETE callback */
+    void set_on_channel_pins_update(channel_pins_update_t cb) { i_channel_pins_update = cb; }/**< CHANNEL_PINS_UPDATE callback */
     void set_on_guild_ban_add(guild_ban_add_t cb) { i_guild_ban_add = cb; }/**< GUILD_BAN_ADD callback */
     void set_on_guild_ban_remove(guild_ban_remove_t cb) { i_guild_ban_remove = cb; }/**< GUILD_BAN_REMOVE callback */
     void set_on_guild_emojis_update(guild_emojis_update_t cb) { i_guild_emojis_update = cb; }/**< GUILD_EMOJIS_UPDATE callback */
@@ -426,6 +435,7 @@ public:
     void set_on_presence_update(presence_update_t cb) { i_presence_update = cb; }/**< PRESENCE_UPDATE callback */
     void set_on_voice_state_update(voice_state_update_t cb) { i_voice_state_update = cb; }/**< VOICE_STATE_UPDATE callback */
     void set_on_voice_server_update(voice_server_update_t cb) { i_voice_server_update = cb; }/**< VOICE_SERVER_UPDATE callback */
+    void set_on_webhooks_update(webhooks_update_t cb) { i_webhooks_update = cb; }/**< WEBHOOKS_UPDATE callback */
 
     void set_on_shard_disconnect(std::function<void(aegis::shards::shard*)> cb) { _shard_mgr->i_shard_disconnect = cb; };
     void set_on_shard_connect(std::function<void(aegis::shards::shard*)> cb) { _shard_mgr->i_shard_connect = cb; };
@@ -512,12 +522,16 @@ private:
     guild_create_t i_guild_create;
     guild_update_t i_guild_update;
     guild_delete_t i_guild_delete;
+    message_reaction_add_t i_message_reaction_add;
+    message_reaction_remove_t i_message_reaction_remove;
+    message_reaction_remove_all_t i_message_reaction_remove_all;
     user_update_t i_user_update;
     ready_t i_ready;
     resumed_t i_resumed;
     channel_create_t i_channel_create;
     channel_update_t i_channel_update;
     channel_delete_t i_channel_delete;
+    channel_pins_update_t i_channel_pins_update;
     guild_ban_add_t i_guild_ban_add;
     guild_ban_remove_t i_guild_ban_remove;
     guild_emojis_update_t i_guild_emojis_update;
@@ -532,6 +546,7 @@ private:
     presence_update_t i_presence_update;
     voice_state_update_t i_voice_state_update;
     voice_server_update_t i_voice_server_update;
+    webhooks_update_t i_webhooks_update;
 
     AEGIS_DECL void setup_gateway();
     AEGIS_DECL void keep_alive(const asio::error_code & error, const std::chrono::milliseconds ms, shards::shard * _shard);
@@ -552,15 +567,18 @@ private:
     AEGIS_DECL void ws_guild_create(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_guild_update(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_guild_delete(const json & result, shards::shard * _shard);
+    AEGIS_DECL void ws_message_reaction_add(const json & result, shards::shard * _shard);
+    AEGIS_DECL void ws_message_reaction_remove(const json & result, shards::shard * _shard);
+    AEGIS_DECL void ws_message_reaction_remove_all(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_message_delete(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_message_delete_bulk(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_user_update(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_voice_state_update(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_resumed(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_ready(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_channel_create(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_channel_update(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_channel_delete(const json & result, shards::shard * _shard);
+    AEGIS_DECL void ws_channel_pins_update(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_guild_ban_add(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_guild_ban_remove(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_guild_emojis_update(const json & result, shards::shard * _shard);
@@ -573,6 +591,8 @@ private:
     AEGIS_DECL void ws_guild_role_update(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_guild_role_delete(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_voice_server_update(const json & result, shards::shard * _shard);
+    AEGIS_DECL void ws_voice_state_update(const json & result, shards::shard * _shard);
+    AEGIS_DECL void ws_webhooks_update(const json & result, shards::shard * _shard);
 
     AEGIS_DECL void on_message(websocketpp::connection_hdl hdl, std::string msg, shards::shard * _shard);
     AEGIS_DECL void on_connect(websocketpp::connection_hdl hdl, shards::shard * _shard);

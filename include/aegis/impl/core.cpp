@@ -533,6 +533,9 @@ AEGIS_DECL void core::setup_gateway()
     ws_handlers.emplace("GUILD_CREATE", std::bind(&core::ws_guild_create, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("GUILD_UPDATE", std::bind(&core::ws_guild_update, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("GUILD_DELETE", std::bind(&core::ws_guild_delete, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("MESSAGE_REACTION_ADD", std::bind(&core::ws_message_reaction_add, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("MESSAGE_REACTION_REMOVE", std::bind(&core::ws_message_reaction_remove, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("MESSAGE_REACTION_REMOVE_ALL", std::bind(&core::ws_message_reaction_remove_all, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("MESSAGE_DELETE_BULK", std::bind(&core::ws_message_delete_bulk, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("USER_UPDATE", std::bind(&core::ws_user_update, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("RESUMED", std::bind(&core::ws_resumed, this, std::placeholders::_1, std::placeholders::_2));
@@ -540,6 +543,7 @@ AEGIS_DECL void core::setup_gateway()
     ws_handlers.emplace("CHANNEL_CREATE", std::bind(&core::ws_channel_create, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("CHANNEL_UPDATE", std::bind(&core::ws_channel_update, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("CHANNEL_DELETE", std::bind(&core::ws_channel_delete, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("CHANNEL_PINS_UPDATE", std::bind(&core::ws_channel_pins_update, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("GUILD_BAN_ADD", std::bind(&core::ws_guild_ban_add, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("GUILD_BAN_REMOVE", std::bind(&core::ws_guild_ban_remove, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("GUILD_EMOJIS_UPDATE", std::bind(&core::ws_guild_emojis_update, this, std::placeholders::_1, std::placeholders::_2));
@@ -553,6 +557,7 @@ AEGIS_DECL void core::setup_gateway()
     ws_handlers.emplace("GUILD_ROLE_DELETE", std::bind(&core::ws_guild_role_delete, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("VOICE_STATE_UPDATE", std::bind(&core::ws_voice_state_update, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("VOICE_SERVER_UPDATE", std::bind(&core::ws_voice_server_update, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("WEBHOOKS_UPDATE", std::bind(&core::ws_webhooks_update, this, std::placeholders::_1, std::placeholders::_2));
 
     if (force_shard_count)
     {
@@ -1785,6 +1790,79 @@ AEGIS_DECL void core::ws_voice_server_update(const json & result, shards::shard 
 
     if (i_voice_server_update)
         i_voice_server_update(obj);
+}
+
+AEGIS_DECL void core::ws_message_reaction_add(const json & result, shards::shard * _shard)
+{
+    gateway::events::message_reaction_add obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.user_id = j["user_id"];
+    obj.channel_id = j["channel_id"];
+    obj.message_id = j["message_id"];
+    obj.guild_id = j["guild_id"];
+    obj.emoji = j["emoji"];
+
+    if (i_message_reaction_add)
+        i_message_reaction_add(obj);
+}
+
+AEGIS_DECL void core::ws_message_reaction_remove(const json & result, shards::shard * _shard)
+{
+    gateway::events::message_reaction_remove obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.user_id = j["user_id"];
+    obj.channel_id = j["channel_id"];
+    obj.message_id = j["message_id"];
+    obj.guild_id = j["guild_id"];
+    obj.emoji = j["emoji"];
+
+    if (i_message_reaction_remove)
+        i_message_reaction_remove(obj);
+}
+
+AEGIS_DECL void core::ws_message_reaction_remove_all(const json & result, shards::shard * _shard)
+{
+    gateway::events::message_reaction_remove_all obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.channel_id = j["channel_id"];
+    obj.message_id = j["message_id"];
+    obj.guild_id = j["guild_id"];
+
+    if (i_message_reaction_remove_all)
+        i_message_reaction_remove_all(obj);
+}
+
+AEGIS_DECL void core::ws_channel_pins_update(const json & result, shards::shard * _shard)
+{
+    gateway::events::channel_pins_update obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.channel_id = j["channel_id"];
+    if (j.count("last_pin_timestamp") && !j["last_pin_timestamp"].is_null())
+        obj.last_pin_timestamp = j["last_pin_timestamp"].get<std::string>();
+
+    if (i_channel_pins_update)
+        i_channel_pins_update(obj);
+}
+
+AEGIS_DECL void core::ws_webhooks_update(const json & result, shards::shard * _shard)
+{
+    gateway::events::webhooks_update obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.guild_id = j["guild_id"];
+    obj.channel_id = j["channel_id"];
+
+    if (i_webhooks_update)
+        i_webhooks_update(obj);
 }
 
 AEGIS_DECL aegis::future<gateway::objects::guild> core::create_guild(
