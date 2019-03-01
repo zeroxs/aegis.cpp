@@ -28,25 +28,12 @@ namespace events
  */
 struct user_update
 {
-    objects::user _user; /**<\todo Needs documentation */
-    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
-    core * bot = nullptr; /**< Pointer to the main bot object */
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
-    explicit user_update(aegis::member * m) : _member(m) {}
-    aegis::member * const _member = nullptr; /**<\todo Needs documentation */
-#endif
+    shards::shard & shard; /**< Reference to shard object this message came from */
+    objects::user _user; /**< Discord User object */
 };
 
-/// \cond TEMPLATES
-AEGIS_DECL void from_json(const nlohmann::json& j, user_update& m);
-/// \endcond
-
 }
 
 }
 
 }
-
-#if defined(AEGIS_HEADER_ONLY)
-#include "aegis/gateway/events/impl/user_update.cpp"
-#endif

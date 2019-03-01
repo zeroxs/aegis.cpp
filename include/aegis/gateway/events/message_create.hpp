@@ -28,45 +28,22 @@ namespace events
  */
 struct message_create
 {
-    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
-    core * bot = nullptr; /**< Pointer to the main bot object */
+    shards::shard & shard; /**< Reference to shard object this message came from */
+    std::optional<std::reference_wrapper<aegis::user>> user; /**<\todo Reference to object of user that sent this message */
+    aegis::channel & channel; /**<\todo Reference to channel object this message was sent in */
+    //std::optional<std::reference_wrapper<aegis::guild>> guild; /**<\todo Reference to guild object this message was sent in if it exists */
     objects::message msg; /**<\todo Message object */
-    aegis::channel * const _channel = nullptr; /**<\todo Pointer to channel object this message was sent in */
-    
-    bool has_channel()
+
+    bool has_user() const noexcept
     {
-        return (_channel != nullptr);
+        return user.has_value();
     }
-
-    aegis::channel & get_channel()
+    aegis::user & get_user() const
     {
-        if (_channel == nullptr)
-            throw exception(make_error_code(error::channel_not_found));
-        return *_channel;
+        if (has_user())
+            return user.value().get();
+        throw std::bad_optional_access();
     }
-
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
-    aegis::member * const _member; /**<\todo Needs documentation */
-
-    bool has_member()
-    {
-        return (_member != nullptr);
-    }
-
-    aegis::member & get_member()
-    {
-        if (_member == nullptr)
-            throw exception(make_error_code(error::member_not_found));
-        return *_member;
-    }
-
-    message_create(const json & j, aegis::channel * c, aegis::member * m, aegis::core * b) : msg(j, b), _channel(c), _member(m) { msg.set_channel(c); };
-    message_create(const json & j, aegis::guild * g, aegis::channel * c, aegis::member * m, aegis::core * b) : msg(j, b), _channel(c), _member(m) { msg.set_channel(c); msg.set_guild(g); };
-#else
-    bool has_member() { return false; }
-    message_create(const json & j, aegis::channel * c, aegis::core * b) : msg(j, b), _channel(c) { msg.set_channel(c); };
-    message_create(const json & j, aegis::guild * g, aegis::channel * c, aegis::core * b) : msg(j, b), _channel(c) { msg.set_channel(c); msg.set_guild(g); };
-#endif
 };
 
 }

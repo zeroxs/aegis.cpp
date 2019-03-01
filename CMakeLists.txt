@@ -58,36 +58,7 @@ include/aegis/impl/snowflake.cpp
 include/aegis/rest/impl/rest_controller.cpp
 include/aegis/shards/impl/shard.cpp
 include/aegis/shards/impl/shard_mgr.cpp
-include/aegis/gateway/objects/impl/message.cpp
-include/aegis/gateway/events/impl/channel_create.cpp
-include/aegis/gateway/events/impl/channel_delete.cpp
-include/aegis/gateway/events/impl/channel_pins_update.cpp
-include/aegis/gateway/events/impl/channel_update.cpp
-include/aegis/gateway/events/impl/guild_ban_add.cpp
-include/aegis/gateway/events/impl/guild_ban_remove.cpp
-include/aegis/gateway/events/impl/guild_create.cpp
-include/aegis/gateway/events/impl/guild_delete.cpp
-include/aegis/gateway/events/impl/guild_emojis_update.cpp
-include/aegis/gateway/events/impl/guild_integrations_update.cpp
-include/aegis/gateway/events/impl/guild_member_add.cpp
-include/aegis/gateway/events/impl/guild_member_remove.cpp
-include/aegis/gateway/events/impl/guild_member_update.cpp
-include/aegis/gateway/events/impl/guild_members_chunk.cpp
-include/aegis/gateway/events/impl/guild_role_create.cpp
-include/aegis/gateway/events/impl/guild_role_delete.cpp
-include/aegis/gateway/events/impl/guild_role_update.cpp
-include/aegis/gateway/events/impl/guild_update.cpp
-include/aegis/gateway/events/impl/message_delete_bulk.cpp
-include/aegis/gateway/events/impl/message_reaction_add.cpp
-include/aegis/gateway/events/impl/message_reaction_remove.cpp
-include/aegis/gateway/events/impl/message_reaction_remove_all.cpp
-include/aegis/gateway/events/impl/message_update.cpp
-include/aegis/gateway/events/impl/presence_update.cpp
-include/aegis/gateway/events/impl/ready.cpp
-include/aegis/gateway/events/impl/resumed.cpp
-include/aegis/gateway/events/impl/user_update.cpp
-include/aegis/gateway/events/impl/voice_server_update.cpp
-include/aegis/gateway/events/impl/voice_state_update.cpp)
+include/aegis/gateway/objects/impl/message.cpp)
 
 if (AEGIS_DEBUG_HISTORY)
 set(AEGIS_FLAGS ${AEGIS_FLAGS} AEGIS_DEBUG_HISTORY)

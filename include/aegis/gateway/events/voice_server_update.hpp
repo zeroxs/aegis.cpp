@@ -26,23 +26,14 @@ namespace events
  */
 struct voice_server_update
 {
-    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
-    core * bot = nullptr; /**< Pointer to the main bot object */
+    shards::shard & shard; /**< Reference to shard object this message came from */
     std::string token;
     snowflake guild_id;
     std::string endpoint;
 };
 
-/// \cond TEMPLATES
-AEGIS_DECL void from_json(const nlohmann::json& j, voice_server_update& m);
-/// \endcond
-
 }
 
 }
 
 }
-
-#if defined(AEGIS_HEADER_ONLY)
-#include "aegis/gateway/events/impl/voice_server_update.cpp"
-#endif

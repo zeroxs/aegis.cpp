@@ -26,22 +26,13 @@ namespace events
 /// Send when a guild role is updated
 struct guild_role_update
 {
-    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
-    core * bot = nullptr; /**< Pointer to the main bot object */
+    shards::shard & shard; /**< Reference to shard object this message came from */
     snowflake guild_id; /**< Snowflake of guild */
-    objects::role _role; /**< Role that was updated */
+    objects::role role; /**< Role that was updated */
 };
 
-/// \cond TEMPLATES
-AEGIS_DECL void from_json(const nlohmann::json& j, guild_role_update& m);
-/// \endcond
-
 }
 
 }
 
 }
-
-#if defined(AEGIS_HEADER_ONLY)
-#include "aegis/gateway/events/impl/guild_role_update.cpp"
-#endif

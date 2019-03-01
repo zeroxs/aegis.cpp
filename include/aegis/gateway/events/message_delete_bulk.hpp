@@ -25,23 +25,14 @@ namespace events
 /// Sent when many messages are deleted at once
 struct message_delete_bulk
 {
-    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
-    core * bot = nullptr; /**< Pointer to the main bot object */
+    shards::shard & shard; /**< Reference to shard object this message came from */
     snowflake channel_id; /**< Snowflake of channel */
     snowflake guild_id; /**< Snowflake of guild */
     std::vector<snowflake> ids; /**< Array of snowflake of deleted messages */
 };
 
-/// \cond TEMPLATES
-AEGIS_DECL void from_json(const nlohmann::json& j, message_delete_bulk& m);
-/// \endcond
-
 }
 
 }
 
 }
-
-#if defined(AEGIS_HEADER_ONLY)
-#include "aegis/gateway/events/impl/message_delete_bulk.cpp"
-#endif

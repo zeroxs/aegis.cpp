@@ -26,8 +26,7 @@ namespace events
  */
 struct webhooks_update
 {
-    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
-    core * bot = nullptr; /**< Pointer to the main bot object */
+    shards::shard & shard; /**< Reference to shard object this message came from */
     snowflake guild_id;
     snowflake channel_id;
 };

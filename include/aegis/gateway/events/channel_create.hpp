@@ -25,21 +25,12 @@ namespace events
 /// Channel object sent over the gateway on create
 struct channel_create
 {
-    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
-    core * bot = nullptr; /**< Pointer to the main bot object */
-    objects::channel _channel; /**< gateway channel object */
+    shards::shard & shard; /**< Reference to shard object this message came from */
+    objects::channel channel; /**< gateway channel object */
 };
 
-/// \cond TEMPLATES
-AEGIS_DECL void from_json(const nlohmann::json& j, channel_create& m);
-/// \endcond
-
 }
 
 }
 
 }
-
-#if defined(AEGIS_HEADER_ONLY)
-#include "aegis/gateway/events/impl/channel_create.cpp"
-#endif

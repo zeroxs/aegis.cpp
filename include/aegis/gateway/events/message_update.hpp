@@ -27,28 +27,14 @@ namespace events
  */
 struct message_update
 {
-    objects::message msg; /**<\todo Needs documentation */
-    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
-    core * bot = nullptr; /**< Pointer to the main bot object */
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
-    message_update(const nlohmann::json & j, aegis::channel * c, aegis::member * m) : msg(j), _channel(c), _member(m) {};
-    aegis::channel * const _channel = nullptr; /**<\todo Needs documentation */
-    aegis::member * const _member = nullptr; /**<\todo Needs documentation */
-#else
-    message_update(const json & j) : msg(j) {};
-#endif
+    shards::shard & shard; /**< Reference to shard object this message came from */
+    aegis::channel & channel; /**< Reference to channel object this message came from */
+    std::optional<std::reference_wrapper<aegis::user>> user; /**< Cached user object */
+    objects::message msg; /**< Message object */
 };
 
-/// \cond TEMPLATES
-AEGIS_DECL void from_json(const nlohmann::json& j, message_update& m);
-/// \endcond
-
 }
 
 }
 
 }
-
-#if defined(AEGIS_HEADER_ONLY)
-#include "aegis/gateway/events/impl/message_update.cpp"
-#endif

@@ -27,25 +27,16 @@ namespace events
  */
 struct message_reaction_add
 {
-    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
-    core * bot = nullptr; /**< Pointer to the main bot object */
+    shards::shard & shard; /**< Reference to shard object this message came from */
     snowflake user_id;
     snowflake channel_id;
     snowflake message_id;
     snowflake guild_id;
-    objects::emoji _emoji;
+    objects::emoji emoji;
 };
 
-/// \cond TEMPLATES
-AEGIS_DECL void from_json(const nlohmann::json& j, message_reaction_add& m);
-/// \endcond
-
 }
 
 }
 
 }
-
-#if defined(AEGIS_HEADER_ONLY)
-#include "aegis/gateway/events/impl/message_reaction_add.cpp"
-#endif
