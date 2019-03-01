@@ -91,6 +91,8 @@ public:
         {
             auto & bkt = get_bucket(params.path);
             auto res = bkt.perform(params);
+			if (res.reply_code < rest::ok || res.reply_code >= rest::multiple_choices)//error
+				throw aegis::exception(fmt::format("REST Reply Code: {}", static_cast<int>(res.reply_code)), bad_request);
             return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
         });
     }
@@ -111,7 +113,9 @@ public:
         {
             auto & bkt = get_bucket(_bucket);
             auto res = bkt.perform(params);
-            return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
+			if (res.reply_code < rest::ok || res.reply_code >= rest::multiple_choices)//error
+				throw aegis::exception(fmt::format("REST Reply Code: {}", static_cast<int>(res.reply_code)), bad_request);
+			return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
         });
     }
 
