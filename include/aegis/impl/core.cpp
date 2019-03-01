@@ -555,7 +555,7 @@ AEGIS_DECL void core::setup_gateway()
     }
     else
     {
-        _shard_mgr->shard_max_count = ret["shards"];
+        shard_max_count = _shard_mgr->shard_max_count = ret["shards"];
         log->info("Shard count: {}", _shard_mgr->shard_max_count);
     }
 
