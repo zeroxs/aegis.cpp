@@ -1879,10 +1879,7 @@ AEGIS_DECL aegis::future<gateway::objects::guild> core::create_guild(
         for (auto & c : channels.value())
             obj["channels"].push_back(json({ { "name", std::get<0>(c) }, { "type", std::get<1>(c) } }));
 
-    return async([&]
-    {
-        return gateway::objects::guild(json::parse(_rest->execute({ "/guilds", rest::Post, obj.dump() }).content));
-    });
+    return aegis::make_ready_future(gateway::objects::guild(json::parse(get_ratelimit().post_task({ "/guilds", rest::Post, obj.dump() }).get().content)));
 }
 
 }
