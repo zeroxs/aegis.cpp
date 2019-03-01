@@ -52,7 +52,7 @@ set(AEGIS_FILES
 include/aegis/impl/channel.cpp
 include/aegis/impl/core.cpp
 include/aegis/impl/guild.cpp
-include/aegis/impl/member.cpp
+include/aegis/impl/user.cpp
 include/aegis/impl/permission.cpp
 include/aegis/impl/snowflake.cpp
 include/aegis/rest/impl/rest_controller.cpp

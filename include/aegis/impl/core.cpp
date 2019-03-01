@@ -191,7 +191,12 @@ AEGIS_DECL int64_t core::get_member_count() const noexcept
     return count;
 }
 
-AEGIS_DECL member * core::find_member(snowflake id) const noexcept
+AEGIS_DECL int64_t core::get_user_count() const noexcept
+{
+    return members.size();
+}
+
+AEGIS_DECL user * core::find_user(snowflake id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_member_m);
     auto it = members.find(id);
@@ -200,13 +205,13 @@ AEGIS_DECL member * core::find_member(snowflake id) const noexcept
     return it->second.get();
 }
 
-AEGIS_DECL member * core::member_create(snowflake id) noexcept
+AEGIS_DECL user * core::user_create(snowflake id) noexcept
 {
     std::unique_lock<shared_mutex> l(_member_m);
     auto it = members.find(id);
     if (it == members.end())
     {
-        auto g = std::make_unique<member>(id);
+        auto g = std::make_unique<user>(id);
         auto ptr = g.get();
         members.emplace(id, std::move(g));
         return ptr;
@@ -219,7 +224,7 @@ AEGIS_DECL aegis::future<gateway::objects::message> core::create_dm_message(snow
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     channel * c = nullptr;
-    auto m = find_member(member_id);
+    auto m = find_user(member_id);
     if (!m)
         return aegis::make_exception_future<gateway::objects::message>(aegis::error::member_error);
     if (m->get_dm_id())
@@ -488,7 +493,7 @@ AEGIS_DECL void core::shutdown()
     cv.notify_all();
 }
 
-AEGIS_DECL void core::setup_gateway(std::error_code & ec)
+AEGIS_DECL void core::setup_gateway()
 {
     log->info("Creating websocket");
 
@@ -562,8 +567,6 @@ AEGIS_DECL void core::setup_gateway(std::error_code & ec)
 
     _shard_mgr->ws_gateway = ret["url"].get<std::string>();
     _shard_mgr->set_gateway_url(_shard_mgr->ws_gateway + "/?compress=zlib-stream&encoding=json&v=6");
-
-    ec = std::error_code();
 }
 
 
@@ -578,20 +581,20 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
     {
         const json & userdata = d["user"];
         discriminator = static_cast<int16_t>(std::stoi(userdata["discriminator"].get<std::string>()));
-        member_id = userdata["id"];
+        user_id = userdata["id"];
         username = userdata["username"].get<std::string>();
         mfa_enabled = userdata["mfa_enabled"];
         if (mention.empty())
         {
             std::stringstream ss;
-            ss << "<@" << member_id << ">";
+            ss << "<@" << user_id << ">";
             mention = ss.str();
         }
 
-        auto m = std::make_unique<member>(member_id);
+        auto m = std::make_unique<user>(user_id);
         _self = m.get();
-        members.emplace(member_id, std::move(m));
-        _self->_member_id = member_id;
+        members.emplace(user_id, std::move(m));
+        _self->_member_id = user_id;
         _self->_is_bot = true;
         _self->_name = username;
         _self->_discriminator = discriminator;
@@ -600,7 +603,7 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
 #else
     const json & userdata = d["user"];
     discriminator = static_cast<int16_t>(std::stoi(userdata["discriminator"].get<std::string>()));
-    member_id = userdata["id"];
+    user_id = userdata["id"];
 #endif
 
     for (auto & guildobj : guilds)
@@ -1061,7 +1064,7 @@ AEGIS_DECL void core::ws_presence_update(const json & result, shards::shard * _s
     json user = result["d"]["user"];
     snowflake guild_id = result["d"]["guild_id"];
     snowflake member_id = user["id"];
-    auto _member = member_create(member_id);
+    auto _member = user_create(member_id);
     auto  _guild = find_guild(guild_id);
     if (_guild == nullptr)
     {

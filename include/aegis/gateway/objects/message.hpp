@@ -193,7 +193,7 @@ public:
     AEGIS_DECL aegis::channel & get_channel();
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    AEGIS_DECL aegis::member & get_member();
+    AEGIS_DECL aegis::user & get_user();
 #endif
 
     AEGIS_DECL aegis::future<rest::rest_reply> delete_message();
@@ -230,7 +230,7 @@ private:
     aegis::channel * _channel = nullptr;/**< Pointer to the channel this message belongs to */
     aegis::guild * _guild = nullptr;/**< Pointer to the guild this message belongs to */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    aegis::member * _member = nullptr;/**< Pointer to the author of this message */
+    aegis::user * _user = nullptr;/**< Pointer to the author of this message */
 #endif
     aegis::core * _bot = nullptr;
     snowflake _message_id = 0; /**< snowflake of the message */

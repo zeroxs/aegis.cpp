@@ -270,7 +270,7 @@ public:
     */
     const snowflake get_id() const noexcept
     {
-        return member_id;
+        return user_id;
     }
 
     /// Obtain a pointer to a channel by snowflake
@@ -345,7 +345,7 @@ public:
     std::unordered_map<snowflake, std::unique_ptr<channel>> channels;
     std::unordered_map<snowflake, std::unique_ptr<guild>> guilds;
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    std::unordered_map<snowflake, std::unique_ptr<member>> members;
+    std::unordered_map<snowflake, std::unique_ptr<user>> members;
 #endif
     std::map<std::string, uint64_t> message_count;
 
@@ -587,7 +587,7 @@ private:
 
     std::chrono::steady_clock::time_point starttime;
 
-    snowflake member_id;
+    snowflake user_id;
     int16_t discriminator = 0;
     std::string username;
     bool mfa_enabled = false;
@@ -601,7 +601,7 @@ private:
     std::shared_ptr<ratelimit_mgr_t> _ratelimit;
     std::shared_ptr<shards::shard_mgr> _shard_mgr;
 
-    member * _self = nullptr;
+    user * _self = nullptr;
 
     std::unordered_map<std::string, std::function<void(const json &, shards::shard *)>> ws_handlers;
     spdlog::level::level_enum _loglevel = spdlog::level::level_enum::info;

@@ -239,7 +239,7 @@ public:
      * @param _channel Pointer to channel object
      * @returns Permission object of channel
      */
-    AEGIS_DECL permission get_permissions(member * _member, channel * _channel) noexcept;
+    AEGIS_DECL permission get_permissions(user * _member, channel * _channel) noexcept;
 
     /// Get base guild permissions for member
     /**
@@ -254,7 +254,7 @@ public:
 /**
  * @param _member Pointer to member object
  */
-    int64_t base_permissions(member * _member) const noexcept
+    int64_t base_permissions(user * _member) const noexcept
     {
         return base_permissions(*_member);
     }
@@ -263,7 +263,7 @@ public:
     /**
      * @param _member Reference to member object
      */
-    AEGIS_DECL int64_t base_permissions(member & _member) const noexcept;
+    AEGIS_DECL int64_t base_permissions(user & _member) const noexcept;
 
     /// Calculate permission overrides for member in channel
     /**
@@ -272,7 +272,7 @@ public:
      * @param _channel Reference to channel object
      * @returns true on successful request, false for no permissions
      */
-    AEGIS_DECL int64_t compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const noexcept;
+    AEGIS_DECL int64_t compute_overwrites(int64_t _base_permissions, user & _member, channel & _channel) const noexcept;
 
     /// Get role
     /**
@@ -685,7 +685,7 @@ public:
      * @param member_id Snowflake of member to search for
      * @returns Pointer to member or nullptr
      */
-    AEGIS_DECL member * find_member(snowflake member_id) const noexcept;
+    AEGIS_DECL user * find_member(snowflake member_id) const noexcept;
 
     /// Obtain a pointer to a channel by snowflake
     /**
@@ -708,7 +708,7 @@ public:
     /**
      * @returns unordered_map<snowflake, member*> of members
      */
-    const std::unordered_map<snowflake, member*> & get_members() const noexcept
+    const std::unordered_map<snowflake, user*> & get_members() const noexcept
     {
         return members;
     }
@@ -730,16 +730,16 @@ public:
 
 private:
     friend class core;
-    friend class member;
+    friend class user;
 
     std::unordered_map<snowflake, channel*> channels; /**< Map of snowflakes to channel objects */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    std::unordered_map<snowflake, member*> members; /**< Map of snowflakes to member objects */
+    std::unordered_map<snowflake, user*> members; /**< Map of snowflakes to member objects */
     std::unordered_map<snowflake, gateway::objects::role> roles; /**< Map of snowflakes to role objects */
 #endif
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    AEGIS_DECL void add_member(member * _member) noexcept;
+    AEGIS_DECL void add_member(user * _member) noexcept;
 
     AEGIS_DECL void remove_member(snowflake member_id) noexcept;
 
@@ -753,7 +753,7 @@ private:
     AEGIS_DECL void load(const json & obj, shards::shard * _shard) noexcept;
 
     /// non-locking version for internal use
-    AEGIS_DECL member * _find_member(snowflake member_id) const noexcept;
+    AEGIS_DECL user * _find_member(snowflake member_id) const noexcept;
     
     /// non-locking version for internal use
     AEGIS_DECL channel * _find_channel(snowflake channel_id) const noexcept;

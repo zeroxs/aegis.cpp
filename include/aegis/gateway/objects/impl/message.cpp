@@ -46,19 +46,19 @@ AEGIS_DECL aegis::channel & message::get_channel()
 }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-AEGIS_DECL aegis::member & message::get_member()
+AEGIS_DECL aegis::user & message::get_user()
 {
-    if (_member == nullptr)
-        _member = _bot->find_member(_author_id);
-    if (_member == nullptr)
+    if (_user == nullptr)
+        _user = _bot->find_user(_author_id);
+    if (_user == nullptr)
     {
         if (_author_id == 0)
-            throw exception("message::get_member() _member|_author_id == nullptr", make_error_code(error::member_not_found));
+            throw exception("message::get_member() _member == nullptr && _author_id == 0", make_error_code(error::member_not_found));
 
-        _member = _bot->member_create(_author_id);
-        _member->load_data(author);
+        _user = _bot->user_create(_author_id);
+        _user->load_data(author);
     }
-    return *_member;
+    return *_user;
 }
 #endif
 
@@ -133,8 +133,8 @@ AEGIS_DECL void message::populate_self()
     if (_guild == nullptr)
         _guild = _bot->find_guild(_channel->get_guild_id());
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if ((_member == nullptr) && (_author_id > 0))
-        _member = _bot->find_member(_author_id);
+    if ((_user == nullptr) && (_author_id > 0))
+        _user = _bot->find_user(_author_id);
 #endif
 }
 

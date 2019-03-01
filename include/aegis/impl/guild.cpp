@@ -47,12 +47,12 @@ AEGIS_DECL core & guild::get_bot() const noexcept
 }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-AEGIS_DECL member * guild::self() const
+AEGIS_DECL user * guild::self() const
 {
     return get_bot().self();
 }
 
-AEGIS_DECL void guild::add_member(member * _member) noexcept
+AEGIS_DECL void guild::add_member(user * _member) noexcept
 {
     members.emplace(_member->_member_id, _member);
 }
@@ -130,7 +130,7 @@ AEGIS_DECL const snowflake guild::get_owner() const noexcept
     return owner_id;
 }
 
-AEGIS_DECL member * guild::find_member(snowflake member_id) const noexcept
+AEGIS_DECL user * guild::find_member(snowflake member_id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_m);
     auto m = members.find(member_id);
@@ -139,7 +139,7 @@ AEGIS_DECL member * guild::find_member(snowflake member_id) const noexcept
     return m->second;
 }
 
-AEGIS_DECL member * guild::_find_member(snowflake member_id) const noexcept
+AEGIS_DECL user * guild::_find_member(snowflake member_id) const noexcept
 {
     auto m = members.find(member_id);
     if (m == members.end())
@@ -171,7 +171,7 @@ AEGIS_DECL permission guild::get_permissions(snowflake member_id, snowflake chan
     return get_permissions(find_member(member_id), find_channel(channel_id));
 }
 
-AEGIS_DECL permission guild::get_permissions(member * _member, channel * _channel) noexcept
+AEGIS_DECL permission guild::get_permissions(user * _member, channel * _channel) noexcept
 {
     if (_member == nullptr || _channel == nullptr)
         return 0;
@@ -181,7 +181,7 @@ AEGIS_DECL permission guild::get_permissions(member * _member, channel * _channe
     return compute_overwrites(_base_permissions, *_member, *_channel);
 }
 
-AEGIS_DECL int64_t guild::base_permissions(member & _member) const noexcept
+AEGIS_DECL int64_t guild::base_permissions(user & _member) const noexcept
 {
     try
     {
@@ -217,7 +217,7 @@ AEGIS_DECL int64_t guild::base_permissions(member & _member) const noexcept
     }
 }
 
-AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const noexcept
+AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, user & _member, channel & _channel) const noexcept
 {
     try
     {
@@ -359,7 +359,7 @@ AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) noexcept
             for (auto & member : members)
             {
                 snowflake member_id = member["user"]["id"];
-                auto _member = bot.member_create(member_id);
+                auto _member = bot.user_create(member_id);
                 std::unique_lock<shared_mutex> l(_member->mtx());
                 _member->load(this, member, _shard);
                 this->members.emplace(member_id, _member);
