@@ -29,10 +29,9 @@ namespace events
 struct message_create
 {
     shards::shard & shard; /**< Reference to shard object this message came from */
-    std::optional<std::reference_wrapper<aegis::user>> user; /**<\todo Reference to object of user that sent this message */
-    aegis::channel & channel; /**<\todo Reference to channel object this message was sent in */
-    //std::optional<std::reference_wrapper<aegis::guild>> guild; /**<\todo Reference to guild object this message was sent in if it exists */
-    objects::message msg; /**<\todo Message object */
+    lib::optional<std::reference_wrapper<aegis::user>> user; /**< Reference to object of user that sent this message */
+    aegis::channel & channel; /**< Reference to channel object this message was sent in */
+    objects::message msg; /**< Message object */
 
     bool has_user() const noexcept
     {

@@ -46,7 +46,7 @@ public:
     {
         snowflake id;/**< Snowflake of the guild for this data */
         std::vector<snowflake> roles;
-        std::optional<std::string> nickname;/**< Nickname of the user in this guild */
+		lib::optional<std::string> nickname;/**< Nickname of the user in this guild */
         uint64_t joined_at = 0;/**< Unix timestamp of when member joined this guild */
         bool deaf = false;/**< Whether member is deafened in a voice channel */
         bool mute = false;/**< Whether member is muted in a voice channel */

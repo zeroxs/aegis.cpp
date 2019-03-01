@@ -1154,7 +1154,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
 AEGIS_DECL void core::ws_message_update(const json & result, shards::shard * _shard)
 {
     auto _channel = channel_create(result["d"]["channel_id"]);
-    std::optional<std::reference_wrapper<aegis::user>> _user;
+    lib::optional<std::reference_wrapper<aegis::user>> _user;
     if (result["d"].count("author"))
     {
         const json & author = result["d"]["author"];
