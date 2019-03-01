@@ -33,9 +33,19 @@ struct timestamp
 inline void from_json(const nlohmann::json& j, timestamp& m)
 {
     if (j.count("start") && !j["start"].is_null())
-        m.start = j["start"];
+	{
+		if (j["start"].is_number_integer())
+			m.start = j["start"];
+		else if (j["start"].is_string())
+			m.start = std::stoull(j["start"].get<std::string>());
+	}
     if (j.count("end") && !j["end"].is_null())
-        m.end = j["end"];
+	{
+		if (j["end"].is_number_integer())
+			m.end = j["end"];
+		else if (j["end"].is_string())
+			m.end = std::stoull(j["end"].get<std::string>());
+	}
 }
 /// \endcond
 
