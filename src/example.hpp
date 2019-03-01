@@ -24,8 +24,10 @@ using namespace aegis::gateway::events;
 class example
 {
 public:
-    example() = default;
+    example(core & bot) : bot(bot) {};
     ~example() = default;
+
+    core & bot;
 
     template<typename Out>
     void split(const std::string &s, char delim, Out result)
@@ -40,6 +42,8 @@ public:
         }
     }
 
+    const json make_info_obj(aegis::core & bot, aegis::shards::shard * _shard);
+
     std::vector<std::string> split(const std::string &s, char delim)
     {
         std::vector<std::string> elems;
@@ -48,7 +52,7 @@ public:
     }
 
     // Messages you want to process
-    void attach(core & bot)
+    void attach()
     {
         bot.set_on_message_create(std::bind(&example::MessageCreate, this, std::placeholders::_1));
     }

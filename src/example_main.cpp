@@ -18,9 +18,9 @@ int main(int argc, char * argv[])
     {
         aegis::core bot(spdlog::level::trace);
 
-        example_bot::example commands;
+        example_bot::example commands(bot);
 
-        commands.attach(bot);
+        commands.attach();
 
         bot.run();
         bot.yield();

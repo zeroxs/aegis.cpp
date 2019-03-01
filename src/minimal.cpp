@@ -40,7 +40,7 @@ int main(int argc, char * argv[])
 #endif
 
                 // Is message author myself?
-                if (member_id == obj.bot->get_id())
+                if (member_id == bot.get_id())
                     return;
      
                 // Ignore bot messages and DMs
