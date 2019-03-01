@@ -222,7 +222,7 @@ public:
 private:
     friend AEGIS_DECL void from_json(const nlohmann::json& j, objects::message& m);
     friend AEGIS_DECL void to_json(nlohmann::json& j, const objects::message& m);
-    friend class core;
+    friend class aegis::core;
 
     AEGIS_DECL void populate_self();
 
