@@ -59,6 +59,7 @@ public:
     bool can_voice_deafen() const noexcept { return (_allow_permissions & 0x800000) > 0; }
     bool can_voice_move() const noexcept { return (_allow_permissions & 0x1000000) > 0; }
     bool can_voice_activity() const noexcept { return (_allow_permissions & 0x2000000) > 0; }
+    bool has_priority_speaker() const noexcept { return (_allow_permissions & 0x100) > 0; }
 
     void set_invite() noexcept { _allow_permissions = (_allow_permissions & 0x1); }
     void set_kick() noexcept { _allow_permissions = (_allow_permissions & 0x2); }
