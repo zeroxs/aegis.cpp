@@ -502,28 +502,17 @@ AEGIS_DECL void core::setup_gateway()
     _rest->tz_bias = tz_bias = std::chrono::hours(int(std::round(double((std::chrono::duration_cast<std::chrono::minutes>(res.date - std::chrono::system_clock::now()) / 60).count()))));
 
     if (res.content.empty())
-    {
-        ec = make_error_code(error::get_gateway);
-        return;
-    }
+        throw make_error_code(error::get_gateway);
 
     if (res.reply_code == 401)
-    {
-        ec = make_error_code(error::invalid_token);
-        return;
-    }
+        throw make_error_code(error::invalid_token);
 
     using json = nlohmann::json;
 
     json ret = json::parse(res.content);
     if (ret.count("message"))
-    {
         if (ret["message"] == "401: Unauthorized")
-        {
-            ec = make_error_code(error::invalid_token);
-            return;
-        }
-    }
+            throw make_error_code(error::invalid_token);
 
     ws_handlers.emplace("PRESENCE_UPDATE", std::bind(&core::ws_presence_update, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("TYPING_START", std::bind(&core::ws_typing_start, this, std::placeholders::_1, std::placeholders::_2));
