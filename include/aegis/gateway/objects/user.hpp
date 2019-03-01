@@ -16,7 +16,7 @@
 namespace aegis
 {
 
-class member;
+class user;
 class channel;
 
 }

@@ -8,7 +8,7 @@
 //
 
 #include "aegis/config.hpp"
-#include "aegis/member.hpp"
+#include "aegis/user.hpp"
 #include "aegis/channel.hpp"
 #include "aegis/guild.hpp"
 #include "aegis/core.hpp"

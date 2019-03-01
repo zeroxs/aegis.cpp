@@ -1,6 +1,6 @@
 //
-// member.cpp
-// **********
+// user.cpp
+// ********
 //
 // Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
@@ -8,7 +8,7 @@
 //
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-#include "aegis/member.hpp"
+#include "aegis/user.hpp"
 #include "aegis/channel.hpp"
 #include "aegis/core.hpp"
 #include "aegis/guild.hpp"
@@ -22,12 +22,12 @@
 namespace aegis
 {
 
-AEGIS_DECL std::string member::get_full_name() const noexcept
+AEGIS_DECL std::string user::get_full_name() const noexcept
 {
     return fmt::format("{}#{:0=4}", std::string(_name), _discriminator);
 }
 
-AEGIS_DECL void member::load(guild * _guild, const json & obj, shards::shard * _shard)
+AEGIS_DECL void user::load(guild * _guild, const json & obj, shards::shard * _shard)
 {
     const json & user = obj["user"];
     _member_id = user["id"];
@@ -77,7 +77,7 @@ AEGIS_DECL void member::load(guild * _guild, const json & obj, shards::shard * _
     }
 }
 
-AEGIS_DECL member::guild_info & member::get_guild_info(snowflake guild_id) noexcept
+AEGIS_DECL user::guild_info & user::get_guild_info(snowflake guild_id) noexcept
 {
     std::shared_lock<shared_mutex> l(mtx());
     auto g = std::find_if(std::begin(guilds), std::end(guilds), [&guild_id](const guild_info & gi)
@@ -97,12 +97,14 @@ AEGIS_DECL member::guild_info & member::get_guild_info(snowflake guild_id) noexc
     return *g;
 }
 
-AEGIS_DECL const std::string & member::get_name(snowflake guild_id) noexcept
+AEGIS_DECL const std::string & user::get_name(snowflake guild_id) noexcept
 {
-    return get_guild_info(guild_id).nickname;
+    const auto & def = get_guild_info(guild_id).nickname;
+    static const std::string temp = "";
+    return def.has_value() ? def.value() : temp;
 }
 
-AEGIS_DECL member::guild_info & member::join(snowflake guild_id)
+AEGIS_DECL user::guild_info & user::join(snowflake guild_id)
 {
     auto g = std::find_if(std::begin(guilds), std::end(guilds), [&guild_id](const guild_info & gi)
     {
@@ -121,19 +123,19 @@ AEGIS_DECL member::guild_info & member::join(snowflake guild_id)
     return *g;
 }
 
-AEGIS_DECL void member::load_data(gateway::objects::user mbr)
+AEGIS_DECL void user::load_data(gateway::objects::user mbr)
 {
     if (!mbr.avatar.empty())
         _avatar = mbr.avatar;
     if (!mbr.username.empty())
         _name = mbr.username;
     if (!mbr.avatar.empty())
-        _discriminator = std::stoul(mbr.discriminator);
+        _discriminator = static_cast<uint16_t>(std::stoi(mbr.discriminator));
 
     _is_bot = mbr.is_bot();
 }
 
-AEGIS_DECL std::string member::get_mention() const noexcept
+AEGIS_DECL std::string user::get_mention() const noexcept
 {
     return fmt::format("<@{}>", _member_id);
 }

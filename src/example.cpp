@@ -23,10 +23,10 @@ void example::MessageCreate(message_create obj)
     const aegis::snowflake message_id = std::get<2>(rets);
     const aegis::snowflake member_id = std::get<3>(rets);
 
-    if (obj.msg.is_bot() || !obj.has_member() || !obj.has_channel() || !obj.msg.has_guild())
+    if (obj.msg.is_bot() || !obj.has_user() || !obj.msg.has_guild())
         return;
 
-    auto & _member = obj.get_member();
+    auto & _member = obj.get_user();
     auto & _channel = obj.get_channel();
     auto & _guild = _channel.get_guild();
 
@@ -82,7 +82,7 @@ void example::MessageCreate(message_create obj)
                     _channel.create_message(fmt::format("Unable to kick: {}", tar));
                 else
                 {
-                    auto tmem = obj.bot->find_member(tar);
+                    auto tmem = bot.find_user(tar);
                     if (!tmem)
                         _channel.create_message(fmt::format("Kicked: {}", tar));
                     else

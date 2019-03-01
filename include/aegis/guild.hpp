@@ -191,7 +191,7 @@ public:
     /**
      * @returns Pointer to own member object
      */
-    AEGIS_DECL member * self() const;
+    AEGIS_DECL user * self() const;
 
     /// Get name of guild
     /**

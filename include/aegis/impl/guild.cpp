@@ -11,7 +11,7 @@
 #include <string>
 #include <memory>
 #include "aegis/core.hpp"
-#include "aegis/member.hpp"
+#include "aegis/user.hpp"
 #include "aegis/channel.hpp"
 #include "aegis/error.hpp"
 #include "aegis/shards/shard.hpp"

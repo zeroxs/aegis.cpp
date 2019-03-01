@@ -14,7 +14,7 @@
 #include "aegis/error.hpp"
 #include "aegis/guild.hpp"
 #include "aegis/shards/shard.hpp"
-#include "aegis/member.hpp"
+#include "aegis/user.hpp"
 #include "aegis/rest/rest_reply.hpp"
 #include "aegis/ratelimit/ratelimit.hpp"
 #include "aegis/gateway/objects/message.hpp"

@@ -235,28 +235,39 @@ public:
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 
-    member * self() const
+    user * self() const
     {
         if (_self == nullptr)
             throw exception("Self not found", make_error_code(error::member_not_found));
         return _self;
     }
 
+
+    /// Get count of members tracked (includes duplicates from multiple shared guilds)
+    /**
+     * @returns int64_t of member count
+     */
     AEGIS_DECL int64_t get_member_count() const noexcept;
 
-    /// Obtain a pointer to a member by snowflake
+    /// Get count of unique users tracked
     /**
-     * @param id Snowflake of member to search for
-     * @returns Pointer to member or nullptr
+     * @returns int64_t of user count
      */
-    AEGIS_DECL member * find_member(snowflake id) const noexcept;
+    AEGIS_DECL int64_t get_user_count() const noexcept;
 
-    /// Obtain a pointer to a member by snowflake. If none exists, creates the object.
+    /// Obtain a pointer to a user by snowflake
     /**
-     * @param id Snowflake of member to search for
-     * @returns Pointer to member
+     * @param id Snowflake of user to search for
+     * @returns Pointer to user or nullptr
      */
-    AEGIS_DECL member * member_create(snowflake id) noexcept;
+    AEGIS_DECL user * find_user(snowflake id) const noexcept;
+
+    /// Obtain a pointer to a user by snowflake. If none exists, creates the object.
+    /**
+     * @param id Snowflake of user to search for
+     * @returns Pointer to user
+     */
+    AEGIS_DECL user * user_create(snowflake id) noexcept;
 #endif
 
     /// Get the snowflake of the bot

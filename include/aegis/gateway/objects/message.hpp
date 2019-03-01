@@ -184,7 +184,7 @@ public:
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     bool has_member() const noexcept
     {
-        return _member != nullptr || _author_id != 0;
+        return _user != nullptr || _author_id != 0;
     }
 #endif
 

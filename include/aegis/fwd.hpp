@@ -32,7 +32,7 @@ class shard_mgr;
 class core;
 class channel;
 class guild;
-class member;
+class user;
 class shard;
 
 namespace gateway

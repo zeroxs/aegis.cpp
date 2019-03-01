@@ -1,6 +1,6 @@
 //
-// member.hpp
-// **********
+// user.hpp
+// ********
 //
 // Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
@@ -34,20 +34,19 @@ using shared_mutex = std::shared_timed_mutex;
 using json = nlohmann::json;
 
 /// Stores user-specific and guild-specific attributes of users
-///\todo Maybe rename this to the more appropriate `user`?
-class member
+class user
 {
 public:
     using presence = aegis::gateway::objects::presence;
   
-    explicit member(snowflake id) : _member_id(id) {}
+    explicit user(snowflake id) : _member_id(id) {}
 
     /// Member owned guild information
     struct guild_info
     {
         snowflake id;/**< Snowflake of the guild for this data */
         std::vector<snowflake> roles;
-        std::string nickname;/**< Nickname of the user in this guild */
+        std::optional<std::string> nickname;/**< Nickname of the user in this guild */
         uint64_t joined_at = 0;/**< Unix timestamp of when member joined this guild */
         bool deaf = false;/**< Whether member is deafened in a voice channel */
         bool mute = false;/**< Whether member is muted in a voice channel */
@@ -204,7 +203,7 @@ private:
 namespace aegis
 {
 
-class member
+class user
 {
 public:
     enum member_status

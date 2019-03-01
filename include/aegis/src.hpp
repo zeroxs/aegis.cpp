@@ -31,6 +31,6 @@
 #include <aegis/rest/rest_controller.hpp>
 #include <aegis/core.hpp>
 #include <aegis/shards/shard_mgr.hpp>
-#include <aegis/member.hpp>
+#include <aegis/user.hpp>
 #include <aegis/channel.hpp>
 #include <aegis/guild.hpp>

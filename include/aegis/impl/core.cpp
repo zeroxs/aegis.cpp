@@ -15,7 +15,7 @@
 #include "aegis/shards/shard.hpp"
 #include "aegis/guild.hpp"
 #include "aegis/channel.hpp"
-#include "aegis/member.hpp"
+#include "aegis/user.hpp"
 
 #include <nlohmann/json.hpp>
 #include <spdlog/sinks/sink.h>
