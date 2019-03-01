@@ -41,7 +41,11 @@ struct message_create
     {
         if (has_user())
             return user.value().get();
-        throw lib::bad_optional_access();
+#if defined(AEGIS_HAS_BUILTIN_OPTIONAL)
+		throw lib::bad_optional_access("bad optional access");
+#else
+		throw lib::bad_optional_access();
+#endif
     }
 };
 

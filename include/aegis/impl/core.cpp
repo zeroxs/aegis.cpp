@@ -1158,7 +1158,7 @@ AEGIS_DECL void core::ws_message_update(const json & result, shards::shard * _sh
     if (result["d"].count("author"))
     {
         const json & author = result["d"]["author"];
-        _user = *user_create(author["id"]);
+        _user = std::ref(*user_create(author["id"]));
     }
     gateway::events::message_update obj{ *_shard, *_channel, std::ref(*_user) };
     obj.msg = result["d"];
