@@ -68,7 +68,7 @@ using ratelimit_mgr_t = aegis::ratelimit::ratelimit_mgr;
 struct thread_state
 {
     std::thread thd;
-    bool active;
+    bool active = false;
     std::chrono::steady_clock::time_point start_time;
     std::function<void(void)> fn;
 };
@@ -218,12 +218,6 @@ public:
         cv.wait(l);
 
         log->info("Closing bot");
-    
-        if (!external_io_context)
-        {
-            wrk.reset();
-            _io_context->stop();
-        }
     }
 
     rest::rest_controller & get_rest_controller() noexcept { return *_rest; }
@@ -539,7 +533,7 @@ private:
     voice_state_update_t i_voice_state_update;
     voice_server_update_t i_voice_server_update;
 
-    AEGIS_DECL void setup_gateway(std::error_code & ec);
+    AEGIS_DECL void setup_gateway();
     AEGIS_DECL void keep_alive(const asio::error_code & error, const std::chrono::milliseconds ms, shards::shard * _shard);
 
     AEGIS_DECL void reset_shard(shards::shard * _shard);
@@ -626,7 +620,7 @@ private:
     std::shared_ptr<asio::io_context> _io_context = nullptr;
     work_ptr wrk = nullptr;
     std::condition_variable cv;
-    std::chrono::hours tz_bias;
+    std::chrono::hours tz_bias = 0h;
 public:
     std::vector<std::unique_ptr<thread_state>> threads;
     std::recursive_mutex _global_m;

@@ -109,10 +109,7 @@ AEGIS_DECL void core::setup_shard_mgr()
 
     _rest = std::make_shared<rest::rest_controller>(_token, "/api/v6", "discordapp.com", &get_io_context());
 
-    std::error_code ec;
-    setup_gateway(ec);
-    if (ec)
-        throw ec;
+    setup_gateway();
 
     _ratelimit = std::make_shared<ratelimit_mgr_t>(
         std::bind(&aegis::rest::rest_controller::execute,
@@ -138,12 +135,13 @@ AEGIS_DECL core::core(spdlog::level::level_enum loglevel, std::size_t count)
 }
 
 AEGIS_DECL core::core(std::shared_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel)
-    : _loglevel(loglevel)
+    : _io_context(_io)
+    , _loglevel(loglevel)
 {
     load_config();
 
     setup_logging();
-    setup_context();
+    //setup_context();
     setup_shard_mgr();
 }
 
@@ -181,6 +179,7 @@ AEGIS_DECL core::~core()
             _io_context->stop();
     for (auto & t : threads)
         t->thd.join();
+    _shard_mgr.reset();
 }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
@@ -726,6 +725,9 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                     ++message_count[cmd];
                     asio::post(*_io_context, [=, res = std::move(result)]()
                     {
+                        if (get_state() == aegis::bot_status::shutdown)
+                            return;
+
                         try
                         {
 #if defined(AEGIS_PROFILING)

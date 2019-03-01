@@ -44,7 +44,10 @@ AEGIS_DECL shard_mgr::shard_mgr(std::string token, asio::io_context & _io, std::
 
 AEGIS_DECL shard_mgr::~shard_mgr()
 {
-
+    if (ws_timer) ws_timer->cancel();
+    ws_timer.reset();
+    if (ws_connect_timer) ws_connect_timer->cancel();
+    ws_connect_timer.reset();
 }
 
 AEGIS_DECL void shard_mgr::start()
@@ -61,15 +64,7 @@ AEGIS_DECL void shard_mgr::start()
         log->info("Websocket[s] connecting");
         for (uint32_t k = 0; k < shard_max_count; ++k)
         {
-            std::error_code ec;
             auto _shard = std::make_unique<aegis::shards::shard>(_io_context, websocket_o, k);
-
-            if (ec)
-            {
-                log->critical("Websocket connection failed: {}", ec.message());
-                return;
-            }
-
             AEGIS_DEBUG(log, "Shard#{}: added to connect list", _shard->get_id());
             _shards_to_connect.push_back(_shard.get());
             _shards.push_back(std::move(_shard));
