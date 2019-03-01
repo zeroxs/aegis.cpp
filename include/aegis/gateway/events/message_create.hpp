@@ -41,7 +41,7 @@ struct message_create
     {
         if (has_user())
             return user.value().get();
-        throw std::bad_optional_access();
+        throw lib::bad_optional_access();
     }
 };
 

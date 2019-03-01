@@ -1131,7 +1131,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
     else if (c->get_guild_id() == 0)//DM
     {
         auto m = find_user(result["d"]["author"]["id"]);
-        gateway::events::message_create obj{ *_shard, *m, *c };
+        gateway::events::message_create obj{ *_shard, std::ref(*m), std::ref(*c) };
 
         obj.msg = result["d"];
 
@@ -1142,7 +1142,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
     {
         auto m = find_user(result["d"]["author"]["id"]);
         auto g = &c->get_guild();
-        gateway::events::message_create obj{ *_shard, *m, *c/*, std::make_optional(std::ref(*g))*/ };
+        gateway::events::message_create obj{ *_shard, std::ref(*m), std::ref(*c)/*, std::make_optional(std::ref(*g))*/ };
 
         obj.msg = result["d"];
 
@@ -1160,7 +1160,7 @@ AEGIS_DECL void core::ws_message_update(const json & result, shards::shard * _sh
         const json & author = result["d"]["author"];
         _user = *user_create(author["id"]);
     }
-    gateway::events::message_update obj{ *_shard, *_channel, *_user };
+    gateway::events::message_update obj{ *_shard, *_channel, std::ref(*_user) };
     obj.msg = result["d"];
 
     if (i_message_update)
