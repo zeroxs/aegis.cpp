@@ -122,19 +122,36 @@ AEGIS_DECL aegis::future<rest::rest_reply> message::delete_all_reactions()
     return get_channel().delete_all_reactions(_message_id);
 }
 
+//TODO: query the API when encountering missing data?
 AEGIS_DECL void message::populate_self()
 {
     if ((_guild == nullptr) && (_guild_id > 0))
         _guild = _bot->find_guild(_guild_id);
     if ((_channel == nullptr) && (_channel_id > 0))
         _channel = _bot->find_channel(_channel_id);
-    if (_channel == nullptr)
-        return;//fail
+    if (!_channel)
+        //throw because channel should always exist or else we have no understanding of the channel
+        //TODO: create a dummy channel in this instance then request full info after?
+        //bot would have already performed action on it by then. perhaps timed block here until channel info
+        //is requested and populated and throw if it can't be requested?
+        throw aegis::exception(error::channel_not_found);
     if (_guild == nullptr)
         _guild = _bot->find_guild(_channel->get_guild_id());
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if ((_user == nullptr) && (_author_id > 0))
-        _user = _bot->find_user(_author_id);
+    if (!is_webhook())
+    {
+        if ((_user == nullptr) && (_author_id > 0))
+            _user = _bot->find_user(_author_id);
+        if (_user == nullptr)
+        {
+            //create user with the info provided?
+            //user created will be very primitive with minimal information
+            //TODO: add user request queue to lib to pull updated user data
+            _bot->user_create(_author_id)->load_data(author);
+            _bot->log->debug("message::populate_self() user not found - created");
+            //throw aegis::exception(error::member_not_found);
+        }
+    }
 #endif
 }
 

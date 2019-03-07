@@ -138,7 +138,7 @@ public:
 
     bool is_webhook() const noexcept
     {
-        return author.is_webhook();
+        return !webhook_id.empty();
     }
 
     const std::string & get_content() const noexcept
