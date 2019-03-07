@@ -1884,6 +1884,62 @@ AEGIS_DECL aegis::future<gateway::objects::guild> core::create_guild(
     return aegis::make_ready_future(gateway::objects::guild(json::parse(get_ratelimit().post_task({ "/guilds", rest::Post, obj.dump() }).get().content)));
 }
 
+AEGIS_DECL aegis::future<gateway::objects::message> core::create_message(snowflake channel_id, const std::string & msg, int64_t nonce, bool perform_lookup) noexcept
+{
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    channel* _channel = nullptr;
+    guild* _guild = nullptr;
+    if (perform_lookup)
+    {
+        auto it = channels.find(channel_id);
+        if (it == channels.end())
+            return aegis::make_exception_future<gateway::objects::message>(error::channel_not_found);
+        _channel = it->second.get();
+        _guild = &it->second->get_guild();
+        if (_guild != nullptr)//probably a DM
+            if (!_channel->perms().can_send_messages())
+                return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
+    }
+#endif
+
+    json obj;
+    obj["content"] = msg;
+
+    if (nonce)
+        obj["nonce"] = nonce;
+
+    return get_ratelimit().post_task<gateway::objects::message>({ fmt::format("/channels/{}/messages", channel_id), rest::Post, obj.dump() });
+}
+
+AEGIS_DECL aegis::future<gateway::objects::message> core::create_message_embed(snowflake channel_id, const std::string& msg, const json& _obj, int64_t nonce, bool perform_lookup) noexcept
+{
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    channel* _channel = nullptr;
+    guild* _guild = nullptr;
+    if (perform_lookup)
+    {
+        auto it = channels.find(channel_id);
+        if (it == channels.end())
+            return aegis::make_exception_future<gateway::objects::message>(error::channel_not_found);
+        _channel = it->second.get();
+        _guild = &it->second->get_guild();
+        if (_guild != nullptr)//probably a DM
+            if (!_channel->perms().can_send_messages())
+                return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
+    }
+#endif
+
+    json obj;
+    if (!msg.empty())
+        obj["content"] = msg;
+    obj["embed"] = _obj;
+
+    if (nonce)
+        obj["nonce"] = nonce;
+
+    return get_ratelimit().post_task<gateway::objects::message>({ fmt::format("/channels/{}/messages", channel_id), rest::Post, obj.dump() });
+}
+
 AEGIS_DECL void aegis::core::update_presence(const std::string& text, gateway::objects::activity::activity_type type, gateway::objects::presence::user_status status)
 {
     json j = {

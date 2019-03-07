@@ -476,8 +476,12 @@ public:
 
     AEGIS_DECL void reduce_threads(std::size_t count) noexcept;
 
+    AEGIS_DECL aegis::future<gateway::objects::message> create_message(snowflake channel_id, const std::string& msg, int64_t nonce = 0, bool perform_lookup = false) noexcept;
+
+    AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(snowflake channel_id, const std::string& msg, const json& _obj, int64_t nonce = 0, bool perform_lookup = false) noexcept;
+
     template<typename T, typename V = std::result_of_t<T()>, typename = std::enable_if_t<!std::is_void<V>::value>>
-    aegis::future<V> async(T f)
+    aegis::future<V> async(T f) noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
         aegis::promise<V> pr(_io_context.get(), &_global_m);
@@ -499,7 +503,7 @@ public:
     }
 
     template<typename T, typename V = std::enable_if_t<std::is_void<std::result_of_t<T()>>::value>>
-    aegis::future<V> async(T f)
+    aegis::future<V> async(T f) noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
         aegis::promise<V> pr(_io_context.get(), &_global_m);

@@ -85,7 +85,7 @@ public:
     }
 
     template<typename ResultType, typename V = std::enable_if_t<!std::is_same<ResultType, rest::rest_reply>::value>>
-    aegis::future<ResultType> post_task(rest::request_params params)
+    aegis::future<ResultType> post_task(rest::request_params params) noexcept
     {
         return _bot->async([=]() -> ResultType
         {
@@ -97,7 +97,7 @@ public:
         });
     }
 
-    aegis::future<rest::rest_reply> post_task(rest::request_params params)
+    aegis::future<rest::rest_reply> post_task(rest::request_params params) noexcept
     {
         return _bot->async([=]() -> rest::rest_reply
         {
@@ -107,7 +107,7 @@ public:
     }
 
     template<typename ResultType, typename V = std::enable_if_t<!std::is_same<ResultType, rest::rest_reply>::value>>
-    aegis::future<ResultType> post_task(std::string _bucket, rest::request_params params)
+    aegis::future<ResultType> post_task(std::string _bucket, rest::request_params params) noexcept
     {
         return _bot->async([=]() -> ResultType
         {
@@ -119,7 +119,7 @@ public:
         });
     }
 
-    aegis::future<rest::rest_reply> post_task(std::string _bucket, rest::request_params params)
+    aegis::future<rest::rest_reply> post_task(std::string _bucket, rest::request_params params) noexcept
     {
         return _bot->async([=]() -> rest::rest_reply
         {
