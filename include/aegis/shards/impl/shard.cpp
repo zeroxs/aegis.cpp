@@ -245,6 +245,30 @@ AEGIS_DECL void shard::process_writes(const asio::error_code & ec)
     write_timer.async_wait(asio::bind_executor(*_connection->get_strand(), std::bind(&shard::process_writes, this, std::placeholders::_1)));
 }
 
+AEGIS_DECL void shard::update_presence(const std::string& text, gateway::objects::activity::activity_type type, gateway::objects::presence::user_status status)
+{
+    nlohmann::json j = {
+        { "op", 3 },
+        {
+            "d",
+            {
+                { "game",
+                    {
+                        { "name", text },
+                        { "type", static_cast<int32_t>(type) }
+                    }
+                },
+                { "status", gateway::objects::presence::to_string(status) },
+                { "since", nlohmann::json::value_t::null },
+                { "afk", false }
+            }
+        }
+    };
+    send(j.dump());
+    return;
+}
+
+
 }
 
 }

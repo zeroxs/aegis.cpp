@@ -22,6 +22,7 @@
 #include "aegis/gateway/objects/member.hpp"
 #include "aegis/gateway/objects/channel.hpp"
 #include "aegis/gateway/objects/guild.hpp"
+#include "aegis/gateway/objects/activity.hpp"
 
 #include <asio/io_context.hpp>
 #include <asio/bind_executor.hpp>
@@ -341,6 +342,17 @@ public:
      * @returns Response object
      */
     AEGIS_DECL rest::rest_reply call(rest::request_params & params);
+
+    /// Updated presence across all shards at once
+    /**
+     * @see aegis::gateway::objects::activity
+     * @see aegis::gateway::objects::presence
+     * @param std::string Test of presence message
+     * @param aegis::gateway::objects::activity::activity_type Enum of the activity type
+     * @param aegis::gateway::objects::presence::user_status Enum of the status
+     * @returns 
+     */
+    AEGIS_DECL void update_presence(const std::string& text, gateway::objects::activity::activity_type type = gateway::objects::activity::Game, gateway::objects::presence::user_status status = gateway::objects::presence::Online);
 
     std::unordered_map<snowflake, std::unique_ptr<channel>> channels;
     std::unordered_map<snowflake, std::unique_ptr<guild>> guilds;

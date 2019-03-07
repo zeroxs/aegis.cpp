@@ -33,6 +33,25 @@ struct presence
         DoNotDisturb,
         Offline
     };
+    static inline std::string to_string(user_status status)
+    {
+        switch (status)
+        {
+        case Idle:
+            return "idle";
+            break;
+        case DoNotDisturb:
+            return "dnd";
+            break;
+        case Offline:
+            return "offline";
+            break;
+        case Online:
+        default:
+            return "online";
+            break;
+        }
+    }
 };
 
 /// \cond TEMPLATES

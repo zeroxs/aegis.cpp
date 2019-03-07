@@ -29,6 +29,8 @@
 #endif
 #include <spdlog/fmt/fmt.h>
 #include "aegis/zstr/zstr.hpp"
+#include "aegis/gateway/objects/presence.hpp"
+#include "aegis/gateway/objects/activity.hpp"
 
 namespace aegis
 {
@@ -209,6 +211,9 @@ public:
     {
         return _trace;
     }
+
+    AEGIS_DECL void update_presence(const std::string& text, gateway::objects::activity::activity_type type = gateway::objects::activity::Game, gateway::objects::presence::user_status status = gateway::objects::presence::Online);
+
 
 private:
     friend class shard_mgr;

@@ -31,6 +31,8 @@ using shared_mutex = std::shared_timed_mutex;
 
 using json = nlohmann::json;
 
+using channel_type = gateway::objects::channel::channel_type;
+
 #pragma region rest params
 struct create_message_t
 {

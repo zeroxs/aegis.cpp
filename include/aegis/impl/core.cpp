@@ -1884,4 +1884,27 @@ AEGIS_DECL aegis::future<gateway::objects::guild> core::create_guild(
     return aegis::make_ready_future(gateway::objects::guild(json::parse(get_ratelimit().post_task({ "/guilds", rest::Post, obj.dump() }).get().content)));
 }
 
+AEGIS_DECL void aegis::core::update_presence(const std::string& text, gateway::objects::activity::activity_type type, gateway::objects::presence::user_status status)
+{
+    json j = {
+        { "op", 3 },
+        {
+            "d",
+            {
+                { "game",
+                    {
+                        { "name", text },
+                        { "type", static_cast<int32_t>(type) }
+                    }
+                },
+                { "status", gateway::objects::presence::to_string(status) },
+                { "since", json::value_t::null },
+                { "afk", false }
+            }
+        }
+    };
+    send_all_shards(j.dump());
+    return;
+}
+
 }
