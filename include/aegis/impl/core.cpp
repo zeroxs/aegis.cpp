@@ -1940,7 +1940,7 @@ AEGIS_DECL aegis::future<gateway::objects::message> core::create_message_embed(s
     return get_ratelimit().post_task<gateway::objects::message>({ fmt::format("/channels/{}/messages", channel_id), rest::Post, obj.dump() });
 }
 
-AEGIS_DECL void aegis::core::update_presence(const std::string& text, gateway::objects::activity::activity_type type, gateway::objects::presence::user_status status)
+AEGIS_DECL void core::update_presence(const std::string& text, gateway::objects::activity::activity_type type, gateway::objects::presence::user_status status)
 {
     json j = {
         { "op", 3 },
