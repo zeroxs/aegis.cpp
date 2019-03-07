@@ -24,7 +24,9 @@ namespace objects
 /**\todo Needs documentation
  */
 struct thumbnail
-{
+{ 
+    thumbnail(std::string tn) : url(tn) {}
+    thumbnail() = default;
     std::string url; /**<\todo Needs documentation */
     std::string proxy_url; /**<\todo Needs documentation */
     int32_t height = 0; /**<\todo Needs documentation */
