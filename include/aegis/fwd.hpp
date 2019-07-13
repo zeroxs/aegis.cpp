@@ -43,6 +43,9 @@ struct user;
 class message;
 struct channel;
 struct guild;
+struct emoji;
+struct role;
+struct attachment;
 }
 
 namespace events

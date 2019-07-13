@@ -168,7 +168,6 @@ public:
     /// directly on the same thread and does not attempt to manage ratelimits due to the already
     /// existing requirement that the bot must be in less than 10 guilds for this call to succeed
     /**
-     * @param ec Indicates what error occurred, if any
      * @param name Set name of guild
      * @param voice_region Set region for voice
      * @param verification_level Set verification level from unrestricted level to verified phone level

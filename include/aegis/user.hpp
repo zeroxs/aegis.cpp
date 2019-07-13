@@ -77,9 +77,9 @@ public:
         return _discriminator;
     }
 
-    /// Get the discriminator of this user
+    /// Get the avatar hash of this user
     /**
-    * @returns string of the discriminator
+    * @returns string of the avatar hash
     */
     const std::string & get_avatar() const noexcept
     {
@@ -116,7 +116,7 @@ public:
      */
     AEGIS_DECL guild_info & get_guild_info(snowflake guild_id) noexcept;
 
-    /// Get the full name (username#discriminator) of this user
+    /// Get the full name (username\#discriminator) of this user
     /**
      * @returns string of the full username and discriminator
      */

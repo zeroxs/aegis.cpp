@@ -306,14 +306,12 @@ public:
 
     /// Get guild information
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<gateway::objects::guild>
      */
     AEGIS_DECL aegis::future<gateway::objects::guild> get_guild();
 
     /// Modify guild information
     /**
-     * @param ec Indicates what error occurred, if any
      * @param name Set name of guild
      * @param voice_region Set region for voice
      * @param verification_level Set verification level from unrestricted level to verified phone level
@@ -352,14 +350,12 @@ public:
 
     /// Delete a guild
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_guild();
 
     /// Create a text channel
     /**
-     * @param ec Indicates what error occurred, if any
      * @param name String of the name for the channel
      * @param parent_id The channel or category to place this channel below
      * @param nsfw Whether the channel will be labeled as not safe for work
@@ -382,7 +378,6 @@ public:
 
     /// Create a voice channel
     /**
-     * @param ec Indicates what error occurred, if any
      * @param name String of the name for the channel
      * @param bitrate The bitrate count of the channel
      * @param user_limit The max amount of members that may join the channel
@@ -407,7 +402,6 @@ public:
 
     /// Create a category
     /**
-     * @param ec Indicates what error occurred, if any
      * @param name String of the name for the channel
      * @param parent_id The channel or category to place this channel below
      * @param permission_overwrites Array of permission overwrites to apply to the channel
@@ -429,7 +423,6 @@ public:
 
     /// Modify positions of channels
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> modify_channel_positions();
@@ -437,7 +430,6 @@ public:
     /// Modify a member
     /// All fields are optional
     /**
-     * @param ec Indicates what error occurred, if any
      * @param user_id The snowflake of the user to edit
      * @param nick String of nickname to change to
      * @param mute Whether or not to voice mute the member
@@ -464,7 +456,6 @@ public:
 
     /// Modify own nickname
     /**
-     * @param ec Indicates what error occurred, if any
      * @param newname String of the new nickname to apply
      * @returns aegis::future<rest::rest_reply>
      */
@@ -472,7 +463,6 @@ public:
 
     /// Add a role to guild member
     /**
-     * @param ec Indicates what error occurred, if any
      * @param user_id The snowflake of the user to add new role
      * @param role_id The snowflake of the role to add to member
      * @returns aegis::future<rest::rest_reply>
@@ -481,7 +471,6 @@ public:
 
     /// Remove a role from guild member
     /**
-     * @param ec Indicates what error occurred, if any
      * @param user_id The snowflake of the user to remove role
      * @param role_id The snowflake of the role to remove from member
      * @returns aegis::future<rest::rest_reply>
@@ -490,7 +479,6 @@ public:
 
     /// Remove guild member (kick)
     /**
-     * @param ec Indicates what error occurred, if any
      * @param user_id The snowflake of the member to kick
      * @returns aegis::future<rest::rest_reply>
      */
@@ -498,7 +486,6 @@ public:
 
     /// Create a new guild ban
     /**
-     * @param ec Indicates what error occurred, if any
      * @param user_id The snowflake of the member to ban
      * @param delete_message_days How many days to delete member message history (0-7)
      * @returns aegis::future<rest::rest_reply>
@@ -518,7 +505,6 @@ public:
 
     /// Remove a guild ban
     /**
-     * @param ec Indicates what error occurred, if any
      * @param user_id The snowflake of the member to unban
      * @returns aegis::future<rest::rest_reply>
      */
@@ -527,7 +513,6 @@ public:
     /// Create a guild role
     /**
      * @see aegis::permission
-     * @param ec Indicates what error occurred, if any
      * @param name The name of the role to create
      * @param _perms The permissions to set
      * @param color 32bit integer of the color
@@ -551,7 +536,6 @@ public:
 
     /// Modify the guild role positions
     /**
-     * @param ec Indicates what error occurred, if any
      * @param role_id Snowflake of role to change position
      * @param position Index of position to change role to
      * @returns aegis::future<rest::rest_reply>
@@ -561,7 +545,6 @@ public:
     /// Modify a guild role
     /**
      * @see aegis::permission
-     * @param ec Indicates what error occurred, if any
      * @param id The snowflake of the role to modify
      * @param name The name to set the role to
      * @param _perms The permissions to set
@@ -587,7 +570,6 @@ public:
 
     /// Delete a guild role
     /**
-     * @param ec Indicates what error occurred, if any
      * @param role_id The snowflake of the role to delete
      * @returns aegis::future<rest::rest_reply>
      */
@@ -595,7 +577,6 @@ public:
 
     /// Get a count of members that would be pruned
     /**
-     * @param ec Indicates what error occurred, if any
      * @param days The days of inactivity to prune the member
      * @returns aegis::future<rest::rest_reply>
      */
@@ -603,7 +584,6 @@ public:
 
     /// Perform a guild prune
     /**
-     * @param ec Indicates what error occurred, if any
      * @param days The days of inactivity to prune the member
      * @returns aegis::future<rest::rest_reply>
      */
@@ -611,63 +591,54 @@ public:
 
     /// Get active guild invites
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> get_guild_invites();
 
     /// Get guild integrations
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> get_guild_integrations();
 
     /// Create a new guild integration
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> create_guild_integration();
 
     /// Modify a guild integration
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> modify_guild_integration();
 
     /// Delete a guild integration
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_guild_integration();
 
     /// Get the guild integrations
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> sync_guild_integration();
 
     /// Get the guild embed settings
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> get_guild_embed();
 
     /// Modify the guild embed settings
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> modify_guild_embed();
 
     /// Leave the guild this object is associated with
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> leave();

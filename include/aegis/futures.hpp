@@ -553,6 +553,7 @@ public:
     {
         std::atomic_thread_fence(std::memory_order_acquire);
         //std::lock_guard<std::recursive_mutex> gl(internal::_global_m);
+        //TODO: this needs a lock or l2 lock has a chance of segfault
         if (x._future)
         {
             std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
