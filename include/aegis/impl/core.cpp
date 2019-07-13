@@ -309,7 +309,7 @@ AEGIS_DECL channel * core::channel_create(snowflake id) noexcept
     auto it = channels.find(id);
     if (it == channels.end())
     {
-        auto g = std::make_unique<channel>(id, 0, this, *_io_context);
+        auto g = std::make_unique<channel>(id, 0, this, *_io_context, *_ratelimit);
         auto ptr = g.get();
         channels.emplace(id, std::move(g));
         return ptr;

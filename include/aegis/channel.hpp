@@ -164,8 +164,9 @@ public:
      * @param guild_id Snowflake of guild this channel belongs to
      * @param _bot Pointer to the core lib instance
      * @param _io Reference to asio::io_context for the bot
+     * @param ratelimit Reference to bucket factory that manages rate limits for this channel
      */
-    AEGIS_DECL channel(const snowflake channel_id, const snowflake guild_id, core * _bot, asio::io_context & _io);
+    AEGIS_DECL channel(const snowflake channel_id, const snowflake guild_id, core * _bot, asio::io_context & _io, ratelimit::ratelimit_mgr &_ratelimit);
 
     /// Get a reference to the guild object this channel belongs to
     /**
@@ -570,6 +571,7 @@ private:
     asio::io_context & _io_context;
     mutable shared_mutex _m;
     core * _bot = nullptr;
+    ratelimit::ratelimit_mgr & _ratelimit;
 };
 
 }
