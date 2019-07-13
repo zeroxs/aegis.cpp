@@ -493,7 +493,7 @@ public:
             }
             catch (std::exception & e)
             {
-                pr.set_exception(make_exception_ptr(e));
+                pr.set_exception(std::current_exception());
             }
         });
         std::atomic_thread_fence(std::memory_order_release);
@@ -516,7 +516,7 @@ public:
             }
             catch (std::exception & e)
             {
-                pr.set_exception(make_exception_ptr(e));
+                pr.set_exception(std::current_exception());
             }
         });
         std::atomic_thread_fence(std::memory_order_release);
