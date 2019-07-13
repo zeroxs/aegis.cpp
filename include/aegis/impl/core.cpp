@@ -1001,6 +1001,14 @@ AEGIS_DECL uint64_t core::get_shard_transfer()
     return count;
 }
 
+AEGIS_DECL uint64_t core::get_shard_u_transfer()
+{
+    uint64_t count = 0;
+    for (auto & s : _shard_mgr->_shards)
+        count += s->get_transfer_u();
+    return count;
+}
+
 AEGIS_DECL void core::_thread_track(thread_state * t_state)
 {
     try

@@ -468,6 +468,8 @@ public:
 
     AEGIS_DECL uint64_t get_shard_transfer();
 
+    AEGIS_DECL uint64_t get_shard_u_transfer();
+
     const std::string & get_token() const noexcept { return _token; }
 
     AEGIS_DECL std::size_t add_run_thread() noexcept;
