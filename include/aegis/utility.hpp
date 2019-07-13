@@ -152,6 +152,22 @@ inline std::chrono::system_clock::time_point from_iso8601(const std::string & _t
     return std::chrono::system_clock::from_time_t(std::mktime(&tm));
 }
 
+inline std::string to_iso8601(std::chrono::system_clock::time_point tp)
+{
+    auto itt = std::chrono::system_clock::to_time_t(tp);
+    std::ostringstream ss;
+    ss << std::put_time(gmtime(&itt), "%FT%TZ");
+    return ss.str();
+}
+
+inline std::string to_iso8601(int64_t tp)
+{
+    auto itt = std::chrono::system_clock::to_time_t(std::chrono::time_point<std::chrono::system_clock>(std::chrono::milliseconds(tp)));
+    std::ostringstream ss;
+    ss << std::put_time(gmtime(&itt), "%FT%TZ");
+    return ss.str();
+}
+
 /// Converts an Day, DD, Mth YYYY HH:MM:SS GMT date string to an std::chrono::system_clock::time_point
 /**
  * @param _time_t String of the timestamp
