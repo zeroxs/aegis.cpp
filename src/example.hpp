@@ -94,14 +94,14 @@ public:
                     for (auto & m : _guild.get_members())
                         if (m.second->get_full_name() == name)
                             return { m.second->get_id() };
-                    return { 0 };
+                    return 0;
                 }
-                return { 0 };//# not found. unknown parameter. unicode may trigger this.
+                return 0;//# not found. unknown parameter. unicode may trigger this.
             }
         }
         catch (std::invalid_argument &)
         {
-            return { 0 };
+            return 0;
         }
     }
 
