@@ -12,7 +12,7 @@ This project is licensed under the MIT license. See [LICENSE](https://github.com
 
 Libraries used (all are header-only with the exception of zlib and openssl):
 - [Asio](https://github.com/chriskohlhoff/asio)
-- [Websocketpp](https://github.com/zaphoyd/websocketpp)
+- [Websocketpp (unofficial fork)](https://github.com/zeroxs/websocketpp)
 - [JSON for Modern C++](https://github.com/nlohmann/json)
 - [spdlog](https://github.com/gabime/spdlog) (by extension, [fmtlib](https://github.com/fmtlib/fmt))
 - [OpenSSL 1.0.2](https://www.openssl.org)
