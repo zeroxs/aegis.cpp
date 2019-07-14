@@ -166,7 +166,7 @@ public:
      * @param _io Reference to asio::io_context for the bot
      * @param ratelimit Reference to bucket factory that manages rate limits for this channel
      */
-    AEGIS_DECL channel(const snowflake channel_id, const snowflake guild_id, core * _bot, asio::io_context & _io, ratelimit::ratelimit_mgr &_ratelimit);
+    AEGIS_DECL channel(const snowflake channel_id, const snowflake guild_id, core * _bot, asio::io_context & _io, ratelimit::ratelimit_mgr & _ratelimit);
 
     /// Get a reference to the guild object this channel belongs to
     /**
@@ -188,7 +188,9 @@ public:
      */
     std::string get_name() const noexcept
     {
-        return name;
+        std::shared_lock<shared_mutex> l(_m);
+        std::string _name = name;
+        return std::move(_name);
     }
 
     /// Get the type of this channel
@@ -551,7 +553,7 @@ private:
     friend class core;
 
     /// requires the caller to handle locking
-    AEGIS_DECL void load_with_guild(guild & _guild, const json & obj, shards::shard * _shard);
+    AEGIS_DECL void _load_with_guild(guild & _guild, const json & obj, shards::shard * _shard);
 
     snowflake channel_id; /**< snowflake of this channel */
     snowflake guild_id; /**< snowflake of the guild this channel belongs to */

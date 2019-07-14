@@ -56,7 +56,7 @@ AEGIS_DECL aegis::user & message::get_user()
             throw exception("message::get_member() _member == nullptr && _author_id == 0", make_error_code(error::member_not_found));
 
         _user = _bot->user_create(_author_id);
-        _user->load_data(author);
+        _user->_load_data(author);
     }
     return *_user;
 }
@@ -147,7 +147,7 @@ AEGIS_DECL void message::populate_self()
             //create user with the info provided?
             //user created will be very primitive with minimal information
             //TODO: add user request queue to lib to pull updated user data
-            _bot->user_create(_author_id)->load_data(author);
+            _bot->user_create(_author_id)->_load_data(author);
             _bot->log->debug("message::populate_self() user not found - created");
             //throw aegis::exception(error::member_not_found);
         }

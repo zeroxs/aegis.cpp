@@ -199,7 +199,9 @@ public:
      */
     std::string get_name() const noexcept
     {
-        return name;
+        std::shared_lock<shared_mutex> l(_m);
+        std::string _name = name;
+        return std::move(_name);
     }
 
     /// Get region of guild
@@ -208,7 +210,9 @@ public:
      */
     std::string get_region() const noexcept
     {
-        return region;
+        std::shared_lock<shared_mutex> l(_m);
+        std::string _region = region;
+        return std::move(_region);
     }
 
     /// Check if member has role
@@ -247,6 +251,7 @@ public:
      */
     int64_t base_permissions() const noexcept
     {
+        std::shared_lock<shared_mutex> l(_m);
         return base_permissions(self());
     }
 
@@ -256,6 +261,7 @@ public:
  */
     int64_t base_permissions(user * _member) const noexcept
     {
+        std::shared_lock<shared_mutex> l(_m);
         return base_permissions(*_member);
     }
 
@@ -277,9 +283,9 @@ public:
     /// Get role
     /**
      * @param r Snowflake of role
-     * @returns Reference to role object
+     * @returns Role object
      */
-    AEGIS_DECL const gateway::objects::role & get_role(int64_t r) const;
+    AEGIS_DECL const gateway::objects::role get_role(int64_t r) const;
 
     /// Get owner of guild
     /**
@@ -667,32 +673,65 @@ public:
 
     /// Obtain map of channels
     /**
-     * @returns unordered_map<snowflake, channel*> of channels
+     * @returns unordered_map<snowflake, channel*> COPY of channels
      */
-    const std::unordered_map<snowflake, channel*> & get_channels() const noexcept
+    std::unordered_map<snowflake, channel*> get_channels() const noexcept
     {
-        return channels;
+        std::shared_lock<shared_mutex> l(_m);
+        std::unordered_map<snowflake, channel*> _list = channels;
+        return std::move(_list);
     }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     /// Obtain map of members
     /**
-     * @returns unordered_map<snowflake, member*> of members
+     * @returns unordered_map<snowflake, user*> COPY of members
      */
-    const std::unordered_map<snowflake, user*> & get_members() const noexcept
+    std::unordered_map<snowflake, user*> get_members() const noexcept
     {
-        return members;
+        std::shared_lock<shared_mutex> l(_m);
+        std::unordered_map<snowflake, user*> _list = members;
+        return std::move(_list);
     }
 
     /// Obtain map of roles
     /**
+     * @returns unordered_map<snowflake, gateway::objects::role> COPY of roles
+     */
+    std::unordered_map<snowflake, gateway::objects::role> get_roles() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        std::unordered_map<snowflake, gateway::objects::role> _list = roles;
+        return std::move(_list);
+    }
+
+    /// Obtain map of members - caller must lock guild._m to ensure no race conditions
+    /**
+     * @returns unordered_map<snowflake, user*> of members
+     */
+    const std::unordered_map<snowflake, user*> & get_members_nocopy() const noexcept
+    {
+        return members;
+    }
+
+    /// Obtain map of roles - caller must lock guild._m to ensure no race conditions
+    /**
      * @returns unordered_map<snowflake, gateway::objects::role> of roles
      */
-    const std::unordered_map<snowflake, gateway::objects::role> & get_roles() const noexcept
+    const std::unordered_map<snowflake, gateway::objects::role> & get_roles_nocopy() const noexcept
     {
         return roles;
     }
 #endif
+
+    /// Obtain map of channels - caller must lock guild._m to ensure no race conditions
+    /**
+     * @returns unordered_map<snowflake, channel*> of channels
+     */
+    const std::unordered_map<snowflake, channel*> & get_channels_nocopy() const noexcept
+    {
+        return channels;
+    }
 
     shared_mutex & mtx()
     {
@@ -707,21 +746,26 @@ private:
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     std::unordered_map<snowflake, user*> members; /**< Map of snowflakes to member objects */
     std::unordered_map<snowflake, gateway::objects::role> roles; /**< Map of snowflakes to role objects */
+    std::unordered_map<snowflake, gateway::objects::emoji> emojis; /**< Map of snowflakes to emoji objects */
 #endif
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    AEGIS_DECL void add_member(user * _member) noexcept;
+    AEGIS_DECL void _add_member(user * _member) noexcept;
 
-    AEGIS_DECL void remove_member(snowflake member_id) noexcept;
+    AEGIS_DECL void _add_member_nolock(user * _member) noexcept;
 
-    AEGIS_DECL void load_presence(const json & obj) noexcept;
+    AEGIS_DECL void _remove_member(snowflake member_id) noexcept;
 
-    AEGIS_DECL void load_role(const json & obj) noexcept;
+    AEGIS_DECL void _load_presence(const json & obj) noexcept;
 
-    AEGIS_DECL void remove_role(snowflake role_id);
+    AEGIS_DECL void _load_emoji(const json & obj) noexcept;
+
+    AEGIS_DECL void _load_role(const json & obj) noexcept;
+
+    AEGIS_DECL void _remove_role(snowflake role_id) noexcept;
 #endif
 
-    AEGIS_DECL void load(const json & obj, shards::shard * _shard) noexcept;
+    AEGIS_DECL void _load(const json & obj, shards::shard * _shard) noexcept;
 
     /// non-locking version for internal use
     AEGIS_DECL user * _find_member(snowflake member_id) const noexcept;
@@ -729,7 +773,7 @@ private:
     /// non-locking version for internal use
     AEGIS_DECL channel * _find_channel(snowflake channel_id) const noexcept;
 
-    AEGIS_DECL void remove_channel(snowflake channel_id) noexcept;
+    AEGIS_DECL void _remove_channel(snowflake channel_id) noexcept;
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     std::string name;
