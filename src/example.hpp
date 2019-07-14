@@ -60,7 +60,7 @@ public:
     snowflake get_snowflake(const std::string name, aegis::guild & _guild) const noexcept
     {
         if (name.empty())
-            return { 0 };
+            return 0;
         try
         {
             if (name[0] == '<')
