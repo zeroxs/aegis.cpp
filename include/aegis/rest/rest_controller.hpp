@@ -59,7 +59,7 @@ public:
 
     /// Performs an HTTP request using the params provided
     /**
-     * @see rest_reply
+     * @see rest::rest_reply
      * @see rest::request_params
      * @param params A struct of HTTP parameters to perform the request
      * @returns rest_reply
@@ -68,7 +68,7 @@ public:
 
     /// Performs an HTTP request using the params provided
     /**
-     * @see rest_reply
+     * @see rest::rest_reply
      * @see rest::request_params
      * @param params A struct of HTTP parameters to perform the request
      * @returns rest_reply

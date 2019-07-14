@@ -486,25 +486,25 @@ public:
     AEGIS_DECL aegis::future<rest::rest_reply> get_pinned_messages();
 
     /// Add a pinned message in channel
-    /**\todo
+    /**
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> add_pinned_channel_message(snowflake message_id);
 
     /// Delete a pinned message in channel
-    /**\todo
+    /**
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_pinned_channel_message(snowflake message_id);
 
     /// Add member to a group direct message
-    /**\todo
+    /**
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> group_dm_add_recipient(snowflake user_id);
 
     /// Remove member from a group direct message
-    /**\todo
+    /**
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> group_dm_remove_recipient(snowflake user_id);
@@ -536,12 +536,20 @@ public:
         return _guild == nullptr;
     }
 
+    /// Get the mutex for the channel
+    /**
+     * @returns Returns a std::shared_mutex reference for the channel object
+     */
     shared_mutex & mtx() noexcept
     {
         return _m;
     }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
+    /// Get if this channel is set to NSFW
+    /**
+     * @returns bool whether channel is NSFW or not
+     */
     bool nsfw() const noexcept
     {
         return _nsfw;

@@ -69,18 +69,18 @@ public:
 
     /// Get a bucket object
     /**
-    * @see bucket
-    * @param id Snowflake of bucket object
-    * @returns Reference to a bucket object
-    */
+     * @see bucket
+     * @param id Snowflake of bucket object
+     * @returns Reference to a bucket object
+     */
     bucket & get_bucket(const std::string & path) noexcept
     {
         // look for existing bucket
         auto bkt = _buckets.find(path);
         if (bkt != _buckets.end())
-                return *bkt->second;// found
+            return *bkt->second;// found
 
-        // create new bucket and return
+    // create new bucket and return
         return *_buckets.emplace(path, std::make_unique<bucket>(_call, _io_context, global_limit)).first->second;
     }
 
@@ -91,8 +91,8 @@ public:
         {
             auto & bkt = get_bucket(params.path);
             auto res = bkt.perform(params);
-			if (res.reply_code < rest::ok || res.reply_code >= rest::multiple_choices)//error
-				throw aegis::exception(fmt::format("REST Reply Code: {}", static_cast<int>(res.reply_code)), bad_request);
+            if (res.reply_code < rest::ok || res.reply_code >= rest::multiple_choices)//error
+                throw aegis::exception(fmt::format("REST Reply Code: {}", static_cast<int>(res.reply_code)), bad_request);
             return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
         });
     }
@@ -113,9 +113,9 @@ public:
         {
             auto & bkt = get_bucket(_bucket);
             auto res = bkt.perform(params);
-			if (res.reply_code < rest::ok || res.reply_code >= rest::multiple_choices)//error
-				throw aegis::exception(fmt::format("REST Reply Code: {}", static_cast<int>(res.reply_code)), bad_request);
-			return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
+            if (res.reply_code < rest::ok || res.reply_code >= rest::multiple_choices)//error
+                throw aegis::exception(fmt::format("REST Reply Code: {}", static_cast<int>(res.reply_code)), bad_request);
+            return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
         });
     }
 
