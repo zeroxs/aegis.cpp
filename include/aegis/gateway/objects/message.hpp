@@ -116,6 +116,26 @@ public:
     message(const message&) = default;
     message(message && msg) = default;
 
+    inline bool operator==(const std::string& rhs)
+    {
+        return _content == rhs;
+    }
+
+    inline bool operator!=(const std::string& rhs)
+    {
+        return !(*this == rhs);
+    }
+
+    inline bool operator==(const char * rhs)
+    {
+        return _content == rhs;
+    }
+
+    inline bool operator!=(const char * rhs)
+    {
+        return !(*this == rhs);
+    }
+
     std::string timestamp; /**<\todo Needs documentation */
     std::string edited_timestamp; /**<\todo Needs documentation */
     bool tts = false; /**<\todo Needs documentation */
