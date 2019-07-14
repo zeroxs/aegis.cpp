@@ -230,16 +230,20 @@ inline void from_json(const nlohmann::json& j, embed& m)
 inline void to_json(nlohmann::json & j, const embed & m)
 {
     j["title"] = m._title;
-    j["type"] = m._type;
+    //j["type"] = m._type;
     j["description"] = m._description;
-    j["url"] = m._url;
+    if (m._url.size())
+        j["url"] = m._url;
     j["timestamp"] = m._timestamp;
     j["color"] = m._color;
-    j["footer"] = m._footer;
-    j["image"] = m._image;
-    j["thumbnail"] = m._thumbnail;
-    j["video"] = m._video;
-    j["provider"] = m._provider;
+    if (m._footer.text.size())
+        j["footer"] = m._footer;
+    if (m._image.url.size())
+        j["image"] = m._image;
+    if (m._thumbnail.url.size())
+        j["thumbnail"] = m._thumbnail;
+    //j["video"] = m._video;
+    //j["provider"] = m._provider;
     for (const auto& _field : m._fields)
         j["fields"].push_back(_field);
 }

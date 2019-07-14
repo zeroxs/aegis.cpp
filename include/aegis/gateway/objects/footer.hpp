@@ -47,7 +47,7 @@ inline void to_json(nlohmann::json& j, const footer& m)
 {
     j["text"] = m.text;
     j["icon_url"] = m.icon_url;
-    j["proxy_icon_url"] = m.proxy_icon_url;
+    //j["proxy_icon_url"] = m.proxy_icon_url;
 }
 /// \endcond
 

@@ -47,7 +47,7 @@ inline void from_json(const nlohmann::json& j, image& m)
 inline void to_json(nlohmann::json& j, const image& m)
 {
     j["url"] = m.url;
-    j["proxy_url"] = m.proxy_url;
+    //j["proxy_url"] = m.proxy_url;
     j["height"] = m.height;
     j["width"] = m.width;
 }
