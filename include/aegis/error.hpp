@@ -79,6 +79,9 @@ enum error
     /// Malformed Redis request
     bad_redis_request,
 
+    /// Provided too many or too few messages for message bulk delete
+    bulk_delete_out_of_range,
+
     max_errors
 };
 
@@ -134,6 +137,8 @@ public:
                 return "Bad request";
             case error::bad_redis_request:
                 return "Bad Redis request";
+            case error::bulk_delete_out_of_range:
+                return "Bulk delete invalid message amount";
             default:
                 return "Unknown";
         }

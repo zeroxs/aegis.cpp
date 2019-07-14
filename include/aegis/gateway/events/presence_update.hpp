@@ -30,25 +30,16 @@ namespace events
  */
 struct presence_update
 {
-    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
-    core * bot = nullptr; /**< Pointer to the main bot object */
-    objects::user _user; /**<\todo Needs documentation */
-    objects::activity game;
-    std::vector<objects::role> roles;
-    snowflake guild_id;
-    objects::presence::user_status status = objects::presence::Online;
+    shards::shard & shard; /**< Reference to shard object this message came from */
+    objects::user user; /**< Discord user object */
+    objects::activity game; /**<\todo Needs documentation */
+    std::vector<objects::role> roles; /**<\todo Needs documentation */
+    snowflake guild_id; /**<\todo Needs documentation */
+    objects::presence::user_status status = objects::presence::Online; /**<\todo Needs documentation */
 };
 
-/// \cond TEMPLATES
-AEGIS_DECL void from_json(const nlohmann::json& j, presence_update& m);
-/// \endcond
-
 }
 
 }
 
 }
-
-#if defined(AEGIS_HEADER_ONLY)
-#include "aegis/gateway/events/impl/presence_update.cpp"
-#endif

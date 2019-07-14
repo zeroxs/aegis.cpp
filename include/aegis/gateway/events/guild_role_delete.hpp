@@ -25,22 +25,13 @@ namespace events
 /// Sent when a guild role was deleted
 struct guild_role_delete
 {
-    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
-    core * bot = nullptr; /**< Pointer to the main bot object */
+    shards::shard & shard; /**< Reference to shard object this message came from */
     snowflake guild_id; /**< Snowflake of guild */
     snowflake role_id; /**< Snowflake of role that was deleted */
 };
 
-/// \cond TEMPLATES
-AEGIS_DECL void from_json(const nlohmann::json& j, guild_role_delete& m);
-/// \endcond
-
 }
 
 }
 
 }
-
-#if defined(AEGIS_HEADER_ONLY)
-#include "aegis/gateway/events/impl/guild_role_delete.cpp"
-#endif

@@ -26,21 +26,12 @@ namespace events
 /// Sent when a guild is updated
 struct guild_update
 {
-    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
-    core * bot = nullptr; /**< Pointer to the main bot object */
-    objects::guild _guild; /**< guild object */
+    shards::shard & shard; /**< Reference to shard object this message came from */
+    objects::guild guild; /**< guild object */
 };
 
-/// \cond TEMPLATES
-AEGIS_DECL void from_json(const nlohmann::json& j, guild_update& m);
-/// \endcond
-
 }
 
 }
 
 }
-
-#if defined(AEGIS_HEADER_ONLY)
-#include "aegis/gateway/events/impl/guild_update.cpp"
-#endif

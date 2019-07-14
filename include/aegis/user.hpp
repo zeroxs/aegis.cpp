@@ -1,6 +1,6 @@
 //
-// member.hpp
-// **********
+// user.hpp
+// ********
 //
 // Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
@@ -34,20 +34,20 @@ using shared_mutex = std::shared_timed_mutex;
 using json = nlohmann::json;
 
 /// Stores user-specific and guild-specific attributes of users
-///\todo Maybe rename this to the more appropriate `user`?
-class member
+class user
 {
 public:
     using presence = aegis::gateway::objects::presence;
   
-    explicit member(snowflake id) : _member_id(id) {}
+    explicit user(snowflake id) : _member_id(id) {}
 
     /// Member owned guild information
     struct guild_info
     {
+        guild_info(snowflake _id) : id(_id) {};
         snowflake id;/**< Snowflake of the guild for this data */
         std::vector<snowflake> roles;
-        std::string nickname;/**< Nickname of the user in this guild */
+		lib::optional<std::string> nickname;/**< Nickname of the user in this guild */
         uint64_t joined_at = 0;/**< Unix timestamp of when member joined this guild */
         bool deaf = false;/**< Whether member is deafened in a voice channel */
         bool mute = false;/**< Whether member is muted in a voice channel */
@@ -58,15 +58,17 @@ public:
      * @param guild_id The snowflake for the guild to check if nickname is set
      * @returns string of the nickname or empty if no nickname is set
      */
-    AEGIS_DECL const std::string & get_name(snowflake guild_id) noexcept;
+    AEGIS_DECL std::string get_name(snowflake guild_id) noexcept;
 
     /// Get the nickname of this user
     /**
     * @returns string of the username
     */
-    const std::string & get_username() const noexcept
+    std::string get_username() const noexcept
     {
-        return _name;
+        std::shared_lock<shared_mutex> l(_m);
+        std::string _username = _name;
+        return std::move(_username);
     }
 
     /// Get the discriminator of this user
@@ -78,13 +80,15 @@ public:
         return _discriminator;
     }
 
-    /// Get the discriminator of this user
+    /// Get the avatar hash of this user
     /**
-    * @returns string of the discriminator
+    * @returns string of the avatar hash
     */
-    const std::string & get_avatar() const noexcept
+    std::string get_avatar() const noexcept
     {
-        return _avatar;
+        std::shared_lock<shared_mutex> l(_m);
+        std::string t_avatar = _avatar;
+        return std::move(t_avatar);
     }
 
     /// Check whether user is a bot
@@ -117,7 +121,7 @@ public:
      */
     AEGIS_DECL guild_info & get_guild_info(snowflake guild_id) noexcept;
 
-    /// Get the full name (username#discriminator) of this user
+    /// Get the full name (username\#discriminator) of this user
     /**
      * @returns string of the full username and discriminator
      */
@@ -165,7 +169,7 @@ private:
     friend class guild;
     friend class gateway::objects::message;
 
-    AEGIS_DECL void load_data(gateway::objects::user mbr);
+    AEGIS_DECL void _load_data(gateway::objects::user mbr);
 
     snowflake _member_id = 0;
     snowflake _dm_id = 0;
@@ -175,22 +179,28 @@ private:
     std::string _avatar; /**< Hash of member avatar */
     bool _is_bot = false; /**< true if member is a bot */
     bool _mfa_enabled = false; /**< true if member has Two-factor authentication enabled */
-    std::vector<guild_info> guilds; /**< Vector of snowflakes to member owned guild information */
+    std::vector<std::unique_ptr<guild_info>> guilds; /**< Vector of snowflakes to member owned guild information */
     mutable shared_mutex _m;
 
     /// requires the caller to handle locking
-    AEGIS_DECL void load(guild * _guild, const json & obj, shards::shard * _shard);
+    AEGIS_DECL void _load(guild * _guild, const json & obj, shards::shard * _shard, bool self_add = true);
+
+    /// does not lock the member object
+    AEGIS_DECL void _load_nolock(guild * _guild, const json & obj, shards::shard * _shard, bool self_add = true, bool guild_lock = true);
 
     /// requires the caller to handle locking
-    AEGIS_DECL guild_info & join(snowflake guild_id);
+    AEGIS_DECL guild_info & _join(snowflake guild_id);
+
+    /// requires the caller to handle locking
+    AEGIS_DECL guild_info & _join_nolock(snowflake guild_id);
 
     /// remove this member from the specified guild
     void leave(snowflake guild_id)
     {
         std::unique_lock<shared_mutex> l(mtx());
-        guilds.erase(std::find_if(std::begin(guilds), std::end(guilds), [&guild_id](const guild_info & gi)
+        guilds.erase(std::find_if(std::begin(guilds), std::end(guilds), [&guild_id](const std::unique_ptr<guild_info> & gi)
         {
-            if (gi.id == guild_id)
+            if (gi->id == guild_id)
                 return true;
             return false;
         }));
@@ -204,7 +214,7 @@ private:
 namespace aegis
 {
 
-class member
+class user
 {
 public:
     enum member_status

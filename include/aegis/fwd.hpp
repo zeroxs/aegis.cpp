@@ -32,7 +32,7 @@ class shard_mgr;
 class core;
 class channel;
 class guild;
-class member;
+class user;
 class shard;
 
 namespace gateway
@@ -43,6 +43,9 @@ struct user;
 class message;
 struct channel;
 struct guild;
+struct emoji;
+struct role;
+struct attachment;
 }
 
 namespace events

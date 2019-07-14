@@ -116,6 +116,26 @@ public:
     message(const message&) = default;
     message(message && msg) = default;
 
+    inline bool operator==(const std::string& rhs)
+    {
+        return _content == rhs;
+    }
+
+    inline bool operator!=(const std::string& rhs)
+    {
+        return !(*this == rhs);
+    }
+
+    inline bool operator==(const char * rhs)
+    {
+        return _content == rhs;
+    }
+
+    inline bool operator!=(const char * rhs)
+    {
+        return !(*this == rhs);
+    }
+
     std::string timestamp; /**<\todo Needs documentation */
     std::string edited_timestamp; /**<\todo Needs documentation */
     bool tts = false; /**<\todo Needs documentation */
@@ -138,7 +158,7 @@ public:
 
     bool is_webhook() const noexcept
     {
-        return author.is_webhook();
+        return !webhook_id.empty();
     }
 
     const std::string & get_content() const noexcept
@@ -184,7 +204,7 @@ public:
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     bool has_member() const noexcept
     {
-        return _member != nullptr || _author_id != 0;
+        return _user != nullptr || _author_id != 0;
     }
 #endif
 
@@ -193,7 +213,7 @@ public:
     AEGIS_DECL aegis::channel & get_channel();
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    AEGIS_DECL aegis::member & get_member();
+    AEGIS_DECL aegis::user & get_user();
 #endif
 
     AEGIS_DECL aegis::future<rest::rest_reply> delete_message();
@@ -222,7 +242,7 @@ public:
 private:
     friend AEGIS_DECL void from_json(const nlohmann::json& j, objects::message& m);
     friend AEGIS_DECL void to_json(nlohmann::json& j, const objects::message& m);
-    friend class core;
+    friend class aegis::core;
 
     AEGIS_DECL void populate_self();
 
@@ -230,7 +250,7 @@ private:
     aegis::channel * _channel = nullptr;/**< Pointer to the channel this message belongs to */
     aegis::guild * _guild = nullptr;/**< Pointer to the guild this message belongs to */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    aegis::member * _member = nullptr;/**< Pointer to the author of this message */
+    aegis::user * _user = nullptr;/**< Pointer to the author of this message */
 #endif
     aegis::core * _bot = nullptr;
     snowflake _message_id = 0; /**< snowflake of the message */

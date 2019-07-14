@@ -22,6 +22,7 @@
 #include "aegis/gateway/objects/member.hpp"
 #include "aegis/gateway/objects/channel.hpp"
 #include "aegis/gateway/objects/guild.hpp"
+#include "aegis/gateway/objects/activity.hpp"
 
 #include <asio/io_context.hpp>
 #include <asio/bind_executor.hpp>
@@ -68,7 +69,7 @@ using ratelimit_mgr_t = aegis::ratelimit::ratelimit_mgr;
 struct thread_state
 {
     std::thread thd;
-    bool active;
+    bool active = false;
     std::chrono::steady_clock::time_point start_time;
     std::function<void(void)> fn;
 };
@@ -107,7 +108,7 @@ public:
      * @param loglevel The level of logging to use
      * @param count Amount of threads to start
      */
-    AEGIS_DECL explicit core(spdlog::level::level_enum loglevel = spdlog::level::level_enum::info, std::size_t count = 10);
+    AEGIS_DECL explicit core(spdlog::level::level_enum loglevel = spdlog::level::level_enum::trace, std::size_t count = 10);
 
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /// This constructor creates its own spdlog::logger and expects you to create the asio::io_context.
@@ -115,7 +116,7 @@ public:
     /**
      * @param loglevel The level of logging to use
      */
-    AEGIS_DECL explicit core(std::shared_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel = spdlog::level::level_enum::info);
+    AEGIS_DECL explicit core(std::shared_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel = spdlog::level::level_enum::trace);
 
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /// This constructor creates its own asio::io_context and expects you to create the spdlog::logger
@@ -167,7 +168,6 @@ public:
     /// directly on the same thread and does not attempt to manage ratelimits due to the already
     /// existing requirement that the bot must be in less than 10 guilds for this call to succeed
     /**
-     * @param ec Indicates what error occurred, if any
      * @param name Set name of guild
      * @param voice_region Set region for voice
      * @param verification_level Set verification level from unrestricted level to verified phone level
@@ -218,12 +218,6 @@ public:
         cv.wait(l);
 
         log->info("Closing bot");
-    
-        if (!external_io_context)
-        {
-            wrk.reset();
-            _io_context->stop();
-        }
     }
 
     rest::rest_controller & get_rest_controller() noexcept { return *_rest; }
@@ -235,28 +229,39 @@ public:
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 
-    member * self() const
+    user * self() const
     {
         if (_self == nullptr)
             throw exception("Self not found", make_error_code(error::member_not_found));
         return _self;
     }
 
+
+    /// Get count of members tracked (includes duplicates from multiple shared guilds)
+    /**
+     * @returns int64_t of member count
+     */
     AEGIS_DECL int64_t get_member_count() const noexcept;
 
-    /// Obtain a pointer to a member by snowflake
+    /// Get count of unique users tracked
     /**
-     * @param id Snowflake of member to search for
-     * @returns Pointer to member or nullptr
+     * @returns int64_t of user count
      */
-    AEGIS_DECL member * find_member(snowflake id) const noexcept;
+    AEGIS_DECL int64_t get_user_count() const noexcept;
 
-    /// Obtain a pointer to a member by snowflake. If none exists, creates the object.
+    /// Obtain a pointer to a user by snowflake
     /**
-     * @param id Snowflake of member to search for
-     * @returns Pointer to member
+     * @param id Snowflake of user to search for
+     * @returns Pointer to user or nullptr
      */
-    AEGIS_DECL member * member_create(snowflake id) noexcept;
+    AEGIS_DECL user * find_user(snowflake id) const noexcept;
+
+    /// Obtain a pointer to a user by snowflake. If none exists, creates the object.
+    /**
+     * @param id Snowflake of user to search for
+     * @returns Pointer to user
+     */
+    AEGIS_DECL user * user_create(snowflake id) noexcept;
 #endif
 
     /// Get the snowflake of the bot
@@ -265,7 +270,7 @@ public:
     */
     const snowflake get_id() const noexcept
     {
-        return member_id;
+        return user_id;
     }
 
     /// Obtain a pointer to a channel by snowflake
@@ -337,10 +342,20 @@ public:
      */
     AEGIS_DECL rest::rest_reply call(rest::request_params & params);
 
+    /// Update presence across all shards at once
+    /**
+     * @see aegis::gateway::objects::activity
+     * @see aegis::gateway::objects::presence
+     * @param std::string Test of presence message
+     * @param aegis::gateway::objects::activity::activity_type Enum of the activity type
+     * @param aegis::gateway::objects::presence::user_status Enum of the status
+     */
+    AEGIS_DECL void update_presence(const std::string& text, gateway::objects::activity::activity_type type = gateway::objects::activity::Game, gateway::objects::presence::user_status status = gateway::objects::presence::Online);
+
     std::unordered_map<snowflake, std::unique_ptr<channel>> channels;
     std::unordered_map<snowflake, std::unique_ptr<guild>> guilds;
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    std::unordered_map<snowflake, std::unique_ptr<member>> members;
+    std::unordered_map<snowflake, std::unique_ptr<user>> members;
 #endif
     std::map<std::string, uint64_t> message_count;
 
@@ -371,12 +386,16 @@ public:
     using guild_create_t = std::function<void(gateway::events::guild_create obj)>;
     using guild_update_t = std::function<void(gateway::events::guild_update obj)>;
     using guild_delete_t = std::function<void(gateway::events::guild_delete obj)>;
+    using message_reaction_add_t = std::function<void(gateway::events::message_reaction_add obj)>;
+    using message_reaction_remove_t = std::function<void(gateway::events::message_reaction_remove obj)>;
+    using message_reaction_remove_all_t = std::function<void(gateway::events::message_reaction_remove_all obj)>;
     using user_update_t = std::function<void(gateway::events::user_update obj)>;
     using ready_t = std::function<void(gateway::events::ready obj)>;
     using resumed_t = std::function<void(gateway::events::resumed obj)>;
     using channel_create_t = std::function<void(gateway::events::channel_create obj)>;
     using channel_update_t = std::function<void(gateway::events::channel_update obj)>;
     using channel_delete_t = std::function<void(gateway::events::channel_delete obj)>;
+    using channel_pins_update_t = std::function<void(gateway::events::channel_pins_update obj)>;
     using guild_ban_add_t = std::function<void(gateway::events::guild_ban_add obj)>;
     using guild_ban_remove_t = std::function<void(gateway::events::guild_ban_remove obj)>;
     using guild_emojis_update_t = std::function<void(gateway::events::guild_emojis_update obj)>;
@@ -391,6 +410,7 @@ public:
     using presence_update_t = std::function<void(gateway::events::presence_update obj)>;
     using voice_state_update_t = std::function<void(gateway::events::voice_state_update obj)>;
     using voice_server_update_t = std::function<void(gateway::events::voice_server_update obj)>;
+    using webhooks_update_t = std::function<void(gateway::events::webhooks_update obj)>;
 
     void set_on_typing_start(typing_start_t cb) { i_typing_start = cb; }/**< TYPING_START callback */
     void set_on_message_create(message_create_t cb) { i_message_create = cb; }/**< MESSAGE_CREATE callback */
@@ -401,12 +421,16 @@ public:
     void set_on_guild_create(guild_create_t cb) { i_guild_create = cb; }/**< GUILD_CREATE callback */
     void set_on_guild_update(guild_update_t cb) { i_guild_update = cb; }/**< GUILD_UPDATE callback */
     void set_on_guild_delete(guild_delete_t cb) { i_guild_delete = cb; }/**< GUILD_DELETE callback */
+    void set_on_message_reaction_add(message_reaction_add_t cb) { i_message_reaction_add = cb; }/**< MESSAGE_REACTION_ADD callback */
+    void set_on_message_reaction_remove(message_reaction_remove_t cb) { i_message_reaction_remove = cb; }/**< MESSAGE_REACTION_REMOVE callback */
+    void set_on_message_reaction_remove_all(message_reaction_remove_all_t cb) { i_message_reaction_remove_all = cb; }/**< MESSAGE_REACTION_REMOVE_ALL callback */
     void set_on_user_update(user_update_t cb) { i_user_update = cb; }/**< USER_UPDATE callback */
     void set_on_ready(ready_t cb) { i_ready = cb; }/**< READY callback */
     void set_on_resumed(resumed_t cb) { i_resumed = cb; }/**< RESUME callback */
     void set_on_channel_create(channel_create_t cb) { i_channel_create = cb; }/**< CHANNEL_CREATE callback */
     void set_on_channel_update(channel_update_t cb) { i_channel_update = cb; }/**< CHANNEL_UPDATE callback */
     void set_on_channel_delete(channel_delete_t cb) { i_channel_delete = cb; }/**< CHANNEL_DELETE callback */
+    void set_on_channel_pins_update(channel_pins_update_t cb) { i_channel_pins_update = cb; }/**< CHANNEL_PINS_UPDATE callback */
     void set_on_guild_ban_add(guild_ban_add_t cb) { i_guild_ban_add = cb; }/**< GUILD_BAN_ADD callback */
     void set_on_guild_ban_remove(guild_ban_remove_t cb) { i_guild_ban_remove = cb; }/**< GUILD_BAN_REMOVE callback */
     void set_on_guild_emojis_update(guild_emojis_update_t cb) { i_guild_emojis_update = cb; }/**< GUILD_EMOJIS_UPDATE callback */
@@ -421,6 +445,7 @@ public:
     void set_on_presence_update(presence_update_t cb) { i_presence_update = cb; }/**< PRESENCE_UPDATE callback */
     void set_on_voice_state_update(voice_state_update_t cb) { i_voice_state_update = cb; }/**< VOICE_STATE_UPDATE callback */
     void set_on_voice_server_update(voice_server_update_t cb) { i_voice_server_update = cb; }/**< VOICE_SERVER_UPDATE callback */
+    void set_on_webhooks_update(webhooks_update_t cb) { i_webhooks_update = cb; }/**< WEBHOOKS_UPDATE callback */
 
     void set_on_shard_disconnect(std::function<void(aegis::shards::shard*)> cb) { _shard_mgr->i_shard_disconnect = cb; };
     void set_on_shard_connect(std::function<void(aegis::shards::shard*)> cb) { _shard_mgr->i_shard_connect = cb; };
@@ -443,14 +468,20 @@ public:
 
     AEGIS_DECL uint64_t get_shard_transfer();
 
+    AEGIS_DECL uint64_t get_shard_u_transfer();
+
     const std::string & get_token() const noexcept { return _token; }
 
     AEGIS_DECL std::size_t add_run_thread() noexcept;
 
     AEGIS_DECL void reduce_threads(std::size_t count) noexcept;
 
+    AEGIS_DECL aegis::future<gateway::objects::message> create_message(snowflake channel_id, const std::string& msg, int64_t nonce = 0, bool perform_lookup = false) noexcept;
+
+    AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(snowflake channel_id, const std::string& msg, const json& _obj, int64_t nonce = 0, bool perform_lookup = false) noexcept;
+
     template<typename T, typename V = std::result_of_t<T()>, typename = std::enable_if_t<!std::is_void<V>::value>>
-    aegis::future<V> async(T f)
+    aegis::future<V> async(T f) noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
         aegis::promise<V> pr(_io_context.get(), &_global_m);
@@ -464,7 +495,7 @@ public:
             }
             catch (std::exception & e)
             {
-                pr.set_exception(make_exception_ptr(e));
+                pr.set_exception(std::current_exception());
             }
         });
         std::atomic_thread_fence(std::memory_order_release);
@@ -472,7 +503,7 @@ public:
     }
 
     template<typename T, typename V = std::enable_if_t<std::is_void<std::result_of_t<T()>>::value>>
-    aegis::future<V> async(T f)
+    aegis::future<V> async(T f) noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
         aegis::promise<V> pr(_io_context.get(), &_global_m);
@@ -487,7 +518,7 @@ public:
             }
             catch (std::exception & e)
             {
-                pr.set_exception(make_exception_ptr(e));
+                pr.set_exception(std::current_exception());
             }
         });
         std::atomic_thread_fence(std::memory_order_release);
@@ -507,12 +538,16 @@ private:
     guild_create_t i_guild_create;
     guild_update_t i_guild_update;
     guild_delete_t i_guild_delete;
+    message_reaction_add_t i_message_reaction_add;
+    message_reaction_remove_t i_message_reaction_remove;
+    message_reaction_remove_all_t i_message_reaction_remove_all;
     user_update_t i_user_update;
     ready_t i_ready;
     resumed_t i_resumed;
     channel_create_t i_channel_create;
     channel_update_t i_channel_update;
     channel_delete_t i_channel_delete;
+    channel_pins_update_t i_channel_pins_update;
     guild_ban_add_t i_guild_ban_add;
     guild_ban_remove_t i_guild_ban_remove;
     guild_emojis_update_t i_guild_emojis_update;
@@ -527,8 +562,9 @@ private:
     presence_update_t i_presence_update;
     voice_state_update_t i_voice_state_update;
     voice_server_update_t i_voice_server_update;
+    webhooks_update_t i_webhooks_update;
 
-    AEGIS_DECL void setup_gateway(std::error_code & ec);
+    AEGIS_DECL void setup_gateway();
     AEGIS_DECL void keep_alive(const asio::error_code & error, const std::chrono::milliseconds ms, shards::shard * _shard);
 
     AEGIS_DECL void reset_shard(shards::shard * _shard);
@@ -547,15 +583,18 @@ private:
     AEGIS_DECL void ws_guild_create(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_guild_update(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_guild_delete(const json & result, shards::shard * _shard);
+    AEGIS_DECL void ws_message_reaction_add(const json & result, shards::shard * _shard);
+    AEGIS_DECL void ws_message_reaction_remove(const json & result, shards::shard * _shard);
+    AEGIS_DECL void ws_message_reaction_remove_all(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_message_delete(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_message_delete_bulk(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_user_update(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_voice_state_update(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_resumed(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_ready(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_channel_create(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_channel_update(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_channel_delete(const json & result, shards::shard * _shard);
+    AEGIS_DECL void ws_channel_pins_update(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_guild_ban_add(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_guild_ban_remove(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_guild_emojis_update(const json & result, shards::shard * _shard);
@@ -568,6 +607,8 @@ private:
     AEGIS_DECL void ws_guild_role_update(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_guild_role_delete(const json & result, shards::shard * _shard);
     AEGIS_DECL void ws_voice_server_update(const json & result, shards::shard * _shard);
+    AEGIS_DECL void ws_voice_state_update(const json & result, shards::shard * _shard);
+    AEGIS_DECL void ws_webhooks_update(const json & result, shards::shard * _shard);
 
     AEGIS_DECL void on_message(websocketpp::connection_hdl hdl, std::string msg, shards::shard * _shard);
     AEGIS_DECL void on_connect(websocketpp::connection_hdl hdl, shards::shard * _shard);
@@ -582,7 +623,7 @@ private:
 
     std::chrono::steady_clock::time_point starttime;
 
-    snowflake member_id;
+    snowflake user_id;
     int16_t discriminator = 0;
     std::string username;
     bool mfa_enabled = false;
@@ -596,7 +637,7 @@ private:
     std::shared_ptr<ratelimit_mgr_t> _ratelimit;
     std::shared_ptr<shards::shard_mgr> _shard_mgr;
 
-    member * _self = nullptr;
+    user * _self = nullptr;
 
     std::unordered_map<std::string, std::function<void(const json &, shards::shard *)>> ws_handlers;
     spdlog::level::level_enum _loglevel = spdlog::level::level_enum::info;
@@ -615,7 +656,7 @@ private:
     std::shared_ptr<asio::io_context> _io_context = nullptr;
     work_ptr wrk = nullptr;
     std::condition_variable cv;
-    std::chrono::hours tz_bias;
+    std::chrono::hours tz_bias = 0h;
 public:
     std::vector<std::unique_ptr<thread_state>> threads;
     std::recursive_mutex _global_m;

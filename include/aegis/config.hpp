@@ -124,6 +124,7 @@ using bad_optional_access = std::experimental::bad_optional_access;
 }
 }
 #  define AEGIS_HAS_STD_OPTIONAL 1
+#  define AEGIS_HAS_BUILTIN_OPTIONAL 1
 # endif // (__cplusplus >= 201703)
 # if defined(AEGIS_MSVC)
 #  if (_MSVC_LANG < 201703)
@@ -137,7 +138,8 @@ constexpr auto nullopt = std::experimental::nullopt;
 using bad_optional_access = std::experimental::bad_optional_access;
 }
 }
-#   define AEGIS_HAS_STD_OPTIONAL
+#   define AEGIS_HAS_STD_OPTIONAL 1
+#   define AEGIS_HAS_BUILTIN_OPTIONAL 1
 #  else
 #   include <optional>
 namespace aegis::lib
@@ -146,7 +148,7 @@ template<typename T> using optional = std::optional<T>;
 constexpr auto nullopt = std::nullopt;
 using bad_optional_access = std::bad_optional_access;
 }
-#   define AEGIS_HAS_STD_OPTIONAL
+#   define AEGIS_HAS_STD_OPTIONAL 1
 #  endif // (_MSC_VER >= 1910 && _HAS_CXX17)
 # endif // defined(AEGIS_MSVC)
 #endif // !defined(AEGIS_HAS_STD_OPTIONAL)

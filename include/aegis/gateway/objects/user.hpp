@@ -16,7 +16,7 @@
 namespace aegis
 {
 
-class member;
+class user;
 class channel;
 
 }
@@ -77,9 +77,9 @@ private:
 /// \cond TEMPLATES
 inline void from_json(const nlohmann::json& j, user& m)
 {
-    m.id = j["id"];
+    m.id = std::stoull(j["id"].get<std::string>());
     if (j.count("guild_id") && !j["guild_id"].is_null())
-        m.guild_id = j["guild_id"];
+        m.guild_id = std::stoull(j["guild_id"].get<std::string>());
     if (j.count("username") && !j["username"].is_null())
         m.username = j["username"].get<std::string>();
     if (j.count("discriminator") && !j["discriminator"].is_null())
@@ -98,8 +98,8 @@ inline void from_json(const nlohmann::json& j, user& m)
 /// \cond TEMPLATES
 inline void to_json(nlohmann::json& j, const user& m)
 {
-    j["id"] = m.id;
-    j["guild_id"] = m.guild_id;
+    j["id"] = std::to_string(m.id);
+    j["guild_id"] = std::to_string(m.guild_id);
     j["username"] = m.username;
     j["discriminator"] = m.discriminator;
     j["bot"] = m._is_bot;

@@ -11,7 +11,7 @@
 
 #include "aegis/fwd.hpp"
 #include "aegis/config.hpp"
-//#include <nlohmann/json.hpp>
+#include <nlohmann/json.hpp>
 
 
 namespace aegis
@@ -24,6 +24,15 @@ public:
     constexpr snowflake() noexcept : _id(0) {}
     constexpr snowflake(int64_t _snowflake) noexcept : _id(_snowflake) {}
     constexpr snowflake(const snowflake & _snowflake) noexcept : _id(_snowflake._id) {}
+    explicit snowflake(const char * _snowflake) noexcept : _id(std::stoll(std::string(_snowflake))) {}
+    explicit snowflake(const std::string & _snowflake) noexcept : _id(std::stoll(_snowflake)) {}
+	explicit snowflake(const nlohmann::json & _snowflake) noexcept : _id(std::stoll(_snowflake.get<std::string>())) {}
+	snowflake(const aegis::guild & _guild) noexcept;
+	snowflake(const aegis::channel & _channel) noexcept;
+	snowflake(const aegis::gateway::objects::role & _role) noexcept;
+	snowflake(const aegis::gateway::objects::message & _message) noexcept;
+	snowflake(const aegis::gateway::objects::emoji & _emoji) noexcept;
+	snowflake(const aegis::gateway::objects::attachment & _attachment) noexcept;
 
     constexpr operator int64_t() const noexcept
     {

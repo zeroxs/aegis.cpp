@@ -34,13 +34,13 @@ int main(int argc, char * argv[])
                 const aegis::snowflake guild_id = obj.msg.get_guild().get_id();
                 const aegis::snowflake message_id = obj.msg.get_id();
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-                const aegis::snowflake member_id = obj.msg.get_member().get_id();
+                const aegis::snowflake member_id = obj.msg.get_user().get_id();
 #else
                 const aegis::snowflake member_id = obj.msg.author.id;
 #endif
 
                 // Is message author myself?
-                if (member_id == obj.bot->get_id())
+                if (member_id == bot.get_id())
                     return;
      
                 // Ignore bot messages and DMs

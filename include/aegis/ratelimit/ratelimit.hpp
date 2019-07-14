@@ -85,17 +85,19 @@ public:
     }
 
     template<typename ResultType, typename V = std::enable_if_t<!std::is_same<ResultType, rest::rest_reply>::value>>
-    aegis::future<ResultType> post_task(rest::request_params params)
+    aegis::future<ResultType> post_task(rest::request_params params) noexcept
     {
         return _bot->async([=]() -> ResultType
         {
             auto & bkt = get_bucket(params.path);
             auto res = bkt.perform(params);
+			if (res.reply_code < rest::ok || res.reply_code >= rest::multiple_choices)//error
+				throw aegis::exception(fmt::format("REST Reply Code: {}", static_cast<int>(res.reply_code)), bad_request);
             return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
         });
     }
 
-    aegis::future<rest::rest_reply> post_task(rest::request_params params)
+    aegis::future<rest::rest_reply> post_task(rest::request_params params) noexcept
     {
         return _bot->async([=]() -> rest::rest_reply
         {
@@ -105,17 +107,19 @@ public:
     }
 
     template<typename ResultType, typename V = std::enable_if_t<!std::is_same<ResultType, rest::rest_reply>::value>>
-    aegis::future<ResultType> post_task(std::string _bucket, rest::request_params params)
+    aegis::future<ResultType> post_task(std::string _bucket, rest::request_params params) noexcept
     {
         return _bot->async([=]() -> ResultType
         {
             auto & bkt = get_bucket(_bucket);
             auto res = bkt.perform(params);
-            return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
+			if (res.reply_code < rest::ok || res.reply_code >= rest::multiple_choices)//error
+				throw aegis::exception(fmt::format("REST Reply Code: {}", static_cast<int>(res.reply_code)), bad_request);
+			return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
         });
     }
 
-    aegis::future<rest::rest_reply> post_task(std::string _bucket, rest::request_params params)
+    aegis::future<rest::rest_reply> post_task(std::string _bucket, rest::request_params params) noexcept
     {
         return _bot->async([=]() -> rest::rest_reply
         {

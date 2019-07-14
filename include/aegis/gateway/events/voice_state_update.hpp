@@ -26,8 +26,7 @@ namespace events
  */
 struct voice_state_update
 {
-    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
-    core * bot = nullptr; /**< Pointer to the main bot object */
+    shards::shard & shard; /**< Reference to shard object this message came from */
     snowflake guild_id = 0;
     snowflake channel_id = 0;
     snowflake user_id = 0;
@@ -39,16 +38,8 @@ struct voice_state_update
     bool suppress = false;
 };
 
-/// \cond TEMPLATES
-AEGIS_DECL void from_json(const nlohmann::json& j, voice_state_update& m);
-/// \endcond
-
 }
 
 }
 
 }
-
-#if defined(AEGIS_HEADER_ONLY)
-#include "aegis/gateway/events/impl/voice_state_update.cpp"
-#endif

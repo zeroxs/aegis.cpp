@@ -31,6 +31,8 @@ using shared_mutex = std::shared_timed_mutex;
 
 using json = nlohmann::json;
 
+using channel_type = gateway::objects::channel::channel_type;
+
 #pragma region rest params
 struct create_message_t
 {
@@ -77,7 +79,9 @@ struct modify_channel_t
     modify_channel_t & bitrate(int param) { _bitrate = param; return *this; }
     modify_channel_t & user_limit(int param) { _user_limit = param; return *this; }
     modify_channel_t & permission_overwrites(const std::vector<gateway::objects::permission_overwrite> & param)
-    { _permission_overwrites = param; return *this; }
+    {
+        _permission_overwrites = param; return *this;
+    }
     modify_channel_t & parent_id(snowflake param) { _parent_id = param; return *this; }
     modify_channel_t & rate_limit_per_user(int param) { _rate_limit_per_user = param; return *this; }
     lib::optional<std::string> _name = {};
@@ -158,10 +162,11 @@ public:
     /**
      * @param channel_id Snowflake of this channel
      * @param guild_id Snowflake of guild this channel belongs to
-     * @param ratelimit Reference to bucket factory that manages ratelimits for this channel
-     * @param emoji Reference to bucket factory that manages ratelimits for emoji messages
+     * @param _bot Pointer to the core lib instance
+     * @param _io Reference to asio::io_context for the bot
+     * @param ratelimit Reference to bucket factory that manages rate limits for this channel
      */
-    AEGIS_DECL channel(const snowflake channel_id, const snowflake guild_id, core * _bot, asio::io_context & _io);
+    AEGIS_DECL channel(const snowflake channel_id, const snowflake guild_id, core * _bot, asio::io_context & _io, ratelimit::ratelimit_mgr & _ratelimit);
 
     /// Get a reference to the guild object this channel belongs to
     /**
@@ -183,7 +188,9 @@ public:
      */
     std::string get_name() const noexcept
     {
-        return name;
+        std::shared_lock<shared_mutex> l(_m);
+        std::string _name = name;
+        return std::move(_name);
     }
 
     /// Get the type of this channel
@@ -204,7 +211,6 @@ public:
 
     /// Send message to this channel
     /**
-     * @param ec Indicates what error occurred, if any
      * @param content A string of the message to send
      * @returns std::future<gateway::objects::message>
      */
@@ -220,7 +226,6 @@ public:
 
     /// Send an embed message to this channel
     /**
-     * @param ec Indicates what error occurred, if any
      * @param content A string of the message to send
      * @param embed A json object of the embed object itself
      * @returns std::future<gateway::objects::message>
@@ -236,7 +241,6 @@ public:
     AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(create_message_embed_t obj);
     /// Edit a message in this channel
     /**
-     * @param ec Indicates what error occurred, if any
      * @param message_id Snowflake of the message to replace. Must be your own message
      * @param content A string of the message to set
      * @returns std::future<gateway::objects::message>
@@ -253,7 +257,6 @@ public:
 
     /// Edit an embed message in this channel
     /**
-     * @param ec Indicates what error occurred, if any
      * @param message_id Snowflake of the message to replace. Must be your own message
      * @param content A string of the message to set
      * @param embed A json object of the embed object itself
@@ -271,7 +274,6 @@ public:
 
     /// Delete a message
     /**
-     * @param ec Indicates what error occurred, if any
      * @param message_id Snowflake of the message to delete
      * @returns std::future<rest::rest_reply>
      */
@@ -279,7 +281,6 @@ public:
 
     /// Delete up to 100 messages at once
     /**
-     * @param ec Indicates what error occurred, if any
      * @param message Vector of up to 100 message int64_t to delete
      * @returns std::future<rest::rest_reply>
      */
@@ -287,7 +288,6 @@ public:
 
     /// Delete up to 100 messages at once
     /**
-     * @param ec Indicates what error occurred, if any
      * @param message Vector of up to 100 message snowflakes to delete
      * @returns std::future<rest::rest_reply>
      */
@@ -295,7 +295,6 @@ public:
 
     /// Modify this channel (all parameters optional)
     /**
-     * @param ec Indicates what error occurred, if any
      * @param _name String of channel name
      * @param _position Integer of position on channel list
      * @param _topic String of channel topic
@@ -307,11 +306,11 @@ public:
      * @returns std::future<gateway::objects::channel>
      */
     AEGIS_DECL aegis::future<gateway::objects::channel> modify_channel(lib::optional<std::string> _name = {},
-                        lib::optional<int> _position = {}, lib::optional<std::string> _topic = {},
-                        lib::optional<bool> _nsfw = {}, lib::optional<int> _bitrate = {},
-                        lib::optional<int> _user_limit = {},
-                        lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {},
-                        lib::optional<snowflake> _parent_id = {}, lib::optional<int> _rate_limit_per_user = {});
+        lib::optional<int> _position = {}, lib::optional<std::string> _topic = {},
+        lib::optional<bool> _nsfw = {}, lib::optional<int> _bitrate = {},
+        lib::optional<int> _user_limit = {},
+        lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites = {},
+        lib::optional<snowflake> _parent_id = {}, lib::optional<int> _rate_limit_per_user = {});
 
     /// Modify this channel (all parameters optional)
     /**
@@ -322,20 +321,18 @@ public:
     AEGIS_DECL aegis::future<gateway::objects::channel> modify_channel(modify_channel_t obj)
     {
         return modify_channel(obj._name, obj._position, obj._topic, obj._nsfw,
-                              obj._bitrate, obj._user_limit, obj._permission_overwrites,
-                              obj._parent_id, obj._rate_limit_per_user);
+            obj._bitrate, obj._user_limit, obj._permission_overwrites,
+            obj._parent_id, obj._rate_limit_per_user);
     }
 
     /// Delete this channel
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_channel();
 
     /// Add new reaction on message
     /**
-     * @param ec Indicates what error occurred, if any
      * @param message_id Snowflake of message
      * @param emoji_text Text of emoji being added `name:snowflake`
      * @returns std::future<rest::rest_reply>
@@ -355,7 +352,6 @@ public:
 
     /// Delete own reaction on message
     /**
-     * @param ec Indicates what error occurred, if any
      * @param message_id Snowflake of message
      * @param emoji_text Text of emoji being added `name:snowflake`
      * @returns std::future<rest::rest_reply>
@@ -375,7 +371,6 @@ public:
 
     /// Delete specified member reaction on message
     /**
-     * @param ec Indicates what error occurred, if any
      * @param message_id Snowflake of message
      * @param emoji_text Text of emoji being added `name:snowflake`
      * @param member_id Snowflake of member to remove emoji from
@@ -396,7 +391,6 @@ public:
 
     /// Get all reactions for this message
     /**
-     * @param ec Indicates what error occurred, if any
      * @param message_id Snowflake of message
      * @param emoji_text Text of emoji being added `name:snowflake`
      * @returns std::future<rest::rest_reply>
@@ -416,7 +410,6 @@ public:
 
     /// Delete all reactions by message
     /**
-     * @param ec Indicates what error occurred, if any
      * @param message_id Snowflake of message
      * @returns std::future<rest::rest_reply>
      */
@@ -424,7 +417,6 @@ public:
 
     /// Edit channel permission override
     /**
-     * @param ec Indicates what error occurred, if any
      * @param _overwrite_id Snowflake of the permission override
      * @param _allow Int64 allow flags
      * @param _deny Int64 deny flags
@@ -446,14 +438,12 @@ public:
 
     /// Get active channel invites
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> get_channel_invites();
 
     /// Create a new channel invite
     /**
-     * @param ec Indicates what error occurred, if any
      * @param max_age How long this invite code lasts for in seconds
      * @param max_uses The max uses this invite code allows
      * @param temporary Is this invite code temporary
@@ -461,9 +451,9 @@ public:
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> create_channel_invite(const lib::optional<int> max_age,
-                                                                     const lib::optional<int> max_uses,
-                                                                     const lib::optional<bool> temporary,
-                                                                     const lib::optional<bool> unique);
+        const lib::optional<int> max_uses,
+        const lib::optional<bool> temporary,
+        const lib::optional<bool> unique);
 
     /// Create a new channel invite
     /**
@@ -478,7 +468,6 @@ public:
 
     /// Delete channel permission override
     /**
-     * @param ec Indicates what error occurred, if any
      * @param overwrite_id Snowflake of the channel permission to delete
      * @returns std::future<rest::rest_reply>
      */
@@ -486,42 +475,36 @@ public:
 
     /// Trigger typing indicator in channel (lasts 10 seconds)
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> trigger_typing_indicator();
 
     /// Get pinned messages in channel
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> get_pinned_messages();
 
     /// Add a pinned message in channel
     /**\todo
-     * @param ec Indicates what error occurred, if any
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> add_pinned_channel_message(snowflake message_id);
 
     /// Delete a pinned message in channel
     /**\todo
-     * @param ec Indicates what error occurred, if any
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_pinned_channel_message(snowflake message_id);
 
     /// Add member to a group direct message
     /**\todo
-     * @param ec Indicates what error occurred, if any
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> group_dm_add_recipient(snowflake user_id);
 
     /// Remove member from a group direct message
     /**\todo
-     * @param ec Indicates what error occurred, if any
      * @returns std::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> group_dm_remove_recipient(snowflake user_id);
@@ -570,7 +553,7 @@ private:
     friend class core;
 
     /// requires the caller to handle locking
-    AEGIS_DECL void load_with_guild(guild & _guild, const json & obj, shards::shard * _shard);
+    AEGIS_DECL void _load_with_guild(guild & _guild, const json & obj, shards::shard * _shard);
 
     snowflake channel_id; /**< snowflake of this channel */
     snowflake guild_id; /**< snowflake of the guild this channel belongs to */
@@ -590,6 +573,7 @@ private:
     asio::io_context & _io_context;
     mutable shared_mutex _m;
     core * _bot = nullptr;
+    ratelimit::ratelimit_mgr & _ratelimit;
 };
 
 }

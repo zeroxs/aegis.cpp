@@ -11,7 +11,7 @@
 #include <string>
 #include <memory>
 #include "aegis/core.hpp"
-#include "aegis/member.hpp"
+#include "aegis/user.hpp"
 #include "aegis/channel.hpp"
 #include "aegis/error.hpp"
 #include "aegis/shards/shard.hpp"
@@ -47,18 +47,25 @@ AEGIS_DECL core & guild::get_bot() const noexcept
 }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-AEGIS_DECL member * guild::self() const
+AEGIS_DECL user * guild::self() const
 {
     return get_bot().self();
 }
 
-AEGIS_DECL void guild::add_member(member * _member) noexcept
+AEGIS_DECL void guild::_add_member(user * _member) noexcept
+{
+    std::unique_lock<shared_mutex> l(_m);
+    members.emplace(_member->_member_id, _member);
+}
+
+AEGIS_DECL void guild::_add_member_nolock(user * _member) noexcept
 {
     members.emplace(_member->_member_id, _member);
 }
 
-AEGIS_DECL void guild::remove_member(snowflake member_id) noexcept
+AEGIS_DECL void guild::_remove_member(snowflake member_id) noexcept
 {
+    std::unique_lock<shared_mutex> l(_m);
     auto _member = members.find(member_id);
     if (_member == members.end())
     {
@@ -71,7 +78,7 @@ AEGIS_DECL void guild::remove_member(snowflake member_id) noexcept
 
 AEGIS_DECL bool guild::member_has_role(snowflake member_id, snowflake role_id) const noexcept
 {
-    std::shared_lock<shared_mutex> l(_m);
+    std::unique_lock<shared_mutex> l(_m);
     auto _member = find_member(member_id);
     if (_member == nullptr)
         return false;
@@ -87,7 +94,14 @@ AEGIS_DECL bool guild::member_has_role(snowflake member_id, snowflake role_id) c
     return false;
 }
 
-AEGIS_DECL void guild::load_presence(const json & obj) noexcept
+AEGIS_DECL void guild::_load_emoji(const json & obj) noexcept
+{
+    snowflake emoji_id = obj["id"];
+    auto & _emoji = emojis[emoji_id];
+    _emoji = obj;
+}
+
+AEGIS_DECL void guild::_load_presence(const json & obj) noexcept
 {
     json user = obj["user"];
 
@@ -109,20 +123,11 @@ AEGIS_DECL void guild::load_presence(const json & obj) noexcept
         _member->_status = user_status::Offline;
 }
 
-AEGIS_DECL void guild::load_role(const json & obj) noexcept
+AEGIS_DECL void guild::_load_role(const json & obj) noexcept
 {
     snowflake role_id = obj["id"];
-    if (!roles.count(role_id))
-        roles.emplace(role_id, gateway::objects::role());
     auto & _role = roles[role_id];
-    _role.role_id = role_id;
-    _role.hoist = obj["hoist"];
-    _role.managed = obj["managed"];
-    _role.mentionable = obj["mentionable"];
-    _role._permission = permission(obj["permissions"].get<uint64_t>());
-    _role.position = obj["position"];
-    if (!obj["name"].is_null()) _role.name = obj["name"].get<std::string>();
-    _role.color = obj["color"];
+    _role = obj;
 }
 
 AEGIS_DECL const snowflake guild::get_owner() const noexcept
@@ -130,7 +135,7 @@ AEGIS_DECL const snowflake guild::get_owner() const noexcept
     return owner_id;
 }
 
-AEGIS_DECL member * guild::find_member(snowflake member_id) const noexcept
+AEGIS_DECL user * guild::find_member(snowflake member_id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_m);
     auto m = members.find(member_id);
@@ -139,7 +144,7 @@ AEGIS_DECL member * guild::find_member(snowflake member_id) const noexcept
     return m->second;
 }
 
-AEGIS_DECL member * guild::_find_member(snowflake member_id) const noexcept
+AEGIS_DECL user * guild::_find_member(snowflake member_id) const noexcept
 {
     auto m = members.find(member_id);
     if (m == members.end())
@@ -166,12 +171,13 @@ AEGIS_DECL channel * guild::_find_channel(snowflake channel_id) const noexcept
 
 AEGIS_DECL permission guild::get_permissions(snowflake member_id, snowflake channel_id) noexcept
 {
+    std::shared_lock<shared_mutex> l(_m);
     if (!members.count(member_id) || !channels.count(channel_id))
         return 0;
-    return get_permissions(find_member(member_id), find_channel(channel_id));
+    return get_permissions(_find_member(member_id), _find_channel(channel_id));
 }
 
-AEGIS_DECL permission guild::get_permissions(member * _member, channel * _channel) noexcept
+AEGIS_DECL permission guild::get_permissions(user * _member, channel * _channel) noexcept
 {
     if (_member == nullptr || _channel == nullptr)
         return 0;
@@ -181,7 +187,7 @@ AEGIS_DECL permission guild::get_permissions(member * _member, channel * _channe
     return compute_overwrites(_base_permissions, *_member, *_channel);
 }
 
-AEGIS_DECL int64_t guild::base_permissions(member & _member) const noexcept
+AEGIS_DECL int64_t guild::base_permissions(user & _member) const noexcept
 {
     try
     {
@@ -217,7 +223,7 @@ AEGIS_DECL int64_t guild::base_permissions(member & _member) const noexcept
     }
 }
 
-AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const noexcept
+AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, user & _member, channel & _channel) const noexcept
 {
     try
     {
@@ -266,7 +272,7 @@ AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, member &
     }
 }
 
-AEGIS_DECL const gateway::objects::role & guild::get_role(int64_t r) const
+AEGIS_DECL const gateway::objects::role guild::get_role(int64_t r) const
 {
     std::shared_lock<shared_mutex> l(_m);
     for (auto & kv : roles)
@@ -275,7 +281,7 @@ AEGIS_DECL const gateway::objects::role & guild::get_role(int64_t r) const
     throw std::out_of_range(fmt::format("G: {} role:[{}] does not exist", guild_id, r));
 }
 
-AEGIS_DECL void guild::remove_role(snowflake role_id)
+AEGIS_DECL void guild::_remove_role(snowflake role_id) noexcept
 {
     std::unique_lock<shared_mutex> l(_m);
     try
@@ -307,8 +313,9 @@ AEGIS_DECL int32_t guild::get_member_count() const noexcept
     return static_cast<int32_t>(members.size());
 }
 
-AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) noexcept
+AEGIS_DECL void guild::_load(const json & obj, shards::shard * _shard) noexcept
 {
+    std::unique_lock<shared_mutex> l(_m);
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
     snowflake g_id = obj["id"];
 
@@ -348,7 +355,7 @@ AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) noexcept
 
             for (auto & role : roles)
             {
-                load_role(role);
+                _load_role(role);
             }
         }
 
@@ -358,11 +365,38 @@ AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) noexcept
 
             for (auto & member : members)
             {
-                snowflake member_id = member["user"]["id"];
-                auto _member = bot.member_create(member_id);
-                std::unique_lock<shared_mutex> l(_member->mtx());
-                _member->load(this, member, _shard);
+                const json & obj = member["user"];
+                snowflake member_id = obj["id"];
+                auto _member = bot.user_create(member_id);
+                _member->_load(this, member, _shard, false);
                 this->members.emplace(member_id, _member);
+
+                {
+                    auto & g_info = _member->_join(guild_id);
+
+
+                    if (obj.count("deaf") && !obj["deaf"].is_null()) g_info.deaf = obj["deaf"];
+                    if (obj.count("mute") && !obj["mute"].is_null()) g_info.mute = obj["mute"];
+
+                    if (obj.count("joined_at") && !obj["joined_at"].is_null())// g_info.value()->joined_at = obj["joined_at"];
+                    {
+                        g_info.joined_at = utility::from_iso8601(obj["joined_at"]).time_since_epoch().count();
+                    }
+
+                    if (obj.count("roles") && !obj["roles"].is_null())
+                    {
+                        g_info.roles.clear();
+                        g_info.roles.emplace_back(guild_id);//default everyone role
+
+                        json roles = obj["roles"];
+                        for (auto & r : roles)
+                            g_info.roles.emplace_back(std::stoull(r.get<std::string>()));
+                    }
+
+                    if (obj.count("nick") && !obj["nick"].is_null())
+                        g_info.nickname = obj["nick"].get<std::string>();
+                }
+
             }
         }
 
@@ -374,7 +408,7 @@ AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) noexcept
             {
                 snowflake channel_id = channel_obj["id"];
                 auto _channel = bot.channel_create(channel_id);
-                _channel->load_with_guild(*this, channel_obj, _shard);
+                _channel->_load_with_guild(*this, channel_obj, _shard);
                 _channel->guild_id = guild_id;
                 _channel->_guild = this;
                 this->channels.emplace(channel_id, _channel);
@@ -387,7 +421,7 @@ AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) noexcept
 
             for (auto & presence : presences)
             {
-                load_presence(presence);
+                _load_presence(presence);
             }
         }
 
@@ -395,10 +429,10 @@ AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) noexcept
         {
             const json & emojis = obj["emojis"];
 
-            /*for (auto & emoji : emojis)
+            for (auto & emoji : emojis)
             {
-            //loadEmoji(emoji, _guild);
-            }*/
+                _load_emoji(emoji);
+            }
         }
 
         if (obj.count("features"))
@@ -427,8 +461,9 @@ AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) noexcept
     }
 }
 #else
-AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) noexcept
+AEGIS_DECL void guild::_load(const json & obj, shards::shard * _shard) noexcept
 {
+    std::unique_lock<shared_mutex> l(_m);
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
     snowflake g_id = obj["id"];
 
@@ -445,7 +480,7 @@ AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) noexcept
             {
                 snowflake channel_id = channel_obj["id"];
                 auto _channel = bot.channel_create(channel_id);
-                _channel->load_with_guild(*this, channel_obj, _shard);
+                _channel->_load_with_guild(*this, channel_obj, _shard);
                 _channel->guild_id = guild_id;
                 _channel->_guild = this;
                 this->channels.emplace(channel_id, _channel);
@@ -459,9 +494,10 @@ AEGIS_DECL void guild::load(const json & obj, shards::shard * _shard) noexcept
 }
 #endif
 
-AEGIS_DECL void guild::remove_channel(snowflake channel_id) noexcept
+AEGIS_DECL void guild::_remove_channel(snowflake channel_id) noexcept
 {
-    auto it = channels.find(channel_id);
+    std::unique_lock<shared_mutex> l(_m);
+     auto it = channels.find(channel_id);
     if (it == channels.end())
     {
         AEGIS_DEBUG(get_bot().log, "Unable to remove channel [{}] from guild [{}] (does not exist)", channel_id, guild_id);
@@ -483,6 +519,7 @@ AEGIS_DECL channel * guild::get_channel(snowflake id) const noexcept
  */
 AEGIS_DECL aegis::future<gateway::objects::guild> guild::get_guild()
 {
+    std::shared_lock<shared_mutex> l(_m);
     return _bot->get_ratelimit().post_task<gateway::objects::guild>({ fmt::format("/guilds/{}", guild_id), rest::Get });
 }
 
@@ -494,6 +531,8 @@ AEGIS_DECL aegis::future<gateway::objects::guild> guild::modify_guild(lib::optio
     if ((!perms().can_manage_guild()) || (owner_id.has_value() && owner_id != self()->_member_id))
         return aegis::make_exception_future<gateway::objects::guild>(error::no_permission);
 #endif
+
+    std::shared_lock<shared_mutex> l(_m);
 
     json obj;
     if (name.has_value())
@@ -528,6 +567,8 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::delete_guild()
         return aegis::make_exception_future(error::no_permission);
 #endif
 
+    std::shared_lock<shared_mutex> l(_m);
+  
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}", guild_id), rest::Delete });
 }
 
@@ -539,6 +580,8 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_text_channel(c
     if (!perms().can_manage_channels())
         return aegis::make_exception_future<gateway::objects::channel>(error::no_permission);
 #endif
+
+    std::shared_lock<shared_mutex> l(_m);
 
     json obj;
     obj["name"] = name;
@@ -563,6 +606,8 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_voice_channel(
         return aegis::make_exception_future<gateway::objects::channel>(error::no_permission);
 #endif
 
+    std::shared_lock<shared_mutex> l(_m);
+
     json obj;
     obj["name"] = name;
     obj["type"] = 2;
@@ -585,6 +630,8 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_category_chann
     if (!perms().can_manage_channels())
         return aegis::make_exception_future<gateway::objects::channel>(error::no_permission);
 #endif
+
+    std::shared_lock<shared_mutex> l(_m);
 
     json obj;
     obj["name"] = name;
@@ -660,6 +707,8 @@ AEGIS_DECL aegis::future<gateway::objects::member> guild::modify_guild_member(sn
         obj["channel_id"] = channel_id.value();//requires MOVE_MEMBERS
 #endif
 
+    std::shared_lock<shared_mutex> l(_m);
+
     return _bot->get_ratelimit().post_task<gateway::objects::member>({ fmt::format("/guilds/{}/members/{}", guild_id, user_id), rest::Patch, obj.dump() });
 }
 
@@ -669,6 +718,8 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_my_nick(const std::stri
     if (!perms().can_change_name())
         return aegis::make_exception_future(error::no_permission);
 #endif
+
+    std::shared_lock<shared_mutex> l(_m);
 
     json obj = { { "nick", newname } };
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/members/@me/nick", guild_id), rest::Patch, obj.dump() });
@@ -681,6 +732,8 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::add_guild_member_role(snowflak
         return aegis::make_exception_future(error::no_permission);
 #endif
 
+    std::shared_lock<shared_mutex> l(_m);
+
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/members/{}/roles/{}", guild_id, user_id, role_id), rest::Put });
 }
 
@@ -690,6 +743,8 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::remove_guild_member_role(snowf
     if (!perms().can_manage_roles())
         return aegis::make_exception_future(error::no_permission);
 #endif
+
+    std::shared_lock<shared_mutex> l(_m);
 
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/members/{}/roles/{}", guild_id, user_id, role_id), rest::Delete });
 }
@@ -701,6 +756,8 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::remove_guild_member(snowflake 
         return aegis::make_exception_future(error::no_permission);
 #endif
 
+    std::shared_lock<shared_mutex> l(_m);
+
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/members/{}", guild_id, user_id), rest::Delete });
 }
 
@@ -710,6 +767,8 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::create_guild_ban(snowflake use
     if (!perms().can_ban())
         return aegis::make_exception_future(error::no_permission);
 #endif
+
+    std::shared_lock<shared_mutex> l(_m);
 
     std::string query_params = fmt::format("?delete-message-days={}", delete_message_days);
     if (!reason.empty())
@@ -725,6 +784,8 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::remove_guild_ban(snowflake use
         return aegis::make_exception_future(error::no_permission);
 #endif
 
+    std::shared_lock<shared_mutex> l(_m);
+
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/bans/{}", guild_id, user_id), rest::Delete });
 }
 
@@ -734,6 +795,8 @@ AEGIS_DECL aegis::future<gateway::objects::role> guild::create_guild_role(const 
     if (!perms().can_manage_roles())
         return aegis::make_exception_future<gateway::objects::role>(error::no_permission);
 #endif
+
+    std::shared_lock<shared_mutex> l(_m);
 
     json obj = { { "name", name },{ "permissions", _perms },{ "color", color },{ "hoist", hoist },{ "mentionable", mentionable } };
     return _bot->get_ratelimit().post_task<gateway::objects::role>({ fmt::format("/guilds/{}/roles", guild_id), rest::Post, obj.dump() });
@@ -746,6 +809,8 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_guild_role_positions(sn
         return aegis::make_exception_future(error::no_permission);
 #endif
 
+    std::shared_lock<shared_mutex> l(_m);
+
     json obj = { { "id", role_id },{ "position", position } };
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/roles", guild_id), rest::Patch, obj.dump() });
 }
@@ -757,6 +822,8 @@ AEGIS_DECL aegis::future<gateway::objects::role> guild::modify_guild_role(snowfl
         return aegis::make_exception_future<gateway::objects::role>(error::no_permission);
 #endif
 
+    std::shared_lock<shared_mutex> l(_m);
+
     json obj = { { "name", name },{ "permissions", _perms },{ "color", color },{ "hoist", hoist },{ "mentionable", mentionable } };
     return _bot->get_ratelimit().post_task<gateway::objects::role>({ fmt::format("/guilds/{}/roles/{}", guild_id, role_id), rest::Post, obj.dump() });
 }
@@ -767,6 +834,8 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::delete_guild_role(snowflake ro
     if (!perms().can_manage_roles())
         return aegis::make_exception_future(error::no_permission);
 #endif
+
+    std::shared_lock<shared_mutex> l(_m);
 
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/roles/{}", guild_id, role_id), rest::Delete });
 }
@@ -893,6 +962,8 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_guild_embed()
 
 AEGIS_DECL aegis::future<rest::rest_reply> guild::leave()
 {
+    std::unique_lock<shared_mutex> l(_m);
+
     return _bot->get_ratelimit().post_task({ fmt::format("/users/@me/guilds/{0}", guild_id), rest::Delete });
 }
 

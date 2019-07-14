@@ -191,7 +191,7 @@ public:
     /**
      * @returns Pointer to own member object
      */
-    AEGIS_DECL member * self() const;
+    AEGIS_DECL user * self() const;
 
     /// Get name of guild
     /**
@@ -199,7 +199,9 @@ public:
      */
     std::string get_name() const noexcept
     {
-        return name;
+        std::shared_lock<shared_mutex> l(_m);
+        std::string _name = name;
+        return std::move(_name);
     }
 
     /// Get region of guild
@@ -208,7 +210,9 @@ public:
      */
     std::string get_region() const noexcept
     {
-        return region;
+        std::shared_lock<shared_mutex> l(_m);
+        std::string _region = region;
+        return std::move(_region);
     }
 
     /// Check if member has role
@@ -239,7 +243,7 @@ public:
      * @param _channel Pointer to channel object
      * @returns Permission object of channel
      */
-    AEGIS_DECL permission get_permissions(member * _member, channel * _channel) noexcept;
+    AEGIS_DECL permission get_permissions(user * _member, channel * _channel) noexcept;
 
     /// Get base guild permissions for member
     /**
@@ -247,6 +251,7 @@ public:
      */
     int64_t base_permissions() const noexcept
     {
+        std::shared_lock<shared_mutex> l(_m);
         return base_permissions(self());
     }
 
@@ -254,8 +259,9 @@ public:
 /**
  * @param _member Pointer to member object
  */
-    int64_t base_permissions(member * _member) const noexcept
+    int64_t base_permissions(user * _member) const noexcept
     {
+        std::shared_lock<shared_mutex> l(_m);
         return base_permissions(*_member);
     }
 
@@ -263,7 +269,7 @@ public:
     /**
      * @param _member Reference to member object
      */
-    AEGIS_DECL int64_t base_permissions(member & _member) const noexcept;
+    AEGIS_DECL int64_t base_permissions(user & _member) const noexcept;
 
     /// Calculate permission overrides for member in channel
     /**
@@ -272,14 +278,14 @@ public:
      * @param _channel Reference to channel object
      * @returns true on successful request, false for no permissions
      */
-    AEGIS_DECL int64_t compute_overwrites(int64_t _base_permissions, member & _member, channel & _channel) const noexcept;
+    AEGIS_DECL int64_t compute_overwrites(int64_t _base_permissions, user & _member, channel & _channel) const noexcept;
 
     /// Get role
     /**
      * @param r Snowflake of role
-     * @returns Reference to role object
+     * @returns Role object
      */
-    AEGIS_DECL const gateway::objects::role & get_role(int64_t r) const;
+    AEGIS_DECL const gateway::objects::role get_role(int64_t r) const;
 
     /// Get owner of guild
     /**
@@ -306,14 +312,12 @@ public:
 
     /// Get guild information
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<gateway::objects::guild>
      */
     AEGIS_DECL aegis::future<gateway::objects::guild> get_guild();
 
     /// Modify guild information
     /**
-     * @param ec Indicates what error occurred, if any
      * @param name Set name of guild
      * @param voice_region Set region for voice
      * @param verification_level Set verification level from unrestricted level to verified phone level
@@ -352,14 +356,12 @@ public:
 
     /// Delete a guild
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_guild();
 
     /// Create a text channel
     /**
-     * @param ec Indicates what error occurred, if any
      * @param name String of the name for the channel
      * @param parent_id The channel or category to place this channel below
      * @param nsfw Whether the channel will be labeled as not safe for work
@@ -382,7 +384,6 @@ public:
 
     /// Create a voice channel
     /**
-     * @param ec Indicates what error occurred, if any
      * @param name String of the name for the channel
      * @param bitrate The bitrate count of the channel
      * @param user_limit The max amount of members that may join the channel
@@ -407,7 +408,6 @@ public:
 
     /// Create a category
     /**
-     * @param ec Indicates what error occurred, if any
      * @param name String of the name for the channel
      * @param parent_id The channel or category to place this channel below
      * @param permission_overwrites Array of permission overwrites to apply to the channel
@@ -429,7 +429,6 @@ public:
 
     /// Modify positions of channels
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> modify_channel_positions();
@@ -437,7 +436,6 @@ public:
     /// Modify a member
     /// All fields are optional
     /**
-     * @param ec Indicates what error occurred, if any
      * @param user_id The snowflake of the user to edit
      * @param nick String of nickname to change to
      * @param mute Whether or not to voice mute the member
@@ -464,7 +462,6 @@ public:
 
     /// Modify own nickname
     /**
-     * @param ec Indicates what error occurred, if any
      * @param newname String of the new nickname to apply
      * @returns aegis::future<rest::rest_reply>
      */
@@ -472,7 +469,6 @@ public:
 
     /// Add a role to guild member
     /**
-     * @param ec Indicates what error occurred, if any
      * @param user_id The snowflake of the user to add new role
      * @param role_id The snowflake of the role to add to member
      * @returns aegis::future<rest::rest_reply>
@@ -481,7 +477,6 @@ public:
 
     /// Remove a role from guild member
     /**
-     * @param ec Indicates what error occurred, if any
      * @param user_id The snowflake of the user to remove role
      * @param role_id The snowflake of the role to remove from member
      * @returns aegis::future<rest::rest_reply>
@@ -490,7 +485,6 @@ public:
 
     /// Remove guild member (kick)
     /**
-     * @param ec Indicates what error occurred, if any
      * @param user_id The snowflake of the member to kick
      * @returns aegis::future<rest::rest_reply>
      */
@@ -498,7 +492,6 @@ public:
 
     /// Create a new guild ban
     /**
-     * @param ec Indicates what error occurred, if any
      * @param user_id The snowflake of the member to ban
      * @param delete_message_days How many days to delete member message history (0-7)
      * @returns aegis::future<rest::rest_reply>
@@ -518,7 +511,6 @@ public:
 
     /// Remove a guild ban
     /**
-     * @param ec Indicates what error occurred, if any
      * @param user_id The snowflake of the member to unban
      * @returns aegis::future<rest::rest_reply>
      */
@@ -527,7 +519,6 @@ public:
     /// Create a guild role
     /**
      * @see aegis::permission
-     * @param ec Indicates what error occurred, if any
      * @param name The name of the role to create
      * @param _perms The permissions to set
      * @param color 32bit integer of the color
@@ -551,7 +542,6 @@ public:
 
     /// Modify the guild role positions
     /**
-     * @param ec Indicates what error occurred, if any
      * @param role_id Snowflake of role to change position
      * @param position Index of position to change role to
      * @returns aegis::future<rest::rest_reply>
@@ -561,7 +551,6 @@ public:
     /// Modify a guild role
     /**
      * @see aegis::permission
-     * @param ec Indicates what error occurred, if any
      * @param id The snowflake of the role to modify
      * @param name The name to set the role to
      * @param _perms The permissions to set
@@ -587,7 +576,6 @@ public:
 
     /// Delete a guild role
     /**
-     * @param ec Indicates what error occurred, if any
      * @param role_id The snowflake of the role to delete
      * @returns aegis::future<rest::rest_reply>
      */
@@ -595,7 +583,6 @@ public:
 
     /// Get a count of members that would be pruned
     /**
-     * @param ec Indicates what error occurred, if any
      * @param days The days of inactivity to prune the member
      * @returns aegis::future<rest::rest_reply>
      */
@@ -603,7 +590,6 @@ public:
 
     /// Perform a guild prune
     /**
-     * @param ec Indicates what error occurred, if any
      * @param days The days of inactivity to prune the member
      * @returns aegis::future<rest::rest_reply>
      */
@@ -611,63 +597,54 @@ public:
 
     /// Get active guild invites
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> get_guild_invites();
 
     /// Get guild integrations
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> get_guild_integrations();
 
     /// Create a new guild integration
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> create_guild_integration();
 
     /// Modify a guild integration
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> modify_guild_integration();
 
     /// Delete a guild integration
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_guild_integration();
 
     /// Get the guild integrations
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> sync_guild_integration();
 
     /// Get the guild embed settings
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> get_guild_embed();
 
     /// Modify the guild embed settings
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> modify_guild_embed();
 
     /// Leave the guild this object is associated with
     /**
-     * @param ec Indicates what error occurred, if any
      * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> leave();
@@ -685,7 +662,7 @@ public:
      * @param member_id Snowflake of member to search for
      * @returns Pointer to member or nullptr
      */
-    AEGIS_DECL member * find_member(snowflake member_id) const noexcept;
+    AEGIS_DECL user * find_member(snowflake member_id) const noexcept;
 
     /// Obtain a pointer to a channel by snowflake
     /**
@@ -696,32 +673,65 @@ public:
 
     /// Obtain map of channels
     /**
-     * @returns unordered_map<snowflake, channel*> of channels
+     * @returns unordered_map<snowflake, channel*> COPY of channels
      */
-    const std::unordered_map<snowflake, channel*> & get_channels() const noexcept
+    std::unordered_map<snowflake, channel*> get_channels() const noexcept
     {
-        return channels;
+        std::shared_lock<shared_mutex> l(_m);
+        std::unordered_map<snowflake, channel*> _list = channels;
+        return std::move(_list);
     }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     /// Obtain map of members
     /**
-     * @returns unordered_map<snowflake, member*> of members
+     * @returns unordered_map<snowflake, user*> COPY of members
      */
-    const std::unordered_map<snowflake, member*> & get_members() const noexcept
+    std::unordered_map<snowflake, user*> get_members() const noexcept
     {
-        return members;
+        std::shared_lock<shared_mutex> l(_m);
+        std::unordered_map<snowflake, user*> _list = members;
+        return std::move(_list);
     }
 
     /// Obtain map of roles
     /**
+     * @returns unordered_map<snowflake, gateway::objects::role> COPY of roles
+     */
+    std::unordered_map<snowflake, gateway::objects::role> get_roles() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        std::unordered_map<snowflake, gateway::objects::role> _list = roles;
+        return std::move(_list);
+    }
+
+    /// Obtain map of members - caller must lock guild._m to ensure no race conditions
+    /**
+     * @returns unordered_map<snowflake, user*> of members
+     */
+    const std::unordered_map<snowflake, user*> & get_members_nocopy() const noexcept
+    {
+        return members;
+    }
+
+    /// Obtain map of roles - caller must lock guild._m to ensure no race conditions
+    /**
      * @returns unordered_map<snowflake, gateway::objects::role> of roles
      */
-    const std::unordered_map<snowflake, gateway::objects::role> & get_roles() const noexcept
+    const std::unordered_map<snowflake, gateway::objects::role> & get_roles_nocopy() const noexcept
     {
         return roles;
     }
 #endif
+
+    /// Obtain map of channels - caller must lock guild._m to ensure no race conditions
+    /**
+     * @returns unordered_map<snowflake, channel*> of channels
+     */
+    const std::unordered_map<snowflake, channel*> & get_channels_nocopy() const noexcept
+    {
+        return channels;
+    }
 
     shared_mutex & mtx()
     {
@@ -730,35 +740,40 @@ public:
 
 private:
     friend class core;
-    friend class member;
+    friend class user;
 
     std::unordered_map<snowflake, channel*> channels; /**< Map of snowflakes to channel objects */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    std::unordered_map<snowflake, member*> members; /**< Map of snowflakes to member objects */
+    std::unordered_map<snowflake, user*> members; /**< Map of snowflakes to member objects */
     std::unordered_map<snowflake, gateway::objects::role> roles; /**< Map of snowflakes to role objects */
+    std::unordered_map<snowflake, gateway::objects::emoji> emojis; /**< Map of snowflakes to emoji objects */
 #endif
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    AEGIS_DECL void add_member(member * _member) noexcept;
+    AEGIS_DECL void _add_member(user * _member) noexcept;
 
-    AEGIS_DECL void remove_member(snowflake member_id) noexcept;
+    AEGIS_DECL void _add_member_nolock(user * _member) noexcept;
 
-    AEGIS_DECL void load_presence(const json & obj) noexcept;
+    AEGIS_DECL void _remove_member(snowflake member_id) noexcept;
 
-    AEGIS_DECL void load_role(const json & obj) noexcept;
+    AEGIS_DECL void _load_presence(const json & obj) noexcept;
 
-    AEGIS_DECL void remove_role(snowflake role_id);
+    AEGIS_DECL void _load_emoji(const json & obj) noexcept;
+
+    AEGIS_DECL void _load_role(const json & obj) noexcept;
+
+    AEGIS_DECL void _remove_role(snowflake role_id) noexcept;
 #endif
 
-    AEGIS_DECL void load(const json & obj, shards::shard * _shard) noexcept;
+    AEGIS_DECL void _load(const json & obj, shards::shard * _shard) noexcept;
 
     /// non-locking version for internal use
-    AEGIS_DECL member * _find_member(snowflake member_id) const noexcept;
+    AEGIS_DECL user * _find_member(snowflake member_id) const noexcept;
     
     /// non-locking version for internal use
     AEGIS_DECL channel * _find_channel(snowflake channel_id) const noexcept;
 
-    AEGIS_DECL void remove_channel(snowflake channel_id) noexcept;
+    AEGIS_DECL void _remove_channel(snowflake channel_id) noexcept;
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     std::string name;

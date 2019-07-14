@@ -25,6 +25,8 @@ namespace objects
  */
 struct footer
 {
+    footer(std::string txt) : text(txt) {}
+    footer() = default;
     std::string text; /**<\todo Needs documentation */
     std::string icon_url; /**<\todo Needs documentation */
     std::string proxy_icon_url; /**<\todo Needs documentation */
@@ -45,7 +47,7 @@ inline void to_json(nlohmann::json& j, const footer& m)
 {
     j["text"] = m.text;
     j["icon_url"] = m.icon_url;
-    j["proxy_icon_url"] = m.proxy_icon_url;
+    //j["proxy_icon_url"] = m.proxy_icon_url;
 }
 /// \endcond
 

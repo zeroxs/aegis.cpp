@@ -29,28 +29,17 @@ namespace events
  */
 struct ready 
 {
-    shards::shard * _shard = nullptr; /**< Pointer to shard object this message came from */
-    core * bot = nullptr; /**< Pointer to the main bot object */
-    int8_t v = 0; /**<\todo Needs documentation */
-    objects::user _user; /**<\todo Needs documentation */
-    std::vector<objects::channel> private_channels; /**<\todo Needs documentation */
-    std::vector<objects::guild> guilds; /**<\todo Needs documentation */
-    std::string session_id; /**<\todo Needs documentation */
-    std::vector<std::string> _trace; /**<\todo Needs documentation */
+    shards::shard & shard; /**< Reference to shard object this message came from */
+    int8_t v = 0; /**< Gateway protocol version */
+    objects::user user; /**< Discord user object */
+    std::vector<objects::channel> private_channels; /**< Direct Message channels (empty for bots) */
+    std::vector<objects::guild> guilds; /**< Guilds currently in */
+    std::string session_id; /**< Session ID for resuming */
+    std::vector<std::string> _trace; /**< Debug information for Discord */
 };
 
-/// \cond TEMPLATES
-AEGIS_DECL void from_json(const nlohmann::json& j, ready& m);
-
-AEGIS_DECL void to_json(nlohmann::json& j, const ready& m);
-/// \endcond
-
 }
 
 }
 
 }
-
-#if defined(AEGIS_HEADER_ONLY)
-#include "aegis/gateway/events/impl/ready.cpp"
-#endif

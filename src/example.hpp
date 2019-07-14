@@ -24,8 +24,10 @@ using namespace aegis::gateway::events;
 class example
 {
 public:
-    example() = default;
+    example(core & bot) : bot(bot) {};
     ~example() = default;
+
+    core & bot;
 
     template<typename Out>
     void split(const std::string &s, char delim, Out result)
@@ -40,6 +42,8 @@ public:
         }
     }
 
+    const json make_info_obj(aegis::core & bot, aegis::shards::shard * _shard);
+
     std::vector<std::string> split(const std::string &s, char delim)
     {
         std::vector<std::string> elems;
@@ -48,7 +52,7 @@ public:
     }
 
     // Messages you want to process
-    void attach(core & bot)
+    void attach()
     {
         bot.set_on_message_create(std::bind(&example::MessageCreate, this, std::placeholders::_1));
     }
@@ -56,7 +60,7 @@ public:
     snowflake get_snowflake(const std::string name, aegis::guild & _guild) const noexcept
     {
         if (name.empty())
-            return { 0 };
+            return 0;
         try
         {
             if (name[0] == '<')
@@ -65,7 +69,7 @@ public:
 
                 std::string::size_type pos = name.find_first_of('>');
                 if (pos == std::string::npos)
-                    return { 0 };
+                    return 0;
                 if (name[2] == '!')//mobile mention. strip <@!
                     return std::stoull(std::string{ name.substr(3, pos - 1) });
                 else  if (name[2] == '&')//role mention. strip <@&
@@ -90,14 +94,14 @@ public:
                     for (auto & m : _guild.get_members())
                         if (m.second->get_full_name() == name)
                             return { m.second->get_id() };
-                    return { 0 };
+                    return 0;
                 }
-                return { 0 };//# not found. unknown parameter. unicode may trigger this.
+                return 0;//# not found. unknown parameter. unicode may trigger this.
             }
         }
         catch (std::invalid_argument &)
         {
-            return { 0 };
+            return 0;
         }
     }
 

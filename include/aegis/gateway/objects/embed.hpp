@@ -39,7 +39,7 @@ public:
      * @param value Text to be shown within field
      * @param is_inline Sets whether the field is inline
      */
-    embed & fields(const std::vector<objects::field> & flds) noexcept
+    embed& fields(const std::vector<objects::field>& flds) noexcept
     {
         _fields = flds;
         return *this;
@@ -49,7 +49,7 @@ public:
     /**
      * @param str Title to set
      */
-    embed & title(const std::string & str) noexcept
+    embed& title(const std::string& str) noexcept
     {
         _title = str;
         return *this;
@@ -59,7 +59,7 @@ public:
     /**
      * @param str Footer to set
      */
-    embed & footer(const objects::footer ftr) noexcept
+    embed& footer(const objects::footer ftr) noexcept
     {
         _footer = ftr;
         return *this;
@@ -69,7 +69,7 @@ public:
     /**
      * @param str Description to set
      */
-    embed & description(const std::string & str) noexcept
+    embed& description(const std::string& str) noexcept
     {
         _description = str;
         return *this;
@@ -79,7 +79,7 @@ public:
     /**
      * @param str Url to set
      */
-    embed & url(const std::string & str) noexcept
+    embed& url(const std::string& str) noexcept
     {
         _url = str;
         return *this;
@@ -89,7 +89,7 @@ public:
     /**
      * @param str Timestamp to set
      */
-    embed & timestamp(const std::string & str) noexcept
+    embed& timestamp(const std::string& str) noexcept
     {
         _timestamp = str;
         return *this;
@@ -99,52 +99,84 @@ public:
     /**
      * @param clr Color to set
      */
-    embed & color(const int32_t clr) noexcept
+    embed& color(const int32_t clr) noexcept
     {
         _color = clr;
         return *this;
     }
 
+    /// Sets the thumbnail of the embed
+    /**
+     * @param tn Thumbnail to set
+     */
+    embed& thumbnail(const objects::thumbnail& tn) noexcept
+    {
+        _thumbnail = tn;
+        return *this;
+    }
+
+    /// Sets the image of the embed
+    /**
+     * @param img Image to set
+     */
+    embed& image(const objects::image& img) noexcept
+    {
+        _image = img;
+        return *this;
+    }
+
     /// Get the fields
-    std::vector<objects::field> & fields() noexcept
+    std::vector<objects::field>& fields() noexcept
     {
         return _fields;
     }
 
     /// Get the title
-    std::string & title() noexcept
+    std::string& title() noexcept
     {
         return _title;
     }
-    
+
     /// Get the footer
-    objects::footer & footer() noexcept
+    objects::footer& footer() noexcept
     {
         return _footer;
     }
-    
+
     /// Get the description
-    std::string & description() noexcept
+    std::string& description() noexcept
     {
         return _description;
     }
-    
+
     /// Get the url
-    std::string & url() noexcept
+    std::string& url() noexcept
     {
         return _url;
     }
-    
+
     /// Get the timestamp
-    std::string & timestamp() noexcept
+    std::string& timestamp() noexcept
     {
         return _timestamp;
     }
-    
+
     /// Get the color
-    int32_t & color() noexcept
+    int32_t& color() noexcept
     {
         return _color;
+    }
+
+    /// Get the thumbnail
+    objects::thumbnail& thumbnail() noexcept
+    {
+        return _thumbnail;
+    }
+
+    /// Get the image
+    objects::image& image() noexcept
+    {
+        return _image;
     }
 
 private:
@@ -191,24 +223,28 @@ inline void from_json(const nlohmann::json& j, embed& m)
     if (j.count("provider") && !j["provider"].is_null())
         m._provider = j["provider"];
     if (j.count("fields") && !j["fields"].is_null())
-        for (const auto & _field : j["fields"])
+        for (const auto& _field : j["fields"])
             m._fields.push_back(_field);
 }
 
-inline void to_json(nlohmann::json& j, const embed& m)
+inline void to_json(nlohmann::json & j, const embed & m)
 {
     j["title"] = m._title;
-    j["type"] = m._type;
+    //j["type"] = m._type;
     j["description"] = m._description;
-    j["url"] = m._url;
+    if (m._url.size())
+        j["url"] = m._url;
     j["timestamp"] = m._timestamp;
     j["color"] = m._color;
-    j["footer"] = m._footer;
-    j["image"] = m._image;
-    j["thumbnail"] = m._thumbnail;
-    j["video"] = m._video;
-    j["provider"] = m._provider;
-    for (const auto & _field : m._fields)
+    if (m._footer.text.size())
+        j["footer"] = m._footer;
+    if (m._image.url.size())
+        j["image"] = m._image;
+    if (m._thumbnail.url.size())
+        j["thumbnail"] = m._thumbnail;
+    //j["video"] = m._video;
+    //j["provider"] = m._provider;
+    for (const auto& _field : m._fields)
         j["fields"].push_back(_field);
 }
 /// \endcond

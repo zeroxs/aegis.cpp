@@ -24,7 +24,9 @@ namespace objects
 /**\todo Needs documentation
  */
 struct thumbnail
-{
+{ 
+    thumbnail(std::string tn) : url(tn) {}
+    thumbnail() = default;
     std::string url; /**<\todo Needs documentation */
     std::string proxy_url; /**<\todo Needs documentation */
     int32_t height = 0; /**<\todo Needs documentation */
@@ -49,7 +51,7 @@ inline void from_json(const nlohmann::json& j, thumbnail& m)
 inline void to_json(nlohmann::json& j, const thumbnail& m)
 {
     j["url"] = m.url;
-    j["proxy_url"] = m.proxy_url;
+    //j["proxy_url"] = m.proxy_url;
     j["height"] = m.height;
     j["width"] = m.width;
 }

@@ -12,6 +12,7 @@ These docs are being worked on. Some quick examples and brief explanations in th
  
 The most minimal usage example:
  
+Lambda:
 ~~~~~~~~~~~~~~~{.cpp}
 #include <aegis.hpp>
 
@@ -19,48 +20,134 @@ using json = nlohmann::json;
 
 int main(int argc, char * argv[])
 {
-    try
-    {
-        // Create bot object with a minimum log level of trace
-        aegis::core bot(spdlog::level::trace);
+    // Create bot object with a minimum log level of trace
+    aegis::core bot(spdlog::level::trace);
 
-        AEGIS_TRACE(bot.log, "Bot object created");
+    AEGIS_TRACE(bot.log, "Bot object created");
 
-        // With min log level set to trace and wsdbg (websocket debug) set to true
-        // the bot will dump all websocket messages to console
-        bot.wsdbg = true;
+    // With min log level set to trace and wsdbg (websocket debug) set to true
+    // the bot will dump all websocket messages to console
+    bot.wsdbg = true;
  
-        // These callbacks are what are called when websocket events occur
-        bot.set_on_message_create([&](aegis::gateway::events::message_create obj)
-        {
-            std::string content{ obj.msg.get_content() };
-            
-            auto & _channel = obj.msg.get_channel();
-
-            // Simple Hi response
-            if (content == "~Hi")
-            {
-                _channel.create_message("Hello back");
-            }
-        });
-
-        // start the bot
-        bot.run();
-		// yield thread execution to the library
-		bot.yield();
-    }
-    catch (std::exception & e)
+    // These callbacks are what are called when websocket events occur
+    bot.set_on_message_create([&](aegis::gateway::events::message_create obj)
     {
-        std::cout << "Error during initialization: " << e.what() << '\n';
-        return 1;
-    }
+        std::string content{ obj.msg.get_content() };
+            
+        auto & _channel = obj.msg.get_channel();
+
+        // Simple Hi response
+        if (content == "~Hi")
+        {
+            _channel.create_message("Hello back");
+        }
+    });
+
+    // start the bot
+    bot.run();
+	// yield thread execution to the library
+    bot.yield();
+
     std::cout << "Press any key to continue...\n";
     std::cin.ignore();
     return 0;
 }
 ~~~~~~~~~~~~~~~
  
+Free function:
+~~~~~~~~~~~~~~~{.cpp}
+#include <aegis.hpp>
+
+using json = nlohmann::json;
+
+void message_create(aegis::gateway::events::message_create obj)
+{
+    std::string content{ obj.msg.get_content() };
+            
+    auto & _channel = obj.msg.get_channel();
+
+    // Simple Hi response
+    if (content == "~Hi")
+    {
+        _channel.create_message("Hello back");
+    }
+}
+
+int main(int argc, char * argv[])
+{
+    // Create bot object with a minimum log level of trace
+    aegis::core bot(spdlog::level::trace);
+
+    AEGIS_TRACE(bot.log, "Bot object created");
+
+    // With min log level set to trace and wsdbg (websocket debug) set to true
+    // the bot will dump all websocket messages to console
+    bot.wsdbg = true;
  
+    // These callbacks are what are called when websocket events occur
+    bot.set_on_message_create(&message_create);
+
+    // start the bot
+    bot.run();
+	// yield thread execution to the library
+    bot.yield();
+
+    std::cout << "Press any key to continue...\n";
+    std::cin.ignore();
+    return 0;
+}
+~~~~~~~~~~~~~~~
+
+Class:
+~~~~~~~~~~~~~~~{.cpp}
+#include <aegis.hpp>
+
+using json = nlohmann::json;
+
+class my_bot
+{
+public:
+    void message_create(aegis::gateway::events::message_create obj)
+    {
+        std::string content{ obj.msg.get_content() };
+
+        auto & _channel = obj.msg.get_channel();
+
+        // Simple Hi response
+        if (content == "~Hi")
+        {
+            _channel.create_message("Hello back");
+        }
+    }
+
+}
+
+int main(int argc, char * argv[])
+{
+    // Create bot object with a minimum log level of trace
+    aegis::core bot(spdlog::level::trace);
+
+	my_bot my_bot_instance;
+
+    AEGIS_TRACE(bot.log, "Bot object created");
+
+    // With min log level set to trace and wsdbg (websocket debug) set to true
+    // the bot will dump all websocket messages to console
+    bot.wsdbg = true;
+ 
+    // These callbacks are what are called when websocket events occur
+    bot.set_on_message_create(std::bind(&my_bot::message_create, &my_bot_instance, std::placeholders::_1));
+
+    // start the bot
+    bot.run();
+	// yield thread execution to the library
+    bot.yield();
+
+    std::cout << "Press any key to continue...\n";
+    std::cin.ignore();
+    return 0;
+}
+~~~~~~~~~~~~~~~
  
  
  

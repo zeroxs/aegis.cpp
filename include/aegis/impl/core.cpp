@@ -15,7 +15,7 @@
 #include "aegis/shards/shard.hpp"
 #include "aegis/guild.hpp"
 #include "aegis/channel.hpp"
-#include "aegis/member.hpp"
+#include "aegis/user.hpp"
 
 #include <nlohmann/json.hpp>
 #include <spdlog/sinks/sink.h>
@@ -109,10 +109,7 @@ AEGIS_DECL void core::setup_shard_mgr()
 
     _rest = std::make_shared<rest::rest_controller>(_token, "/api/v6", "discordapp.com", &get_io_context());
 
-    std::error_code ec;
-    setup_gateway(ec);
-    if (ec)
-        throw ec;
+    setup_gateway();
 
     _ratelimit = std::make_shared<ratelimit_mgr_t>(
         std::bind(&aegis::rest::rest_controller::execute,
@@ -138,12 +135,13 @@ AEGIS_DECL core::core(spdlog::level::level_enum loglevel, std::size_t count)
 }
 
 AEGIS_DECL core::core(std::shared_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel)
-    : _loglevel(loglevel)
+    : _io_context(_io)
+    , _loglevel(loglevel)
 {
     load_config();
 
     setup_logging();
-    setup_context();
+    //setup_context();
     setup_shard_mgr();
 }
 
@@ -181,6 +179,7 @@ AEGIS_DECL core::~core()
             _io_context->stop();
     for (auto & t : threads)
         t->thd.join();
+    _shard_mgr.reset();
 }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
@@ -192,7 +191,12 @@ AEGIS_DECL int64_t core::get_member_count() const noexcept
     return count;
 }
 
-AEGIS_DECL member * core::find_member(snowflake id) const noexcept
+AEGIS_DECL int64_t core::get_user_count() const noexcept
+{
+    return members.size();
+}
+
+AEGIS_DECL user * core::find_user(snowflake id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_member_m);
     auto it = members.find(id);
@@ -201,13 +205,13 @@ AEGIS_DECL member * core::find_member(snowflake id) const noexcept
     return it->second.get();
 }
 
-AEGIS_DECL member * core::member_create(snowflake id) noexcept
+AEGIS_DECL user * core::user_create(snowflake id) noexcept
 {
     std::unique_lock<shared_mutex> l(_member_m);
     auto it = members.find(id);
     if (it == members.end())
     {
-        auto g = std::make_unique<member>(id);
+        auto g = std::make_unique<user>(id);
         auto ptr = g.get();
         members.emplace(id, std::move(g));
         return ptr;
@@ -220,7 +224,7 @@ AEGIS_DECL aegis::future<gateway::objects::message> core::create_dm_message(snow
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     channel * c = nullptr;
-    auto m = find_member(member_id);
+    auto m = find_user(member_id);
     if (!m)
         return aegis::make_exception_future<gateway::objects::message>(aegis::error::member_error);
     if (m->get_dm_id())
@@ -305,7 +309,7 @@ AEGIS_DECL channel * core::channel_create(snowflake id) noexcept
     auto it = channels.find(id);
     if (it == channels.end())
     {
-        auto g = std::make_unique<channel>(id, 0, this, *_io_context);
+        auto g = std::make_unique<channel>(id, 0, this, *_io_context, *_ratelimit);
         auto ptr = g.get();
         channels.emplace(id, std::move(g));
         return ptr;
@@ -489,7 +493,7 @@ AEGIS_DECL void core::shutdown()
     cv.notify_all();
 }
 
-AEGIS_DECL void core::setup_gateway(std::error_code & ec)
+AEGIS_DECL void core::setup_gateway()
 {
     log->info("Creating websocket");
 
@@ -498,28 +502,17 @@ AEGIS_DECL void core::setup_gateway(std::error_code & ec)
     _rest->tz_bias = tz_bias = std::chrono::hours(int(std::round(double((std::chrono::duration_cast<std::chrono::minutes>(res.date - std::chrono::system_clock::now()) / 60).count()))));
 
     if (res.content.empty())
-    {
-        ec = make_error_code(error::get_gateway);
-        return;
-    }
+        throw make_error_code(error::get_gateway);
 
     if (res.reply_code == 401)
-    {
-        ec = make_error_code(error::invalid_token);
-        return;
-    }
+        throw make_error_code(error::invalid_token);
 
     using json = nlohmann::json;
 
     json ret = json::parse(res.content);
     if (ret.count("message"))
-    {
         if (ret["message"] == "401: Unauthorized")
-        {
-            ec = make_error_code(error::invalid_token);
-            return;
-        }
-    }
+            throw make_error_code(error::invalid_token);
 
     ws_handlers.emplace("PRESENCE_UPDATE", std::bind(&core::ws_presence_update, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("TYPING_START", std::bind(&core::ws_typing_start, this, std::placeholders::_1, std::placeholders::_2));
@@ -529,6 +522,9 @@ AEGIS_DECL void core::setup_gateway(std::error_code & ec)
     ws_handlers.emplace("GUILD_CREATE", std::bind(&core::ws_guild_create, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("GUILD_UPDATE", std::bind(&core::ws_guild_update, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("GUILD_DELETE", std::bind(&core::ws_guild_delete, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("MESSAGE_REACTION_ADD", std::bind(&core::ws_message_reaction_add, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("MESSAGE_REACTION_REMOVE", std::bind(&core::ws_message_reaction_remove, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("MESSAGE_REACTION_REMOVE_ALL", std::bind(&core::ws_message_reaction_remove_all, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("MESSAGE_DELETE_BULK", std::bind(&core::ws_message_delete_bulk, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("USER_UPDATE", std::bind(&core::ws_user_update, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("RESUMED", std::bind(&core::ws_resumed, this, std::placeholders::_1, std::placeholders::_2));
@@ -536,6 +532,7 @@ AEGIS_DECL void core::setup_gateway(std::error_code & ec)
     ws_handlers.emplace("CHANNEL_CREATE", std::bind(&core::ws_channel_create, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("CHANNEL_UPDATE", std::bind(&core::ws_channel_update, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("CHANNEL_DELETE", std::bind(&core::ws_channel_delete, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("CHANNEL_PINS_UPDATE", std::bind(&core::ws_channel_pins_update, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("GUILD_BAN_ADD", std::bind(&core::ws_guild_ban_add, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("GUILD_BAN_REMOVE", std::bind(&core::ws_guild_ban_remove, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("GUILD_EMOJIS_UPDATE", std::bind(&core::ws_guild_emojis_update, this, std::placeholders::_1, std::placeholders::_2));
@@ -549,6 +546,7 @@ AEGIS_DECL void core::setup_gateway(std::error_code & ec)
     ws_handlers.emplace("GUILD_ROLE_DELETE", std::bind(&core::ws_guild_role_delete, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("VOICE_STATE_UPDATE", std::bind(&core::ws_voice_state_update, this, std::placeholders::_1, std::placeholders::_2));
     ws_handlers.emplace("VOICE_SERVER_UPDATE", std::bind(&core::ws_voice_server_update, this, std::placeholders::_1, std::placeholders::_2));
+    ws_handlers.emplace("WEBHOOKS_UPDATE", std::bind(&core::ws_webhooks_update, this, std::placeholders::_1, std::placeholders::_2));
 
     if (force_shard_count)
     {
@@ -557,14 +555,12 @@ AEGIS_DECL void core::setup_gateway(std::error_code & ec)
     }
     else
     {
-        _shard_mgr->shard_max_count = ret["shards"];
+        shard_max_count = _shard_mgr->shard_max_count = ret["shards"];
         log->info("Shard count: {}", _shard_mgr->shard_max_count);
     }
 
     _shard_mgr->ws_gateway = ret["url"].get<std::string>();
     _shard_mgr->set_gateway_url(_shard_mgr->ws_gateway + "/?compress=zlib-stream&encoding=json&v=6");
-
-    ec = std::error_code();
 }
 
 
@@ -579,20 +575,20 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
     {
         const json & userdata = d["user"];
         discriminator = static_cast<int16_t>(std::stoi(userdata["discriminator"].get<std::string>()));
-        member_id = userdata["id"];
+        user_id = userdata["id"];
         username = userdata["username"].get<std::string>();
         mfa_enabled = userdata["mfa_enabled"];
         if (mention.empty())
         {
             std::stringstream ss;
-            ss << "<@" << member_id << ">";
+            ss << "<@" << user_id << ">";
             mention = ss.str();
         }
 
-        auto m = std::make_unique<member>(member_id);
+        auto m = std::make_unique<user>(user_id);
         _self = m.get();
-        members.emplace(member_id, std::move(m));
-        _self->_member_id = member_id;
+        members.emplace(user_id, std::move(m));
+        _self->_member_id = user_id;
         _self->_is_bot = true;
         _self->_name = username;
         _self->_discriminator = discriminator;
@@ -601,7 +597,7 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
 #else
     const json & userdata = d["user"];
     discriminator = static_cast<int16_t>(std::stoi(userdata["discriminator"].get<std::string>()));
-    member_id = userdata["id"];
+    user_id = userdata["id"];
 #endif
 
     for (auto & guildobj : guilds)
@@ -617,7 +613,7 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
         if (!unavailable)
         {
             std::unique_lock<shared_mutex> l(_guild->mtx());
-            _guild->load(guildobj, _shard);
+            _guild->_load(guildobj, _shard);
             AEGIS_DEBUG(log, "Shard#{} : CREATED Guild: {} [T:{}] [{}]"
                       , _shard->get_id()
                       , _guild->guild_id
@@ -726,6 +722,9 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                     ++message_count[cmd];
                     asio::post(*_io_context, [=, res = std::move(result)]()
                     {
+                        if (get_state() == aegis::bot_status::shutdown)
+                            return;
+
                         try
                         {
 #if defined(AEGIS_PROFILING)
@@ -1002,6 +1001,14 @@ AEGIS_DECL uint64_t core::get_shard_transfer()
     return count;
 }
 
+AEGIS_DECL uint64_t core::get_shard_u_transfer()
+{
+    uint64_t count = 0;
+    for (auto & s : _shard_mgr->_shards)
+        count += s->get_transfer_u();
+    return count;
+}
+
 AEGIS_DECL void core::_thread_track(thread_state * t_state)
 {
     try
@@ -1059,7 +1066,7 @@ AEGIS_DECL void core::ws_presence_update(const json & result, shards::shard * _s
     json user = result["d"]["user"];
     snowflake guild_id = result["d"]["guild_id"];
     snowflake member_id = user["id"];
-    auto _member = member_create(member_id);
+    auto _member = user_create(member_id);
     auto  _guild = find_guild(guild_id);
     if (_guild == nullptr)
     {
@@ -1069,7 +1076,7 @@ AEGIS_DECL void core::ws_presence_update(const json & result, shards::shard * _s
     std::unique_lock<shared_mutex> l(_member->mtx(), std::defer_lock);
     std::unique_lock<shared_mutex> l2(_guild->mtx(), std::defer_lock);
     std::lock(l, l2);
-    _member->load(_guild, result["d"], _shard);
+    _member->_load_nolock(_guild, result["d"], _shard, true, false);
 
     using user_status = aegis::gateway::objects::presence::user_status;
 
@@ -1088,10 +1095,20 @@ AEGIS_DECL void core::ws_presence_update(const json & result, shards::shard * _s
     //_member->rich_presence = result["d"]["game"]; //activity object
 #endif
 
-    gateway::events::presence_update obj;
-    obj._user = result["d"]["user"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::presence_update obj{*_shard};
+
+    const json & j = result["d"];
+
+    obj.user = j["user"];
+    obj.guild_id = j["guild_id"];
+
+    if (j.count("game") && !j["game"].is_null())
+        obj.game = j["game"];
+
+    if (j.count("roles") && !j["roles"].is_null())
+        for (const auto & _role : j["roles"])
+            obj.roles.push_back(_role);
+
 
     if (i_presence_update)
         i_presence_update(obj);
@@ -1099,15 +1116,10 @@ AEGIS_DECL void core::ws_presence_update(const json & result, shards::shard * _s
 
 AEGIS_DECL void core::ws_typing_start(const json & result, shards::shard * _shard)
 {
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
-    gateway::events::typing_start obj(static_cast<int64_t>(result["d"]["timestamp"])
-                                      , find_channel(result["d"]["channel_id"])
-                                      , find_member(result["d"]["user_id"]));
-#else
-    gateway::events::typing_start obj(static_cast<int64_t>(result["d"]["timestamp"]));
-#endif
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::typing_start obj{ *_shard
+                                      , *channel_create(result["d"]["channel_id"])
+                                      , *user_create(result["d"]["user_id"]) };
+    obj.timestamp = static_cast<int64_t>(result["d"]["timestamp"]);
 
     if (i_typing_start)
         i_typing_start(obj);
@@ -1124,49 +1136,42 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
     {
         log->warn("Shard#{} - channel == nullptr - {} {} {}", _shard->get_id(), c_id, result["d"]["author"]["id"].get<std::string>(), result["d"]["content"].get<std::string>());
     }
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
     else if (c->get_guild_id() == 0)//DM
     {
-        auto m = find_member(result["d"]["author"]["id"]);
-        gateway::events::message_create obj(result["d"], c, m, this);
-        obj.bot = this;
-        obj._shard = _shard;
+        auto m = find_user(result["d"]["author"]["id"]);
+        gateway::events::message_create obj{ *_shard, std::ref(*m), std::ref(*c) };
+
+        obj.msg = result["d"];
+        obj.msg._bot = this;
 
         if (i_message_create_dm)
             i_message_create_dm(obj);
     }
     else
     {
-        auto m = find_member(result["d"]["author"]["id"]);
+        auto m = find_user(result["d"]["author"]["id"]);
         auto g = &c->get_guild();
-        gateway::events::message_create obj(result["d"], g, c, m, this);
-        obj.bot = this;
-        obj._shard = _shard;
+        gateway::events::message_create obj{ *_shard, std::ref(*m), std::ref(*c)/*, std::make_optional(std::ref(*g))*/ };
+
+        obj.msg = result["d"];
+        obj.msg._bot = this;
+
         if (i_message_create)
             i_message_create(obj);
     }
-#else
-    auto g = &c->get_guild();
-    gateway::events::message_create obj(result["d"], g, c, this);
-    obj.bot = this;
-    obj._shard = _shard;
-    if (i_message_create)
-        i_message_create(obj);
-#endif
-
 }
 
 AEGIS_DECL void core::ws_message_update(const json & result, shards::shard * _shard)
 {
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
-    gateway::events::message_update obj(result["d"]
-        , find_channel(result["d"]["channel_id"])
-        , (result["d"].count("author") && result["d"]["author"].count("id"))? find_member(result["d"]["author"]["id"]) : nullptr );
-#else
-    gateway::events::message_update obj(result["d"]);
-#endif
-    obj.bot = this;
-    obj._shard = _shard;
+    auto _channel = channel_create(result["d"]["channel_id"]);
+    lib::optional<std::reference_wrapper<aegis::user>> _user;
+    if (result["d"].count("author"))
+    {
+        const json & author = result["d"]["author"];
+        _user = std::ref(*user_create(author["id"]));
+    }
+    gateway::events::message_update obj{ *_shard, *_channel, std::ref(*_user) };
+    obj.msg = result["d"];
 
     if (i_message_update)
         i_message_update(obj);
@@ -1177,32 +1182,22 @@ AEGIS_DECL void core::ws_guild_create(const json & result, shards::shard * _shar
     snowflake guild_id = result["d"]["id"];
 
     auto _guild = guild_create(guild_id, _shard);
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild->unavailable && _guild->get_owner())
     {
         //outage
     }
-#endif
 
-    {
-        std::unique_lock<shared_mutex> l(_guild->mtx());
-        _guild->load(result["d"], _shard);
-    }
+    _guild->_load(result["d"], _shard);
 
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
-    //TODO: abide by rate limits (120/60)
     json chunk;
     chunk["d"]["guild_id"] = std::to_string(guild_id);
     chunk["d"]["query"] = "";
     chunk["d"]["limit"] = 0;
     chunk["op"] = 8;
     _shard->send(chunk.dump());
-#endif
 
-    gateway::events::guild_create obj;
-    obj._guild = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::guild_create obj{ *_shard };
+    obj.guild = result["d"];
 
     if (i_guild_create)
         i_guild_create(obj);
@@ -1220,15 +1215,10 @@ AEGIS_DECL void core::ws_guild_update(const json & result, shards::shard * _shar
         return;
     }
 
-    {
-        std::unique_lock<shared_mutex> l(_guild->mtx());
-        _guild->load(result["d"], _shard);
-    }
+    _guild->_load(result["d"], _shard);
 
-    gateway::events::guild_update obj;
-    obj._guild = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::guild_update obj{ *_shard };
+    obj.guild = result["d"];
 
     if (i_guild_update)
         i_guild_update(obj);
@@ -1236,9 +1226,7 @@ AEGIS_DECL void core::ws_guild_update(const json & result, shards::shard * _shar
 
 AEGIS_DECL void core::ws_guild_delete(const json & result, shards::shard * _shard)
 {
-    gateway::events::guild_delete obj;
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::guild_delete obj{ *_shard };
     obj.guild_id = result["d"]["id"];
     if (result["d"].count("unavailable"))
         obj.unavailable = result["d"]["unavailable"];
@@ -1279,13 +1267,8 @@ AEGIS_DECL void core::ws_guild_delete(const json & result, shards::shard * _shar
 
 AEGIS_DECL void core::ws_message_delete(const json & result, shards::shard * _shard)
 {
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
-    gateway::events::message_delete obj(static_cast<snowflake>(std::stoll(result["d"]["id"].get<std::string>()))
-                                        , find_channel(result["d"]["channel_id"]));
-#else
-    gateway::events::message_delete obj(static_cast<snowflake>(std::stoll(result["d"]["id"].get<std::string>())));
-#endif
-    obj.bot = this;
+    gateway::events::message_delete obj{ *_shard, *channel_create(result["d"]["channel_id"]) };
+    obj.id = static_cast<snowflake>(std::stoll(result["d"]["id"].get<std::string>()));
 
     if (i_message_delete)
         i_message_delete(obj);
@@ -1293,10 +1276,14 @@ AEGIS_DECL void core::ws_message_delete(const json & result, shards::shard * _sh
 
 AEGIS_DECL void core::ws_message_delete_bulk(const json & result, shards::shard * _shard)
 {
-    gateway::events::message_delete_bulk obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::message_delete_bulk obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.channel_id = j["channel_id"];
+    obj.guild_id = j["guild_id"];
+    for (const auto & id : j["ids"])
+        obj.ids.push_back(id);
 
     if (i_message_delete_bulk)
         i_message_delete_bulk(obj);
@@ -1304,11 +1291,9 @@ AEGIS_DECL void core::ws_message_delete_bulk(const json & result, shards::shard 
 
 AEGIS_DECL void core::ws_user_update(const json & result, shards::shard * _shard)
 {
-#if !defined(AEGIS_DISABLE_ALL_CACHE)
-
     snowflake member_id = result["d"]["id"];
 
-    auto _member = member_create(member_id);
+    auto _member = user_create(member_id);
 
     const json & user = result["d"];
     if (user.count("username") && !user["username"].is_null())
@@ -1323,14 +1308,11 @@ AEGIS_DECL void core::ws_user_update(const json & result, shards::shard * _shard
         _member->_is_bot = user["bot"];
     //if (!user["verified"].is_null()) _member.m_verified = user["verified"];
     //if (!user["email"].is_null()) _member.m_email = user["email"];
-    gateway::events::user_update obj(_member);
-#else
-    gateway::events::user_update obj;
-#endif
+    gateway::events::user_update obj{ *_shard };
 
-    obj._user = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    const json & j = result["d"];
+
+    obj._user = j;
 
     if (i_user_update)
         i_user_update(obj);
@@ -1338,11 +1320,21 @@ AEGIS_DECL void core::ws_user_update(const json & result, shards::shard * _shard
 
 AEGIS_DECL void core::ws_voice_state_update(const json & result, shards::shard * _shard)
 {
-    gateway::events::voice_state_update obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
-    
+    gateway::events::voice_state_update obj{ *_shard };
+
+    const json & j = result["d"];
+
+    if (j.count("guild_id") && !j["guild_id"].is_null())
+        obj.guild_id = j["guild_id"];
+    obj.channel_id = j["channel_id"];
+    obj.user_id = j["user_id"];
+    obj.session_id = j["session_id"].get<std::string>();
+    obj.deaf = j["deaf"];
+    obj.mute = j["mute"];
+    obj.self_deaf = j["self_deaf"];
+    obj.self_mute = j["self_mute"];
+    obj.suppress = j["suppress"];
+
     if (i_voice_state_update)
         i_voice_state_update(obj);
 }
@@ -1358,10 +1350,13 @@ AEGIS_DECL void core::ws_resumed(const json & result, shards::shard * _shard)
     _shard->set_heartbeat(std::bind(&core::keep_alive, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     _shard->start_heartbeat(_shard->heartbeattime);
 
-    gateway::events::resumed obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::resumed obj{ *_shard };
+
+    const json & j = result["d"];
+
+    if (j.count("_trace") && !j["_trace"].is_null())
+        for (const auto & i : j["_trace"])
+            obj._trace.push_back(i);
 
     _shard->_trace = obj._trace;
 
@@ -1378,10 +1373,20 @@ AEGIS_DECL void core::ws_ready(const json & result, shards::shard * _shard)
     process_ready(result["d"], _shard);
     log->info("Shard#{} READY Processed", _shard->get_id());
 
-    gateway::events::ready obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::ready obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.user = j["user"];
+    if (j.count("private_channels") && !j["private_channels"].is_null())
+        for (const auto & i : j["private_channels"])
+            obj.private_channels.push_back(i);
+    if (j.count("guilds") && !j["guilds"].is_null())
+        for (const auto & i : j["guilds"])
+            obj.guilds.push_back(i);
+    if (j.count("_trace") && !j["_trace"].is_null())
+        for (const auto & i : j["_trace"])
+            obj._trace.push_back(i);
 
     _shard->_trace = obj._trace;
 
@@ -1405,7 +1410,7 @@ AEGIS_DECL void core::ws_channel_create(const json & result, shards::shard * _sh
         std::unique_lock<shared_mutex> l2(_channel_m, std::defer_lock);
         std::unique_lock<shared_mutex> l3(_guild->mtx(), std::defer_lock);
         std::lock(l, l2, l3);
-        _channel->load_with_guild(*_guild, result["d"], _shard);
+        _channel->_load_with_guild(*_guild, result["d"], _shard);
         _guild->channels.emplace(channel_id, _channel);
         _channel->guild_id = guild_id;
         _channel->_guild = _guild;
@@ -1421,17 +1426,18 @@ AEGIS_DECL void core::ws_channel_create(const json & result, shards::shard * _sh
             snowflake user_id = std::stoull(r.at(0)["id"].get<std::string>());
             snowflake dm_id = std::stoull(result["d"]["id"].get<std::string>());
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-            auto user = find_member(user_id);
+            auto user = find_user(user_id);
             if (user)
                 user->set_dm_id(dm_id);
 #endif
         }
     }
 
-    gateway::events::channel_create obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::channel_create obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.channel = j;
 
     if (i_channel_create)
         i_channel_create(obj);
@@ -1452,7 +1458,7 @@ AEGIS_DECL void core::ws_channel_update(const json & result, shards::shard * _sh
         std::unique_lock<shared_mutex> l(_channel->mtx(), std::defer_lock);
         std::unique_lock<shared_mutex> l2(_channel_m, std::defer_lock);
         std::lock(l, l2);
-        _channel->load_with_guild(*_guild, result["d"], _shard);
+        _channel->_load_with_guild(*_guild, result["d"], _shard);
         _guild->channels.emplace(channel_id, _channel);
     }
     else
@@ -1462,10 +1468,11 @@ AEGIS_DECL void core::ws_channel_update(const json & result, shards::shard * _sh
         auto _channel = dm_channel_create(result["d"], _shard);
     }
 
-    gateway::events::channel_update obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::channel_update obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.channel = j;
 
     if (i_channel_update)
         i_channel_update(obj);
@@ -1487,14 +1494,15 @@ AEGIS_DECL void core::ws_channel_delete(const json & result, shards::shard * _sh
         std::unique_lock<shared_mutex> l(_channel->mtx(), std::defer_lock);
         std::unique_lock<shared_mutex> l2(_channel_m, std::defer_lock);
         std::lock(l, l2);
-        _guild->remove_channel(channel_id);
+        _guild->_remove_channel(channel_id);
         remove_channel(channel_id);
     }
 
-    gateway::events::channel_delete obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::channel_delete obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.channel = j;
 
     if (i_channel_delete)
         i_channel_delete(obj);
@@ -1502,10 +1510,12 @@ AEGIS_DECL void core::ws_channel_delete(const json & result, shards::shard * _sh
 
 AEGIS_DECL void core::ws_guild_ban_add(const json & result, shards::shard * _shard)
 {
-    gateway::events::guild_ban_add obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::guild_ban_add obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.guild_id = j["guild_id"];
+    obj.user = j["user"];
 
     if (i_guild_ban_add)
         i_guild_ban_add(obj);
@@ -1513,10 +1523,12 @@ AEGIS_DECL void core::ws_guild_ban_add(const json & result, shards::shard * _sha
 
 AEGIS_DECL void core::ws_guild_ban_remove(const json & result, shards::shard * _shard)
 {
-    gateway::events::guild_ban_remove obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::guild_ban_remove obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.guild_id = j["guild_id"];
+    obj.user = j["user"];
 
     if (i_guild_ban_remove)
         i_guild_ban_remove(obj);
@@ -1524,10 +1536,14 @@ AEGIS_DECL void core::ws_guild_ban_remove(const json & result, shards::shard * _
 
 AEGIS_DECL void core::ws_guild_emojis_update(const json & result, shards::shard * _shard)
 {
-    gateway::events::guild_emojis_update obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::guild_emojis_update obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.guild_id = j["guild_id"];
+    if (j.count("emojis") && !j["emojis"].is_null())
+        for (const auto & _emoji : j["emojis"])
+            obj.emojis.push_back(_emoji);
 
     if (i_guild_emojis_update)
         i_guild_emojis_update(obj);
@@ -1535,10 +1551,11 @@ AEGIS_DECL void core::ws_guild_emojis_update(const json & result, shards::shard 
 
 AEGIS_DECL void core::ws_guild_integrations_update(const json & result, shards::shard * _shard)
 {
-    gateway::events::guild_integrations_update obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::guild_integrations_update obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.guild_id = j["guild_id"];
 
     if (i_guild_integrations_update)
         i_guild_integrations_update(obj);
@@ -1550,19 +1567,20 @@ AEGIS_DECL void core::ws_guild_member_add(const json & result, shards::shard * _
     snowflake member_id = result["d"]["user"]["id"];
     snowflake guild_id = result["d"]["guild_id"];
 
-    auto _member = member_create(member_id);
+    auto _member = user_create(member_id);
     auto _guild = find_guild(guild_id);
 
     std::unique_lock<shared_mutex> l(_member->mtx(), std::defer_lock);
     std::unique_lock<shared_mutex> l2(_guild->mtx(), std::defer_lock);
     std::lock(l, l2);
-    _member->load(_guild, result["d"], _shard);
+    _member->_load_nolock(_guild, result["d"], _shard, true, false);
 #endif
 
-    gateway::events::guild_member_add obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::guild_member_add obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.member = j;
 
     if (i_guild_member_add)
         i_guild_member_add(obj);
@@ -1574,21 +1592,23 @@ AEGIS_DECL void core::ws_guild_member_remove(const json & result, shards::shard 
     snowflake member_id = result["d"]["user"]["id"];
     snowflake guild_id = result["d"]["guild_id"];
 
-    auto _member = find_member(member_id);
+    auto _member = find_user(member_id);
     auto _guild = find_guild(guild_id);
 
     if (_guild != nullptr)
     {
-        std::unique_lock<shared_mutex> l(_guild->mtx());
         //if user was self, guild may already be deleted
-        _guild->remove_member(member_id);
+        _guild->_remove_member(member_id);
     }
 #endif
 
-    gateway::events::guild_member_remove obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::guild_member_remove obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.user = j["user"];
+    if (j.count("guild_id") && !j["guild_id"].is_null())
+        obj.guild_id = j["guild_id"];
 
     if (i_guild_member_remove)
         i_guild_member_remove(obj);
@@ -1600,7 +1620,7 @@ AEGIS_DECL void core::ws_guild_member_update(const json & result, shards::shard 
     snowflake member_id = result["d"]["user"]["id"];
     snowflake guild_id = result["d"]["guild_id"];
 
-    auto _member = member_create(member_id);
+    auto _member = user_create(member_id);
     auto _guild = find_guild(guild_id);
 
     if (_member == nullptr)
@@ -1625,13 +1645,21 @@ AEGIS_DECL void core::ws_guild_member_update(const json & result, shards::shard 
     std::unique_lock<shared_mutex> l(_member->mtx(), std::defer_lock);
     std::unique_lock<shared_mutex> l2(_guild->mtx(), std::defer_lock);
     std::lock(l, l2);
-    _member->load(_guild, result["d"], _shard);
+    _member->_load_nolock(_guild, result["d"], _shard, true, false);
 #endif
 
-    gateway::events::guild_member_update obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::guild_member_update obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.user = j["user"];
+    if (j.count("nick") && !j["nick"].is_null())
+        obj.nick = j["nick"].get<std::string>();
+    if (j.count("guild_id") && !j["guild_id"].is_null())
+        obj.guild_id = j["guild_id"];
+    if (j.count("roles") && !j["roles"].is_null())
+        for (const auto & i : j["roles"])
+            obj.roles.push_back(i);
 
     if (i_guild_member_update)
         i_guild_member_update(obj);
@@ -1651,20 +1679,24 @@ AEGIS_DECL void core::ws_guild_members_chunk(const json & result, shards::shard 
         {
             snowflake member_id = _member["user"]["id"];
 
-            auto _member_ptr = member_create(member_id);
+            auto _member_ptr = user_create(member_id);
 
             std::unique_lock<shared_mutex> l(_member_ptr->mtx(), std::defer_lock);
             std::unique_lock<shared_mutex> l2(_guild->mtx(), std::defer_lock);
             std::lock(l, l2);
-            _member_ptr->load(_guild, _member, _shard);
+            _member_ptr->_load_nolock(_guild, _member, _shard, true, false);
         }
     }
 #endif
 
-    gateway::events::guild_members_chunk obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::guild_members_chunk obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.guild_id = j["guild_id"];
+    if (j.count("members") && !j["members"].is_null())
+        for (const auto & i : j["members"])
+            obj.members.push_back(i);
 
     if (i_guild_members_chunk)
         i_guild_members_chunk(obj);
@@ -1676,13 +1708,15 @@ AEGIS_DECL void core::ws_guild_role_create(const json & result, shards::shard * 
     snowflake guild_id = result["d"]["guild_id"];
 
     auto _guild = find_guild(guild_id);
-    _guild->load_role(result["d"]["role"]);
+    _guild->_load_role(result["d"]["role"]);
 #endif
 
-    gateway::events::guild_role_create obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::guild_role_create obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.guild_id = j["guild_id"];
+    obj.role = j["role"];
 
     if (i_guild_role_create)
         i_guild_role_create(obj);
@@ -1694,13 +1728,15 @@ AEGIS_DECL void core::ws_guild_role_update(const json & result, shards::shard * 
     snowflake guild_id = result["d"]["guild_id"];
 
     auto _guild = find_guild(guild_id);
-    _guild->load_role(result["d"]["role"]);
+    _guild->_load_role(result["d"]["role"]);
 #endif
 
-    gateway::events::guild_role_update obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::guild_role_update obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.guild_id = j["guild_id"];
+    obj.role = j["role"];
 
     if (i_guild_role_update)
         i_guild_role_update(obj);
@@ -1717,14 +1753,16 @@ AEGIS_DECL void core::ws_guild_role_delete(const json & result, shards::shard * 
     if (_guild != nullptr)
     {
         //if role was own, we may have been kicked and guild may already be deleted
-        _guild->remove_role(role_id);
+        _guild->_remove_role(role_id);
     }
 #endif
 
-    gateway::events::guild_role_delete obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::guild_role_delete obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.guild_id = j["guild_id"];
+    obj.role_id = j["role_id"];
 
     if (i_guild_role_delete)
         i_guild_role_delete(obj);
@@ -1732,13 +1770,91 @@ AEGIS_DECL void core::ws_guild_role_delete(const json & result, shards::shard * 
 
 AEGIS_DECL void core::ws_voice_server_update(const json & result, shards::shard * _shard)
 {
-    gateway::events::voice_server_update obj;
-    obj = result["d"];
-    obj.bot = this;
-    obj._shard = _shard;
+    gateway::events::voice_server_update obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.token = j["token"].get<std::string>();
+    obj.guild_id = j["guild_id"];
+    if (!j["endpoint"].is_null())
+        obj.endpoint = j["endpoint"].get<std::string>();
+
 
     if (i_voice_server_update)
         i_voice_server_update(obj);
+}
+
+AEGIS_DECL void core::ws_message_reaction_add(const json & result, shards::shard * _shard)
+{
+    gateway::events::message_reaction_add obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.user_id = j["user_id"];
+    obj.channel_id = j["channel_id"];
+    obj.message_id = j["message_id"];
+    obj.guild_id = j["guild_id"];
+    obj.emoji = j["emoji"];
+
+    if (i_message_reaction_add)
+        i_message_reaction_add(obj);
+}
+
+AEGIS_DECL void core::ws_message_reaction_remove(const json & result, shards::shard * _shard)
+{
+    gateway::events::message_reaction_remove obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.user_id = j["user_id"];
+    obj.channel_id = j["channel_id"];
+    obj.message_id = j["message_id"];
+    obj.guild_id = j["guild_id"];
+    obj.emoji = j["emoji"];
+
+    if (i_message_reaction_remove)
+        i_message_reaction_remove(obj);
+}
+
+AEGIS_DECL void core::ws_message_reaction_remove_all(const json & result, shards::shard * _shard)
+{
+    gateway::events::message_reaction_remove_all obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.channel_id = j["channel_id"];
+    obj.message_id = j["message_id"];
+    obj.guild_id = j["guild_id"];
+
+    if (i_message_reaction_remove_all)
+        i_message_reaction_remove_all(obj);
+}
+
+AEGIS_DECL void core::ws_channel_pins_update(const json & result, shards::shard * _shard)
+{
+    gateway::events::channel_pins_update obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.channel_id = j["channel_id"];
+    if (j.count("last_pin_timestamp") && !j["last_pin_timestamp"].is_null())
+        obj.last_pin_timestamp = j["last_pin_timestamp"].get<std::string>();
+
+    if (i_channel_pins_update)
+        i_channel_pins_update(obj);
+}
+
+AEGIS_DECL void core::ws_webhooks_update(const json & result, shards::shard * _shard)
+{
+    gateway::events::webhooks_update obj{ *_shard };
+
+    const json & j = result["d"];
+
+    obj.guild_id = j["guild_id"];
+    obj.channel_id = j["channel_id"];
+
+    if (i_webhooks_update)
+        i_webhooks_update(obj);
 }
 
 AEGIS_DECL aegis::future<gateway::objects::guild> core::create_guild(
@@ -1766,10 +1882,86 @@ AEGIS_DECL aegis::future<gateway::objects::guild> core::create_guild(
         for (auto & c : channels.value())
             obj["channels"].push_back(json({ { "name", std::get<0>(c) }, { "type", std::get<1>(c) } }));
 
-    return async([&]
+    return aegis::make_ready_future(gateway::objects::guild(json::parse(get_ratelimit().post_task({ "/guilds", rest::Post, obj.dump() }).get().content)));
+}
+
+AEGIS_DECL aegis::future<gateway::objects::message> core::create_message(snowflake channel_id, const std::string & msg, int64_t nonce, bool perform_lookup) noexcept
+{
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    channel* _channel = nullptr;
+    guild* _guild = nullptr;
+    if (perform_lookup)
     {
-        return gateway::objects::guild(json::parse(_rest->execute({ "/guilds", rest::Post, obj.dump() }).content));
-    });
+        auto it = channels.find(channel_id);
+        if (it == channels.end())
+            return aegis::make_exception_future<gateway::objects::message>(error::channel_not_found);
+        _channel = it->second.get();
+        _guild = &it->second->get_guild();
+        if (_guild != nullptr)//probably a DM
+            if (!_channel->perms().can_send_messages())
+                return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
+    }
+#endif
+
+    json obj;
+    obj["content"] = msg;
+
+    if (nonce)
+        obj["nonce"] = nonce;
+
+    return get_ratelimit().post_task<gateway::objects::message>({ fmt::format("/channels/{}/messages", channel_id), rest::Post, obj.dump() });
+}
+
+AEGIS_DECL aegis::future<gateway::objects::message> core::create_message_embed(snowflake channel_id, const std::string& msg, const json& _obj, int64_t nonce, bool perform_lookup) noexcept
+{
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    channel* _channel = nullptr;
+    guild* _guild = nullptr;
+    if (perform_lookup)
+    {
+        auto it = channels.find(channel_id);
+        if (it == channels.end())
+            return aegis::make_exception_future<gateway::objects::message>(error::channel_not_found);
+        _channel = it->second.get();
+        _guild = &it->second->get_guild();
+        if (_guild != nullptr)//probably a DM
+            if (!_channel->perms().can_send_messages())
+                return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
+    }
+#endif
+
+    json obj;
+    if (!msg.empty())
+        obj["content"] = msg;
+    obj["embed"] = _obj;
+
+    if (nonce)
+        obj["nonce"] = nonce;
+
+    return get_ratelimit().post_task<gateway::objects::message>({ fmt::format("/channels/{}/messages", channel_id), rest::Post, obj.dump() });
+}
+
+AEGIS_DECL void core::update_presence(const std::string& text, gateway::objects::activity::activity_type type, gateway::objects::presence::user_status status)
+{
+    json j = {
+        { "op", 3 },
+        {
+            "d",
+            {
+                { "game",
+                    {
+                        { "name", text },
+                        { "type", static_cast<int32_t>(type) }
+                    }
+                },
+                { "status", gateway::objects::presence::to_string(status) },
+                { "since", json::value_t::null },
+                { "afk", false }
+            }
+        }
+    };
+    send_all_shards(j.dump());
+    return;
 }
 
 }
