@@ -193,7 +193,9 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message_embed(
 	return _ratelimit.post_task<gateway::objects::message>(_bucket, { _endpoint, rest::Patch, obj.dump() });
 }
 
-/**\todo can delete your own messages freely - provide separate function or keep history of messages
+/**
+ * can delete your own messages freely - provide separate function or keep history of messages?
+ * message::delete() can determine if author is bot for self-delete
  */
 AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_message(snowflake message_id)
 {
@@ -213,7 +215,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const st
     if (!perms().can_manage_messages())
         return aegis::make_exception_future(error::no_permission);
     if (messages.size() < 2 || messages.size() > 100)
-        return aegis::make_exception_future(error::bad_request);
+        return aegis::make_exception_future(error::bulk_delete_out_of_range);
 #endif
 
     json obj;
@@ -228,8 +230,9 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const st
 AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const std::vector<snowflake> & messages)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if ((!perms().can_manage_messages()) || (messages.size() < 2 || messages.size() > 100))
+    if (!perms().can_manage_messages())
         return aegis::make_exception_future(error::no_permission);
+    if (messages.size() < 2 || messages.size() > 100)
 #endif
 
     json obj;
