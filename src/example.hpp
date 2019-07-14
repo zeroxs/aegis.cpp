@@ -69,7 +69,7 @@ public:
 
                 std::string::size_type pos = name.find_first_of('>');
                 if (pos == std::string::npos)
-                    return { 0 };
+                    return 0;
                 if (name[2] == '!')//mobile mention. strip <@!
                     return std::stoull(std::string{ name.substr(3, pos - 1) });
                 else  if (name[2] == '&')//role mention. strip <@&
