@@ -12,8 +12,22 @@
 #include "aegis/snowflake.hpp"
 #include <nlohmann/json.hpp>
 
+#include "aegis/guild.hpp"
+#include "aegis/channel.hpp"
+#include "aegis/gateway/objects/role.hpp"
+#include "aegis/gateway/objects/message.hpp"
+#include "aegis/gateway/objects/emoji.hpp"
+#include "aegis/gateway/objects/attachment.hpp"
+
 namespace aegis
 {
+
+snowflake::snowflake(const aegis::guild & _guild) noexcept : _id(_guild.get_id()) {}
+snowflake::snowflake(const aegis::channel & _channel) noexcept : _id(_channel.get_id()) {}
+snowflake::snowflake(const aegis::gateway::objects::role & _role) noexcept : _id(_role.role_id) {}
+snowflake::snowflake(const aegis::gateway::objects::message & _message) noexcept : _id(_message.get_id()) {}
+snowflake::snowflake(const aegis::gateway::objects::emoji & _emoji) noexcept : _id(_emoji.id) {}
+snowflake::snowflake(const aegis::gateway::objects::attachment & _attachment) noexcept : _id(_attachment.id) {}
 
 /// \cond TEMPLATES
 AEGIS_DECL void from_json(const nlohmann::json& j, snowflake& s)
