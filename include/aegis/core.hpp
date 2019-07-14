@@ -177,10 +177,12 @@ public:
      * (DISABLED=0, MEMBERS_WITHOUT_ROLES=1, ALL_MEMBERS=2)
      * @param afk_channel_id Set channel for idle voice connections to be moved to
      * @param afk_timeout Set time where voice connections are considered to be idle
-     * @param icon Set icon \todo
+     * \todo
+     * @param icon Set icon 
+     * 
      * @param roles vector of roles to create
      * @param channels vector of channels to create
-     * @returns rest_reply
+     * @returns aegis::future<gateway::objects::guild>
      */
     AEGIS_DECL aegis::future<gateway::objects::guild> create_guild(
         std::string name, lib::optional<std::string> voice_region = {}, lib::optional<int> verification_level = {},
@@ -195,12 +197,22 @@ public:
     /**
      * @see aegis::create_guild_t
      * @param obj Struct of the contents of the request
-     * @returns rest::rest_reply
+     * @returns aegis::future<gateway::objects::guild>
      */
     AEGIS_DECL aegis::future<gateway::objects::guild> create_guild(create_guild_t obj);
 
+    /// Changes bot's username (not implemented yet. username can be changed in developer panel)
+    /**
+     * @param username String of the username to set
+     * @returns aegis::future<gateway::objects::member>
+     */
     AEGIS_DECL aegis::future<gateway::objects::member> modify_bot_username(const std::string & username);
 
+    /// Changes bot's avatar (not implemented yet. avatar can be changed in developer panel)
+    /**
+     * @param avatar String of the avatar to set
+     * @returns aegis::future<gateway::objects::member>
+     */
     AEGIS_DECL aegis::future<gateway::objects::member> modify_bot_avatar(const std::string & avatar);
 
     /// Starts the shard manager, creates the shards, and connects to the gateway
@@ -220,15 +232,50 @@ public:
         log->info("Closing bot");
     }
 
+    /// Get the rest controller object
+    /**
+     * @returns Reference to the internal rest controller
+     */
     rest::rest_controller & get_rest_controller() noexcept { return *_rest; }
+
+    /// Get the ratelimit object
+    /**
+     * @returns Reference to the internal rate limiter
+     */
     ratelimit_mgr_t & get_ratelimit() noexcept { return *_ratelimit; }
+
+    /// Get the shard manager
+    /**
+     * @returns Reference to the internal shard manager
+     */
     shards::shard_mgr & get_shard_mgr() noexcept { return *_shard_mgr; }
+
+    /// Get current state of the bot
+    /**
+     * @see bot_status
+     * @returns Current bot status
+     */
     bot_status get_state() const noexcept { return _status; }
+
+    /// Set the bot status
+    /**
+     * @see bot_status
+     * @param s Status to set
+     */
     void set_state(bot_status s) noexcept { _status = s; }
+
+    /// Get the timezone offset
+    /**
+     * @returns std::chrono::hours of timezone bias
+     */
     std::chrono::hours get_tz_bias() const noexcept { return tz_bias; }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 
+    /// Obtain pointer to self object
+    /**
+     * @returns Pointer to the user object of the bot
+     */
     user * self() const
     {
         if (_self == nullptr)
@@ -310,6 +357,12 @@ public:
      */
     AEGIS_DECL channel * dm_channel_create(const json & obj, shards::shard * _shard);
 
+    /// Send a direct message to a user
+    /**
+     * @param id Snowflake of member to message
+     * @param content string of message to send
+     * @returns nonce Unique id to track when message verifies (can be omitted)
+     */
     AEGIS_DECL aegis::future<gateway::objects::message> create_dm_message(snowflake member_id, const std::string & content, int64_t nonce = 0);
 
     /// Return bot uptime as {days hours minutes seconds}
@@ -326,7 +379,7 @@ public:
 
     /// Performs an immediate blocking HTTP request on the path with content as the request body using the method method
     /**
-     * @see rest_reply
+     * @see rest::rest_reply
      * @see rest::request_params
      * @param params A struct of HTTP parameters to perform the request
      * @returns Response object
@@ -335,7 +388,7 @@ public:
 
     /// Performs an immediate blocking HTTP request on the path with content as the request body using the method method
     /**
-     * @see rest_reply
+     * @see rest::rest_reply
      * @see rest::request_params
      * @param params A struct of HTTP parameters to perform the request
      * @returns Response object
@@ -412,43 +465,119 @@ public:
     using voice_server_update_t = std::function<void(gateway::events::voice_server_update obj)>;
     using webhooks_update_t = std::function<void(gateway::events::webhooks_update obj)>;
 
-    void set_on_typing_start(typing_start_t cb) { i_typing_start = cb; }/**< TYPING_START callback */
-    void set_on_message_create(message_create_t cb) { i_message_create = cb; }/**< MESSAGE_CREATE callback */
-    void set_on_message_create_dm(message_create_t cb) { i_message_create_dm = cb; }/**< MESSAGE_CREATE callback for direct messages */
-    void set_on_message_update(message_update_t cb) { i_message_update = cb; }/**< MESSAGE_UPDATE callback */
-    void set_on_message_delete(message_delete_t cb) { i_message_delete = cb; }/**< MESSAGE_DELETE callback */
-    void set_on_message_delete_bulk(message_delete_bulk_t cb) { i_message_delete_bulk = cb; }/**< MESSAGE_DELETE_BULK callback */
-    void set_on_guild_create(guild_create_t cb) { i_guild_create = cb; }/**< GUILD_CREATE callback */
-    void set_on_guild_update(guild_update_t cb) { i_guild_update = cb; }/**< GUILD_UPDATE callback */
-    void set_on_guild_delete(guild_delete_t cb) { i_guild_delete = cb; }/**< GUILD_DELETE callback */
-    void set_on_message_reaction_add(message_reaction_add_t cb) { i_message_reaction_add = cb; }/**< MESSAGE_REACTION_ADD callback */
-    void set_on_message_reaction_remove(message_reaction_remove_t cb) { i_message_reaction_remove = cb; }/**< MESSAGE_REACTION_REMOVE callback */
-    void set_on_message_reaction_remove_all(message_reaction_remove_all_t cb) { i_message_reaction_remove_all = cb; }/**< MESSAGE_REACTION_REMOVE_ALL callback */
-    void set_on_user_update(user_update_t cb) { i_user_update = cb; }/**< USER_UPDATE callback */
-    void set_on_ready(ready_t cb) { i_ready = cb; }/**< READY callback */
-    void set_on_resumed(resumed_t cb) { i_resumed = cb; }/**< RESUME callback */
-    void set_on_channel_create(channel_create_t cb) { i_channel_create = cb; }/**< CHANNEL_CREATE callback */
-    void set_on_channel_update(channel_update_t cb) { i_channel_update = cb; }/**< CHANNEL_UPDATE callback */
-    void set_on_channel_delete(channel_delete_t cb) { i_channel_delete = cb; }/**< CHANNEL_DELETE callback */
-    void set_on_channel_pins_update(channel_pins_update_t cb) { i_channel_pins_update = cb; }/**< CHANNEL_PINS_UPDATE callback */
-    void set_on_guild_ban_add(guild_ban_add_t cb) { i_guild_ban_add = cb; }/**< GUILD_BAN_ADD callback */
-    void set_on_guild_ban_remove(guild_ban_remove_t cb) { i_guild_ban_remove = cb; }/**< GUILD_BAN_REMOVE callback */
-    void set_on_guild_emojis_update(guild_emojis_update_t cb) { i_guild_emojis_update = cb; }/**< GUILD_EMOJIS_UPDATE callback */
-    void set_on_guild_integrations_update(guild_integrations_update_t cb) { i_guild_integrations_update = cb; }/**< GUILD_INTEGRATIONS_UPDATE callback */
-    void set_on_guild_member_add(guild_member_add_t cb) { i_guild_member_add = cb; }/**< GUILD_MEMBER_ADD callback */
-    void set_on_guild_member_remove(guild_member_remove_t cb) { i_guild_member_remove = cb; }/**< GUILD_MEMBER_REMOVE callback */
-    void set_on_guild_member_update(guild_member_update_t cb) { i_guild_member_update = cb; }/**< GUILD_MEMBER_UPDATE callback */
-    void set_on_guild_member_chunk(guild_members_chunk_t cb) { i_guild_members_chunk = cb; }/**< GUILD_MEMBERS_CHUNK callback */
-    void set_on_guild_role_create(guild_role_create_t cb) { i_guild_role_create = cb; }/**< GUILD_ROLE_CREATE callback */
-    void set_on_guild_role_update(guild_role_update_t cb) { i_guild_role_update = cb; }/**< GUILD_ROLE_UPDATE callback */
-    void set_on_guild_role_delete(guild_role_delete_t cb) { i_guild_role_delete = cb; }/**< GUILD_ROLE_DELETE callback */
-    void set_on_presence_update(presence_update_t cb) { i_presence_update = cb; }/**< PRESENCE_UPDATE callback */
-    void set_on_voice_state_update(voice_state_update_t cb) { i_voice_state_update = cb; }/**< VOICE_STATE_UPDATE callback */
-    void set_on_voice_server_update(voice_server_update_t cb) { i_voice_server_update = cb; }/**< VOICE_SERVER_UPDATE callback */
-    void set_on_webhooks_update(webhooks_update_t cb) { i_webhooks_update = cb; }/**< WEBHOOKS_UPDATE callback */
+    /// TYPING_START callback
+    void set_on_typing_start(typing_start_t cb) { i_typing_start = cb; }
 
-    void set_on_shard_disconnect(std::function<void(aegis::shards::shard*)> cb) { _shard_mgr->i_shard_disconnect = cb; };
-    void set_on_shard_connect(std::function<void(aegis::shards::shard*)> cb) { _shard_mgr->i_shard_connect = cb; };
+    /// MESSAGE_CREATE callback
+    void set_on_message_create(message_create_t cb) { i_message_create = cb; }
+
+    /// MESSAGE_CREATE callback for direct messages
+    void set_on_message_create_dm(message_create_t cb) { i_message_create_dm = cb; }
+
+    /// MESSAGE_UPDATE callback
+    void set_on_message_update(message_update_t cb) { i_message_update = cb; }
+
+    /// MESSAGE_DELETE callback
+    void set_on_message_delete(message_delete_t cb) { i_message_delete = cb; }
+
+    /// MESSAGE_DELETE_BULK callback
+    void set_on_message_delete_bulk(message_delete_bulk_t cb) { i_message_delete_bulk = cb; }
+
+    /// GUILD_CREATE callback
+    void set_on_guild_create(guild_create_t cb) { i_guild_create = cb; }
+
+    /// GUILD_UPDATE callback
+    void set_on_guild_update(guild_update_t cb) { i_guild_update = cb; }
+
+    /// GUILD_DELETE callback
+    void set_on_guild_delete(guild_delete_t cb) { i_guild_delete = cb; }
+
+    /// MESSAGE_REACTION_ADD callback
+    void set_on_message_reaction_add(message_reaction_add_t cb) { i_message_reaction_add = cb; }
+
+    /// MESSAGE_REACTION_REMOVE callback
+    void set_on_message_reaction_remove(message_reaction_remove_t cb) { i_message_reaction_remove = cb; }
+
+    /// MESSAGE_REACTION_REMOVE_ALL callback
+    void set_on_message_reaction_remove_all(message_reaction_remove_all_t cb) { i_message_reaction_remove_all = cb; }
+
+    /// USER_UPDATE callback
+    void set_on_user_update(user_update_t cb) { i_user_update = cb; }
+
+    /// READY callback
+    void set_on_ready(ready_t cb) { i_ready = cb; }
+
+    /// RESUME callback
+    void set_on_resumed(resumed_t cb) { i_resumed = cb; }
+
+    /// CHANNEL_CREATE callback
+    void set_on_channel_create(channel_create_t cb) { i_channel_create = cb; }
+
+    /// CHANNEL_UPDATE callback
+    void set_on_channel_update(channel_update_t cb) { i_channel_update = cb; }
+
+    /// CHANNEL_DELETE callback
+    void set_on_channel_delete(channel_delete_t cb) { i_channel_delete = cb; }
+
+    /// CHANNEL_PINS_UPDATE callback
+    void set_on_channel_pins_update(channel_pins_update_t cb) { i_channel_pins_update = cb; }
+
+    /// GUILD_BAN_ADD callback
+    void set_on_guild_ban_add(guild_ban_add_t cb) { i_guild_ban_add = cb; }
+
+    /// GUILD_BAN_REMOVE callback
+    void set_on_guild_ban_remove(guild_ban_remove_t cb) { i_guild_ban_remove = cb; }
+
+    /// GUILD_EMOJIS_UPDATE callback
+    void set_on_guild_emojis_update(guild_emojis_update_t cb) { i_guild_emojis_update = cb; }
+
+    /// GUILD_INTEGRATIONS_UPDATE callback
+    void set_on_guild_integrations_update(guild_integrations_update_t cb) { i_guild_integrations_update = cb; }
+
+    /// GUILD_MEMBER_ADD callback
+    void set_on_guild_member_add(guild_member_add_t cb) { i_guild_member_add = cb; }
+
+    /// GUILD_MEMBER_REMOVE callback
+    void set_on_guild_member_remove(guild_member_remove_t cb) { i_guild_member_remove = cb; }
+
+    /// GUILD_MEMBER_UPDATE callback
+    void set_on_guild_member_update(guild_member_update_t cb) { i_guild_member_update = cb; }
+
+    /// GUILD_MEMBERS_CHUNK callback
+    void set_on_guild_member_chunk(guild_members_chunk_t cb) { i_guild_members_chunk = cb; }
+
+    /// GUILD_ROLE_CREATE callback
+    void set_on_guild_role_create(guild_role_create_t cb) { i_guild_role_create = cb; }
+
+    /// GUILD_ROLE_UPDATE callback
+    void set_on_guild_role_update(guild_role_update_t cb) { i_guild_role_update = cb; }
+
+    /// GUILD_ROLE_DELETE callback
+    void set_on_guild_role_delete(guild_role_delete_t cb) { i_guild_role_delete = cb; }
+
+    /// PRESENCE_UPDATE callback
+    void set_on_presence_update(presence_update_t cb) { i_presence_update = cb; }
+
+    /// VOICE_STATE_UPDATE callback
+    void set_on_voice_state_update(voice_state_update_t cb) { i_voice_state_update = cb; }
+
+    /// VOICE_SERVER_UPDATE callback
+    void set_on_voice_server_update(voice_server_update_t cb) { i_voice_server_update = cb; }
+
+    /// WEBHOOKS_UPDATE callback
+    void set_on_webhooks_update(webhooks_update_t cb) { i_webhooks_update = cb; }
+
+    /// Shard disconnect callback
+    void set_on_shard_disconnect(std::function<void(aegis::shards::shard*)> cb)
+    {
+        _shard_mgr->i_shard_disconnect = cb;
+    }
+
+    /// Shard connect callback
+    void set_on_shard_connect(std::function<void(aegis::shards::shard*)> cb)
+    {
+        _shard_mgr->i_shard_connect = cb;
+    }
 
     /// Send a websocket message to a single shard
     /**
@@ -462,24 +591,72 @@ public:
     */
     AEGIS_DECL void send_all_shards(const json & msg);
 
+    /// Get a reference to the shard by shard id
+    /**
+     * @param shard_id Shard id
+     * @returns Reference to shard
+     */
     AEGIS_DECL shards::shard & get_shard_by_id(uint16_t shard_id);
 
+    /// Get a reference to the shard that the provided guild is on
+    /**
+     * @param guild_id Snowflake of guild
+     * @returns Reference to shard
+     */
     AEGIS_DECL shards::shard & get_shard_by_guild(snowflake guild_id);
 
+    /// Get total transfer of bot in bytes
+    /**
+     * @returns uint64_t
+     */
     AEGIS_DECL uint64_t get_shard_transfer();
 
+    /// Get total transfer of bot in bytes after decompression
+    /**
+     * @returns uint64_t
+     */
     AEGIS_DECL uint64_t get_shard_u_transfer();
 
+    /// Obtain bot's token
+    /**
+     * @returns std::string
+     */
     const std::string & get_token() const noexcept { return _token; }
 
+    /// Interrupt and end threads
+    /**
+     * @param count Amount of threads to shutdown
+     */
     AEGIS_DECL std::size_t add_run_thread() noexcept;
 
+    /// Interrupt and end threads
+    /**
+     * @param count Amount of threads to shutdown
+     */
     AEGIS_DECL void reduce_threads(std::size_t count) noexcept;
 
     AEGIS_DECL aegis::future<gateway::objects::message> create_message(snowflake channel_id, const std::string& msg, int64_t nonce = 0, bool perform_lookup = false) noexcept;
 
     AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(snowflake channel_id, const std::string& msg, const json& _obj, int64_t nonce = 0, bool perform_lookup = false) noexcept;
 
+    /// Run async task
+    /**
+     * This function will queue your task (a lambda or std::function) within Asio for execution at a later time
+     * This version will return an aegis::future of your type that the passed function returns that you may
+     * chain a continuation onto and receive that value within in
+     *
+     * Example:
+     * @code{.cpp}
+     * aegis::future<std::string> message = async([]{
+     *     return 5;
+     * }).then([](int value){
+     *     return std::string("result received");
+     * });
+     * @endcode
+     *
+     * @param f Function to run async
+     * @returns aegis::future<V>
+     */
     template<typename T, typename V = std::result_of_t<T()>, typename = std::enable_if_t<!std::is_void<V>::value>>
     aegis::future<V> async(T f) noexcept
     {
@@ -502,6 +679,23 @@ public:
         return fut;
     }
 
+    /// Run async task
+    /**
+     * This function will queue your task (a lambda or std::function) within Asio for execution at a later time
+     * This version will return an aegis::future<void> that will still allow chaining continuations on
+     *
+     * Example:
+     * @code{.cpp}
+     * aegis::future<std::string> message = async([]{
+     *     return;
+     * }).then([](){
+     *     return std::string("continuation executed");
+     * });
+     * @endcode
+     *
+     * @param f Function to run async
+     * @returns aegis::future<V>
+     */
     template<typename T, typename V = std::enable_if_t<std::is_void<std::result_of_t<T()>>::value>>
     aegis::future<V> async(T f) noexcept
     {
