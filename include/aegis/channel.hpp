@@ -563,6 +563,8 @@ private:
     /// requires the caller to handle locking
     AEGIS_DECL void _load_with_guild(guild & _guild, const json & obj, shards::shard * _shard);
 
+    AEGIS_DECL void _load_with_guild_nolock(guild & _guild, const json & obj, shards::shard * _shard);
+
     snowflake channel_id; /**< snowflake of this channel */
     snowflake guild_id; /**< snowflake of the guild this channel belongs to */
     guild * _guild; /**< Pointer to the guild this channel belongs to */
