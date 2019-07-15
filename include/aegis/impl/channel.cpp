@@ -60,6 +60,11 @@ AEGIS_DECL void channel::_load_with_guild(guild & _guild, const json & obj, shar
 {
     std::unique_lock<shared_mutex> l(_m);
 
+    _load_with_guild_nolock(_guild, obj, _shard);
+}
+
+AEGIS_DECL void channel::_load_with_guild_nolock(guild & _guild, const json & obj, shards::shard * _shard)
+{
     channel_id = obj["id"];
     guild_id = _guild.get_id();
     try

@@ -1410,7 +1410,7 @@ AEGIS_DECL void core::ws_channel_create(const json & result, shards::shard * _sh
         std::unique_lock<shared_mutex> l2(_channel_m, std::defer_lock);
         std::unique_lock<shared_mutex> l3(_guild->mtx(), std::defer_lock);
         std::lock(l, l2, l3);
-        _channel->_load_with_guild(*_guild, result["d"], _shard);
+        _channel->_load_with_guild_nolock(*_guild, result["d"], _shard);
         _guild->channels.emplace(channel_id, _channel);
         _channel->guild_id = guild_id;
         _channel->_guild = _guild;
@@ -1458,7 +1458,7 @@ AEGIS_DECL void core::ws_channel_update(const json & result, shards::shard * _sh
         std::unique_lock<shared_mutex> l(_channel->mtx(), std::defer_lock);
         std::unique_lock<shared_mutex> l2(_channel_m, std::defer_lock);
         std::lock(l, l2);
-        _channel->_load_with_guild(*_guild, result["d"], _shard);
+        _channel->_load_with_guild_nolock(*_guild, result["d"], _shard);
         _guild->channels.emplace(channel_id, _channel);
     }
     else
