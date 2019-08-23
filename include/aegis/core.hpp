@@ -298,7 +298,7 @@ public:
     /**
      * @returns std::chrono::hours of timezone bias
      */
-    std::chrono::hours get_tz_bias() const noexcept { return tz_bias; }
+    std::chrono::hours get_tz_bias() const noexcept { return _tz_bias; }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 
