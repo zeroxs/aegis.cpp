@@ -43,7 +43,7 @@ inline void from_json(const nlohmann::json& j, guild_member& m)
     if (j.count("nick") && !j["nick"].is_null())
         m.nick = j["nick"];
     if (j.count("guild_id") && !j["guild_id"].is_null())
-        m.guild_id = j["guild_id"];
+        m.guild_id = std::to_string(j["guild_id"]);
     if (j.count("roles") && !j["roles"].is_null())
         for (const auto & _role : j["roles"])
             m.roles.push_back(_role);
