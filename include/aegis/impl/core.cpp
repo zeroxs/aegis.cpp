@@ -185,6 +185,7 @@ AEGIS_DECL core::~core()
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 AEGIS_DECL int64_t core::get_member_count() const noexcept
 {
+    std::shared_lock<shared_mutex> l(_guild_m);
     int64_t count = 0;
     for (auto & kv : guilds)
         count += kv.second->get_member_count();
@@ -234,7 +235,7 @@ AEGIS_DECL aegis::future<gateway::objects::message> core::create_dm_message(snow
     else
 #endif
     {
-        rest::request_params params{ "/users/@me/channels", rest::Post, fmt::format(R"({{ "recipient_id": "{}" }})", member_id), "", {}, {} };
+        rest::request_params params{ "/users/@me/channels", rest::Post, json{{ "recipient_id", std::to_string(member_id) }}, "", {}, {} };
         return get_ratelimit().post_task<gateway::objects::message>(params)
             .then([=](gateway::objects::message && reply)
             {
@@ -479,14 +480,14 @@ AEGIS_DECL void core::load_config()
     }
 }
 
-AEGIS_DECL void core::setup_callbacks()
+AEGIS_DECL void core::setup_callbacks() noexcept
 {
     _shard_mgr->set_on_message(std::bind(&core::on_message, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     _shard_mgr->set_on_connect(std::bind(&core::on_connect, this, std::placeholders::_1, std::placeholders::_2));
     _shard_mgr->set_on_close(std::bind(&core::on_close, this, std::placeholders::_1, std::placeholders::_2));
 }
 
-AEGIS_DECL void core::shutdown()
+AEGIS_DECL void core::shutdown() noexcept
 {
     set_state(bot_status::shutdown);
     _shard_mgr->shutdown();
@@ -870,7 +871,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
     }
 }
 
-AEGIS_DECL void core::debug_trace(shards::shard * _shard)
+AEGIS_DECL void core::debug_trace(shards::shard * _shard) noexcept
 {
     _shard_mgr->debug_trace(_shard);
 }
@@ -993,7 +994,7 @@ AEGIS_DECL aegis::shards::shard & core::get_shard_by_guild(snowflake guild_id)
     return _shard_mgr->get_shard(g->shard_id);
 }
 
-AEGIS_DECL uint64_t core::get_shard_transfer()
+AEGIS_DECL uint64_t core::get_shard_transfer() const noexcept
 {
     uint64_t count = 0;
     for (auto & s : _shard_mgr->_shards)
@@ -1001,7 +1002,7 @@ AEGIS_DECL uint64_t core::get_shard_transfer()
     return count;
 }
 
-AEGIS_DECL uint64_t core::get_shard_u_transfer()
+AEGIS_DECL uint64_t core::get_shard_u_transfer() const noexcept
 {
     uint64_t count = 0;
     for (auto & s : _shard_mgr->_shards)
@@ -1040,7 +1041,7 @@ AEGIS_DECL std::size_t core::add_run_thread() noexcept
 
 AEGIS_DECL void core::reduce_threads(std::size_t count) noexcept
 {
-    for (int i = 0; i < count; ++i)
+    for (uint32_t i = 0; i < count; ++i)
         asio::post(*_io_context, []
         {
             throw 1;

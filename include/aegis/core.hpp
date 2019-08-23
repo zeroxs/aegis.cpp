@@ -146,7 +146,7 @@ public:
     /**
      * @param _shard Pointer to the shard object to dump recent messages
      */
-    AEGIS_DECL void debug_trace(shards::shard * _shard);
+    AEGIS_DECL void debug_trace(shards::shard * _shard) noexcept;
 
     AEGIS_DECL void setup_logging();
 
@@ -155,14 +155,14 @@ public:
     AEGIS_DECL void setup_shard_mgr();
 
     /// Get the internal (or external) io_service object
-    asio::io_context & get_io_context()
+    asio::io_context & get_io_context() noexcept
     {
         return *_io_context;
     }
 
     /// Invokes a shutdown on the entire lib. Sets internal state to `Shutdown` and propagates the
     /// Shutdown state along with closing all websockets within the shard vector
-    AEGIS_DECL void shutdown();
+    AEGIS_DECL void shutdown() noexcept;
 
     /// Create new guild - Unique case. Does not belong to any ratelimit bucket so it is run
     /// directly on the same thread and does not attempt to manage ratelimits due to the already
@@ -361,7 +361,8 @@ public:
     /**
      * @param id Snowflake of member to message
      * @param content string of message to send
-     * @returns nonce Unique id to track when message verifies (can be omitted)
+     * @param nonce Unique id to track when message verifies (can be omitted)
+     * @returns Message object
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_dm_message(snowflake member_id, const std::string & content, int64_t nonce = 0);
 
@@ -609,13 +610,13 @@ public:
     /**
      * @returns uint64_t
      */
-    AEGIS_DECL uint64_t get_shard_transfer();
+    AEGIS_DECL uint64_t get_shard_transfer() const noexcept;
 
     /// Get total transfer of bot in bytes after decompression
     /**
      * @returns uint64_t
      */
-    AEGIS_DECL uint64_t get_shard_u_transfer();
+    AEGIS_DECL uint64_t get_shard_u_transfer() const noexcept;
 
     /// Obtain bot's token
     /**
@@ -670,7 +671,7 @@ public:
             {
                 pr.set_value(f());
             }
-            catch (std::exception & e)
+            catch (std::exception &)
             {
                 pr.set_exception(std::current_exception());
             }
@@ -764,7 +765,7 @@ private:
     AEGIS_DECL void reset_shard(shards::shard * _shard);
 
     /// Assign the message, connect, and close callbacks to the websocket object
-    AEGIS_DECL void setup_callbacks();
+    AEGIS_DECL void setup_callbacks() noexcept;
 
     friend class guild;
     friend class channel;

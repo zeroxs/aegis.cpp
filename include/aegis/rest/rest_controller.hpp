@@ -75,12 +75,10 @@ public:
      */
     AEGIS_DECL rest_reply execute2(rest::request_params && params);
 
-    static std::string get_method(RequestMethod method)
+    static std::string get_method(RequestMethod method) noexcept
     {
         switch (method)
         {
-            case Get:
-                return "GET";
             case Post:
                 return "POST";
             case Put:
@@ -89,24 +87,20 @@ public:
                 return "PATCH";
             case Delete:
                 return "DELETE";
+            case Get:
             default:
                 return "GET";
         }
     }
 
-    void set_auth(const std::string & token)
-    {
-        _token = token;
-    }
-
-    void set_prefix(const std::string & prefix)
+    void set_prefix(const std::string & prefix) noexcept
     {
         _prefix = prefix;
     }
 
 private:
     friend aegis::core;
-    std::string _token;
+    const std::string & _token;
     std::string _prefix;
     std::string _host;
     std::unordered_map<std::string, asio::ip::basic_resolver<asio::ip::tcp>::results_type> _resolver_cache;
@@ -114,7 +108,7 @@ private:
     using rest_end_t = std::function<void(std::chrono::steady_clock::time_point, uint16_t)>;
     rest_end_t rest_end;
     asio::io_context * _io_context = nullptr;
-    std::chrono::hours tz_bias;
+    std::chrono::hours tz_bias = 0h;
 };
 
 }
