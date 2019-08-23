@@ -314,7 +314,7 @@ private:
     websocket websocket_o;
 
     // Bot's token
-    const std::string & _token;
+    std::string _token;
 
     bot_status _status;
 

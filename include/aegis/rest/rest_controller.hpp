@@ -98,9 +98,19 @@ public:
         _prefix = prefix;
     }
 
+    std::chrono::hours tz_bias()
+    {
+        return _tz_bias;
+    }
+
+    void tz_bias(std::chrono::hours bias)
+    {
+        _tz_bias = bias;
+    }
+
 private:
     friend aegis::core;
-    const std::string & _token;
+    std::string _token;
     std::string _prefix;
     std::string _host;
     std::unordered_map<std::string, asio::ip::basic_resolver<asio::ip::tcp>::results_type> _resolver_cache;
@@ -108,7 +118,7 @@ private:
     using rest_end_t = std::function<void(std::chrono::steady_clock::time_point, uint16_t)>;
     rest_end_t rest_end;
     asio::io_context * _io_context = nullptr;
-    std::chrono::hours tz_bias = 0h;
+    std::chrono::hours _tz_bias = 0h;
 };
 
 }

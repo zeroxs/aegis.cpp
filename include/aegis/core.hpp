@@ -881,7 +881,7 @@ private:
     std::shared_ptr<asio::io_context> _io_context = nullptr;
     work_ptr wrk = nullptr;
     std::condition_variable cv;
-    std::chrono::hours tz_bias = 0h;
+    std::chrono::hours _tz_bias = 0h;
 public:
     std::vector<std::unique_ptr<thread_state>> threads;
     std::recursive_mutex _global_m;

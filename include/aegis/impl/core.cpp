@@ -531,7 +531,7 @@ AEGIS_DECL void core::setup_gateway()
 
     rest::rest_reply res = _rest->execute({ "/gateway/bot", rest::Get });
 
-    _rest->tz_bias = tz_bias = std::chrono::hours(int(std::round(double((std::chrono::duration_cast<std::chrono::minutes>(res.date - std::chrono::system_clock::now()) / 60).count()))));
+    _rest->_tz_bias = _tz_bias = std::chrono::hours(int(std::round(double((std::chrono::duration_cast<std::chrono::minutes>(res.date - std::chrono::system_clock::now()) / 60).count()))));
 
     if (res.content.empty())
         throw make_error_code(error::get_gateway);

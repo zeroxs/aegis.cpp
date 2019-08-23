@@ -143,7 +143,7 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
         if (!test.empty())
             retry = std::stoul(test);
 
-        http_date = utility::from_http_date(hresponse.get_header("Date")) - tz_bias;
+        http_date = utility::from_http_date(hresponse.get_header("Date")) - _tz_bias;
 
         global = !(hresponse.get_header("X-RateLimit-Global").empty());
 
