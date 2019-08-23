@@ -95,6 +95,28 @@ struct create_guild_t
     lib::optional<std::vector<std::tuple<std::string, int>>> _channels;
 };
 
+struct create_bot_t
+{
+    create_bot_t & token(const std::string & param) noexcept { _token = param; return *this; }
+    create_bot_t & thread_count(const uint32_t param) noexcept { _thread_count = param; return *this; }
+    create_bot_t & force_shard_count(const uint32_t param) noexcept { _force_shard_count = param; return *this; }
+    create_bot_t & file_logging(const bool param) noexcept { _file_logging  = param; return *this; }
+    create_bot_t & log_level(const spdlog::level::level_enum param) noexcept { _log_level = param; return *this; }
+    create_bot_t & log_format(const std::string & param) noexcept { _log_format = param; return *this; }
+    create_bot_t & io_context(std::shared_ptr<asio::io_context> param) noexcept { _io = param; return *this; }
+    create_bot_t & logger(std::shared_ptr<spdlog::logger> param) noexcept { _log = param; return *this; }
+private:
+    friend aegis::core;
+    std::string _token;
+    uint32_t _thread_count{ std::thread::hardware_concurrency() };
+    uint32_t _force_shard_count{ 0 };
+    bool _file_logging{ false };
+    spdlog::level::level_enum _log_level{ spdlog::level::level_enum::info };
+    std::string _log_format{ "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v" };
+    std::shared_ptr<asio::io_context> _io;
+    std::shared_ptr<spdlog::logger> _log;
+};
+
 /// Primary class for managing a bot interface
 /**
  * Only one instance of this object can exist safely
@@ -102,6 +124,14 @@ struct create_guild_t
 class core
 {
 public:
+    /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
+    /// This constructor creates its own spdlog::logger and asio::io_context
+    /**
+     * @param loglevel The level of logging to use
+     * @param count Amount of threads to start
+     */
+    AEGIS_DECL explicit core(create_bot_t bot_config);
+
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /// This constructor creates its own spdlog::logger and asio::io_context
     /**

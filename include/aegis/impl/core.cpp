@@ -120,12 +120,40 @@ AEGIS_DECL void core::setup_shard_mgr()
     setup_callbacks();
 }
 
+AEGIS_DECL core::core(create_bot_t bot_config)
+{
+    if (bot_config._thread_count < 4)
+        bot_config._thread_count = 4;
+
+    _token = bot_config._token;
+    thread_count = bot_config._thread_count;
+    file_logging = bot_config._file_logging;
+    force_shard_count = bot_config._force_shard_count;
+    log_formatting = bot_config._log_format;
+    _loglevel = bot_config._log_level;
+
+    if (bot_config._log)
+        log = bot_config._log;
+    else
+        setup_logging();
+
+    if (bot_config._io)
+        _io_context = bot_config._io;
+    else
+        setup_context();
+
+    setup_shard_mgr();
+}
+
 AEGIS_DECL core::core(spdlog::level::level_enum loglevel, std::size_t count)
     : _loglevel(loglevel)
     , thread_count(count)
 {
     if (thread_count == 0)
         thread_count = std::thread::hardware_concurrency();
+
+    if (thread_count < 4)
+        thread_count = 4;
 
     load_config();
 
@@ -150,6 +178,9 @@ AEGIS_DECL core::core(std::shared_ptr<spdlog::logger> _log, std::size_t count)
 {
     if (thread_count == 0)
         thread_count = std::thread::hardware_concurrency();
+
+    if (thread_count < 4)
+        thread_count = 4;
 
     load_config();
 
