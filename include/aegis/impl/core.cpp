@@ -1810,7 +1810,7 @@ AEGIS_DECL void core::ws_voice_server_update(const json & result, shards::shard 
 
     obj.token = j["token"].get<std::string>();
     obj.guild_id = j["guild_id"];
-    if (!j["endpoint"].is_null())
+    if (j.count("endpoint") && !j["endpoint"].is_null())
         obj.endpoint = j["endpoint"].get<std::string>();
 
 
@@ -1827,7 +1827,7 @@ AEGIS_DECL void core::ws_message_reaction_add(const json & result, shards::shard
     obj.user_id = j["user_id"];
     obj.channel_id = j["channel_id"];
     obj.message_id = j["message_id"];
-    if (!j["guild_id"].is_null())
+    if (j.count("guild_id") && !j["guild_id"].is_null())
         obj.guild_id = j["guild_id"];
     obj.emoji = j["emoji"];
 
@@ -1844,7 +1844,7 @@ AEGIS_DECL void core::ws_message_reaction_remove(const json & result, shards::sh
     obj.user_id = j["user_id"];
     obj.channel_id = j["channel_id"];
     obj.message_id = j["message_id"];
-    if (!j["guild_id"].is_null())
+    if (j.count("guild_id") && !j["guild_id"].is_null())
         obj.guild_id = j["guild_id"];
     obj.emoji = j["emoji"];
 
