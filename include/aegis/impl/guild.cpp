@@ -586,15 +586,31 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_text_channel(c
     json obj;
     obj["name"] = name;
     obj["type"] = 0;
-    obj["parent_id"] = parent_id;
+    if (parent_id != 0)
+        obj["parent_id"] = parent_id;
     obj["nsfw"] = nsfw;
-    obj["permission_overwrites"] = json::array();
-    for (auto & p_ow : permission_overwrites)
+    if (permission_overwrites.size() > 0)
     {
-        obj["permission_overwrites"].push_back(p_ow);
+        obj["permission_overwrites"] = json::array();
+        for (auto & p_ow : permission_overwrites)
+        {
+            obj["permission_overwrites"].push_back(p_ow);
+        }
     }
 
-    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() }).then([&](gateway::objects::channel _ch)
+    {
+        channel * _t_ch = this->get_bot().channel_create(_ch.channel_id);
+        _t_ch->guild_id = _ch.guild_id;
+        _t_ch->_guild = this;
+        _t_ch->name = _ch.name;
+        _t_ch->topic = _ch.topic;
+        _t_ch->_nsfw = _ch.nsfw;
+        _t_ch->position = _ch.position;
+        //_t_ch->overrides = _ch.permission_overwrites;
+        //_t_ch->icon = _ch.icon;
+        return _ch;
+    });
 }
 
 AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_voice_channel(const std::string & name,
@@ -620,7 +636,19 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_voice_channel(
         obj["permission_overwrites"].push_back(p_ow);
     }
 
-    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() }).then([&](gateway::objects::channel _ch)
+    {
+        channel * _t_ch = this->get_bot().channel_create(_ch.channel_id);
+        _t_ch->guild_id = _ch.guild_id;
+        _t_ch->_guild = this;
+        _t_ch->name = _ch.name;
+        _t_ch->topic = _ch.topic;
+        _t_ch->_nsfw = _ch.nsfw;
+        _t_ch->position = _ch.position;
+        //_t_ch->overrides = _ch.permission_overwrites;
+        //_t_ch->icon = _ch.icon;
+        return _ch;
+    });
 }
 
 AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_category_channel(const std::string & name,
@@ -642,7 +670,17 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_category_chann
         obj["permission_overwrites"].push_back(p_ow);
     }
 
-    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
+    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() }).then([&](gateway::objects::channel _ch)
+    {
+        channel * _t_ch = this->get_bot().channel_create(_ch.channel_id);
+        _t_ch->guild_id = _ch.guild_id;
+        _t_ch->_guild = this;
+        _t_ch->name = _ch.name;
+        _t_ch->position = _ch.position;
+        //_t_ch->overrides = _ch.permission_overwrites;
+        //_t_ch->icon = _ch.icon;
+        return _ch;
+    });
 }
 
 /**\todo Incomplete. Signature may change
