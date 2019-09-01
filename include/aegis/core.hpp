@@ -136,7 +136,7 @@ public:
 
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /// This constructor creates its own spdlog::logger and asio::io_context
-    /**
+    /**\deprecated
      * @param loglevel The level of logging to use
      * @param count Amount of threads to start
      */
@@ -145,14 +145,14 @@ public:
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /// This constructor creates its own spdlog::logger and expects you to create the asio::io_context.
     /// It also expects you to manage the event loop or start threads on the io_context.
-    /**
+    /**\deprecated
      * @param loglevel The level of logging to use
      */
     AEGIS_DECL explicit core(std::shared_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel = spdlog::level::level_enum::trace);
 
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /// This constructor creates its own asio::io_context and expects you to create the spdlog::logger
-    /**
+    /**\deprecated
      * @param _log Your pre-constructed spdlog::logger object
      * @param count Amount of threads to start
      */
@@ -161,7 +161,7 @@ public:
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /// This constructor accepts a logger and io_context that you create. It expects you to
     /// manage the event loop or start threads on the io_context.
-    /**
+    /**\deprecated
      * @param _io Your pre-constructed asio::io_context object
      * @param _log Your pre-constructed spdlog::logger object
      */
