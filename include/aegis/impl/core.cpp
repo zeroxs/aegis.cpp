@@ -266,43 +266,45 @@ AEGIS_DECL aegis::future<gateway::objects::message> core::create_dm_message(snow
     else
 #endif
     {
-        rest::request_params params{ "/users/@me/channels", rest::Post, json{{ "recipient_id", std::to_string(member_id) }}, "", {}, {} };
-        return get_ratelimit().post_task<gateway::objects::message>(params)
-            .then([=](gateway::objects::message && reply)
+        rest::request_params params{ "/users/@me/channels", rest::Post, json{{ "recipient_id", std::to_string(member_id) }}.dump() };
+        return get_ratelimit().post_task<gateway::objects::channel>(params)
+            .then([=](gateway::objects::channel && reply)
             {
-                auto c = channel_create(reply.get_channel_id());
-                if (!c) //return aegis::make_exception_future<gateway::objects::message>(aegis::error::general)
-                    throw aegis::exception(make_error_code(error::member_error));
+                auto c = channel_create(reply.id);
+                if (!c) throw aegis::exception(make_error_code(error::member_error));
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-                m->set_dm_id(reply.get_channel_id());
+                m->set_dm_id(reply.id);
 #endif
                 return c->create_message(content, nonce).get();
             });
+    }
+}
 
-
-//         return async([=]() -> rest::rest_reply
-//         {
-//             try
-//             {
-//                 rest::request_params params{ "/users/@me/channels", rest::Post, fmt::format(R"({{ "recipient_id": "{}" }})", member_id), "", {}, {} };
-//                 auto res = json::parse(get_ratelimit()
-//                                        .post_task(params)
-//                                        .get()
-//                                        .content);
-//                 snowflake channel_id = std::stoull(res["id"].get<std::string>());
-//                 auto c = channel_create(channel_id);
-//                 if (!c) return {};
-// #if !defined(AEGIS_DISABLE_ALL_CACHE)
-//                 m->set_dm_id(channel_id);
-// #endif
-//                 return c->create_message(content, nonce).get();
-//             }
-//             catch (std::exception & e)
-//             {
-//             	
-//             }
-//             return {};
-//         });
+AEGIS_DECL aegis::future<gateway::objects::message> core::create_dm_message(const create_message_t & obj)
+{
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    channel * c = nullptr;
+    auto m = find_user(obj._user_id);
+    if (!m)
+        return aegis::make_exception_future<gateway::objects::message>(aegis::error::member_error);
+    if (m->get_dm_id())
+        c = channel_create(m->get_dm_id());
+    if (c)
+        return c->create_message(obj);
+    else
+#endif
+    {
+        rest::request_params params{ "/users/@me/channels", rest::Post, json{{ "recipient_id", std::to_string(obj._user_id) }}.dump() };
+        return get_ratelimit().post_task<gateway::objects::channel>(params)
+            .then([=](gateway::objects::channel && reply)
+        {
+            auto c = channel_create(reply.id);
+            if (!c) throw aegis::exception(make_error_code(error::member_error));
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+            m->set_dm_id(reply.id);
+#endif
+            return c->create_message(obj).get();
+        });
     }
 }
 
@@ -1825,7 +1827,8 @@ AEGIS_DECL void core::ws_message_reaction_add(const json & result, shards::shard
     obj.user_id = j["user_id"];
     obj.channel_id = j["channel_id"];
     obj.message_id = j["message_id"];
-    obj.guild_id = j["guild_id"];
+    if (!j["guild_id"].is_null())
+        obj.guild_id = j["guild_id"];
     obj.emoji = j["emoji"];
 
     if (i_message_reaction_add)
@@ -1841,7 +1844,8 @@ AEGIS_DECL void core::ws_message_reaction_remove(const json & result, shards::sh
     obj.user_id = j["user_id"];
     obj.channel_id = j["channel_id"];
     obj.message_id = j["message_id"];
-    obj.guild_id = j["guild_id"];
+    if (!j["guild_id"].is_null())
+        obj.guild_id = j["guild_id"];
     obj.emoji = j["emoji"];
 
     if (i_message_reaction_remove)

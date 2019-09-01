@@ -50,6 +50,8 @@ using shared_mutex = std::shared_mutex;
 using shared_mutex = std::shared_timed_mutex;
 #endif
 
+struct create_message_t;
+
 /// Type of a work guard executor for keeping Asio services alive
 using asio_exec = asio::executor_work_guard<asio::io_context::executor_type>;
 
@@ -388,13 +390,21 @@ public:
     AEGIS_DECL channel * dm_channel_create(const json & obj, shards::shard * _shard);
 
     /// Send a direct message to a user
-    /**
+    /**\deprecated
      * @param id Snowflake of member to message
      * @param content string of message to send
      * @param nonce Unique id to track when message verifies (can be omitted)
      * @returns Message object
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_dm_message(snowflake member_id, const std::string & content, int64_t nonce = 0);
+
+    /// Send a direct message to a user
+    /**
+     * @see aegis::create_message_t
+     * @param obj Struct of the contents of the request
+     * @returns std::future<gateway::objects::message>
+     */
+    AEGIS_DECL aegis::future<gateway::objects::message> create_dm_message(const create_message_t & obj);
 
     /// Return bot uptime as {days hours minutes seconds}
     /**

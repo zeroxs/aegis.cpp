@@ -136,6 +136,15 @@ public:
         return _member_id;
     }
 
+    /// Whether the DM channel id for this user has been cached yet
+    /**
+     * @returns bool
+     */
+    bool has_dm() const noexcept
+    {
+        return !!get_dm_id();
+    }
+
     /// Get the DM channel associated with this user
     /// DM channels are obtained when a DM is sent
     /**

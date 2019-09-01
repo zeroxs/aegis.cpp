@@ -148,7 +148,7 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message(cons
 
 AEGIS_DECL aegis::future<aegis::gateway::objects::message> channel::create_message(create_message_t obj)
 {
-    return create_message(obj._content, obj._nonce);
+    return create_message_embed(obj._content, obj._embed, obj._nonce);
 };
 
 AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embed(const std::string & content, const json & embed, int64_t nonce)
@@ -164,7 +164,8 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embe
     json obj;
     if (!content.empty())
         obj["content"] = content;
-    obj["embed"] = embed;
+    if (!embed.empty())
+        obj["embed"] = embed;
 
     if (nonce)
         obj["nonce"] = nonce;
@@ -173,9 +174,14 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embe
 	return _ratelimit.post_task<gateway::objects::message>({ _endpoint, rest::Post, obj.dump(-1, ' ', true) });
 }
 
-AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embed(create_message_embed_t obj)
+AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embed(create_message_t obj)
 {
     return create_message_embed(obj._content, obj._embed, obj._nonce);
+}
+
+AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message(edit_message_t obj)
+{
+    return edit_message_embed(obj);
 }
 
 AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message(snowflake message_id, const std::string & content)
@@ -190,7 +196,7 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message(snowfl
 	return _ratelimit.post_task<gateway::objects::message>(_bucket, { _endpoint, rest::Patch, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message_embed(edit_message_embed_t obj)
+AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message_embed(edit_message_t obj)
 {
     return edit_message_embed(obj._message_id, obj._content, obj._embed);
 }
@@ -200,10 +206,12 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message_embed(
     std::shared_lock<shared_mutex> l(_m);
 
     json obj;
+    if (content.empty() && embed.empty())
+        return aegis::make_exception_future<gateway::objects::message>(error::bad_request);
     if (!content.empty())
         obj["content"] = content;
-    obj["embed"] = embed;
-    obj["content"] = content;
+    if (!embed.empty())
+        obj["embed"] = embed;
 
 	std::string _endpoint = fmt::format("/channels/{}/messages/{}", channel_id, message_id);
 	std::string _bucket = fmt::format("/channels/{}/messages/", channel_id);

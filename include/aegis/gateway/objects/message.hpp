@@ -23,6 +23,8 @@
 namespace aegis
 {
 
+struct edit_message_t;
+
 namespace gateway
 {
 
@@ -151,6 +153,11 @@ public:
     objects::message_type type = Default; /**<\todo Needs documentation */
     user author; /**< author object for this message */
 
+    bool is_dm() const noexcept
+    {
+        return !!_guild_id;
+    }
+
     bool is_bot() const noexcept
     {
         return author.is_bot();
@@ -219,6 +226,8 @@ public:
     AEGIS_DECL aegis::future<rest::rest_reply> delete_message();
 
     AEGIS_DECL aegis::future<message> edit(const std::string & content);
+
+    AEGIS_DECL aegis::future<message> edit(edit_message_t & obj);
 
     AEGIS_DECL aegis::future<rest::rest_reply> create_reaction(const std::string & content);
 
