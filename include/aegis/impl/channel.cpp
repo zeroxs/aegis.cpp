@@ -281,7 +281,7 @@ AEGIS_DECL aegis::future<gateway::objects::channel> channel::modify_channel(lib:
                                     lib::optional<int> _rate_limit_per_user)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!_guild) return aegis::make_exception_future(error::guild_error);
+    if (!_guild) return aegis::make_exception_future<gateway::objects::channel>(error::guild_error);
     if (!perms().can_manage_channels())
         return aegis::make_exception_future<gateway::objects::channel>(error::no_permission);
 #endif
