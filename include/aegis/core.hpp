@@ -50,6 +50,8 @@ using shared_mutex = std::shared_mutex;
 using shared_mutex = std::shared_timed_mutex;
 #endif
 
+struct create_message_t;
+
 /// Type of a work guard executor for keeping Asio services alive
 using asio_exec = asio::executor_work_guard<asio::io_context::executor_type>;
 
@@ -95,6 +97,28 @@ struct create_guild_t
     lib::optional<std::vector<std::tuple<std::string, int>>> _channels;
 };
 
+struct create_bot_t
+{
+    create_bot_t & token(const std::string & param) noexcept { _token = param; return *this; }
+    create_bot_t & thread_count(const uint32_t param) noexcept { _thread_count = param; return *this; }
+    create_bot_t & force_shard_count(const uint32_t param) noexcept { _force_shard_count = param; return *this; }
+    create_bot_t & file_logging(const bool param) noexcept { _file_logging  = param; return *this; }
+    create_bot_t & log_level(const spdlog::level::level_enum param) noexcept { _log_level = param; return *this; }
+    create_bot_t & log_format(const std::string & param) noexcept { _log_format = param; return *this; }
+    create_bot_t & io_context(std::shared_ptr<asio::io_context> param) noexcept { _io = param; return *this; }
+    create_bot_t & logger(std::shared_ptr<spdlog::logger> param) noexcept { _log = param; return *this; }
+private:
+    friend aegis::core;
+    std::string _token;
+    uint32_t _thread_count{ std::thread::hardware_concurrency() };
+    uint32_t _force_shard_count{ 0 };
+    bool _file_logging{ false };
+    spdlog::level::level_enum _log_level{ spdlog::level::level_enum::info };
+    std::string _log_format{ "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v" };
+    std::shared_ptr<asio::io_context> _io;
+    std::shared_ptr<spdlog::logger> _log;
+};
+
 /// Primary class for managing a bot interface
 /**
  * Only one instance of this object can exist safely
@@ -108,19 +132,27 @@ public:
      * @param loglevel The level of logging to use
      * @param count Amount of threads to start
      */
+    AEGIS_DECL explicit core(create_bot_t bot_config);
+
+    /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
+    /// This constructor creates its own spdlog::logger and asio::io_context
+    /**\deprecated
+     * @param loglevel The level of logging to use
+     * @param count Amount of threads to start
+     */
     AEGIS_DECL explicit core(spdlog::level::level_enum loglevel = spdlog::level::level_enum::trace, std::size_t count = 10);
 
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /// This constructor creates its own spdlog::logger and expects you to create the asio::io_context.
     /// It also expects you to manage the event loop or start threads on the io_context.
-    /**
+    /**\deprecated
      * @param loglevel The level of logging to use
      */
     AEGIS_DECL explicit core(std::shared_ptr<asio::io_context> _io, spdlog::level::level_enum loglevel = spdlog::level::level_enum::trace);
 
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /// This constructor creates its own asio::io_context and expects you to create the spdlog::logger
-    /**
+    /**\deprecated
      * @param _log Your pre-constructed spdlog::logger object
      * @param count Amount of threads to start
      */
@@ -129,7 +161,7 @@ public:
     /// Constructs the aegis object that tracks all of the shards, guilds, channels, and members
     /// This constructor accepts a logger and io_context that you create. It expects you to
     /// manage the event loop or start threads on the io_context.
-    /**
+    /**\deprecated
      * @param _io Your pre-constructed asio::io_context object
      * @param _log Your pre-constructed spdlog::logger object
      */
@@ -146,7 +178,7 @@ public:
     /**
      * @param _shard Pointer to the shard object to dump recent messages
      */
-    AEGIS_DECL void debug_trace(shards::shard * _shard);
+    AEGIS_DECL void debug_trace(shards::shard * _shard) noexcept;
 
     AEGIS_DECL void setup_logging();
 
@@ -155,14 +187,14 @@ public:
     AEGIS_DECL void setup_shard_mgr();
 
     /// Get the internal (or external) io_service object
-    asio::io_context & get_io_context()
+    asio::io_context & get_io_context() noexcept
     {
         return *_io_context;
     }
 
     /// Invokes a shutdown on the entire lib. Sets internal state to `Shutdown` and propagates the
     /// Shutdown state along with closing all websockets within the shard vector
-    AEGIS_DECL void shutdown();
+    AEGIS_DECL void shutdown() noexcept;
 
     /// Create new guild - Unique case. Does not belong to any ratelimit bucket so it is run
     /// directly on the same thread and does not attempt to manage ratelimits due to the already
@@ -268,7 +300,7 @@ public:
     /**
      * @returns std::chrono::hours of timezone bias
      */
-    std::chrono::hours get_tz_bias() const noexcept { return tz_bias; }
+    std::chrono::hours get_tz_bias() const noexcept { return _tz_bias; }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 
@@ -358,12 +390,21 @@ public:
     AEGIS_DECL channel * dm_channel_create(const json & obj, shards::shard * _shard);
 
     /// Send a direct message to a user
-    /**
+    /**\deprecated
      * @param id Snowflake of member to message
      * @param content string of message to send
-     * @returns nonce Unique id to track when message verifies (can be omitted)
+     * @param nonce Unique id to track when message verifies (can be omitted)
+     * @returns Message object
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_dm_message(snowflake member_id, const std::string & content, int64_t nonce = 0);
+
+    /// Send a direct message to a user
+    /**
+     * @see aegis::create_message_t
+     * @param obj Struct of the contents of the request
+     * @returns std::future<gateway::objects::message>
+     */
+    AEGIS_DECL aegis::future<gateway::objects::message> create_dm_message(const create_message_t & obj);
 
     /// Return bot uptime as {days hours minutes seconds}
     /**
@@ -609,13 +650,13 @@ public:
     /**
      * @returns uint64_t
      */
-    AEGIS_DECL uint64_t get_shard_transfer();
+    AEGIS_DECL uint64_t get_shard_transfer() const noexcept;
 
     /// Get total transfer of bot in bytes after decompression
     /**
      * @returns uint64_t
      */
-    AEGIS_DECL uint64_t get_shard_u_transfer();
+    AEGIS_DECL uint64_t get_shard_u_transfer() const noexcept;
 
     /// Obtain bot's token
     /**
@@ -670,7 +711,7 @@ public:
             {
                 pr.set_value(f());
             }
-            catch (std::exception & e)
+            catch (std::exception &)
             {
                 pr.set_exception(std::current_exception());
             }
@@ -764,7 +805,7 @@ private:
     AEGIS_DECL void reset_shard(shards::shard * _shard);
 
     /// Assign the message, connect, and close callbacks to the websocket object
-    AEGIS_DECL void setup_callbacks();
+    AEGIS_DECL void setup_callbacks() noexcept;
 
     friend class guild;
     friend class channel;
@@ -850,7 +891,7 @@ private:
     std::shared_ptr<asio::io_context> _io_context = nullptr;
     work_ptr wrk = nullptr;
     std::condition_variable cv;
-    std::chrono::hours tz_bias = 0h;
+    std::chrono::hours _tz_bias = 0h;
 public:
     std::vector<std::unique_ptr<thread_state>> threads;
     std::recursive_mutex _global_m;

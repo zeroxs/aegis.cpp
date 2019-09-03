@@ -73,7 +73,7 @@ public:
     /**
      * @param _shard The shard object this websocket belong to
      */
-    AEGIS_DECL void setup_callbacks(shard * _shard);
+    AEGIS_DECL void setup_callbacks(shard * _shard) noexcept;
 
     /// Outputs the last 5 messages received from the gateway
     /**
@@ -201,7 +201,7 @@ public:
     /**
      * @param _shard Pointer to shard
      */
-    AEGIS_DECL void queue_reconnect(shard * _shard);
+    AEGIS_DECL void queue_reconnect(shard * _shard) noexcept;
 
     /// Queue the shard for reconnection. Typically only called internally
     /**
@@ -216,7 +216,7 @@ public:
     /**
      * @param _shard Pointer to shard
      */
-    AEGIS_DECL void connect(shard * _shard);
+    AEGIS_DECL void connect(shard * _shard) noexcept;
 
     /// Get the shard object
     /**

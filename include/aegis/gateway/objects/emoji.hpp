@@ -55,7 +55,7 @@ inline void from_json(const nlohmann::json& j, emoji& m)
 
 inline void to_json(nlohmann::json& j, const emoji& m)
 {
-    j["id"] = m.id;
+    j["id"] = std::to_string(m.id);
     j["name"] = m.name;
     j["user"] = m.user;
     j["require_colons"] = m.require_colons;

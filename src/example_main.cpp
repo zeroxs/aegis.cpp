@@ -16,7 +16,7 @@ int main(int argc, char * argv[])
     using namespace std::chrono_literals;
     try
     {
-        aegis::core bot(spdlog::level::trace);
+        aegis::core bot(aegis::create_bot_t().log_level(spdlog::level::trace).token("TOKEN"));
 
         example_bot::example commands(bot);
 

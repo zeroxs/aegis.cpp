@@ -48,6 +48,7 @@ struct role
     role() noexcept {}
 
     uint32_t color = 0;
+    snowflake id;
     snowflake role_id;
     std::string name;
     aegis::permission _permission;
@@ -63,7 +64,7 @@ inline void from_json(const nlohmann::json& j, role& m)
     if (j.count("color") && !j["color"].is_null())
         m.color = j["color"];
     if (j.count("id") && !j["id"].is_null())
-        m.role_id = j["id"];
+        m.id = m.role_id = j["id"];
     if (j.count("name") && !j["name"].is_null())
         m.name = j["name"];
     if (j.count("permissions") && !j["permissions"].is_null())
@@ -79,7 +80,7 @@ inline void from_json(const nlohmann::json& j, role& m)
 inline void to_json(nlohmann::json& j, const role& m)
 {
     j["color"] = m.color;
-    j["id"] = m.role_id;
+    j["id"] = std::to_string(m.id);
     j["name"] = m.name;
     j["permissions"] = m._permission;
     j["position"] = m.position;

@@ -129,9 +129,8 @@ AEGIS_DECL void channel::_load_with_guild(guild & _guild, const json & obj, shar
 AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message(const std::string & content, int64_t nonce)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (_guild != nullptr)//probably a DM
-        if (!perms().can_send_messages())
-            return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
+    if (_guild && !perms().can_send_messages())
+        return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
 #endif
 
     std::shared_lock<shared_mutex> l(_m);
@@ -148,15 +147,14 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message(cons
 
 AEGIS_DECL aegis::future<aegis::gateway::objects::message> channel::create_message(create_message_t obj)
 {
-    return create_message(obj._content, obj._nonce);
+    return create_message_embed(obj._content, obj._embed, obj._nonce);
 };
 
 AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embed(const std::string & content, const json & embed, int64_t nonce)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (_guild != nullptr)//probably a DM
-        if (!perms().can_send_messages())
-            return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
+    if (_guild && !perms().can_send_messages())
+        return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
 #endif
 
     std::shared_lock<shared_mutex> l(_m);
@@ -164,7 +162,8 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embe
     json obj;
     if (!content.empty())
         obj["content"] = content;
-    obj["embed"] = embed;
+    if (!embed.empty())
+        obj["embed"] = embed;
 
     if (nonce)
         obj["nonce"] = nonce;
@@ -173,9 +172,14 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embe
 	return _ratelimit.post_task<gateway::objects::message>({ _endpoint, rest::Post, obj.dump(-1, ' ', true) });
 }
 
-AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embed(create_message_embed_t obj)
+AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embed(create_message_t obj)
 {
     return create_message_embed(obj._content, obj._embed, obj._nonce);
+}
+
+AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message(edit_message_t obj)
+{
+    return edit_message_embed(obj);
 }
 
 AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message(snowflake message_id, const std::string & content)
@@ -190,7 +194,7 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message(snowfl
 	return _ratelimit.post_task<gateway::objects::message>(_bucket, { _endpoint, rest::Patch, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message_embed(edit_message_embed_t obj)
+AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message_embed(edit_message_t obj)
 {
     return edit_message_embed(obj._message_id, obj._content, obj._embed);
 }
@@ -200,10 +204,12 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message_embed(
     std::shared_lock<shared_mutex> l(_m);
 
     json obj;
+    if (content.empty() && embed.empty())
+        return aegis::make_exception_future<gateway::objects::message>(error::bad_request);
     if (!content.empty())
         obj["content"] = content;
-    obj["embed"] = embed;
-    obj["content"] = content;
+    if (!embed.empty())
+        obj["embed"] = embed;
 
 	std::string _endpoint = fmt::format("/channels/{}/messages/{}", channel_id, message_id);
 	std::string _bucket = fmt::format("/channels/{}/messages/", channel_id);
@@ -216,8 +222,9 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message_embed(
  */
 AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_message(snowflake message_id)
 {
+    //@todo check if bot owns message before denying delete
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!perms().can_manage_messages())
+    if (_guild && !perms().can_manage_messages())
         return aegis::make_exception_future(error::no_permission);
 #endif
 
@@ -231,7 +238,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_message(snowflake mes
 AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const std::vector<int64_t> & messages)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!perms().can_manage_messages())
+    if (_guild && !perms().can_manage_messages())
         return aegis::make_exception_future(error::no_permission);
     if (messages.size() < 2 || messages.size() > 100)
         return aegis::make_exception_future(error::bulk_delete_out_of_range);
@@ -251,7 +258,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const st
 AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const std::vector<snowflake> & messages)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!perms().can_manage_messages())
+    if (_guild && !perms().can_manage_messages())
         return aegis::make_exception_future(error::no_permission);
     if (messages.size() < 2 || messages.size() > 100)
         return aegis::make_exception_future(error::bulk_delete_out_of_range);
@@ -274,6 +281,7 @@ AEGIS_DECL aegis::future<gateway::objects::channel> channel::modify_channel(lib:
                                     lib::optional<int> _rate_limit_per_user)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (!_guild) return aegis::make_exception_future<gateway::objects::channel>(error::guild_error);
     if (!perms().can_manage_channels())
         return aegis::make_exception_future<gateway::objects::channel>(error::no_permission);
 #endif
@@ -321,7 +329,7 @@ AEGIS_DECL aegis::future<gateway::objects::channel> channel::modify_channel(lib:
 AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_channel()
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!perms().can_manage_channels())
+    if (_guild && !perms().can_manage_channels())
         return aegis::make_exception_future(error::no_permission);
 #endif
 
@@ -334,7 +342,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_channel()
 AEGIS_DECL aegis::future<rest::rest_reply> channel::create_reaction(snowflake message_id, const std::string & emoji_text)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!perms().can_add_reactions())
+    if (_guild && !perms().can_add_reactions())
         return aegis::make_exception_future(error::no_permission);
 #endif
 
@@ -349,7 +357,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::create_reaction(snowflake me
 AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_own_reaction(snowflake message_id, const std::string & emoji_text)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!perms().can_add_reactions())
+    if (_guild && !perms().can_add_reactions())
         return aegis::make_exception_future(error::no_permission);
 #endif
 
@@ -364,6 +372,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_own_reaction(snowflak
 AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_user_reaction(snowflake message_id, const std::string & emoji_text, snowflake member_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (!_guild) return aegis::make_exception_future(error::guild_error);
     if (!perms().can_manage_messages())
         return aegis::make_exception_future(error::no_permission);
 #endif
@@ -390,6 +399,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::get_reactions(snowflake mess
 AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_all_reactions(snowflake message_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (!_guild) return aegis::make_exception_future(error::guild_error);
     if (!perms().can_manage_messages())
         return aegis::make_exception_future(error::no_permission);
 #endif
@@ -404,6 +414,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_all_reactions(snowfla
 AEGIS_DECL aegis::future<rest::rest_reply> channel::edit_channel_permissions(snowflake _overwrite_id, int64_t _allow, int64_t _deny, const std::string & _type)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (!_guild) return aegis::make_exception_future(error::guild_error);
     if (!perms().can_manage_roles())
         return aegis::make_exception_future(error::no_permission);
 #endif
@@ -423,6 +434,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::edit_channel_permissions(sno
 AEGIS_DECL aegis::future<rest::rest_reply> channel::get_channel_invites()
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (!_guild) return aegis::make_exception_future(error::guild_error);
     if (!perms().can_manage_channels())
         return aegis::make_exception_future(error::no_permission);
 #endif
@@ -436,6 +448,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::get_channel_invites()
 AEGIS_DECL aegis::future<rest::rest_reply> channel::create_channel_invite(lib::optional<int> max_age, lib::optional<int> max_uses, lib::optional<bool> temporary, lib::optional<bool> unique)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (!_guild) return aegis::make_exception_future(error::guild_error);
     if (!perms().can_invite())
         return aegis::make_exception_future(error::no_permission);
 #endif
@@ -459,6 +472,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::create_channel_invite(lib::o
 AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_channel_permission(snowflake overwrite_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (!_guild) return aegis::make_exception_future(error::guild_error);
     if (!perms().can_manage_roles())
         return aegis::make_exception_future(error::no_permission);
 #endif
@@ -489,7 +503,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::get_pinned_messages()
 AEGIS_DECL aegis::future<rest::rest_reply> channel::add_pinned_channel_message(snowflake message_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!perms().can_manage_messages())
+    if (_guild && !perms().can_manage_messages())
         return aegis::make_exception_future(error::no_permission);
 #endif
 
@@ -503,7 +517,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::add_pinned_channel_message(s
 AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_pinned_channel_message(snowflake message_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!perms().can_manage_messages())
+    if (_guild && !perms().can_manage_messages())
         return aegis::make_exception_future(error::no_permission);
 #endif
 

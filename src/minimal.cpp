@@ -20,7 +20,7 @@ int main(int argc, char * argv[])
     try
     {
         // Create bot object
-        aegis::core bot(spdlog::level::trace);
+        aegis::core bot(aegis::create_bot_t().log_level(spdlog::level::trace).token("TOKEN"));
 
         // These callbacks are what the lib calls when messages come in
         bot.set_on_message_create([&](aegis::gateway::events::message_create obj)

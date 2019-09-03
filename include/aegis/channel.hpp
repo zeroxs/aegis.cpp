@@ -36,17 +36,13 @@ using channel_type = gateway::objects::channel::channel_type;
 #pragma region rest params
 struct create_message_t
 {
-    create_message_t & content(const std::string & param) { _content = param; return *this; }
-    create_message_t & nonce(int64_t param) { _nonce = param; return *this; }
-    std::string _content;
-    int64_t _nonce = 0;
-};
+    /// Only used for sending DMs
+    create_message_t & user_id(snowflake param) { _user_id = param; return *this; }
 
-struct create_message_embed_t
-{
-    create_message_embed_t & content(const std::string & param) { _content = param; return *this; }
-    create_message_embed_t & embed(const json & param) { _embed = param; return *this; }
-    create_message_embed_t & nonce(int64_t param) { _nonce = param; return *this; }
+    create_message_t & content(const std::string & param) { _content = param; return *this; }
+    create_message_t & embed(const json & param) { _embed = param; return *this; }
+    create_message_t & nonce(int64_t param) { _nonce = param; return *this; }
+    snowflake _user_id;
     std::string _content;
     json _embed;
     int64_t _nonce = 0;
@@ -56,15 +52,7 @@ struct edit_message_t
 {
     edit_message_t & message_id(snowflake param) { _message_id = param; return *this; }
     edit_message_t & content(const std::string & param) { _content = param; return *this; }
-    snowflake _message_id;
-    std::string _content;
-};
-
-struct edit_message_embed_t
-{
-    edit_message_embed_t & message_id(snowflake param) { _message_id = param; return *this; }
-    edit_message_embed_t & content(const std::string & param) { _content = param; return *this; }
-    edit_message_embed_t & embed(const json & param) { _embed = param; return *this; }
+    edit_message_t & embed(const json & param) { _embed = param; return *this; }
     snowflake _message_id;
     std::string _content;
     json _embed;
@@ -225,7 +213,7 @@ public:
     AEGIS_DECL aegis::future<gateway::objects::message> create_message(create_message_t obj);
 
     /// Send an embed message to this channel
-    /**
+    /**\deprecated
      * @param content A string of the message to send
      * @param embed A json object of the embed object itself
      * @returns std::future<gateway::objects::message>
@@ -233,12 +221,12 @@ public:
     AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(const std::string & content, const json & embed, int64_t nonce = 0);
 
     /// Send an embed message to this channel
-    /**
+    /**\deprecated
      * @see aegis::create_message_embed_t
      * @param obj Struct of the contents of the request
      * @returns std::future<gateway::objects::message>
      */
-    AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(create_message_embed_t obj);
+    AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(create_message_t obj);
     /// Edit a message in this channel
     /**
      * @param message_id Snowflake of the message to replace. Must be your own message
@@ -256,7 +244,7 @@ public:
     AEGIS_DECL aegis::future<gateway::objects::message> edit_message(edit_message_t obj);
 
     /// Edit an embed message in this channel
-    /**
+    /**\deprecated
      * @param message_id Snowflake of the message to replace. Must be your own message
      * @param content A string of the message to set
      * @param embed A json object of the embed object itself
@@ -265,12 +253,12 @@ public:
     AEGIS_DECL aegis::future<gateway::objects::message> edit_message_embed(snowflake message_id, const std::string & content, const json & embed);
 
     /// Edit an embed message in this channel
-    /**
+    /**\deprecated
      * @see aegis::edit_message_embed_t
      * @param obj Struct of the contents of the request
      * @returns std::future<gateway::objects::message>
      */
-    AEGIS_DECL aegis::future<gateway::objects::message> edit_message_embed(edit_message_embed_t obj);
+    AEGIS_DECL aegis::future<gateway::objects::message> edit_message_embed(edit_message_t obj);
 
     /// Delete a message
     /**

@@ -82,6 +82,16 @@ AEGIS_DECL aegis::future<message> message::edit(const std::string & content)
     return get_channel().edit_message(_message_id, content);
 }
 
+AEGIS_DECL aegis::future<message> message::edit(edit_message_t & obj)
+{
+    populate_self();
+    assert(_channel != nullptr);
+    if (_channel == nullptr)
+        return aegis::make_exception_future<message>(std::make_exception_ptr(aegis::exception(make_error_code(error::channel_error))));
+
+    return get_channel().edit_message(obj.message_id(_message_id));
+}
+
 AEGIS_DECL aegis::future<rest::rest_reply> message::create_reaction(const std::string & content)
 {
     populate_self();

@@ -120,12 +120,40 @@ AEGIS_DECL void core::setup_shard_mgr()
     setup_callbacks();
 }
 
+AEGIS_DECL core::core(create_bot_t bot_config)
+{
+    if (bot_config._thread_count < 4)
+        bot_config._thread_count = 4;
+
+    _token = bot_config._token;
+    thread_count = bot_config._thread_count;
+    file_logging = bot_config._file_logging;
+    force_shard_count = bot_config._force_shard_count;
+    log_formatting = bot_config._log_format;
+    _loglevel = bot_config._log_level;
+
+    if (bot_config._log)
+        log = bot_config._log;
+    else
+        setup_logging();
+
+    if (bot_config._io)
+        _io_context = bot_config._io;
+    else
+        setup_context();
+
+    setup_shard_mgr();
+}
+
 AEGIS_DECL core::core(spdlog::level::level_enum loglevel, std::size_t count)
     : _loglevel(loglevel)
     , thread_count(count)
 {
     if (thread_count == 0)
         thread_count = std::thread::hardware_concurrency();
+
+    if (thread_count < 4)
+        thread_count = 4;
 
     load_config();
 
@@ -150,6 +178,9 @@ AEGIS_DECL core::core(std::shared_ptr<spdlog::logger> _log, std::size_t count)
 {
     if (thread_count == 0)
         thread_count = std::thread::hardware_concurrency();
+
+    if (thread_count < 4)
+        thread_count = 4;
 
     load_config();
 
@@ -185,6 +216,7 @@ AEGIS_DECL core::~core()
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 AEGIS_DECL int64_t core::get_member_count() const noexcept
 {
+    std::shared_lock<shared_mutex> l(_guild_m);
     int64_t count = 0;
     for (auto & kv : guilds)
         count += kv.second->get_member_count();
@@ -234,43 +266,45 @@ AEGIS_DECL aegis::future<gateway::objects::message> core::create_dm_message(snow
     else
 #endif
     {
-        rest::request_params params{ "/users/@me/channels", rest::Post, fmt::format(R"({{ "recipient_id": "{}" }})", member_id), "", {}, {} };
-        return get_ratelimit().post_task<gateway::objects::message>(params)
-            .then([=](gateway::objects::message && reply)
+        rest::request_params params{ "/users/@me/channels", rest::Post, json{{ "recipient_id", std::to_string(member_id) }}.dump() };
+        return get_ratelimit().post_task<gateway::objects::channel>(params)
+            .then([=](gateway::objects::channel && reply)
             {
-                auto c = channel_create(reply.get_channel_id());
-                if (!c) //return aegis::make_exception_future<gateway::objects::message>(aegis::error::general)
-                    throw aegis::exception(make_error_code(error::member_error));
+                auto c = channel_create(reply.id);
+                if (!c) throw aegis::exception(make_error_code(error::member_error));
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-                m->set_dm_id(reply.get_channel_id());
+                m->set_dm_id(reply.id);
 #endif
                 return c->create_message(content, nonce).get();
             });
+    }
+}
 
-
-//         return async([=]() -> rest::rest_reply
-//         {
-//             try
-//             {
-//                 rest::request_params params{ "/users/@me/channels", rest::Post, fmt::format(R"({{ "recipient_id": "{}" }})", member_id), "", {}, {} };
-//                 auto res = json::parse(get_ratelimit()
-//                                        .post_task(params)
-//                                        .get()
-//                                        .content);
-//                 snowflake channel_id = std::stoull(res["id"].get<std::string>());
-//                 auto c = channel_create(channel_id);
-//                 if (!c) return {};
-// #if !defined(AEGIS_DISABLE_ALL_CACHE)
-//                 m->set_dm_id(channel_id);
-// #endif
-//                 return c->create_message(content, nonce).get();
-//             }
-//             catch (std::exception & e)
-//             {
-//             	
-//             }
-//             return {};
-//         });
+AEGIS_DECL aegis::future<gateway::objects::message> core::create_dm_message(const create_message_t & obj)
+{
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    channel * c = nullptr;
+    auto m = find_user(obj._user_id);
+    if (!m)
+        return aegis::make_exception_future<gateway::objects::message>(aegis::error::member_error);
+    if (m->get_dm_id())
+        c = channel_create(m->get_dm_id());
+    if (c)
+        return c->create_message(obj);
+    else
+#endif
+    {
+        rest::request_params params{ "/users/@me/channels", rest::Post, json{{ "recipient_id", std::to_string(obj._user_id) }}.dump() };
+        return get_ratelimit().post_task<gateway::objects::channel>(params)
+            .then([=](gateway::objects::channel && reply)
+        {
+            auto c = channel_create(reply.id);
+            if (!c) throw aegis::exception(make_error_code(error::member_error));
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+            m->set_dm_id(reply.id);
+#endif
+            return c->create_message(obj).get();
+        });
     }
 }
 
@@ -479,14 +513,14 @@ AEGIS_DECL void core::load_config()
     }
 }
 
-AEGIS_DECL void core::setup_callbacks()
+AEGIS_DECL void core::setup_callbacks() noexcept
 {
     _shard_mgr->set_on_message(std::bind(&core::on_message, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     _shard_mgr->set_on_connect(std::bind(&core::on_connect, this, std::placeholders::_1, std::placeholders::_2));
     _shard_mgr->set_on_close(std::bind(&core::on_close, this, std::placeholders::_1, std::placeholders::_2));
 }
 
-AEGIS_DECL void core::shutdown()
+AEGIS_DECL void core::shutdown() noexcept
 {
     set_state(bot_status::shutdown);
     _shard_mgr->shutdown();
@@ -499,7 +533,7 @@ AEGIS_DECL void core::setup_gateway()
 
     rest::rest_reply res = _rest->execute({ "/gateway/bot", rest::Get });
 
-    _rest->tz_bias = tz_bias = std::chrono::hours(int(std::round(double((std::chrono::duration_cast<std::chrono::minutes>(res.date - std::chrono::system_clock::now()) / 60).count()))));
+    _rest->_tz_bias = _tz_bias = std::chrono::hours(int(std::round(double((std::chrono::duration_cast<std::chrono::minutes>(res.date - std::chrono::system_clock::now()) / 60).count()))));
 
     if (res.content.empty())
         throw make_error_code(error::get_gateway);
@@ -870,7 +904,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
     }
 }
 
-AEGIS_DECL void core::debug_trace(shards::shard * _shard)
+AEGIS_DECL void core::debug_trace(shards::shard * _shard) noexcept
 {
     _shard_mgr->debug_trace(_shard);
 }
@@ -993,7 +1027,7 @@ AEGIS_DECL aegis::shards::shard & core::get_shard_by_guild(snowflake guild_id)
     return _shard_mgr->get_shard(g->shard_id);
 }
 
-AEGIS_DECL uint64_t core::get_shard_transfer()
+AEGIS_DECL uint64_t core::get_shard_transfer() const noexcept
 {
     uint64_t count = 0;
     for (auto & s : _shard_mgr->_shards)
@@ -1001,7 +1035,7 @@ AEGIS_DECL uint64_t core::get_shard_transfer()
     return count;
 }
 
-AEGIS_DECL uint64_t core::get_shard_u_transfer()
+AEGIS_DECL uint64_t core::get_shard_u_transfer() const noexcept
 {
     uint64_t count = 0;
     for (auto & s : _shard_mgr->_shards)
@@ -1040,7 +1074,7 @@ AEGIS_DECL std::size_t core::add_run_thread() noexcept
 
 AEGIS_DECL void core::reduce_threads(std::size_t count) noexcept
 {
-    for (int i = 0; i < count; ++i)
+    for (uint32_t i = 0; i < count; ++i)
         asio::post(*_io_context, []
         {
             throw 1;
@@ -1776,7 +1810,7 @@ AEGIS_DECL void core::ws_voice_server_update(const json & result, shards::shard 
 
     obj.token = j["token"].get<std::string>();
     obj.guild_id = j["guild_id"];
-    if (!j["endpoint"].is_null())
+    if (j.count("endpoint") && !j["endpoint"].is_null())
         obj.endpoint = j["endpoint"].get<std::string>();
 
 
@@ -1793,7 +1827,8 @@ AEGIS_DECL void core::ws_message_reaction_add(const json & result, shards::shard
     obj.user_id = j["user_id"];
     obj.channel_id = j["channel_id"];
     obj.message_id = j["message_id"];
-    obj.guild_id = j["guild_id"];
+    if (j.count("guild_id") && !j["guild_id"].is_null())
+        obj.guild_id = j["guild_id"];
     obj.emoji = j["emoji"];
 
     if (i_message_reaction_add)
@@ -1809,7 +1844,8 @@ AEGIS_DECL void core::ws_message_reaction_remove(const json & result, shards::sh
     obj.user_id = j["user_id"];
     obj.channel_id = j["channel_id"];
     obj.message_id = j["message_id"];
-    obj.guild_id = j["guild_id"];
+    if (j.count("guild_id") && !j["guild_id"].is_null())
+        obj.guild_id = j["guild_id"];
     obj.emoji = j["emoji"];
 
     if (i_message_reaction_remove)

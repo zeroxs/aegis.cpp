@@ -54,12 +54,13 @@ struct guild
     guild() noexcept {}
 
     //TODO:
-    snowflake guild_id; /**<\todo Needs documentation */
-    std::string name; /**<\todo Needs documentation */
-    std::string icon; /**<\todo Needs documentation */
-    std::string splash; /**<\todo Needs documentation */
-    snowflake owner_id = 0; /**<\todo Needs documentation */
-    std::string region; /**<\todo Needs documentation */
+    snowflake id; /**< Snowflake */
+    snowflake guild_id; /**<\deprecated Snowflake */
+    std::string name; /**< Name */
+    std::string icon; /**< Icon image */
+    std::string splash; /**< Splash image */
+    snowflake owner_id = 0; /**< Snowflake of owner */
+    std::string region; /**< Region */
     snowflake afk_channel_id; /**<\todo Needs documentation */
     int32_t afk_timeout = 0; /**<\todo Needs documentation */
     bool embed_enabled = false; /**<\todo Needs documentation */
@@ -90,7 +91,7 @@ struct guild
 inline void from_json(const nlohmann::json& j, guild& m)
 {
     if (j.count("id") && !j["id"].is_null())
-        m.guild_id = j["id"];
+        m.id = m.guild_id = j["id"];
     if (j.count("name") && !j["name"].is_null())
         m.name = j["name"];
     if (j.count("icon") && !j["icon"].is_null())

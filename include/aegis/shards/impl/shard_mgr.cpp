@@ -74,7 +74,7 @@ AEGIS_DECL void shard_mgr::start()
     }
 }
 
-AEGIS_DECL void shard_mgr::setup_callbacks(shard * _shard)
+AEGIS_DECL void shard_mgr::setup_callbacks(shard * _shard) noexcept
 {
     _shard->_connection->set_message_handler(
         std::bind(&shard_mgr::_on_message, this, std::placeholders::_1, std::placeholders::_2, _shard));
@@ -402,7 +402,7 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
     ws_timer = websocket_o.set_timer(100, std::bind(&shard_mgr::ws_status, this, std::placeholders::_1));
 }
 
-AEGIS_DECL void shard_mgr::connect(shard * _shard)
+AEGIS_DECL void shard_mgr::connect(shard * _shard) noexcept
 {
     asio::post(asio::bind_executor(*_shard->_connection->get_strand(), [this, _shard]()
     {
@@ -417,7 +417,7 @@ AEGIS_DECL void shard_mgr::connect(shard * _shard)
     }));
 }
 
-AEGIS_DECL void shard_mgr::queue_reconnect(shard * _shard)
+AEGIS_DECL void shard_mgr::queue_reconnect(shard * _shard) noexcept
 {
     auto it = std::find(_shards_to_connect.cbegin(), _shards_to_connect.cend(), _shard);
     if (it != _shards_to_connect.cend())
