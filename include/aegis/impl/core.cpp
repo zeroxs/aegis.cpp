@@ -1176,7 +1176,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
         gateway::events::message_create obj{ *_shard, std::ref(*m), std::ref(*c) };
 
         obj.msg = result["d"];
-        obj.msg._bot = this;
+        obj.msg._core = this;
 
         if (i_message_create_dm)
             i_message_create_dm(obj);
@@ -1188,7 +1188,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
         gateway::events::message_create obj{ *_shard, std::ref(*m), std::ref(*c)/*, std::make_optional(std::ref(*g))*/ };
 
         obj.msg = result["d"];
-        obj.msg._bot = this;
+        obj.msg._core = this;
 
         if (i_message_create)
             i_message_create(obj);

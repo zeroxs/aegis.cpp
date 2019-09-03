@@ -28,7 +28,7 @@ namespace objects
 AEGIS_DECL aegis::guild & message::get_guild()
 {
     if (_guild == nullptr)
-        _guild = _bot->find_guild(_guild_id);
+        _guild = _core->find_guild(_guild_id);
     assert(_guild != nullptr);
     if (_guild == nullptr)
         throw exception("message::get_guild() _guild = nullptr", make_error_code(error::guild_not_found));
@@ -38,7 +38,7 @@ AEGIS_DECL aegis::guild & message::get_guild()
 AEGIS_DECL aegis::channel & message::get_channel()
 {
     if (_channel == nullptr)
-        _channel = _bot->find_channel(_channel_id);
+        _channel = _core->find_channel(_channel_id);
     assert(_channel != nullptr);
     if (_channel == nullptr)
         throw exception("message::get_channel() _channel == nullptr", make_error_code(error::channel_not_found));
@@ -49,13 +49,13 @@ AEGIS_DECL aegis::channel & message::get_channel()
 AEGIS_DECL aegis::user & message::get_user()
 {
     if (_user == nullptr)
-        _user = _bot->find_user(_author_id);
+        _user = _core->find_user(_author_id);
     if (_user == nullptr)
     {
         if (_author_id == 0)
             throw exception("message::get_member() _member == nullptr && _author_id == 0", make_error_code(error::member_not_found));
 
-        _user = _bot->user_create(_author_id);
+        _user = _core->user_create(_author_id);
         _user->_load_data(author);
     }
     return *_user;
@@ -136,9 +136,9 @@ AEGIS_DECL aegis::future<rest::rest_reply> message::delete_all_reactions()
 AEGIS_DECL void message::populate_self()
 {
     if ((_guild == nullptr) && (_guild_id > 0))
-        _guild = _bot->find_guild(_guild_id);
+        _guild = _core->find_guild(_guild_id);
     if ((_channel == nullptr) && (_channel_id > 0))
-        _channel = _bot->find_channel(_channel_id);
+        _channel = _core->find_channel(_channel_id);
     if (!_channel)
         //throw because channel should always exist or else we have no understanding of the channel
         //TODO: create a dummy channel in this instance then request full info after?
@@ -146,19 +146,19 @@ AEGIS_DECL void message::populate_self()
         //is requested and populated and throw if it can't be requested?
         throw aegis::exception(error::channel_not_found);
     if (_guild == nullptr)
-        _guild = _bot->find_guild(_channel->get_guild_id());
+        _guild = _core->find_guild(_channel->get_guild_id());
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!is_webhook())
     {
         if ((_user == nullptr) && (_author_id > 0))
-            _user = _bot->find_user(_author_id);
+            _user = _core->find_user(_author_id);
         if (_user == nullptr)
         {
             //create user with the info provided?
             //user created will be very primitive with minimal information
             //TODO: add user request queue to lib to pull updated user data
-            _bot->user_create(_author_id)->_load_data(author);
-            _bot->log->debug("message::populate_self() user not found - created");
+            _core->user_create(_author_id)->_load_data(author);
+            _core->log->debug("message::populate_self() user not found - created");
             //throw aegis::exception(error::member_not_found);
         }
     }

@@ -394,7 +394,7 @@ public:
      * @param id Snowflake of member to message
      * @param content string of message to send
      * @param nonce Unique id to track when message verifies (can be omitted)
-     * @returns Message object
+     * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_dm_message(snowflake member_id, const std::string & content, int64_t nonce = 0);
 
@@ -402,7 +402,7 @@ public:
     /**
      * @see aegis::create_message_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<gateway::objects::message>
+     * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_dm_message(const create_message_t & obj);
 
