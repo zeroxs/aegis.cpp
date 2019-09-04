@@ -721,7 +721,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
 
 #if defined(AEGIS_EVENTS)
         if (websocket_event)
-            websocket_event(msg, _shard);
+            websocket_event(msg, *_shard);
 #endif
 
         if (!result.is_null())

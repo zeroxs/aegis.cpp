@@ -473,7 +473,7 @@ public:
 #endif
 
 #if defined(AEGIS_EVENTS)
-    using websocket_event_t = std::function<void(std::string, aegis::shards::shard*)>;
+    using websocket_event_t = std::function<void(std::string, aegis::shards::shard&)>;
     void set_on_websocket_event(websocket_event_t cb) { websocket_event = cb; }
     websocket_event_t websocket_event;
 #endif
