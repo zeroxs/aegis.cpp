@@ -446,6 +446,16 @@ public:
      */
     AEGIS_DECL void update_presence(const std::string& text, gateway::objects::activity::activity_type type = gateway::objects::activity::Game, gateway::objects::presence::user_status status = gateway::objects::presence::Online);
 
+    /// Passes through to Websocket++
+    /**
+     * @param duration Time until function should be run in milliseconds
+     * @param callback Function to run when timer expires
+     */
+    AEGIS_DECL std::shared_ptr<asio::steady_timer> set_timer(long duration, std::function<void(const asio::error_code &)> callback)
+    {
+        return get_shard_mgr().get_websocket().set_timer(duration, std::move(callback));
+    }
+
     std::unordered_map<snowflake, std::unique_ptr<channel>> channels;
     std::unordered_map<snowflake, std::unique_ptr<guild>> guilds;
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
