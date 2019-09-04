@@ -790,6 +790,11 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                 return;
             }
 
+#if defined(AEGIS_EVENTS)
+            if (websocket_event)
+                websocket_event(msg, _shard);
+#endif
+
             //no message. check opcodes
 
             if (result["op"] == 9)

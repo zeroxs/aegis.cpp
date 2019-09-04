@@ -461,7 +461,7 @@ public:
     std::unique_ptr<asio::io_context::strand> ws_open_strand;
     std::shared_ptr<spdlog::logger> log;
 
-#ifdef AEGIS_PROFILING
+#if defined(AEGIS_PROFILING)
     using message_end_t = std::function<void(std::chrono::steady_clock::time_point, const std::string&)>;
     using rest_end_t = std::function<void(std::chrono::steady_clock::time_point, uint16_t)>;
     using js_end_t = std::function<void(std::chrono::steady_clock::time_point, const std::string&)>;
@@ -470,6 +470,12 @@ public:
     void set_on_js_end(js_end_t cb) { js_end = cb; }
     message_end_t message_end;
     js_end_t js_end;
+#endif
+
+#if defined(AEGIS_EVENTS)
+    using websocket_event_t = std::function<void(std::string, aegis::shards::shard*)>;
+    void set_on_websocket_event(websocket_event_t cb) { websocket_event = cb; }
+    websocket_event_t websocket_event;
 #endif
 
     using typing_start_t = std::function<void(gateway::events::typing_start obj)>;
