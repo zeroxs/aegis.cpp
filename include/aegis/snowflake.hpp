@@ -26,6 +26,7 @@ public:
     constexpr snowflake(const snowflake & _snowflake) noexcept : _id(_snowflake._id) {}
     explicit snowflake(const char * _snowflake) noexcept : _id(std::stoll(std::string(_snowflake))) {}
     explicit snowflake(const std::string & _snowflake) noexcept : _id(std::stoll(_snowflake)) {}
+    explicit snowflake(const std::string_view _snowflake) noexcept : _id(std::stoll(std::string{ _snowflake })) {}
 	explicit snowflake(const nlohmann::json & _snowflake) noexcept : _id(std::stoll(_snowflake.get<std::string>())) {}
 	snowflake(const aegis::guild & _guild) noexcept;
 	snowflake(const aegis::channel & _channel) noexcept;
