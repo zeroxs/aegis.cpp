@@ -225,27 +225,37 @@ AEGIS_DECL int64_t core::get_member_count() const noexcept
 
 AEGIS_DECL int64_t core::get_user_count() const noexcept
 {
-    return members.size();
+    return users.size();
+}
+
+AEGIS_DECL int64_t core::get_channel_count() const noexcept
+{
+    return channels.size();
+}
+
+AEGIS_DECL int64_t core::get_guild_count() const noexcept
+{
+    return guilds.size();
 }
 
 AEGIS_DECL user * core::find_user(snowflake id) const noexcept
 {
-    std::shared_lock<shared_mutex> l(_member_m);
-    auto it = members.find(id);
-    if (it == members.end())
+    std::shared_lock<shared_mutex> l(_user_m);
+    auto it = users.find(id);
+    if (it == users.end())
         return nullptr;
     return it->second.get();
 }
 
 AEGIS_DECL user * core::user_create(snowflake id) noexcept
 {
-    std::unique_lock<shared_mutex> l(_member_m);
-    auto it = members.find(id);
-    if (it == members.end())
+    std::unique_lock<shared_mutex> l(_user_m);
+    auto it = users.find(id);
+    if (it == users.end())
     {
         auto g = std::make_unique<user>(id);
         auto ptr = g.get();
-        members.emplace(id, std::move(g));
+        users.emplace(id, std::move(g));
         return ptr;
     }
     return it->second.get();
@@ -374,28 +384,44 @@ AEGIS_DECL guild * core::guild_create(snowflake id, shards::shard * _shard) noex
     return it->second.get();
 }
 
+AEGIS_DECL void core::remove_guild(snowflake guild_id) noexcept
+{
+    std::unique_lock<shared_mutex> l(_guild_m);
+    auto it = guilds.find(guild_id);
+    if (it == guilds.end())
+    {
+        AEGIS_DEBUG(log, "Unable to remove guild [{}] (does not exist)", guild_id);
+        return;
+    }
+    stale_guilds.emplace(it->first, std::move(it->second));
+    guilds.erase(it);
+}
+
 AEGIS_DECL void core::remove_channel(snowflake channel_id) noexcept
 {
+    std::unique_lock<shared_mutex> l(_channel_m);
     auto it = channels.find(channel_id);
     if (it == channels.end())
     {
         AEGIS_DEBUG(log, "Unable to remove channel [{}] (does not exist)", channel_id);
         return;
     }
+    stale_channels.emplace(it->first, std::move(it->second));
     channels.erase(it);
 }
 
-
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-AEGIS_DECL void core::remove_member(snowflake member_id) noexcept
+AEGIS_DECL void core::remove_member(snowflake user_id) noexcept
 {
-    auto it = members.find(member_id);
-    if (it == members.end())
+    std::unique_lock<shared_mutex> l(_user_m);
+    auto it = users.find(user_id);
+    if (it == users.end())
     {
-        AEGIS_DEBUG(log, "Unable to remove member [{}] (does not exist)", member_id);
+        AEGIS_DEBUG(log, "Unable to remove member [{}] (does not exist)", user_id);
         return;
     }
-    members.erase(it);
+    stale_users.emplace(it->first, std::move(it->second));
+    users.erase(it);
 }
 #endif
 
@@ -621,7 +647,7 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
 
         auto m = std::make_unique<user>(user_id);
         _self = m.get();
-        members.emplace(user_id, std::move(m));
+        users.emplace(user_id, std::move(m));
         _self->_member_id = user_id;
         _self->_is_bot = true;
         _self->_name = username;
@@ -1299,7 +1325,8 @@ AEGIS_DECL void core::ws_guild_delete(const json & result, shards::shard * _shar
         //kicked or left
         //websocket_o.set_timer(5000, [this, id, _shard](const asio::error_code & ec)
         //{
-        guilds.erase(guild_id);
+        remove_guild(guild_id);
+        //guilds.erase(guild_id);
         //});
     }
 }

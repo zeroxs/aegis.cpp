@@ -328,6 +328,18 @@ public:
      */
     AEGIS_DECL int64_t get_user_count() const noexcept;
 
+    /// Get count of unique channels tracked
+    /**
+     * @returns int64_t of channel count
+     */
+    AEGIS_DECL int64_t get_channel_count() const noexcept;
+
+    /// Get count of unique guilds tracked
+    /**
+     * @returns int64_t of guild count
+     */
+    AEGIS_DECL int64_t get_guild_count() const noexcept;
+
     /// Obtain a pointer to a user by snowflake
     /**
      * @param id Snowflake of user to search for
@@ -457,9 +469,12 @@ public:
     }
 
     std::unordered_map<snowflake, std::unique_ptr<channel>> channels;
+    std::unordered_map<snowflake, std::unique_ptr<channel>> stale_channels;
     std::unordered_map<snowflake, std::unique_ptr<guild>> guilds;
+    std::unordered_map<snowflake, std::unique_ptr<guild>> stale_guilds;
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    std::unordered_map<snowflake, std::unique_ptr<user>> members;
+    std::unordered_map<snowflake, std::unique_ptr<user>> users;
+    std::unordered_map<snowflake, std::unique_ptr<user>> stale_users;
 #endif
     std::map<std::string, uint64_t> message_count;
 
@@ -868,6 +883,7 @@ private:
 
     AEGIS_DECL void load_config();
 
+    AEGIS_DECL void remove_guild(snowflake guild_id) noexcept;
     AEGIS_DECL void remove_channel(snowflake channel_id) noexcept;
 
     AEGIS_DECL void remove_member(snowflake member_id) noexcept;
@@ -895,7 +911,7 @@ private:
     mutable shared_mutex _shard_m;
     mutable shared_mutex _guild_m;
     mutable shared_mutex _channel_m;
-    mutable shared_mutex _member_m;
+    mutable shared_mutex _user_m;
 
     bool file_logging = false;
     bool external_io_context = true;
