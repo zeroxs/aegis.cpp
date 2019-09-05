@@ -78,7 +78,7 @@ AEGIS_DECL void guild::_remove_member(snowflake member_id) noexcept
 
 AEGIS_DECL bool guild::member_has_role(snowflake member_id, snowflake role_id) const noexcept
 {
-    std::unique_lock<shared_mutex> l(_m);
+    std::shared_lock<shared_mutex> l(_m);
     auto _member = find_member(member_id);
     if (_member == nullptr)
         return false;
