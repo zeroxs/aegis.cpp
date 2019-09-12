@@ -791,6 +791,62 @@ public:
         return fut;
     }
 
+    /// Get the internal guild mutex
+    shared_mutex & get_guild_mutex() { return _guild_m; }
+
+    /// Get the internal channel mutex
+    shared_mutex & get_channel_mutex() { return _channel_m; }
+
+    /// Get the internal user mutex
+    shared_mutex & get_user_mutex() { return _user_m; }
+
+    /// Get the guild map
+    /**
+     * This will return the internal unordered_map of all the guilds currently tracked. Does not
+     * include stale items. You MUST lock the appropriate mutex BEFORE accessing it to prevent
+     * potential race conditions and possible crashes.
+     * 
+     * Example:
+     * @code{.cpp}
+     * std::shared_lock<aegis::shared_mutex> l(get_guild_mutex());
+     * @endcode
+     * 
+     * @returns std::unordered_map<snowflake, std::unique_ptr<guild>>
+     */
+    std::unordered_map<snowflake, std::unique_ptr<guild>> & get_guild_map() { return guilds; };
+
+    /// Get the channel map
+    /**
+     * This will return the internal unordered_map of all the channels currently tracked. Does not
+     * include stale items. You MUST lock the appropriate mutex BEFORE accessing it to prevent
+     * potential race conditions and possible crashes.
+     *
+     * Example:
+     * @code{.cpp}
+     * std::shared_lock<aegis::shared_mutex> l(get_channel_mutex());
+     * @endcode
+     *
+     * @returns std::unordered_map<snowflake, std::unique_ptr<channel>>
+     */
+    std::unordered_map<snowflake, std::unique_ptr<channel>> & get_channel_map() { return channels; };
+
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    /// Get the user map
+    /**
+     * This will return the internal unordered_map of all the users currently tracked. Does not
+     * include stale items. You MUST lock the appropriate mutex BEFORE accessing it to prevent
+     * potential race conditions and possible crashes.
+     *
+     * Example:
+     * @code{.cpp}
+     * std::shared_lock<aegis::shared_mutex> l(get_user_mutex());
+     * @endcode
+     *
+     * @returns std::unordered_map<snowflake, std::unique_ptr<user>>
+     */
+    std::unordered_map<snowflake, std::unique_ptr<user>> & get_user_map() { return users; };
+#endif
+
 private:
 
     AEGIS_DECL void _thread_track(thread_state * t_state);
