@@ -121,6 +121,8 @@ public:
      */
     AEGIS_DECL guild_info & get_guild_info(snowflake guild_id) noexcept;
 
+    AEGIS_DECL guild_info & get_guild_info_nolock(snowflake guild_id) noexcept;
+
     /// Get the full name (username\#discriminator) of this user
     /**
      * @returns string of the full username and discriminator
