@@ -86,6 +86,8 @@ AEGIS_DECL void user::_load_nolock(guild * _guild, const json & obj, shards::sha
 
             if (obj.count("nick") && !obj["nick"].is_null())
                 g_info->nickname = obj["nick"].get<std::string>();
+            else
+                g_info->nickname.reset();
         }
     }
     catch (std::exception & e)
