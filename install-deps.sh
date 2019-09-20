@@ -40,7 +40,7 @@ fi
 if [ ! \( -f "/usr/local/include/spdlog/spdlog.h" -a -f "/usr/include/spdlog/spdlog.h" \) ]; then
   echo "Spdlog not found."
   echo "Configuring Spdlog."
-  (cd lib/spdlog && mkdir -p build && cd build && cmake -DSPDLOG_BUILD_TESTING=OFF .. && make install)
+  (cd lib/spdlog && mkdir -p build && cd build && cmake -DSPDLOG_BUILD_TESTS=OFF -DSPDLOG_BUILD_EXAMPLE=OFF -DSPDLOG_INSTALL=ON .. && make install)
 fi
 
 if [ ! \( -f "/usr/local/include/websocketpp/version.hpp" -a -f "/usr/include/websocketpp/version.hpp" \) ]; then
