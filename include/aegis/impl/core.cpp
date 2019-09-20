@@ -1659,7 +1659,8 @@ AEGIS_DECL void core::ws_guild_member_update(const json & result, shards::shard 
 
     if (_member == nullptr)
     {
-#ifdef WIN32
+		
+#ifdef _MSC_VER
         log->critical("Shard#{} : Error in [{}] _member == nullptr", _shard->get_id(), __FUNCSIG__);
 #else
         log->critical("Shard#{} : Error in [{}] _member == nullptr", _shard->get_id(), __PRETTY_FUNCTION__);
@@ -1668,7 +1669,7 @@ AEGIS_DECL void core::ws_guild_member_update(const json & result, shards::shard 
     }
     if (_guild == nullptr)
     {
-#ifdef WIN32
+#ifdef _MSC_VER
         log->critical("Shard#{} : Error in [{}] _guild == nullptr", _shard->get_id(), __FUNCSIG__);
 #else
         log->critical("Shard#{} : Error in [{}] _guild == nullptr", _shard->get_id(), __PRETTY_FUNCTION__);
