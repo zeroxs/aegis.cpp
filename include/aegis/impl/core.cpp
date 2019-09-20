@@ -5,7 +5,7 @@
 // Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
-// 
+//
 
 #include "aegis/config.hpp"
 #include "aegis/core.hpp"
@@ -20,6 +20,7 @@
 #include <nlohmann/json.hpp>
 #include <spdlog/sinks/sink.h>
 #include <spdlog/sinks/ansicolor_sink.h>
+#include <spdlog/sinks/rotating_file_sink.h>
 
 #pragma region websocket events
 #include "aegis/gateway/events/ready.hpp"
@@ -410,7 +411,7 @@ AEGIS_DECL void core::run()
     set_state(bot_status::running);
 
     starttime = std::chrono::steady_clock::now();
-    
+
     log->info("Starting shard manager with {} shards", _shard_mgr->shard_max_count);
     _shard_mgr->start();
 }
@@ -422,7 +423,7 @@ AEGIS_DECL void core::load_config()
     {
         std::ifstream config_file("config.json");
 
-        
+
         if (!config_file.is_open())
         {
             std::perror("File opening failed");
