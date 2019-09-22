@@ -204,6 +204,28 @@ public:
         return std::move(_name);
     }
 
+    /// Get icon of guild
+    /**
+     * @returns String of guild icon
+     */
+    std::string get_icon() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        std::string _icon = icon;
+        return std::move(_icon);
+    }
+
+    /// Get splash of guild
+    /**
+     * @returns String of guild splash
+     */
+    std::string get_splash() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        std::string _splash = splash;
+        return std::move(_splash);
+    }
+
     /// Get region of guild
     /**
      * @returns String of region guild is in
