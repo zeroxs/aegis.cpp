@@ -33,12 +33,12 @@ find_package(Threads REQUIRED)
 
 find_package(Asio 1.12.0 REQUIRED MODULE)
 find_package(JSON 3.1.2 REQUIRED MODULE)
-find_package(Spdlog 0.16.4 REQUIRED MODULE)
+find_package(spdlog 1.4.0 REQUIRED CONFIG)
 find_package(Websocketpp 0.7.0 REQUIRED MODULE)
 find_package(OpenSSL 1.0.1 REQUIRED MODULE)
 find_package(ZLIB REQUIRED MODULE)
 
-set(REQUIRED_LIBS OpenSSL::SSL ZLIB::ZLIB Spdlog::Spdlog JSON::JSON Asio::Asio dl Threads::Threads)
+set(REQUIRED_LIBS OpenSSL::SSL ZLIB::ZLIB spdlog::spdlog JSON::JSON Asio::Asio dl Threads::Threads)
 
 option(BUILD_SHARED_LIBS "Build the shared library" ON)
 option(BUILD_EXAMPLES "Build example programs" OFF)
@@ -81,7 +81,7 @@ endif ()
 set(AEGIS_PACKAGE_INCLUDE_DIRS
     $<BUILD_INTERFACE:${Asio_INCLUDE_DIR}>
     $<BUILD_INTERFACE:${nlohmann_json_INCLUDE_DIR}>
-    $<BUILD_INTERFACE:${Spdlog_INCLUDE_DIR}>
+    $<BUILD_INTERFACE:${spdlog_INCLUDE_DIR}>
     $<BUILD_INTERFACE:${Websocketpp_INCLUDE_DIR}>
     $<BUILD_INTERFACE:${OpenSSL_INCLUDE_DIR}>
     $<BUILD_INTERFACE:${ZLIB_INCLUDE_DIR}>
@@ -117,7 +117,7 @@ if (BUILD_SHARED_LIBS)
 	target_link_libraries(aegis PUBLIC ${REQUIRED_LIBS})
 	target_include_directories(aegis
 	  PUBLIC
-		$<INSTALL_INTERFACE:include>    
+		$<INSTALL_INTERFACE:include>
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 		${AEGIS_PACKAGE_INCLUDE_DIRS}
 	)
@@ -146,7 +146,7 @@ if (BUILD_SHARED_LIBS)
 		"-L\${libdir} -laegis -lssl -lcrypto -lpthread -lz -ldl"
 	)
 	SET(PKG_CONFIG_CFLAGS
-		"-I/usr/include -I\${includedir} -I${Asio_INCLUDE_DIR} -I${JSON_INCLUDE_DIR} -I${Spdlog_INCLUDE_DIR} -I${Websocketpp_INCLUDE_DIR} -I${ZLIB_INCLUDE_DIR} -DAEGIS_DYN_LINK"
+		"-I/usr/include -I\${includedir} -I${Asio_INCLUDE_DIR} -I${JSON_INCLUDE_DIR} -I${spdlog_INCLUDE_DIR} -I${Websocketpp_INCLUDE_DIR} -I${ZLIB_INCLUDE_DIR} -DAEGIS_DYN_LINK"
 	)
 
 	CONFIGURE_FILE(
@@ -167,7 +167,7 @@ else ()
 	target_link_libraries(aegis_static INTERFACE ${REQUIRED_LIBS})
 	target_include_directories(aegis_static
 	  PUBLIC
-		$<INSTALL_INTERFACE:include>    
+		$<INSTALL_INTERFACE:include>
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 		${AEGIS_PACKAGE_INCLUDE_DIRS}
 	)
@@ -191,7 +191,7 @@ else ()
 		"-L\${libdir} -l:libaegis.a -lssl -lcrypto -lpthread -lz -ldl"
 	)
 	SET(PKG_CONFIG_STATIC_CFLAGS
-		"-I/usr/include -I\${includedir} -I${Asio_INCLUDE_DIR} -I${JSON_INCLUDE_DIR} -I${Spdlog_INCLUDE_DIR} -I${Websocketpp_INCLUDE_DIR} -I${ZLIB_INCLUDE_DIR} -DAEGIS_SEPARATE_COMPILATION"
+		"-I/usr/include -I\${includedir} -I${Asio_INCLUDE_DIR} -I${JSON_INCLUDE_DIR} -I${spdlog_INCLUDE_DIR} -I${Websocketpp_INCLUDE_DIR} -I${ZLIB_INCLUDE_DIR} -DAEGIS_SEPARATE_COMPILATION"
 	)
 
 	CONFIGURE_FILE(
@@ -250,9 +250,9 @@ install(FILES
     ${CMAKE_CURRENT_LIST_DIR}/cmake/FindWebsocketpp.cmake
     DESTINATION ${INSTALL_CONFIGDIR}
 )
- 
 
-   
+
+
 
 
 export(EXPORT aegis-targets FILE ${CMAKE_CURRENT_BINARY_DIR}/AegisTargets.cmake NAMESPACE Aegis::)
@@ -290,17 +290,17 @@ if (BUILD_EXAMPLES)
 
 	target_include_directories(aegis_example
 	  PUBLIC
-		$<INSTALL_INTERFACE:include>    
+		$<INSTALL_INTERFACE:include>
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	)
 	target_include_directories(aegis_minimal
 	  PUBLIC
-		$<INSTALL_INTERFACE:include>    
+		$<INSTALL_INTERFACE:include>
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	)
 	target_include_directories(aegis_headeronly_no_cache
 	  PUBLIC
-		$<INSTALL_INTERFACE:include>    
+		$<INSTALL_INTERFACE:include>
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	)
 
