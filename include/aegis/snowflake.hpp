@@ -29,13 +29,13 @@ public:
 #if defined(AEGIS_CXX17)
     explicit snowflake(const std::string_view _snowflake) noexcept : _id(std::stoll(std::string{ _snowflake })) {}
 #endif
-	explicit snowflake(const nlohmann::json & _snowflake) noexcept : _id(std::stoll(_snowflake.get<std::string>())) {}
-	snowflake(const aegis::guild & _guild) noexcept;
-	snowflake(const aegis::channel & _channel) noexcept;
-	snowflake(const aegis::gateway::objects::role & _role) noexcept;
-	snowflake(const aegis::gateway::objects::message & _message) noexcept;
-	snowflake(const aegis::gateway::objects::emoji & _emoji) noexcept;
-	snowflake(const aegis::gateway::objects::attachment & _attachment) noexcept;
+    explicit snowflake(const nlohmann::json & _snowflake) noexcept : _id(std::stoll(_snowflake.get<std::string>())) {}
+    AEGIS_DECL snowflake(const aegis::guild & _guild) noexcept;
+    AEGIS_DECL snowflake(const aegis::channel & _channel) noexcept;
+    AEGIS_DECL snowflake(const aegis::gateway::objects::role & _role) noexcept;
+    AEGIS_DECL snowflake(const aegis::gateway::objects::message & _message) noexcept;
+    AEGIS_DECL snowflake(const aegis::gateway::objects::emoji & _emoji) noexcept;
+    AEGIS_DECL snowflake(const aegis::gateway::objects::attachment & _attachment) noexcept;
 
     constexpr operator int64_t() const noexcept
     {
