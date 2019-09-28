@@ -49,30 +49,30 @@ struct channel
     /// Enumeration of the channel types
     enum channel_type
     {
-        Text = 0,               ///< Text channel within a guild
-        DirectMessage = 1,      ///< Direct message channel between a pair of users
-        Voice = 2,              ///< Voice channel within a guild
-        GroupDirectMessage = 3, ///< Direct message channel between a group of users
-        Category = 4            ///< Category containing channels
+        Text = 0, /**< Text channel within a guild */
+        DirectMessage = 1, /**< Direct message channel between a pair of users */
+        Voice = 2, /**< Voice channel within a guild */
+        GroupDirectMessage = 3, /**< Direct message channel between a group of users */
+        Category = 4 /**< Category containing channels */
     };
 
-    snowflake id;                                                     /**< Snowflake */
-    snowflake channel_id;                                             /**<\deprecated Snowflake */
-    channel_type type = Text;                                         /**< Channel type - Text | DirectMessage | Voice | GroupDirectMessage | Category */
-    snowflake guild_id = 0;                                           /**< Snowflake if channel belongs to a guild (not a DM) */
-    int position = 0;                                                 /**< Sorting position of the channel */
+    snowflake id; /**< Snowflake */
+    snowflake channel_id; /**<\deprecated Snowflake */
+    channel_type type = Text; /**< Channel type - Text | DirectMessage | Voice | GroupDirectMessage | Category */
+    snowflake guild_id = 0; /**< Snowflake if channel belongs to a guild (not a DM) */
+    int position = 0; /**< Sorting position of the channel */
     std::vector<objects::permission_overwrite> permission_overwrites; /**< Explicit permission overwrites for members and roles */
-    std::string name;                                                 /**< Name of the channel (must be 2-100 characters) */
-    std::string topic;                                                /**< Topic of the channel (up to 1024 characters) */
-    bool nsfw = false;                                                /**< Whether the channel is NSFW */
-    snowflake last_message_id = 0;                                    /**< Snowflake of the last message sent in the channel (message may be non-existent) */
-    int bitrate = 0;                                                  /**< Bitrate (in bits), if this is a voice channel */
-    int userlimit = 0;                                                /**< User limit, if this is a voice channel */
-    std::vector<objects::user> recipients;                            /**< Channel message recipients, if this is a DM */
-    std::string icon;                                                 /**< Icon hash */
-    snowflake owner_id;                                               /**< Snowflake of the DM creator (if the creator is a user) */
-    snowflake application_id;                                         /**< Application ID of the DM creator (if the creator is a bot) */
-    snowflake parent_id;                                              /**< Snowflake of the parent category */
+    std::string name; /**< Name of the channel (must be 2-100 characters) */
+    std::string topic; /**< Topic of the channel (up to 1024 characters) */
+    bool nsfw = false; /**< Whether the channel is NSFW */
+    snowflake last_message_id = 0; /**< Snowflake of the last message sent in the channel (message may be non-existent) */
+    int bitrate = 0; /**< Bitrate (in bits), if this is a voice channel */
+    int userlimit = 0; /**< User limit, if this is a voice channel */
+    std::vector<objects::user> recipients; /**< Channel message recipients, if this is a DM */
+    std::string icon; /**< Icon hash */
+    snowflake owner_id; /**< Snowflake of the DM creator (if the creator is a user) */
+    snowflake application_id; /**< Application ID of the DM creator (if the creator is a bot) */
+    snowflake parent_id; /**< Snowflake of the parent category */
 };
 
 /// \cond TEMPLATES
