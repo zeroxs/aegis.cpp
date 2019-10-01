@@ -9,8 +9,6 @@
 
 #pragma once
 
-#error TODO: needs fixing
-
 #include <aegis/config.hpp>
 
 #if defined(AEGIS_HEADER_ONLY)
@@ -34,3 +32,17 @@
 #include <aegis/user.hpp>
 #include <aegis/channel.hpp>
 #include <aegis/guild.hpp>
+
+#include <aegis/impl/core.cpp>
+#include <aegis/impl/user.cpp>
+#include <aegis/impl/channel.cpp>
+#include <aegis/impl/guild.cpp>
+#include <aegis/impl/permission.cpp>
+#include <aegis/impl/snowflake.cpp>
+
+#include <aegis/shards/impl/shard.cpp>
+#include <aegis/shards/impl/shard_mgr.cpp>
+
+#include <aegis/rest/impl/rest_controller.cpp>
+
+#include <aegis/gateway/objects/impl/message.cpp>
