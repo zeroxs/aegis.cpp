@@ -61,8 +61,12 @@ $ cd aegis.cpp
 $ mkdir build
 $ cd build
 $ cmake ..
+
 // or to use C++17
 $ cmake -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_CXX_STANDARD=17 ..
+
+// and to get the latest development changes
+$ git checkout -b develop origin/develop
 ```
 You can also add `-DBUILD_EXAMPLES=1` and it will build 3 examples within the ./src directory.<br />
 `example_main.cpp;example.cpp` will build a bot that runs out of its own class<br />
