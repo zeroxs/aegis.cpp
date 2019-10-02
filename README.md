@@ -31,6 +31,15 @@ You can access the [documentation here](https://docs.aegisbot.io/). It is a work
 
 # Using this library #
 There are multiple ways to make use of this library.
+But before you use the library you must first set up the dependencies.
+
+```
+// if you're on Linux
+$ ./install-deps.sh
+
+// if you are on Windows then just download all the libraries except for OpenSSL and ZLib which you'll install with
+$ vcpkg install openssl zlib
+```
 
 #### Header only ####
 Including the helper header will automatically include all other files.
