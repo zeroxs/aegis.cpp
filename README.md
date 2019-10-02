@@ -33,14 +33,6 @@ You can access the [documentation here](https://docs.aegisbot.io/). It is a work
 There are multiple ways to make use of this library.
 But before you use the library you must first set up the dependencies.
 
-```
-// if you're on Linux
-$ ./install-deps.sh
-
-// if you are on Windows then just download all the libraries except for OpenSSL and ZLib which you'll install with
-$ vcpkg install openssl zlib
-```
-
 #### Header only ####
 Including the helper header will automatically include all other files.
 ```cpp
@@ -66,7 +58,15 @@ You can include `#include <aegis/src.hpp>` within a single cpp file while defini
 You can build this library with CMake.
 ```
 $ git clone --recursive https://github.com/zeroxs/aegis.cpp.git
+
 $ cd aegis.cpp
+
+// if you are on linux then
+$ ./install-deps
+
+// otherwise use VCPKG on Windows.
+$ vcpkg install openssl zlib
+
 $ mkdir build
 $ cd build
 $ cmake ..
