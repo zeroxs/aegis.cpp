@@ -117,7 +117,6 @@ Make sure you link these libraries. If you are on Windows using Visual Studio th
 ssl;
 z;
 pthread;
-dl;
 crypto;
 ```
 
