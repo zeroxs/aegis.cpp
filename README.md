@@ -61,8 +61,14 @@ $ git clone --recursive https://github.com/zeroxs/aegis.cpp.git
 
 $ cd aegis.cpp
 
-// if you are on linux then
-$ ./install-deps
+// and to get the latest development changes
+$ git checkout -b develop origin/develop
+
+// if you are on linux (tested in Ubuntu) then
+$ ./install-deps 
+$ apt install zlib1g-dev // zlib
+$ apt install libssl-dev // openssl
+$ apt install pkg-config //pkg-config (optional, install to remove CMake warnings)
 
 // otherwise use VCPKG on Windows.
 $ vcpkg install openssl zlib
@@ -71,11 +77,14 @@ $ mkdir build
 $ cd build
 $ cmake ..
 
-// or to use C++17
+// to use C++17
 $ cmake -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_CXX_STANDARD=17 ..
 
-// and to get the latest development changes
-$ git checkout -b develop origin/develop
+// or to enable everything
+cmake -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_CXX_STANDARD=17 DAEGIS_DISABLE_ALL_CACHE=ON DAEGIS_PROFILING=1 -DAEGIS_DEBUG_HISTORY=1 -DBUILD_EXAMPLES=1 ..
+
+// finally to install the library.
+make install
 ```
 You can also add `-DBUILD_EXAMPLES=1` and it will build 3 examples within the ./src directory.<br />
 `example_main.cpp;example.cpp` will build a bot that runs out of its own class<br />
@@ -102,6 +111,16 @@ Options above, as well as:
 `-DAEGIS_DYN_LINK` used when linking the library as a shared object<br />
 `-DAEGIS_HEADER_ONLY` to make library header-only (default option)<br />
 `-DAEGIS_SEPARATE_COMPILATION` used when linking the library as static or separate cpp file within your project<br />
+
+Make sure you link these libraries, if you are on Windows using Visual Studio then VCPKG should take care of this automatically. 
+If you are on linux then
+```
+ssl;
+z;
+pthread; 
+dl;
+crypto
+```
 
 ## CMake misc ##
 If configured with CMake, it will create a pkg-config file that may help with compiling your own project.<br />
