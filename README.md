@@ -68,7 +68,7 @@ $ git checkout -b develop origin/develop
 $ ./install-deps 
 $ apt install zlib1g-dev // zlib
 $ apt install libssl-dev // openssl
-$ apt install pkg-config //pkg-config (optional, install to remove CMake warnings)
+$ apt install pkg-config // pkg-config (optional, install to remove CMake warnings)
 
 // otherwise use VCPKG on Windows.
 $ vcpkg install openssl zlib
@@ -112,14 +112,13 @@ Options above, as well as:
 `-DAEGIS_HEADER_ONLY` to make library header-only (default option)<br />
 `-DAEGIS_SEPARATE_COMPILATION` used when linking the library as static or separate cpp file within your project<br />
 
-Make sure you link these libraries, if you are on Windows using Visual Studio then VCPKG should take care of this automatically. 
-If you are on linux then
+Make sure you link these libraries. If you are on Windows using Visual Studio then VCPKG should take care of this automatically otherwise if you are  on linux then 
 ```
 ssl;
 z;
-pthread; 
+pthread;
 dl;
-crypto
+crypto;
 ```
 
 ## CMake misc ##
