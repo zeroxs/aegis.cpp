@@ -227,6 +227,14 @@ public:
      * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(create_message_t obj);
+
+    /// Get message from this channel
+    /**
+     * @param message_id Snowflake of the message to retrieve
+     * @returns aegis::future<gateway::objects::message>
+     */
+    AEGIS_DECL aegis::future<gateway::objects::message> get_message(snowflake message_id);
+
     /// Edit a message in this channel
     /**
      * @param message_id Snowflake of the message to replace. Must be your own message
