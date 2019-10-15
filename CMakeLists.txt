@@ -2,9 +2,9 @@ message(STATUS "CMake version: ${CMAKE_VERSION}")
 
 cmake_minimum_required(VERSION 3.8)
 
-file(READ ${CMAKE_SOURCE_DIR}/include/aegis/version.hpp version_hpp)
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/include/aegis/version.hpp version_hpp)
 if (NOT version_hpp MATCHES "AEGIS_VERSION_SHORT ([0-9][0-9])([0-9][0-9])([0-9][0-9])")
-  message(FATAL_ERROR "Cannot get AEGIS_VERSION_SHORT from version.hpp. ${CMAKE_SOURCE_DIR}/include/aegis/version.hpp")
+  message(FATAL_ERROR "Cannot get AEGIS_VERSION_SHORT from version.hpp. ${CMAKE_CURRENT_SOURCE_DIR}/include/aegis/version.hpp")
 endif ()
 math(EXPR AEGIS_VERSION_MAJOR ${CMAKE_MATCH_1})
 math(EXPR AEGIS_VERSION_MINOR ${CMAKE_MATCH_2})
@@ -26,7 +26,7 @@ endif()
 
 project(libaegis VERSION ${AEGIS_VERSION} LANGUAGES CXX)
 
-list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
+list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -43,9 +43,9 @@ set(REQUIRED_LIBS OpenSSL::SSL ZLIB::ZLIB Spdlog::Spdlog JSON::JSON Asio::Asio d
 option(BUILD_SHARED_LIBS "Build the shared library" ON)
 option(BUILD_EXAMPLES "Build example programs" OFF)
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 set(CMAKE_BUILD_TYPE Release)
 
 set(AEGIS_FILES
@@ -150,7 +150,7 @@ if (BUILD_SHARED_LIBS)
 	)
 
 	CONFIGURE_FILE(
-	  "${CMAKE_SOURCE_DIR}/cmake/aegis.pc.cmake"
+	  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/aegis.pc.cmake"
 	  "${CMAKE_CURRENT_BINARY_DIR}/aegis.pc"
 	)
 
@@ -195,7 +195,7 @@ else ()
 	)
 
 	CONFIGURE_FILE(
-	  "${CMAKE_SOURCE_DIR}/cmake/aegis_static.pc.cmake"
+	  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/aegis_static.pc.cmake"
 	  "${CMAKE_CURRENT_BINARY_DIR}/aegis.pc"
 	)
 

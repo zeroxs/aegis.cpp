@@ -8,7 +8,7 @@ find_path(JSON_INCLUDE_DIR
 
 if (JSON_INCLUDE_DIR STREQUAL "JSON_INCLUDE_DIR-NOTFOUND")
   message(WARNING "Using git-module path for JSON")
-  set(JSON_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/json/include)
+  set(JSON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/json/include)
   set(JSON_SUBDIR true)
 endif ()
 

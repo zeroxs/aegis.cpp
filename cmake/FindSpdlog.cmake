@@ -8,7 +8,7 @@ find_path(Spdlog_INCLUDE_DIR
 
 if (Spdlog_INCLUDE_DIR STREQUAL "Spdlog_INCLUDE_DIR-NOTFOUND")
   message(WARNING "Using git-module path for Spdlog")
-  set(Spdlog_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/lib/spdlog/include/)
+  set(Spdlog_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/spdlog/include/)
 endif ()
 
 file(READ ${Spdlog_INCLUDE_DIR}/spdlog/common.h common_h)
