@@ -74,7 +74,7 @@ struct create_text_channel_t
 
 struct create_voice_channel_t
 {
-    create_voice_channel_t & name(snowflake param) { _name = param; return *this; }
+    create_voice_channel_t & name(const std::string param) { _name = param; return *this; }
     create_voice_channel_t & bitrate(int32_t param) { _bitrate = param; return *this; }
     create_voice_channel_t & user_limit(int32_t param) { _user_limit = param; return *this; }
     create_voice_channel_t & parent_id(int64_t param) { _parent_id = param; return *this; }

@@ -627,9 +627,12 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_voice_channel(
     json obj;
     obj["name"] = name;
     obj["type"] = 2;
-    obj["bitrate"] = bitrate;
-    obj["user_limit"] = user_limit;
-    obj["parent_id"] = parent_id;
+    if (bitrate > 0)
+        obj["bitrate"] = bitrate;
+    if (user_limit > 0)
+        obj["user_limit"] = user_limit;
+    if (parent_id > 0)
+        obj["parent_id"] = parent_id;
     obj["permission_overwrites"] = json::array();
     for (auto & p_ow : permission_overwrites)
     {
