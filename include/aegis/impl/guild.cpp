@@ -763,16 +763,16 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_my_nick(const std::stri
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/members/@me/nick", guild_id), rest::Patch, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> guild::add_guild_member_role(snowflake user_id, snowflake role_id)
+AEGIS_DECL aegis::future<gateway::objects::role> guild::add_guild_member_role(snowflake user_id, snowflake role_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_roles())
-        return aegis::make_exception_future(error::no_permission);
+        return aegis::make_exception_future<gateway::objects::role>(error::no_permission);
 #endif
 
     std::shared_lock<shared_mutex> l(_m);
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/members/{}/roles/{}", guild_id, user_id, role_id), rest::Put });
+    return _bot->get_ratelimit().post_task<gateway::objects::role>({ fmt::format("/guilds/{}/members/{}/roles/{}", guild_id, user_id, role_id), rest::Put });
 }
 
 AEGIS_DECL aegis::future<rest::rest_reply> guild::remove_guild_member_role(snowflake user_id, snowflake role_id)

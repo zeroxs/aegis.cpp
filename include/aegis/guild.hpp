@@ -493,9 +493,9 @@ public:
     /**
      * @param user_id The snowflake of the user to add new role
      * @param role_id The snowflake of the role to add to member
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::role>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> add_guild_member_role(snowflake user_id, snowflake role_id);
+    AEGIS_DECL aegis::future<gateway::objects::role> add_guild_member_role(snowflake user_id, snowflake role_id);
 
     /// Remove a role from guild member
     /**
