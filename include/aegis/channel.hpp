@@ -200,7 +200,7 @@ public:
     /// Send message to this channel
     /**
      * @param content A string of the message to send
-     * @returns std::future<gateway::objects::message>
+     * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_message(const std::string & content, int64_t nonce = 0);
 
@@ -208,7 +208,7 @@ public:
     /**
      * @see aegis::create_message_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<gateway::objects::message>
+     * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_message(create_message_t obj);
 
@@ -216,7 +216,7 @@ public:
     /**\deprecated
      * @param content A string of the message to send
      * @param embed A json object of the embed object itself
-     * @returns std::future<gateway::objects::message>
+     * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(const std::string & content, const json & embed, int64_t nonce = 0);
 
@@ -224,14 +224,22 @@ public:
     /**\deprecated
      * @see aegis::create_message_embed_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<gateway::objects::message>
+     * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(create_message_t obj);
+
+    /// Get message from this channel
+    /**
+     * @param message_id Snowflake of the message to retrieve
+     * @returns aegis::future<gateway::objects::message>
+     */
+    AEGIS_DECL aegis::future<gateway::objects::message> get_message(snowflake message_id);
+
     /// Edit a message in this channel
     /**
      * @param message_id Snowflake of the message to replace. Must be your own message
      * @param content A string of the message to set
-     * @returns std::future<gateway::objects::message>
+     * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> edit_message(snowflake message_id, const std::string & content);
 
@@ -239,7 +247,7 @@ public:
     /**
      * @see aegis::edit_message_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<gateway::objects::message>
+     * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> edit_message(edit_message_t obj);
 
@@ -248,7 +256,7 @@ public:
      * @param message_id Snowflake of the message to replace. Must be your own message
      * @param content A string of the message to set
      * @param embed A json object of the embed object itself
-     * @returns std::future<gateway::objects::message>
+     * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> edit_message_embed(snowflake message_id, const std::string & content, const json & embed);
 
@@ -256,28 +264,28 @@ public:
     /**\deprecated
      * @see aegis::edit_message_embed_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<gateway::objects::message>
+     * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> edit_message_embed(edit_message_t obj);
 
     /// Delete a message
     /**
      * @param message_id Snowflake of the message to delete
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_message(snowflake message_id);
 
     /// Delete up to 100 messages at once
     /**
      * @param message Vector of up to 100 message int64_t to delete
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> bulk_delete_message(const std::vector<int64_t> & messages);
 
     /// Delete up to 100 messages at once
     /**
      * @param message Vector of up to 100 message snowflakes to delete
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> bulk_delete_message(const std::vector<snowflake> & messages);
 
@@ -291,7 +299,7 @@ public:
      * @param _user_limit Integer of the channel max user limit (VOICE CHANNEL ONLY)
      * @param _permission_overwrites Vector of permission_overwrite objects for overriding permissions
      * @param _parent_id Snowflake of category channel belongs in (empty parent puts channel in no category)
-     * @returns std::future<gateway::objects::channel>
+     * @returns aegis::future<gateway::objects::channel>
      */
     AEGIS_DECL aegis::future<gateway::objects::channel> modify_channel(lib::optional<std::string> _name = {},
         lib::optional<int> _position = {}, lib::optional<std::string> _topic = {},
@@ -304,7 +312,7 @@ public:
     /**
      * @see aegis::modify_channel_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<gateway::objects::channel>
+     * @returns aegis::future<gateway::objects::channel>
      */
     AEGIS_DECL aegis::future<gateway::objects::channel> modify_channel(modify_channel_t obj)
     {
@@ -315,7 +323,7 @@ public:
 
     /// Delete this channel
     /**
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_channel();
 
@@ -323,7 +331,7 @@ public:
     /**
      * @param message_id Snowflake of message
      * @param emoji_text Text of emoji being added `name:snowflake`
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> create_reaction(snowflake message_id, const std::string & emoji_text);
 
@@ -331,7 +339,7 @@ public:
     /**
      * @see aegis::create_reaction_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> create_reaction(create_reaction_t obj)
     {
@@ -342,7 +350,7 @@ public:
     /**
      * @param message_id Snowflake of message
      * @param emoji_text Text of emoji being added `name:snowflake`
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_own_reaction(snowflake message_id, const std::string & emoji_text);
 
@@ -350,7 +358,7 @@ public:
     /**
      * @see aegis::delete_own_reaction_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_own_reaction(delete_own_reaction_t obj)
     {
@@ -362,7 +370,7 @@ public:
      * @param message_id Snowflake of message
      * @param emoji_text Text of emoji being added `name:snowflake`
      * @param member_id Snowflake of member to remove emoji from
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_user_reaction(snowflake message_id, const std::string & emoji_text, snowflake member_id);
 
@@ -370,7 +378,7 @@ public:
     /**
      * @see aegis::delete_user_reaction_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_user_reaction(delete_user_reaction_t obj)
     {
@@ -381,7 +389,7 @@ public:
     /**
      * @param message_id Snowflake of message
      * @param emoji_text Text of emoji being added `name:snowflake`
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> get_reactions(snowflake message_id, const std::string & emoji_text);
 
@@ -389,7 +397,7 @@ public:
     /**
      * @see aegis::get_reactions_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> get_reactions(get_reactions_t obj)
     {
@@ -399,7 +407,7 @@ public:
     /// Delete all reactions by message
     /**
      * @param message_id Snowflake of message
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_all_reactions(snowflake message_id);
 
@@ -409,7 +417,7 @@ public:
      * @param _allow Int64 allow flags
      * @param _deny Int64 deny flags
      * @param _type Type of override (role/user)
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> edit_channel_permissions(snowflake _overwrite_id, int64_t _allow, int64_t _deny, const std::string & _type);
 
@@ -417,7 +425,7 @@ public:
     /**
      * @see aegis::edit_channel_permissions_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> edit_channel_permissions(edit_channel_permissions_t obj)
     {
@@ -426,7 +434,7 @@ public:
 
     /// Get active channel invites
     /**
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> get_channel_invites();
 
@@ -436,7 +444,7 @@ public:
      * @param max_uses The max uses this invite code allows
      * @param temporary Is this invite code temporary
      * @param unique Is this invite code a unique one-use
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> create_channel_invite(const lib::optional<int> max_age,
         const lib::optional<int> max_uses,
@@ -447,7 +455,7 @@ public:
     /**
      * @see aegis::create_channel_invite_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> create_channel_invite(create_channel_invite_t obj)
     {
@@ -457,49 +465,49 @@ public:
     /// Delete channel permission override
     /**
      * @param overwrite_id Snowflake of the channel permission to delete
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_channel_permission(snowflake overwrite_id);
 
     /// Trigger typing indicator in channel (lasts 10 seconds)
     /**
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> trigger_typing_indicator();
 
     /// Get pinned messages in channel
     /**
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> get_pinned_messages();
 
     /// Add a pinned message in channel
     /**
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> add_pinned_channel_message(snowflake message_id);
 
     /// Delete a pinned message in channel
     /**
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> delete_pinned_channel_message(snowflake message_id);
 
     /// Add member to a group direct message
     /**
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> group_dm_add_recipient(snowflake user_id);
 
     /// Remove member from a group direct message
     /**
-     * @returns std::future<rest::rest_reply>
+     * @returns aegis::future<rest::rest_reply>
      */
     AEGIS_DECL aegis::future<rest::rest_reply> group_dm_remove_recipient(snowflake user_id);
 
-    /// Get the snowflake of this channel
+    /// Get the aegis::snowflake of this channel
     /**
-     * @returns A snowflake of the channel
+     * @returns An aegis::snowflake of the channel
      */
     snowflake get_id() const noexcept
     {

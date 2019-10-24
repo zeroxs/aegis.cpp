@@ -216,9 +216,9 @@ public:
     /**
      * @see aegis::gateway::objects::activity
      * @see aegis::gateway::objects::presence
-     * @param std::string Test of presence message
-     * @param aegis::gateway::objects::activity::activity_type Enum of the activity type
-     * @param aegis::gateway::objects::presence::user_status Enum of the status
+     * @param text String of presence message
+     * @param type aegis::gateway::objects::activity::activity_type enum of the activity type
+     * @param status aegis::gateway::objects::presence::user_status enum of the status
      */
     AEGIS_DECL void update_presence(const std::string& text, gateway::objects::activity::activity_type type = gateway::objects::activity::Game, gateway::objects::presence::user_status status = gateway::objects::presence::Online);
 

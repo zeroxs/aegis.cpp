@@ -86,6 +86,8 @@ AEGIS_DECL void user::_load_nolock(guild * _guild, const json & obj, shards::sha
 
             if (obj.count("nick") && !obj["nick"].is_null())
                 g_info->nickname = obj["nick"].get<std::string>();
+            else
+                g_info->nickname.reset();
         }
     }
     catch (std::exception & e)
@@ -118,11 +120,30 @@ AEGIS_DECL user::guild_info & user::get_guild_info(snowflake guild_id) noexcept
     return **g;
 }
 
+AEGIS_DECL user::guild_info & user::get_guild_info_nolock(snowflake guild_id) noexcept
+{
+    auto g = std::find_if(std::begin(guilds), std::end(guilds), [&guild_id](const std::unique_ptr<guild_info> & gi)
+    {
+        if (gi->id == guild_id)
+            return true;
+        return false;
+    });
+    if (g == guilds.end())
+    {
+#if defined(AEGIS_CXX17)
+        return *guilds.emplace_back(std::make_unique<guild_info>(guild_id));
+#else
+        return **guilds.insert(guilds.end(), std::make_unique<guild_info>(guild_id));
+#endif
+    }
+    return **g;
+}
+
 AEGIS_DECL std::string user::get_name(snowflake guild_id) noexcept
 {
-    std::shared_lock<shared_mutex> l(_m);
+    std::unique_lock<shared_mutex> l(_m);
 
-    const auto & def = get_guild_info(guild_id).nickname;
+    const auto & def = get_guild_info_nolock(guild_id).nickname;
     return def.has_value() ? def.value() : "";
 }
 

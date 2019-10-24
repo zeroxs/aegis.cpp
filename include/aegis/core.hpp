@@ -328,6 +328,18 @@ public:
      */
     AEGIS_DECL int64_t get_user_count() const noexcept;
 
+    /// Get count of unique channels tracked
+    /**
+     * @returns int64_t of channel count
+     */
+    AEGIS_DECL int64_t get_channel_count() const noexcept;
+
+    /// Get count of unique guilds tracked
+    /**
+     * @returns int64_t of guild count
+     */
+    AEGIS_DECL int64_t get_guild_count() const noexcept;
+
     /// Obtain a pointer to a user by snowflake
     /**
      * @param id Snowflake of user to search for
@@ -394,7 +406,7 @@ public:
      * @param id Snowflake of member to message
      * @param content string of message to send
      * @param nonce Unique id to track when message verifies (can be omitted)
-     * @returns Message object
+     * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_dm_message(snowflake member_id, const std::string & content, int64_t nonce = 0);
 
@@ -402,7 +414,7 @@ public:
     /**
      * @see aegis::create_message_t
      * @param obj Struct of the contents of the request
-     * @returns std::future<gateway::objects::message>
+     * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> create_dm_message(const create_message_t & obj);
 
@@ -440,16 +452,29 @@ public:
     /**
      * @see aegis::gateway::objects::activity
      * @see aegis::gateway::objects::presence
-     * @param std::string Test of presence message
-     * @param aegis::gateway::objects::activity::activity_type Enum of the activity type
-     * @param aegis::gateway::objects::presence::user_status Enum of the status
+     * @param text Text of presence message
+     * @param type Enum of the activity type
+     * @param status Enum of the status
      */
     AEGIS_DECL void update_presence(const std::string& text, gateway::objects::activity::activity_type type = gateway::objects::activity::Game, gateway::objects::presence::user_status status = gateway::objects::presence::Online);
 
+    /// Passes through to Websocket++
+    /**
+     * @param duration Time until function should be run in milliseconds
+     * @param callback Function to run when timer expires
+     */
+    AEGIS_DECL std::shared_ptr<asio::steady_timer> set_timer(long duration, std::function<void(const asio::error_code &)> callback)
+    {
+        return get_shard_mgr().get_websocket().set_timer(duration, std::move(callback));
+    }
+
     std::unordered_map<snowflake, std::unique_ptr<channel>> channels;
+    std::unordered_map<snowflake, std::unique_ptr<channel>> stale_channels;
     std::unordered_map<snowflake, std::unique_ptr<guild>> guilds;
+    std::unordered_map<snowflake, std::unique_ptr<guild>> stale_guilds;
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    std::unordered_map<snowflake, std::unique_ptr<user>> members;
+    std::unordered_map<snowflake, std::unique_ptr<user>> users;
+    std::unordered_map<snowflake, std::unique_ptr<user>> stale_users;
 #endif
     std::map<std::string, uint64_t> message_count;
 
@@ -461,7 +486,7 @@ public:
     std::unique_ptr<asio::io_context::strand> ws_open_strand;
     std::shared_ptr<spdlog::logger> log;
 
-#ifdef AEGIS_PROFILING
+#if defined(AEGIS_PROFILING)
     using message_end_t = std::function<void(std::chrono::steady_clock::time_point, const std::string&)>;
     using rest_end_t = std::function<void(std::chrono::steady_clock::time_point, uint16_t)>;
     using js_end_t = std::function<void(std::chrono::steady_clock::time_point, const std::string&)>;
@@ -470,6 +495,12 @@ public:
     void set_on_js_end(js_end_t cb) { js_end = cb; }
     message_end_t message_end;
     js_end_t js_end;
+#endif
+
+#if defined(AEGIS_EVENTS)
+    using websocket_event_t = std::function<void(std::string, aegis::shards::shard&)>;
+    void set_on_websocket_event(websocket_event_t cb) { websocket_event = cb; }
+    websocket_event_t websocket_event;
 #endif
 
     using typing_start_t = std::function<void(gateway::events::typing_start obj)>;
@@ -760,6 +791,62 @@ public:
         return fut;
     }
 
+    /// Get the internal guild mutex
+    shared_mutex & get_guild_mutex() { return _guild_m; }
+
+    /// Get the internal channel mutex
+    shared_mutex & get_channel_mutex() { return _channel_m; }
+
+    /// Get the internal user mutex
+    shared_mutex & get_user_mutex() { return _user_m; }
+
+    /// Get the guild map
+    /**
+     * This will return the internal unordered_map of all the guilds currently tracked. Does not
+     * include stale items. You MUST lock the appropriate mutex BEFORE accessing it to prevent
+     * potential race conditions and possible crashes.
+     * 
+     * Example:
+     * @code{.cpp}
+     * std::shared_lock<aegis::shared_mutex> l(get_guild_mutex());
+     * @endcode
+     * 
+     * @returns std::unordered_map<snowflake, std::unique_ptr<guild>>
+     */
+    std::unordered_map<snowflake, std::unique_ptr<guild>> & get_guild_map() { return guilds; };
+
+    /// Get the channel map
+    /**
+     * This will return the internal unordered_map of all the channels currently tracked. Does not
+     * include stale items. You MUST lock the appropriate mutex BEFORE accessing it to prevent
+     * potential race conditions and possible crashes.
+     *
+     * Example:
+     * @code{.cpp}
+     * std::shared_lock<aegis::shared_mutex> l(get_channel_mutex());
+     * @endcode
+     *
+     * @returns std::unordered_map<snowflake, std::unique_ptr<channel>>
+     */
+    std::unordered_map<snowflake, std::unique_ptr<channel>> & get_channel_map() { return channels; };
+
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    /// Get the user map
+    /**
+     * This will return the internal unordered_map of all the users currently tracked. Does not
+     * include stale items. You MUST lock the appropriate mutex BEFORE accessing it to prevent
+     * potential race conditions and possible crashes.
+     *
+     * Example:
+     * @code{.cpp}
+     * std::shared_lock<aegis::shared_mutex> l(get_user_mutex());
+     * @endcode
+     *
+     * @returns std::unordered_map<snowflake, std::unique_ptr<user>>
+     */
+    std::unordered_map<snowflake, std::unique_ptr<user>> & get_user_map() { return users; };
+#endif
+
 private:
 
     AEGIS_DECL void _thread_track(thread_state * t_state);
@@ -852,6 +939,7 @@ private:
 
     AEGIS_DECL void load_config();
 
+    AEGIS_DECL void remove_guild(snowflake guild_id) noexcept;
     AEGIS_DECL void remove_channel(snowflake channel_id) noexcept;
 
     AEGIS_DECL void remove_member(snowflake member_id) noexcept;
@@ -879,7 +967,7 @@ private:
     mutable shared_mutex _shard_m;
     mutable shared_mutex _guild_m;
     mutable shared_mutex _channel_m;
-    mutable shared_mutex _member_m;
+    mutable shared_mutex _user_m;
 
     bool file_logging = false;
     bool external_io_context = true;

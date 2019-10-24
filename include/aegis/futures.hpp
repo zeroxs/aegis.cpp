@@ -103,13 +103,16 @@ using remove_future_t = typename remove_future<T>::type;
 
 namespace detail
 {
+/// call_state<T, Func, State>
 template<typename T, typename Func, typename State>
 add_future_t<T> call_state(Func&& func, State&& state);
 
+/// call_future<T, Func, Future>
 template<typename T, typename Func, typename Future>
 add_future_t<T> call_future(Func&& func, Future&& fut) noexcept;
 }
 
+/// future_state<T>
 template <typename T>
 struct future_state
 {
@@ -325,6 +328,7 @@ struct future_state
     }
 };
 
+/// future_state<void>
 template <>
 struct future_state<void>
 {
@@ -446,6 +450,7 @@ struct future_state<void>
     void forward_to(promise<void>& pr) noexcept;
 };
 
+/// task<T>
 class task
 {
 public:
@@ -453,6 +458,7 @@ public:
     virtual void run() noexcept = 0;
 };
 
+/// continuation_base<T>
 template <typename T>
 class continuation_base : public task
 {
@@ -484,6 +490,7 @@ public:
     friend class future<T>;
 };
 
+/// continuation_base<void>
 template <>
 class continuation_base<void> : public task
 {
@@ -509,6 +516,7 @@ public:
     friend class future<void>;
 };
 
+/// continuation<Func, T>
 template <typename Func, typename T>
 struct continuation final : continuation_base<T>
 {
@@ -526,6 +534,7 @@ struct continuation final : continuation_base<T>
 using task_ptr = std::unique_ptr<task>;
 
 
+/// promise<T>
 template <typename T>
 class promise
 {
@@ -676,6 +685,7 @@ private:
     friend struct future_state<void>;
 };
 
+/// future<T>
 template <typename T>
 class future
 {
@@ -1140,6 +1150,7 @@ private:
     friend future<U> make_exception_future(std::exception_ptr ex) noexcept;
 };
 
+/// promise<T>::get_future()
 template <typename T>
 inline future<T> promise<T>::get_future() noexcept
 {
@@ -1147,6 +1158,7 @@ inline future<T> promise<T>::get_future() noexcept
     return future<T>(this);
 }
 
+/// promise<T>::make_ready()
 template <typename T>
 template<typename promise<T>::urgent Urgent>
 inline void promise<T>::make_ready() noexcept
@@ -1168,6 +1180,7 @@ inline void promise<T>::make_ready() noexcept
     }
 }
 
+/// promise<T>::abandoned()
 template <typename T>
 inline void promise<T>::abandoned() noexcept
 {
@@ -1186,18 +1199,21 @@ inline void promise<T>::abandoned() noexcept
     std::atomic_thread_fence(std::memory_order_release);
 }
 
+/// make_ready_future<T, ...A>()
 template <typename T, typename... A>
 inline future<T> make_ready_future(A&&... value)
 {
     return { ready_future_marker(), std::forward<A>(value)... };
 }
 
+/// make_ready_future<T>()
 template <typename T>
 inline future<T> make_ready_future(T&& value)
 {
     return { ready_future_marker(), std::forward<T>(value) };
 }
 
+/// make_exception_future<T>()
 template <typename T>
 inline future<T> make_exception_future(std::exception_ptr ex) noexcept
 {
@@ -1207,18 +1223,21 @@ inline future<T> make_exception_future(std::exception_ptr ex) noexcept
 
 namespace detail
 {
+/// to_future<T>()
 template<typename T>
 inline add_future_t<T> to_future(T&& value)
 {
     return make_ready_future<T>(std::forward<T>(value));
 }
 
+/// to_future<T>()
 template<typename T>
 inline future<T> to_future(future<T>&& fut)
 {
     return std::move(fut);
 }
 
+/// call_function<T, Func, ...A, Ret>()
 template<typename T, typename Func, typename... A, typename Ret = std::result_of_t<Func(A&&...)>>
 inline std::enable_if_t<is_future<Ret>::value, add_future_t<Ret>> call_function(std::true_type, Func&& func, A&&... args)
 {
@@ -1232,6 +1251,7 @@ inline std::enable_if_t<is_future<Ret>::value, add_future_t<Ret>> call_function(
     }
 }
 
+/// call_function<T, Func, ...A, Ret>()
 template<typename T, typename Func, typename... A, typename Ret = std::result_of_t<Func(A&&...)>>
 inline std::enable_if_t<!is_future<Ret>::value, add_future_t<T>> call_function(std::true_type, Func&& func, A&&... args)
 {
@@ -1246,6 +1266,7 @@ inline std::enable_if_t<!is_future<Ret>::value, add_future_t<T>> call_function(s
     }
 }
 
+/// call_function<T, Func, ...A>()
 template<typename T, typename Func, typename... A>
 inline add_future_t<T> call_function(std::false_type, Func&& func, A&&... args)
 {
@@ -1259,24 +1280,28 @@ inline add_future_t<T> call_function(std::false_type, Func&& func, A&&... args)
     }
 }
 
+/// call_from_state<T, Func, State>()
 template<typename T, typename Func, typename State>
 inline add_future_t<T> call_from_state(std::true_type, Func&& func, State&&)
 {
     return call_function<T>(std::is_void<T>{}, std::forward<Func>(func));
 }
 
+/// call_from_state<T, Func, State>()
 template<typename T, typename Func, typename State>
 inline add_future_t<T> call_from_state(std::false_type, Func&& func, State&& state)
 {
     return call_function<T>(std::is_void<T>{}, std::forward<Func>(func), std::forward<State>(state).get_value());
 }
 
+/// call_state<T, Func, State>()
 template<typename T, typename Func, typename State>
 inline add_future_t<T> call_state(Func&& func, State&& state)
 {
     return call_from_state<T>(std::is_void<typename State::type>{}, std::forward<Func>(func), std::forward<State>(state));
 }
 
+/// call_future<T, Func, Future>
 template<typename T, typename Func, typename Future>
 inline add_future_t<T> call_future(Func&& func, Future&& fut) noexcept
 {
@@ -1284,6 +1309,7 @@ inline add_future_t<T> call_future(Func&& func, Future&& fut) noexcept
 }
 }
 
+/// future_state<void>::forward_to()
 inline void future_state<void>::forward_to(promise<void>& pr) noexcept
 {
     std::atomic_thread_fence(std::memory_order_acquire);
@@ -1300,6 +1326,7 @@ inline void future_state<void>::forward_to(promise<void>& pr) noexcept
     std::atomic_thread_fence(std::memory_order_release);
 }
 
+/// make_exception_future()
 template <typename T = rest::rest_reply>
 inline future<T> make_exception_future(aegis::error ec)
 {

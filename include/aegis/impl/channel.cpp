@@ -145,6 +145,19 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message(cons
 	return _ratelimit.post_task<gateway::objects::message>({ _endpoint, rest::Post, obj.dump(-1, ' ', true) });
 }
 
+AEGIS_DECL aegis::future<gateway::objects::message> channel::get_message(snowflake message_id)
+{
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (_guild && !perms().can_read_history())
+        return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
+#endif
+
+    std::shared_lock<shared_mutex> l(_m);
+
+    std::string _endpoint = fmt::format("/channels/{}/messages/{}", channel_id, message_id);
+    return _ratelimit.post_task<gateway::objects::message>({ _endpoint, rest::Get });
+}
+
 AEGIS_DECL aegis::future<aegis::gateway::objects::message> channel::create_message(create_message_t obj)
 {
     return create_message_embed(obj._content, obj._embed, obj._nonce);

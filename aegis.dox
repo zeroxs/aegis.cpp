@@ -21,7 +21,7 @@ using json = nlohmann::json;
 int main(int argc, char * argv[])
 {
     // Create bot object with a minimum log level of trace
-    aegis::core bot(aegis::create_bot_t().log_level(spdlog::level::info).token("TOKEN"));
+    aegis::core bot(aegis::create_bot_t().log_level(spdlog::level::trace).token("TOKEN"));
 
     AEGIS_TRACE(bot.log, "Bot object created");
 
@@ -76,7 +76,7 @@ void message_create(aegis::gateway::events::message_create obj)
 int main(int argc, char * argv[])
 {
     // Create bot object with a minimum log level of trace
-    aegis::core bot(aegis::create_bot_t().log_level(spdlog::level::info).token("TOKEN"));
+    aegis::core bot(aegis::create_bot_t().log_level(spdlog::level::trace).token("TOKEN"));
 
     AEGIS_TRACE(bot.log, "Bot object created");
 
@@ -125,7 +125,7 @@ public:
 int main(int argc, char * argv[])
 {
     // Create bot object with a minimum log level of trace
-    aegis::core bot(aegis::create_bot_t().log_level(spdlog::level::info).token("TOKEN"));
+    aegis::core bot(aegis::create_bot_t().log_level(spdlog::level::trace).token("TOKEN"));
 
 	my_bot my_bot_instance;
 

@@ -106,16 +106,16 @@ void example::MessageCreate(message_create obj)
 
 const json example::make_info_obj(aegis::core & bot, aegis::shards::shard * _shard)
 {
-    int64_t guild_count = bot.guilds.size();
-    int64_t member_count_unique = bot.members.size();
-    int64_t channel_count = bot.channels.size();
+    int64_t guild_count = bot.get_guild_count();
+    int64_t user_count_unique = bot.get_user_count();
+    int64_t channel_count = bot.get_channel_count();
 
     int64_t eventsseen = 0;
 
     for (auto & e : bot.message_count)
         eventsseen += e.second;
 
-    std::string members = fmt::format("{}", member_count_unique);
+    std::string members = fmt::format("{}", user_count_unique);
     std::string channels = fmt::format("{}", channel_count);
     std::string guilds = fmt::format("{}", guild_count);
     std::string events = fmt::format("{}", eventsseen);

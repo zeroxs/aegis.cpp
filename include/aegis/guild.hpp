@@ -74,7 +74,7 @@ struct create_text_channel_t
 
 struct create_voice_channel_t
 {
-    create_voice_channel_t & name(snowflake param) { _name = param; return *this; }
+    create_voice_channel_t & name(const std::string param) { _name = param; return *this; }
     create_voice_channel_t & bitrate(int32_t param) { _bitrate = param; return *this; }
     create_voice_channel_t & user_limit(int32_t param) { _user_limit = param; return *this; }
     create_voice_channel_t & parent_id(int64_t param) { _parent_id = param; return *this; }
@@ -202,6 +202,28 @@ public:
         std::shared_lock<shared_mutex> l(_m);
         std::string _name = name;
         return std::move(_name);
+    }
+
+    /// Get icon of guild
+    /**
+     * @returns String of guild icon
+     */
+    std::string get_icon() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        std::string _icon = icon;
+        return std::move(_icon);
+    }
+
+    /// Get splash of guild
+    /**
+     * @returns String of guild splash
+     */
+    std::string get_splash() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        std::string _splash = splash;
+        return std::move(_splash);
     }
 
     /// Get region of guild
@@ -471,9 +493,9 @@ public:
     /**
      * @param user_id The snowflake of the user to add new role
      * @param role_id The snowflake of the role to add to member
-     * @returns aegis::future<rest::rest_reply>
+     * @returns aegis::future<gateway::objects::role>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> add_guild_member_role(snowflake user_id, snowflake role_id);
+    AEGIS_DECL aegis::future<gateway::objects::role> add_guild_member_role(snowflake user_id, snowflake role_id);
 
     /// Remove a role from guild member
     /**

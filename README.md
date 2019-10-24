@@ -39,7 +39,7 @@ Including the helper header will automatically include all other files.
 
 int main()
 {
-    aegis::core bot;
+    aegis::core bot(aegis::create_bot_t().log_level(spdlog::level::trace).token("TOKEN"));
     bot.set_on_message_create([](auto obj)
     {
         if (obj.msg.get_content() == "Hi")
@@ -111,4 +111,9 @@ You can change basic configuration options within the `config.json` file. It sho
 	"file-logging": false,
 	"log-format": "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v"
 }
+```
+
+Alternatively you can configure the library by passing in the [create_bot_t()](https://docs.aegisbot.io/structaegis_1_1create__bot__t.html) object to the constructor of the aegis::core object. You can make use of it fluent-style.
+```cpp
+aegis::core(aegis::create_bot_t().log_level(spdlog::level::trace).token("TOKEN"))
 ```

@@ -78,7 +78,7 @@ AEGIS_DECL void guild::_remove_member(snowflake member_id) noexcept
 
 AEGIS_DECL bool guild::member_has_role(snowflake member_id, snowflake role_id) const noexcept
 {
-    std::unique_lock<shared_mutex> l(_m);
+    std::shared_lock<shared_mutex> l(_m);
     auto _member = find_member(member_id);
     if (_member == nullptr)
         return false;
@@ -627,9 +627,12 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_voice_channel(
     json obj;
     obj["name"] = name;
     obj["type"] = 2;
-    obj["bitrate"] = bitrate;
-    obj["user_limit"] = user_limit;
-    obj["parent_id"] = parent_id;
+    if (bitrate > 0)
+        obj["bitrate"] = bitrate;
+    if (user_limit > 0)
+        obj["user_limit"] = user_limit;
+    if (parent_id > 0)
+        obj["parent_id"] = parent_id;
     obj["permission_overwrites"] = json::array();
     for (auto & p_ow : permission_overwrites)
     {
@@ -763,16 +766,16 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::modify_my_nick(const std::stri
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/members/@me/nick", guild_id), rest::Patch, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> guild::add_guild_member_role(snowflake user_id, snowflake role_id)
+AEGIS_DECL aegis::future<gateway::objects::role> guild::add_guild_member_role(snowflake user_id, snowflake role_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_roles())
-        return aegis::make_exception_future(error::no_permission);
+        return aegis::make_exception_future<gateway::objects::role>(error::no_permission);
 #endif
 
     std::shared_lock<shared_mutex> l(_m);
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/members/{}/roles/{}", guild_id, user_id, role_id), rest::Put });
+    return _bot->get_ratelimit().post_task<gateway::objects::role>({ fmt::format("/guilds/{}/members/{}/roles/{}", guild_id, user_id, role_id), rest::Put });
 }
 
 AEGIS_DECL aegis::future<rest::rest_reply> guild::remove_guild_member_role(snowflake user_id, snowflake role_id)
