@@ -89,6 +89,11 @@ AEGIS_DECL void channel::_load_with_guild_nolock(guild & _guild, const json & ob
             if (obj.count("last_message_id") && !obj["last_message_id"].is_null()) last_message_id = obj["last_message_id"];
         }
 
+        if (obj.count("parent_id") && !obj["parent_id"].is_null())
+        {
+            parent_id = obj["parent_id"];
+        }
+
         if (obj.count("permission_overwrites") && !obj["permission_overwrites"].is_null())
         {
             json permission_overwrites = obj["permission_overwrites"];

@@ -505,6 +505,24 @@ public:
      */
     AEGIS_DECL aegis::future<rest::rest_reply> group_dm_remove_recipient(snowflake user_id);
 
+    /// Get parent channel
+    /**
+     * @returns aegis::channel
+     */
+    aegis::channel * get_parent()
+    {
+        return _bot->find_channel(parent_id);
+    }
+
+    /// Get parent channel snowflake
+    /**
+     * @returns aegis::snowflake
+     */
+    aegis::snowflake get_parent_id()
+    {
+        return parent_id;
+    }
+
     /// Get the aegis::snowflake of this channel
     /**
      * @returns An aegis::snowflake of the channel
@@ -564,6 +582,7 @@ private:
     snowflake channel_id; /**< snowflake of this channel */
     snowflake guild_id; /**< snowflake of the guild this channel belongs to */
     guild * _guild; /**< Pointer to the guild this channel belongs to */
+    snowflake parent_id; /**< snowflake of the parent channel */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     snowflake last_message_id = 0; /**< Snowflake of the last message sent in this channel */
     std::string name; /**< String of the name of this channel */
