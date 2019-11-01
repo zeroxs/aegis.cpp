@@ -1558,9 +1558,15 @@ AEGIS_DECL void core::ws_channel_delete(const json & result, shards::shard * _sh
         if (_channel == nullptr)//TODO: errors
             return;
         std::unique_lock<shared_mutex> l(_channel->mtx(), std::defer_lock);
-        std::unique_lock<shared_mutex> l2(_channel_m, std::defer_lock);
-        std::lock(l, l2);
-        _guild->_remove_channel(channel_id);
+       /* FIX NOTE: _channel_m is also locked by core::remove_channel().
+        * Don't keep this lock in scope when we reach it, otherwise bad stuff
+        * will happen. - CraigE
+        */
+       do {
+                std::unique_lock<shared_mutex> l2(_channel_m, std::defer_lock);
+                std::lock(l, l2);
+                _guild->_remove_channel(channel_id);
+       } while (false);
         remove_channel(channel_id);
     }
 
