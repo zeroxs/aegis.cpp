@@ -1321,7 +1321,7 @@ AEGIS_DECL void core::ws_guild_delete(const json & result, shards::shard * _shar
         _guild->unavailable = obj.unavailable;
 #endif
 
-        std::unique_lock<shared_mutex> l(_guild_m);
+        //std::unique_lock<shared_mutex> l(_guild_m);
         //kicked or left
         //websocket_o.set_timer(5000, [this, id, _shard](const asio::error_code & ec)
         //{
