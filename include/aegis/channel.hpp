@@ -42,10 +42,16 @@ struct create_message_t
     create_message_t & content(const std::string & param) { _content = param; return *this; }
     create_message_t & embed(const json & param) { _embed = param; return *this; }
     create_message_t & nonce(int64_t param) { _nonce = param; return *this; }
+    create_message_t & file(rest::aegis_file file)
+    {
+        this->_file.emplace(std::move(file));
+        return *this;
+    }
     snowflake _user_id;
     std::string _content;
     json _embed;
     int64_t _nonce = 0;
+    std::optional<rest::aegis_file> _file;
 };
 
 struct edit_message_t

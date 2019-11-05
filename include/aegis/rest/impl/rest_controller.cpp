@@ -112,10 +112,33 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
         request_stream << "Accept: */*\r\n";
         request_stream << "Authorization: Bot " << _token << "\r\n";
         request_stream << "User-Agent: DiscordBot (https://github.com/zeroxs/aegis.cpp, " << AEGIS_VERSION_LONG << ")\r\n";
-        request_stream << "Content-Length: " << params.body.size() << "\r\n";
-        request_stream << "Content-Type: application/json\r\n";
-        request_stream << "Connection: close\r\n\r\n";
-        request_stream << params.body;
+        request_stream << "Connection: close\r\n";
+
+        if (params.file.has_value())
+        {
+            auto & file = params.file.value();
+            std::string boundary{ utility::random_string(20) };
+            std::stringstream ss;
+
+            request_stream << "Content-Type: multipart/form-data; boundary=" << boundary << "\r\n";
+
+            ss << "--" << boundary << "\r\n";
+            ss << "Content-Disposition: form-data; name=\"file\"; filename=\"" << utility::escape_quotes(file.name) << "\"\r\n";
+            ss << "Content-Type: text/plain\r\n\r\n";
+            ss.write(file.data.data(), file.data.size());
+            ss << "\r\n";
+
+            ss << "--" << boundary << "--";
+
+            request_stream << "Content-Length: " << ss.str().length() << "\r\n\r\n";
+            request_stream << ss.str();
+        }
+        else
+        {
+            request_stream << "Content-Length: " << params.body.size() << "\r\n";
+            request_stream << "Content-Type: application/json\r\n\r\n";
+            request_stream << params.body;
+        }
 
         asio::write(socket, request);
         asio::streambuf response;
