@@ -49,7 +49,7 @@ struct request_params
     std::string port = "443";
     std::vector<std::string> headers;
     std::string _path_ex;
-    std::optional<aegis_file> file;
+    lib::optional<aegis_file> file;
 };
 
 class rest_controller

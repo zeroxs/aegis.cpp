@@ -51,7 +51,7 @@ struct create_message_t
     std::string _content;
     json _embed;
     int64_t _nonce = 0;
-    std::optional<rest::aegis_file> _file;
+    lib::optional<rest::aegis_file> _file;
 };
 
 struct edit_message_t
