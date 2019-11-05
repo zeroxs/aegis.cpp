@@ -42,13 +42,22 @@ public:
         return _id;
     }
 
-    /// Retrieve full snowflake value
+    /// Get snowflake as int64_t
     /**
      * @returns int64_t Snowflake
      */
     constexpr int64_t get() const noexcept
     {
         return _id;
+    };
+
+    /// Get snowflake as std::string
+    /**
+     * @returns std::string Snowflake
+     */
+    std::string gets() const noexcept
+    {
+        return std::to_string(_id);
     };
 
     /// Obtain all the snowflake values as a tuple
