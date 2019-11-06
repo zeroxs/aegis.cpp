@@ -51,7 +51,7 @@ AEGIS_DECL guild & channel::get_guild(std::error_code & ec) const noexcept
 }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-AEGIS_DECL permission channel::perms()
+AEGIS_DECL permission channel::perms() const noexcept
 {
     return permission(_guild->get_permissions(_guild->self(), this));
 }

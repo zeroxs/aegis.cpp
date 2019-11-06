@@ -200,7 +200,7 @@ public:
     /**
      * @returns Bitmask of current permissions for this channel contained within `permission` object
      */
-    AEGIS_DECL permission perms();
+    AEGIS_DECL permission perms() const noexcept;
 #endif
 
     /// Send message to this channel
@@ -515,7 +515,7 @@ public:
     /**
      * @returns aegis::channel
      */
-    aegis::channel * get_parent()
+    aegis::channel * get_parent() const
     {
         return _bot->find_channel(parent_id);
     }
@@ -524,7 +524,7 @@ public:
     /**
      * @returns aegis::snowflake
      */
-    aegis::snowflake get_parent_id()
+    aegis::snowflake get_parent_id() const noexcept
     {
         return parent_id;
     }
@@ -560,7 +560,7 @@ public:
     /**
      * @returns Returns a std::shared_mutex reference for the channel object
      */
-    shared_mutex & mtx() noexcept
+    shared_mutex & mtx() const noexcept
     {
         return _m;
     }

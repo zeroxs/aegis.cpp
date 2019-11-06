@@ -169,7 +169,7 @@ AEGIS_DECL channel * guild::_find_channel(snowflake channel_id) const noexcept
     return m->second;
 }
 
-AEGIS_DECL permission guild::get_permissions(snowflake member_id, snowflake channel_id) noexcept
+AEGIS_DECL permission guild::get_permissions(snowflake member_id, snowflake channel_id) const
 {
     std::shared_lock<shared_mutex> l(_m);
     if (!members.count(member_id) || !channels.count(channel_id))
@@ -177,7 +177,7 @@ AEGIS_DECL permission guild::get_permissions(snowflake member_id, snowflake chan
     return get_permissions(_find_member(member_id), _find_channel(channel_id));
 }
 
-AEGIS_DECL permission guild::get_permissions(user * _member, channel * _channel) noexcept
+AEGIS_DECL permission guild::get_permissions(const user * _member, const channel * _channel) const
 {
     if (_member == nullptr || _channel == nullptr)
         return 0;
@@ -187,7 +187,7 @@ AEGIS_DECL permission guild::get_permissions(user * _member, channel * _channel)
     return compute_overwrites(_base_permissions, *_member, *_channel);
 }
 
-AEGIS_DECL int64_t guild::base_permissions(user & _member) const noexcept
+AEGIS_DECL int64_t guild::base_permissions(const user & _member) const noexcept
 {
     try
     {
@@ -197,9 +197,9 @@ AEGIS_DECL int64_t guild::base_permissions(user & _member) const noexcept
         auto & role_everyone = get_role(guild_id);
         int64_t permissions = role_everyone._permission.get_allow_perms();
 
-        auto g = _member.get_guild_info(guild_id);
+        auto g = _member.get_guild_info_nocreate(guild_id);
 
-        for (auto & rl : g.roles)
+        for (auto & rl : g->roles)
             permissions |= get_role(rl)._permission.get_allow_perms();
 
         if (permissions & 0x8)//admin
@@ -223,7 +223,7 @@ AEGIS_DECL int64_t guild::base_permissions(user & _member) const noexcept
     }
 }
 
-AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, user & _member, channel & _channel) const noexcept
+AEGIS_DECL int64_t guild::compute_overwrites(const int64_t _base_permissions, const user & _member, const channel & _channel) const noexcept
 {
     try
     {
@@ -231,24 +231,34 @@ AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, user & _
             return ~0;
 
         int64_t permissions = _base_permissions;
-        if (_channel.overrides.count(guild_id))
         {
-            auto & overwrite_everyone = _channel.overrides[guild_id];
-            permissions &= ~overwrite_everyone.deny;
-            permissions |= overwrite_everyone.allow;
+            auto it = _channel.overrides.find(guild_id);
+            if (it != _channel.overrides.end())
+            {
+                auto & overwrite_everyone = it->second;
+                permissions &= ~overwrite_everyone.deny;
+                permissions |= overwrite_everyone.allow;
+            }
         }
 
         auto & overwrites = _channel.overrides;
         int64_t allow = 0;
         int64_t deny = 0;
-        auto g = _member.get_guild_info(guild_id);
-        for (auto & rl : g.roles)
+        auto g = _member.get_guild_info_nocreate(guild_id);
+        if (g == nullptr)
+        {
+            //could not find guild cache within member - use base permissions
+            _bot->log->warn("Member does not have guild info struct : m:[{}] g:[{}]", _member.get_id(), guild_id);
+            return 0;
+        }
+        for (auto & rl : g->roles)
         {
             if (rl == guild_id)
                 continue;
-            if (overwrites.count(rl))
+            auto it = overwrites.find(rl);
+            if (it != overwrites.end())
             {
-                auto & ow_role = overwrites[rl];
+                auto & ow_role = it->second;
                 allow |= ow_role.allow;
                 deny |= ow_role.deny;
             }
@@ -257,11 +267,14 @@ AEGIS_DECL int64_t guild::compute_overwrites(int64_t _base_permissions, user & _
         permissions &= ~deny;
         permissions |= allow;
 
-        if (overwrites.count(_member._member_id))
         {
-            auto & ow_role = overwrites[_member._member_id];
-            permissions &= ~ow_role.deny;
-            permissions |= ow_role.allow;
+            auto it = overwrites.find(_member._member_id);
+            if (it != overwrites.end())
+            {
+                auto & ow_role = it->second;
+                permissions &= ~ow_role.deny;
+                permissions |= ow_role.allow;
+            }
         }
 
         return permissions;

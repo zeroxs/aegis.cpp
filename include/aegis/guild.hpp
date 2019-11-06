@@ -257,7 +257,7 @@ public:
      * @param channel_id Snowflake of channel
      * @returns Permission object of channel
      */
-    AEGIS_DECL permission get_permissions(snowflake member_id, snowflake channel_id) noexcept;
+    AEGIS_DECL permission get_permissions(snowflake member_id, snowflake channel_id) const;
 
     /// Get guild permissions for member in channel
     /**
@@ -265,13 +265,13 @@ public:
      * @param _channel Pointer to channel object
      * @returns Permission object of channel
      */
-    AEGIS_DECL permission get_permissions(user * _member, channel * _channel) noexcept;
+    AEGIS_DECL permission get_permissions(const user * _member, const channel * _channel) const;
 
     /// Get base guild permissions for member
     /**
      * @param _member Pointer to member object
      */
-    int64_t base_permissions() const noexcept
+    int64_t base_permissions() const
     {
         std::shared_lock<shared_mutex> l(_m);
         return base_permissions(self());
@@ -281,7 +281,7 @@ public:
 /**
  * @param _member Pointer to member object
  */
-    int64_t base_permissions(user * _member) const noexcept
+    int64_t base_permissions(const user * _member) const noexcept
     {
         std::shared_lock<shared_mutex> l(_m);
         return base_permissions(*_member);
@@ -291,7 +291,7 @@ public:
     /**
      * @param _member Reference to member object
      */
-    AEGIS_DECL int64_t base_permissions(user & _member) const noexcept;
+    AEGIS_DECL int64_t base_permissions(const user & _member) const noexcept;
 
     /// Calculate permission overrides for member in channel
     /**
@@ -300,14 +300,14 @@ public:
      * @param _channel Reference to channel object
      * @returns true on successful request, false for no permissions
      */
-    AEGIS_DECL int64_t compute_overwrites(int64_t _base_permissions, user & _member, channel & _channel) const noexcept;
+    AEGIS_DECL int64_t compute_overwrites(const int64_t _base_permissions, const user & _member, const channel & _channel) const noexcept;
 
     /// Get role
     /**
      * @param r Snowflake of role
      * @returns Role object
      */
-    AEGIS_DECL const gateway::objects::role get_role(int64_t r) const;
+    AEGIS_DECL const gateway::objects::role get_role(const int64_t r) const;
 
     /// Get owner of guild
     /**

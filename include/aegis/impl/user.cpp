@@ -139,6 +139,23 @@ AEGIS_DECL user::guild_info & user::get_guild_info_nolock(snowflake guild_id) no
     return **g;
 }
 
+AEGIS_DECL user::guild_info * user::get_guild_info_nocreate(snowflake guild_id) const noexcept
+{
+    std::unique_lock<shared_mutex> l(_m);
+
+    auto g = std::find_if(std::begin(guilds), std::end(guilds), [&guild_id](const std::unique_ptr<guild_info> & gi)
+    {
+        if (gi->id == guild_id)
+            return true;
+        return false;
+    });
+    if (g == guilds.end())
+    {
+        return nullptr;
+    }
+    return (*g).get();
+}
+
 AEGIS_DECL std::string user::get_name(snowflake guild_id) noexcept
 {
     std::unique_lock<shared_mutex> l(_m);
