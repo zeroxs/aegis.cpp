@@ -941,6 +941,8 @@ private:
 
     AEGIS_DECL void remove_guild(snowflake guild_id) noexcept;
     AEGIS_DECL void remove_channel(snowflake channel_id) noexcept;
+    AEGIS_DECL void remove_guild_nolock(snowflake guild_id) noexcept;
+    AEGIS_DECL void remove_channel_nolock(snowflake channel_id) noexcept;
 
     AEGIS_DECL void remove_member(snowflake member_id) noexcept;
 
