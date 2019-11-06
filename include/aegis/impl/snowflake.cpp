@@ -14,6 +14,7 @@
 
 #include "aegis/guild.hpp"
 #include "aegis/channel.hpp"
+#include "aegis/user.hpp"
 #include "aegis/gateway/objects/role.hpp"
 #include "aegis/gateway/objects/message.hpp"
 #include "aegis/gateway/objects/emoji.hpp"
@@ -22,6 +23,7 @@
 namespace aegis
 {
 
+AEGIS_DECL snowflake::snowflake(const aegis::user & _user) noexcept : _id(_user.get_id()) {}
 AEGIS_DECL snowflake::snowflake(const aegis::guild & _guild) noexcept : _id(_guild.get_id()) {}
 AEGIS_DECL snowflake::snowflake(const aegis::channel & _channel) noexcept : _id(_channel.get_id()) {}
 AEGIS_DECL snowflake::snowflake(const aegis::gateway::objects::role & _role) noexcept : _id(_role.role_id) {}

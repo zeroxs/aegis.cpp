@@ -30,6 +30,7 @@ public:
     explicit snowflake(const std::string_view _snowflake) noexcept : _id(std::stoll(std::string{ _snowflake })) {}
 #endif
     explicit snowflake(const nlohmann::json & _snowflake) noexcept : _id(std::stoll(_snowflake.get<std::string>())) {}
+    AEGIS_DECL snowflake(const aegis::user & _user) noexcept;
     AEGIS_DECL snowflake(const aegis::guild & _guild) noexcept;
     AEGIS_DECL snowflake(const aegis::channel & _channel) noexcept;
     AEGIS_DECL snowflake(const aegis::gateway::objects::role & _role) noexcept;
