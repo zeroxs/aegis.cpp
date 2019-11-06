@@ -12,6 +12,7 @@
 #include "aegis/fwd.hpp"
 #include "aegis/config.hpp"
 #include "aegis/utility.hpp"
+#include "aegis/context.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/futures.hpp"
 //#include "aegis/ratelimit/ratelimit.hpp"
@@ -52,12 +53,6 @@ using shared_mutex = std::shared_timed_mutex;
 
 struct create_message_t;
 
-/// Type of a work guard executor for keeping Asio services alive
-using asio_exec = asio::executor_work_guard<asio::io_context::executor_type>;
-
-/// Type of a shared pointer to an io_context work object
-using work_ptr = std::unique_ptr<asio_exec>;
-
 //using rest_call = std::function<rest::rest_reply(rest::request_params)>;
 
 /// Type of a pointer to the Websocket++ TLS connection
@@ -67,14 +62,6 @@ using connection_ptr = websocketpp::client<websocketpp::config::asio_tls_client>
 using message_ptr = websocketpp::config::asio_client::message_type::ptr;
 
 using ratelimit_mgr_t = aegis::ratelimit::ratelimit_mgr;
-
-struct thread_state
-{
-    std::thread thd;
-    bool active = false;
-    std::chrono::steady_clock::time_point start_time;
-    std::function<void(void)> fn;
-};
 
 struct create_guild_t
 {
@@ -695,9 +682,9 @@ public:
      */
     const std::string & get_token() const noexcept { return _token; }
 
-    /// Interrupt and end threads
+    /// Spawn new thread on asio context
     /**
-     * @param count Amount of threads to shutdown
+     * @param _context Pointer to asio context to add a thread to
      */
     AEGIS_DECL std::size_t add_run_thread() noexcept;
 
@@ -732,11 +719,17 @@ public:
     template<typename T, typename V = std::result_of_t<T()>, typename = std::enable_if_t<!std::is_void<V>::value>>
     aegis::future<V> async(T f) noexcept
     {
+        context * ctx = get_context();
+        if (ctx == nullptr)
+        {
+            //big error
+            log->critical("Context does not exist");
+        }
         std::atomic_thread_fence(std::memory_order_acquire);
-        aegis::promise<V> pr(_io_context.get(), &_global_m);
+        aegis::promise<V> pr(&ctx->get_io_context(), &_global_m);
         auto fut = pr.get_future();
 
-        asio::post(*_io_context, [pr = std::move(pr), f = std::move(f)]() mutable
+        asio::post(ctx->get_io_context(), [pr = std::move(pr), f = std::move(f)]() mutable
         {
             try
             {
@@ -771,11 +764,17 @@ public:
     template<typename T, typename V = std::enable_if_t<std::is_void<std::result_of_t<T()>>::value>>
     aegis::future<V> async(T f) noexcept
     {
+        context * ctx = get_context();
+        if (ctx == nullptr)
+        {
+            //big error
+            log->critical("Context does not exist");
+        }
         std::atomic_thread_fence(std::memory_order_acquire);
-        aegis::promise<V> pr(_io_context.get(), &_global_m);
+        aegis::promise<V> pr(&ctx->get_io_context(), &_global_m);
         auto fut = pr.get_future();
 
-        asio::post(*_io_context, [pr = std::move(pr), f = std::move(f)]() mutable
+        asio::post(ctx->get_io_context(), [pr = std::move(pr), f = std::move(f)]() mutable
         {
             try
             {
@@ -977,14 +976,40 @@ private:
     std::string log_formatting;
     bool state_valid = true;
 
+    context_type context_option;
+
+    public: std::vector<std::unique_ptr<aegis::context>> _affinity_contexts;
 
     std::shared_ptr<asio::io_context> _io_context = nullptr;
     work_ptr wrk = nullptr;
     std::condition_variable cv;
     std::chrono::hours _tz_bias = 0h;
+#if defined(AEGIS_CONTEXT_ROUNDROBIN) || !defined(AEGIS_CONTEXT)
+    std::atomic<int64_t> round_robin_counter;
+#endif
 public:
     std::vector<std::unique_ptr<thread_state>> threads;
     std::recursive_mutex _global_m;
+
+    //TODO: Revisit this later. While not.. terrible.. it's not exactly ideal.
+    context * get_context()
+    {
+        std::thread::id id = std::this_thread::get_id();
+
+        for (const auto & ac : _affinity_contexts)
+        {
+            const auto & thds = (*ac).get_threads();
+            for (const auto & t : thds)
+            {
+                if (t->thd.get_id() == id)
+                {
+                    //match
+                    return ac.get();
+                }
+            }
+        }
+        return nullptr;
+    }
 };
 
 }

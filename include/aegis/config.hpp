@@ -188,3 +188,7 @@ using bad_optional_access = std::bad_optional_access;
 #define AEGIS_DEBUG(logger, ...) (void)0
 #define AEGIS_TRACE(logger, ...) (void)0
 #endif
+
+#if defined(AEGIS_CONTEXT_ROUNDROBIN) || defined(AEGIS_CONTEXT_MODULUS) || defined(AEGIS_CONTEXT_LOADBALANCE)
+#define AEGIS_CONTEXT
+#endif

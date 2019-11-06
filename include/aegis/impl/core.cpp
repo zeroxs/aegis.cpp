@@ -60,6 +60,8 @@
 namespace aegis
 {
 
+using asio_return_type = asio::io_context::count_type(asio::io_context::*)();
+
 AEGIS_DECL void core::setup_logging()
 {
     std::vector<spdlog::sink_ptr> sinks;
@@ -101,6 +103,16 @@ AEGIS_DECL void core::setup_context()
     wrk = std::make_unique<asio_exec>(asio::make_work_guard(*_io_context));
     for (std::size_t i = 0; i < thread_count; ++i)
         add_run_thread();
+
+    for (std::size_t i = 0; i < std::thread::hardware_concurrency(); ++i)
+    {
+        auto t_context = std::make_unique<aegis::context>(i, i);
+        context * ctx = t_context.get();
+        _affinity_contexts.push_back(std::move(t_context));
+        ctx->work();
+        for (std::size_t i = 0; i < thread_count; ++i)
+            ctx->add_run_thread();
+    }
 }
 
 AEGIS_DECL void core::setup_shard_mgr()
@@ -208,6 +220,8 @@ AEGIS_DECL core::~core()
     if (!external_io_context)
         if (_io_context)
             _io_context->stop();
+    for (auto & c : _affinity_contexts)
+        c->get_io_context().stop();
     for (auto & t : threads)
         t->thd.join();
     _shard_mgr.reset();
@@ -809,7 +823,38 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                 {
                     //message id found
                     ++message_count[cmd];
-                    asio::post(*_io_context, [=, res = std::move(result)]()
+
+                    //which context will we run on?
+
+                    asio::io_context * aegis_context = nullptr;
+#if !defined(AEGIS_CONTEXT)
+                    if (context_option == context_type::RoundRobin)
+#endif
+                    {
+#if defined(AEGIS_CONTEXT_ROUNDROBIN) || !defined(AEGIS_CONTEXT)
+                        int64_t context_id = ++round_robin_counter;
+                        context_id %= _affinity_contexts.size();
+                        aegis_context = &_affinity_contexts[context_id]->get_io_context();
+#endif
+                    }
+#if !defined(AEGIS_CONTEXT)
+                    else if (context_option == context_type::Modulus)
+#endif
+                    {
+#if defined(AEGIS_CONTEXT_MODULUS) || !defined(AEGIS_CONTEXT)
+                        int64_t context_id = _shard->get_id();
+                        aegis_context = &_affinity_contexts[context_id]->get_io_context();
+#endif
+                    }
+#if !defined(AEGIS_CONTEXT)
+                    else if (context_option == context_type::LoadBalance)
+#endif
+                    {
+#if defined(AEGIS_CONTEXT_LOADBALANCE) || !defined(AEGIS_CONTEXT)
+#endif
+                    }
+
+                    asio::post(*aegis_context, [=, res = std::move(result)]()
                     {
                         if (get_state() == aegis::bot_status::shutdown)
                             return;
@@ -1120,8 +1165,7 @@ AEGIS_DECL std::size_t core::add_run_thread() noexcept
     std::unique_ptr<thread_state> t = std::make_unique<thread_state>();
     t->active = true;
     t->start_time = std::chrono::steady_clock::now();
-    t->fn = std::bind(static_cast<asio::io_context::count_type(asio::io_context::*)()>(&asio::io_context::run),
-                      _io_context.get());
+    t->fn = std::bind(static_cast<asio_return_type>(&asio::io_context::run), _io_context);
     t->thd = std::thread(std::bind(&core::_thread_track, this, t.get()));
     threads.emplace_back(std::move(t));
     return threads.size();
@@ -1130,10 +1174,7 @@ AEGIS_DECL std::size_t core::add_run_thread() noexcept
 AEGIS_DECL void core::reduce_threads(std::size_t count) noexcept
 {
     for (uint32_t i = 0; i < count; ++i)
-        asio::post(*_io_context, []
-        {
-            throw 1;
-        });
+        asio::post(*_io_context, [] { throw 1; });
 }
 
 AEGIS_DECL void core::on_close(websocketpp::connection_hdl hdl, shards::shard * _shard)
