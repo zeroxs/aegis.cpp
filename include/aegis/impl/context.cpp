@@ -44,8 +44,8 @@ AEGIS_DECL void context::_thread_track(thread_state * t_state)
     try
     {
 #if defined(WIN32)
-        //HANDLE threadh = GetCurrentThread();
-        if (SetThreadAffinityMask(t_state->thd.native_handle(), _thread_mask) == FALSE)
+        HANDLE threadh = GetCurrentThread();
+        if (SetThreadAffinityMask(threadh, 1LL << _thread_mask) == FALSE)
         {
             throw 1; //throw stuff at the wall
         }

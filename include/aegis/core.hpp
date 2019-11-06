@@ -985,7 +985,7 @@ private:
     std::condition_variable cv;
     std::chrono::hours _tz_bias = 0h;
 #if defined(AEGIS_CONTEXT_ROUNDROBIN) || !defined(AEGIS_CONTEXT)
-    std::atomic<int64_t> round_robin_counter;
+    std::atomic<uint64_t> round_robin_counter;
 #endif
 public:
     std::vector<std::unique_ptr<thread_state>> threads;
