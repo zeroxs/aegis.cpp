@@ -42,10 +42,16 @@ struct create_message_t
     create_message_t & content(const std::string & param) { _content = param; return *this; }
     create_message_t & embed(const json & param) { _embed = param; return *this; }
     create_message_t & nonce(int64_t param) { _nonce = param; return *this; }
+    create_message_t & file(rest::aegis_file file)
+    {
+        this->_file.emplace(std::move(file));
+        return *this;
+    }
     snowflake _user_id;
     std::string _content;
     json _embed;
     int64_t _nonce = 0;
+    lib::optional<rest::aegis_file> _file;
 };
 
 struct edit_message_t
@@ -194,7 +200,7 @@ public:
     /**
      * @returns Bitmask of current permissions for this channel contained within `permission` object
      */
-    AEGIS_DECL permission perms();
+    AEGIS_DECL permission perms() const noexcept;
 #endif
 
     /// Send message to this channel
@@ -505,6 +511,24 @@ public:
      */
     AEGIS_DECL aegis::future<rest::rest_reply> group_dm_remove_recipient(snowflake user_id);
 
+    /// Get parent channel
+    /**
+     * @returns aegis::channel
+     */
+    aegis::channel * get_parent() const
+    {
+        return _bot->find_channel(parent_id);
+    }
+
+    /// Get parent channel snowflake
+    /**
+     * @returns aegis::snowflake
+     */
+    aegis::snowflake get_parent_id() const noexcept
+    {
+        return parent_id;
+    }
+
     /// Get the aegis::snowflake of this channel
     /**
      * @returns An aegis::snowflake of the channel
@@ -536,7 +560,7 @@ public:
     /**
      * @returns Returns a std::shared_mutex reference for the channel object
      */
-    shared_mutex & mtx() noexcept
+    shared_mutex & mtx() const noexcept
     {
         return _m;
     }
@@ -564,6 +588,7 @@ private:
     snowflake channel_id; /**< snowflake of this channel */
     snowflake guild_id; /**< snowflake of the guild this channel belongs to */
     guild * _guild; /**< Pointer to the guild this channel belongs to */
+    snowflake parent_id; /**< snowflake of the parent channel */
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     snowflake last_message_id = 0; /**< Snowflake of the last message sent in this channel */
     std::string name; /**< String of the name of this channel */

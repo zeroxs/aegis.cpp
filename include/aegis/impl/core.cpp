@@ -397,9 +397,33 @@ AEGIS_DECL void core::remove_guild(snowflake guild_id) noexcept
     guilds.erase(it);
 }
 
+AEGIS_DECL void core::remove_guild_nolock(snowflake guild_id) noexcept
+{
+    auto it = guilds.find(guild_id);
+    if (it == guilds.end())
+    {
+        AEGIS_DEBUG(log, "Unable to remove guild [{}] (does not exist)", guild_id);
+        return;
+    }
+    stale_guilds.emplace(it->first, std::move(it->second));
+    guilds.erase(it);
+}
+
 AEGIS_DECL void core::remove_channel(snowflake channel_id) noexcept
 {
     std::unique_lock<shared_mutex> l(_channel_m);
+    auto it = channels.find(channel_id);
+    if (it == channels.end())
+    {
+        AEGIS_DEBUG(log, "Unable to remove channel [{}] (does not exist)", channel_id);
+        return;
+    }
+    stale_channels.emplace(it->first, std::move(it->second));
+    channels.erase(it);
+}
+
+AEGIS_DECL void core::remove_channel_nolock(snowflake channel_id) noexcept
+{
     auto it = channels.find(channel_id);
     if (it == channels.end())
     {
@@ -1325,7 +1349,7 @@ AEGIS_DECL void core::ws_guild_delete(const json & result, shards::shard * _shar
         //kicked or left
         //websocket_o.set_timer(5000, [this, id, _shard](const asio::error_code & ec)
         //{
-        remove_guild(guild_id);
+        remove_guild_nolock(guild_id);
         //guilds.erase(guild_id);
         //});
     }
@@ -1561,7 +1585,7 @@ AEGIS_DECL void core::ws_channel_delete(const json & result, shards::shard * _sh
         std::unique_lock<shared_mutex> l2(_channel_m, std::defer_lock);
         std::lock(l, l2);
         _guild->_remove_channel(channel_id);
-        remove_channel(channel_id);
+        remove_channel_nolock(channel_id);
     }
 
     gateway::events::channel_delete obj{ *_shard };

@@ -174,7 +174,7 @@ public:
      */
     bool is_dm() const noexcept
     {
-        return !!_guild_id;
+        return !_guild_id;
     }
 
     /// Whether message is from a bot

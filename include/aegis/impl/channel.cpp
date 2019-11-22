@@ -51,7 +51,7 @@ AEGIS_DECL guild & channel::get_guild(std::error_code & ec) const noexcept
 }
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-AEGIS_DECL permission channel::perms()
+AEGIS_DECL permission channel::perms() const noexcept
 {
     return permission(_guild->get_permissions(_guild->self(), this));
 }
@@ -87,6 +87,11 @@ AEGIS_DECL void channel::_load_with_guild_nolock(guild & _guild, const json & ob
             //not a voice channel, so has a topic field and last message id
             if (obj.count("topic") && !obj["topic"].is_null()) topic = obj["topic"].get<std::string>();
             if (obj.count("last_message_id") && !obj["last_message_id"].is_null()) last_message_id = obj["last_message_id"];
+        }
+
+        if (obj.count("parent_id") && !obj["parent_id"].is_null())
+        {
+            parent_id = obj["parent_id"];
         }
 
         if (obj.count("permission_overwrites") && !obj["permission_overwrites"].is_null())
@@ -137,7 +142,6 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message(cons
 
     json obj;
     obj["content"] = content;
-
     if (nonce)
         obj["nonce"] = nonce;
 
@@ -160,7 +164,28 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::get_message(snowfla
 
 AEGIS_DECL aegis::future<aegis::gateway::objects::message> channel::create_message(create_message_t obj)
 {
-    return create_message_embed(obj._content, obj._embed, obj._nonce);
+    if (obj._file.has_value())
+    {
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+        if (_guild && (!perms().can_send_messages() || !perms().can_attach_files()))
+            return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
+#endif
+
+        std::shared_lock<shared_mutex> l(_m);
+
+        json jobj;
+        if (!obj._content.empty())
+            jobj["content"] = obj._content;
+        if (!obj._embed.empty())
+            jobj["embed"] = obj._embed;
+        if (obj._nonce)
+            jobj["nonce"] = obj._nonce;
+
+        std::string _endpoint = fmt::format("/channels/{}/messages", channel_id);
+        return _ratelimit.post_task<gateway::objects::message>({ _endpoint, rest::Post, jobj.dump(-1, ' ', true), {}, "443", {}, {}, obj._file });
+    }
+    else
+        return create_message_embed(obj._content, obj._embed, obj._nonce);
 };
 
 AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embed(const std::string & content, const json & embed, int64_t nonce)
@@ -177,7 +202,6 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embe
         obj["content"] = content;
     if (!embed.empty())
         obj["embed"] = embed;
-
     if (nonce)
         obj["nonce"] = nonce;
 

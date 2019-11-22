@@ -206,6 +206,35 @@ inline std::string url_encode(const std::string & value)
     return escaped.str();
 }
 
+inline std::string escape_quotes(const std::string & value)
+{
+    std::ostringstream escaped;
+
+    for (std::string::value_type c : value)
+    {
+        if (c == '"')
+            escaped << '\\';
+        escaped << c;
+    }
+    return escaped.str();
+}
+
+inline char random_letter()
+{
+    return (rand() % 2) ? (rand() % 26 + 'a') : (rand() % 26 + 'A');
+}
+
+inline std::string random_string(const std::size_t length)
+{
+    std::string temp;
+    temp.reserve(length);
+
+    for (int i = 0; i < length; ++i)
+        temp.push_back(random_letter());
+
+    return temp;
+}
+
 inline std::string uptime_str(std::chrono::steady_clock::time_point _start) noexcept
 {
     using seconds = std::chrono::duration<int, std::ratio<1, 1>>;
