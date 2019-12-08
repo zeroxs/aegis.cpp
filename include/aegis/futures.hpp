@@ -561,15 +561,27 @@ public:
         , _global_m(x._global_m)
     {
         std::atomic_thread_fence(std::memory_order_acquire);
-        //std::lock_guard<std::recursive_mutex> gl(internal::_global_m);
-        //TODO: this needs a lock or l2 lock has a chance of segfault
-        if (x._future)
+        
+        // obtain relevant locks from within global mutex
+        std::unique_ptr<std::unique_lock<std::recursive_mutex>> l = nullptr;
+        std::unique_ptr<std::unique_lock<std::recursive_mutex>> l2 = nullptr;
         {
-            std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
-            std::unique_lock<std::recursive_mutex> l2(x._future->_m, std::defer_lock);
-            std::lock(l, l2);
-            if (!x._future)
-                goto NOTREALLYTHERE;
+            l = std::make_unique<std::unique_lock< std::recursive_mutex>>(_m, std::defer_lock);
+            std::lock_guard<std::recursive_mutex> gl(*_global_m);
+            if (x._future)
+            {
+                l2 = std::make_unique<std::unique_lock<std::recursive_mutex>>(x._future->_m, std::defer_lock);
+                std::lock(*l, *l2);
+            }
+            else
+            {
+                l->lock();
+            }
+        }
+        
+        // work based on which mutex we could obtain above
+        if (nullptr != l2)
+        {
             _future = x._future;
             _future->_promise = this;
             _state = x._state;
@@ -584,8 +596,6 @@ public:
         }
         else
         {
-        NOTREALLYTHERE:;
-            std::lock_guard<std::recursive_mutex> l(_m);
             _state = x._state;
             _task = std::move(x._task);
             if (_state == &x._local_state)
