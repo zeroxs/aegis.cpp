@@ -611,6 +611,7 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_text_channel(c
         }
     }
 
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
     return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() }).then([&](gateway::objects::channel _ch)
     {
         channel * _t_ch = this->get_bot().channel_create(_ch.channel_id);
@@ -624,6 +625,9 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_text_channel(c
         //_t_ch->icon = _ch.icon;
         return _ch;
     });
+#else
+    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
+#endif
 }
 
 AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_voice_channel(const std::string & name,
@@ -652,6 +656,7 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_voice_channel(
         obj["permission_overwrites"].push_back(p_ow);
     }
 
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
     return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() }).then([&](gateway::objects::channel _ch)
     {
         channel * _t_ch = this->get_bot().channel_create(_ch.channel_id);
@@ -665,6 +670,9 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_voice_channel(
         //_t_ch->icon = _ch.icon;
         return _ch;
     });
+#else
+    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
+#endif
 }
 
 AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_category_channel(const std::string & name,
@@ -686,6 +694,7 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_category_chann
         obj["permission_overwrites"].push_back(p_ow);
     }
 
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
     return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() }).then([&](gateway::objects::channel _ch)
     {
         channel * _t_ch = this->get_bot().channel_create(_ch.channel_id);
@@ -697,6 +706,9 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_category_chann
         //_t_ch->icon = _ch.icon;
         return _ch;
     });
+#else
+    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
+#endif
 }
 
 /**\todo Incomplete. Signature may change
