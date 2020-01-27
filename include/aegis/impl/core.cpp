@@ -580,72 +580,80 @@ AEGIS_DECL void core::shutdown() noexcept
 
 AEGIS_DECL void core::setup_gateway()
 {
-    log->info("Creating websocket");
+	try
+	{
+		log->info("Creating websocket");
 
-    rest::rest_reply res = _rest->execute({ "/gateway/bot", rest::Get });
+		rest::rest_reply res = _rest->execute({ "/gateway/bot", rest::Get });
 
-    _rest->_tz_bias = _tz_bias = std::chrono::hours(int(std::round(double((std::chrono::duration_cast<std::chrono::minutes>(res.date - std::chrono::system_clock::now()) / 60).count()))));
+		_rest->_tz_bias = _tz_bias = std::chrono::hours(int(std::round(double((std::chrono::duration_cast<std::chrono::minutes>(res.date - std::chrono::system_clock::now()) / 60).count()))));
 
-    if (res.content.empty())
-        throw make_error_code(error::get_gateway);
+		if (res.content.empty())
+			throw aegis::exception(make_error_code(error::get_gateway));
 
-    if (res.reply_code == 401)
-        throw make_error_code(error::invalid_token);
+		if (res.reply_code == 401)
+			throw aegis::exception(make_error_code(error::invalid_token));
 
-    using json = nlohmann::json;
+		using json = nlohmann::json;
 
-    json ret = json::parse(res.content);
-    if (ret.count("message"))
-        if (ret["message"] == "401: Unauthorized")
-            throw make_error_code(error::invalid_token);
+		json ret = json::parse(res.content);
+		if (ret.count("message"))
+			if (ret["message"] == "401: Unauthorized")
+				throw aegis::exception(make_error_code(error::invalid_token));
 
-    ws_handlers.emplace("PRESENCE_UPDATE", std::bind(&core::ws_presence_update, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("TYPING_START", std::bind(&core::ws_typing_start, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("MESSAGE_CREATE", std::bind(&core::ws_message_create, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("MESSAGE_UPDATE", std::bind(&core::ws_message_update, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("MESSAGE_DELETE", std::bind(&core::ws_message_delete, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("GUILD_CREATE", std::bind(&core::ws_guild_create, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("GUILD_UPDATE", std::bind(&core::ws_guild_update, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("GUILD_DELETE", std::bind(&core::ws_guild_delete, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("MESSAGE_REACTION_ADD", std::bind(&core::ws_message_reaction_add, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("MESSAGE_REACTION_REMOVE", std::bind(&core::ws_message_reaction_remove, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("MESSAGE_REACTION_REMOVE_ALL", std::bind(&core::ws_message_reaction_remove_all, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("MESSAGE_DELETE_BULK", std::bind(&core::ws_message_delete_bulk, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("USER_UPDATE", std::bind(&core::ws_user_update, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("RESUMED", std::bind(&core::ws_resumed, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("READY", std::bind(&core::ws_ready, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("CHANNEL_CREATE", std::bind(&core::ws_channel_create, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("CHANNEL_UPDATE", std::bind(&core::ws_channel_update, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("CHANNEL_DELETE", std::bind(&core::ws_channel_delete, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("CHANNEL_PINS_UPDATE", std::bind(&core::ws_channel_pins_update, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("GUILD_BAN_ADD", std::bind(&core::ws_guild_ban_add, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("GUILD_BAN_REMOVE", std::bind(&core::ws_guild_ban_remove, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("GUILD_EMOJIS_UPDATE", std::bind(&core::ws_guild_emojis_update, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("GUILD_INTEGRATIONS_UPDATE", std::bind(&core::ws_guild_integrations_update, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("GUILD_MEMBER_ADD", std::bind(&core::ws_guild_member_add, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("GUILD_MEMBER_REMOVE", std::bind(&core::ws_guild_member_remove, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("GUILD_MEMBER_UPDATE", std::bind(&core::ws_guild_member_update, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("GUILD_MEMBERS_CHUNK", std::bind(&core::ws_guild_members_chunk, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("GUILD_ROLE_CREATE", std::bind(&core::ws_guild_role_create, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("GUILD_ROLE_UPDATE", std::bind(&core::ws_guild_role_update, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("GUILD_ROLE_DELETE", std::bind(&core::ws_guild_role_delete, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("VOICE_STATE_UPDATE", std::bind(&core::ws_voice_state_update, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("VOICE_SERVER_UPDATE", std::bind(&core::ws_voice_server_update, this, std::placeholders::_1, std::placeholders::_2));
-    ws_handlers.emplace("WEBHOOKS_UPDATE", std::bind(&core::ws_webhooks_update, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("PRESENCE_UPDATE", std::bind(&core::ws_presence_update, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("TYPING_START", std::bind(&core::ws_typing_start, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("MESSAGE_CREATE", std::bind(&core::ws_message_create, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("MESSAGE_UPDATE", std::bind(&core::ws_message_update, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("MESSAGE_DELETE", std::bind(&core::ws_message_delete, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("GUILD_CREATE", std::bind(&core::ws_guild_create, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("GUILD_UPDATE", std::bind(&core::ws_guild_update, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("GUILD_DELETE", std::bind(&core::ws_guild_delete, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("MESSAGE_REACTION_ADD", std::bind(&core::ws_message_reaction_add, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("MESSAGE_REACTION_REMOVE", std::bind(&core::ws_message_reaction_remove, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("MESSAGE_REACTION_REMOVE_ALL", std::bind(&core::ws_message_reaction_remove_all, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("MESSAGE_DELETE_BULK", std::bind(&core::ws_message_delete_bulk, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("USER_UPDATE", std::bind(&core::ws_user_update, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("RESUMED", std::bind(&core::ws_resumed, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("READY", std::bind(&core::ws_ready, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("CHANNEL_CREATE", std::bind(&core::ws_channel_create, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("CHANNEL_UPDATE", std::bind(&core::ws_channel_update, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("CHANNEL_DELETE", std::bind(&core::ws_channel_delete, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("CHANNEL_PINS_UPDATE", std::bind(&core::ws_channel_pins_update, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("GUILD_BAN_ADD", std::bind(&core::ws_guild_ban_add, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("GUILD_BAN_REMOVE", std::bind(&core::ws_guild_ban_remove, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("GUILD_EMOJIS_UPDATE", std::bind(&core::ws_guild_emojis_update, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("GUILD_INTEGRATIONS_UPDATE", std::bind(&core::ws_guild_integrations_update, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("GUILD_MEMBER_ADD", std::bind(&core::ws_guild_member_add, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("GUILD_MEMBER_REMOVE", std::bind(&core::ws_guild_member_remove, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("GUILD_MEMBER_UPDATE", std::bind(&core::ws_guild_member_update, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("GUILD_MEMBERS_CHUNK", std::bind(&core::ws_guild_members_chunk, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("GUILD_ROLE_CREATE", std::bind(&core::ws_guild_role_create, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("GUILD_ROLE_UPDATE", std::bind(&core::ws_guild_role_update, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("GUILD_ROLE_DELETE", std::bind(&core::ws_guild_role_delete, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("VOICE_STATE_UPDATE", std::bind(&core::ws_voice_state_update, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("VOICE_SERVER_UPDATE", std::bind(&core::ws_voice_server_update, this, std::placeholders::_1, std::placeholders::_2));
+		ws_handlers.emplace("WEBHOOKS_UPDATE", std::bind(&core::ws_webhooks_update, this, std::placeholders::_1, std::placeholders::_2));
 
-    if (force_shard_count)
-    {
-        _shard_mgr->shard_max_count = shard_max_count = force_shard_count;
-        log->info("Forcing Shard count by config: {}", _shard_mgr->shard_max_count);
-    }
-    else
-    {
-        shard_max_count = _shard_mgr->shard_max_count = ret["shards"];
-        log->info("Shard count: {}", _shard_mgr->shard_max_count);
-    }
+		if (force_shard_count)
+		{
+			_shard_mgr->shard_max_count = shard_max_count = force_shard_count;
+			log->info("Forcing Shard count by config: {}", _shard_mgr->shard_max_count);
+		}
+		else
+		{
+			shard_max_count = _shard_mgr->shard_max_count = ret["shards"];
+			log->info("Shard count: {}", _shard_mgr->shard_max_count);
+		}
 
-    _shard_mgr->ws_gateway = ret["url"].get<std::string>();
-    _shard_mgr->set_gateway_url(_shard_mgr->ws_gateway + "/?compress=zlib-stream&encoding=json&v=6");
+		_shard_mgr->ws_gateway = ret["url"].get<std::string>();
+		_shard_mgr->set_gateway_url(_shard_mgr->ws_gateway + "/?compress=zlib-stream&encoding=json&v=6");
+	}
+	catch (std::exception & e)
+	{
+		log->critical("Exception during startup: {}", e.what());
+		std::terminate();
+	}
 }
 
 
@@ -1262,7 +1270,11 @@ AEGIS_DECL void core::ws_message_update(const json & result, shards::shard * _sh
         const json & author = result["d"]["author"];
         _user = std::ref(*user_create(author["id"]));
     }
-    gateway::events::message_update obj{ *_shard, *_channel, std::ref(*_user) };
+    gateway::events::message_update obj{ *_shard, *_channel };
+    
+    if(_user.has_value())
+      obj.user = std::ref(*_user);
+	
     obj.msg = result["d"];
 
     if (i_message_update)
