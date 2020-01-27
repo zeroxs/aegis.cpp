@@ -693,6 +693,27 @@ public:
      */
     AEGIS_DECL channel * find_channel(snowflake channel_id) const noexcept;
 
+    /// Obtain a pointer to a channel by name
+    /**
+     * @param channel_name String of channel to search for
+     * @returns Pointer to channel or nullptr
+     */
+    AEGIS_DECL channel * find_channel(std::string channel_name) const noexcept;
+
+    /// Obtain a role by snowflake
+    /**
+     * @param role_name String of role to search for
+     * @returns Pointer to gateway::objects::role or nullptr
+     */
+    AEGIS_DECL lib::optional<gateway::objects::role> find_role(snowflake role_id) const noexcept;
+
+    /// Obtain a role by name
+    /**
+     * @param role_name String of role to search for
+     * @returns Pointer to gateway::objects::role or nullptr
+     */
+    AEGIS_DECL lib::optional<gateway::objects::role> find_role(std::string role_name) const noexcept;
+
     /// Obtain map of channels
     /**
      * @returns unordered_map<snowflake, channel*> COPY of channels

@@ -161,12 +161,31 @@ AEGIS_DECL channel * guild::find_channel(snowflake channel_id) const noexcept
     return m->second;
 }
 
-AEGIS_DECL channel * guild::_find_channel(snowflake channel_id) const noexcept
+AEGIS_DECL channel * guild::find_channel(std::string channel_name) const noexcept
 {
-    auto m = channels.find(channel_id);
-    if (m == channels.end())
-        return nullptr;
-    return m->second;
+    std::shared_lock<shared_mutex> l(_m);
+    for (auto & c : channels)
+        if (c.second->get_name() == channel_name)
+            return c.second;
+    return nullptr;
+}
+
+AEGIS_DECL lib::optional<gateway::objects::role> guild::find_role(snowflake role_id) const noexcept
+{
+    std::shared_lock<shared_mutex> l(_m);
+    auto r = roles.find(role_id);
+    if (r == roles.end())
+        return {};
+    return r->second;
+}
+
+AEGIS_DECL lib::optional<gateway::objects::role> guild::find_role(std::string role_name) const noexcept
+{
+    std::shared_lock<shared_mutex> l(_m);
+    for (auto & r : roles)
+        if (r.second.name == role_name)
+            return r.second;
+    return {};
 }
 
 AEGIS_DECL permission guild::get_permissions(snowflake member_id, snowflake channel_id) const
