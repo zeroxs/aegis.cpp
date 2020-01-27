@@ -76,23 +76,25 @@ struct thread_state
     std::function<void(void)> fn;
 };
 
-// Gateway intents for masking out events on the websocket
+/// Gateway intents for masking out events on the websocket.
+/// Use as a bitfield with create_bot_t::intents().
+// https://github.com/discordapp/discord-api-docs/pull/1307
 enum intent {
-	guilds = (1 << 0),
-	guild_members = (1 << 1),
-	guild_bans = (1 << 2),
-	guild_emojis = (1 << 3),
-	guild_integrations = (1 << 4),
-	guild_webhooks = (1 << 5),
-	guild_invites = (1 << 6),
-	guild_voice_states = (1 << 7),
-	guild_presences = (1 << 8),
-	guild_messages = (1 << 9),
-	guild_message_reactions = (1 << 10),
-	guild_message_typing = (1 << 11),
-	direct_messages = (1 << 12),
-	direct_message_reactions = (1 << 13),
-	direct_message_typing = (1 << 14)
+	Guilds = (1 << 0),
+	GuildMembers = (1 << 1),
+	GuildBans = (1 << 2),
+	GuildEmojis = (1 << 3),
+	GuildIntegrations = (1 << 4),
+	GuildWebhooks = (1 << 5),
+	GuildInvites = (1 << 6),
+	GuildVoiceStates = (1 << 7),
+	GuildPresences = (1 << 8),
+	GuildMessages = (1 << 9),
+	GuildMessageReactions = (1 << 10),
+	GuildMessageTyping = (1 << 11),
+	DirectMessages = (1 << 12),
+	DirectMessageReactions = (1 << 13),
+	DirectMessageTyping = (1 << 14)
 };
 
 struct create_guild_t
@@ -116,6 +118,8 @@ struct create_guild_t
     lib::optional<std::vector<std::tuple<std::string, int>>> _channels;
 };
 
+/// Class for fluent definition of bot parameters
+/// The create_bot_t class allows for fluent initialisation of aegis::core objects
 struct create_bot_t
 {
     create_bot_t & token(const std::string & param) noexcept { _token = param; return *this; }
@@ -126,11 +130,19 @@ struct create_bot_t
     create_bot_t & log_format(const std::string & param) noexcept { _log_format = param; return *this; }
     create_bot_t & io_context(std::shared_ptr<asio::io_context> param) noexcept { _io = param; return *this; }
     create_bot_t & logger(std::shared_ptr<spdlog::logger> param) noexcept { _log = param; return *this; }
+    /**
+     * Defines which events your bot will receive, events that you don't set here will be filtered out from the websocket at discord's side.
+     * The default intent mask, if you don't call this method, is:
+     * intent::Guilds | intent::GuildMembers | intent::GuildBans | intent::GuildEmojis | intent::GuildIntegrations | intent::GuildWebhooks | intent::GuildInvites |
+     * intent::GuildVoiceStates | intent::GuildMessages | intent::GuildMessageReactions | intent::DirectMessages | intent::DirectMessageReactions
+     * @param param A bit mask defined by one or more aegis::intents.
+     * @returns reference to self
+     */
     create_bot_t & intents(uint32_t param) noexcept { _intents = param; return *this; }
 private:
     friend aegis::core;
     std::string _token;
-    uint32_t _intents{ intent::guilds | intent::guild_members | intent::guild_bans | intent::guild_emojis | intent::guild_integrations | intent::guild_webhooks | intent::guild_invites | intent::guild_voice_states | intent::guild_messages | intent::guild_message_reactions | intent::direct_messages | intent::direct_message_reactions };
+    uint32_t _intents{ intent::Guilds | intent::GuildMembers | intent::GuildBans | intent::GuildEmojis | intent::GuildIntegrations | intent::GuildWebhooks | intent::GuildInvites | intent::GuildVoiceStates | intent::GuildMessages | intent::GuildMessageReactions | intent::DirectMessages | intent::DirectMessageReactions };
     uint32_t _thread_count{ std::thread::hardware_concurrency() };
     uint32_t _force_shard_count{ 0 };
     bool _file_logging{ false };
@@ -980,7 +992,7 @@ private:
     // Gateway intents
     // These defaults exclude presence and typing events (for both guilds and DMs)
     // If you want to turn these on, you should use the create_bot_t class intents() method
-    uint32_t _intents = intent::guilds | intent::guild_members | intent::guild_bans | intent::guild_emojis | intent::guild_integrations | intent::guild_webhooks | intent::guild_invites | intent::guild_voice_states | intent::guild_messages | intent::guild_message_reactions | intent::direct_messages | intent::direct_message_reactions;
+    uint32_t _intents = intent::Guilds | intent::GuildMembers | intent::GuildBans | intent::GuildEmojis | intent::GuildIntegrations | intent::GuildWebhooks | intent::GuildInvites | intent::GuildVoiceStates | intent::GuildMessages | intent::GuildMessageReactions | intent::DirectMessages | intent::DirectMessageReactions;
 
     bot_status _status = bot_status::uninitialized;
 
