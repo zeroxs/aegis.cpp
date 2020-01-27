@@ -152,6 +152,14 @@ AEGIS_DECL user * guild::_find_member(snowflake member_id) const noexcept
     return m->second;
 }
 
+AEGIS_DECL channel* guild::_find_channel(snowflake channel_id) const noexcept
+{
+    auto m = channels.find(channel_id);
+    if (m == channels.end())
+        return nullptr;
+    return m->second;
+}
+
 AEGIS_DECL channel * guild::find_channel(snowflake channel_id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_m);
