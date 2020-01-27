@@ -76,6 +76,25 @@ struct thread_state
     std::function<void(void)> fn;
 };
 
+// Gateway intents for masking out events on the websocket
+enum intent {
+	guilds = (1 << 0),
+	guild_members = (1 << 1),
+	guild_bans = (1 << 2),
+	guild_emojis = (1 << 3),
+	guild_integrations = (1 << 4),
+	guild_webhooks = (1 << 5),
+	guild_invites = (1 << 6),
+	guild_voice_states = (1 << 7),
+	guild_presences = (1 << 8),
+	guild_messages = (1 << 9),
+	guild_message_reactions = (1 << 10),
+	guild_message_typing = (1 << 11),
+	direct_messages = (1 << 12),
+	direct_message_reactions = (1 << 13),
+	direct_message_typing = (1 << 14)
+};
+
 struct create_guild_t
 {
     create_guild_t & name(const std::string & param) { _name = param; return *this; }
@@ -107,9 +126,11 @@ struct create_bot_t
     create_bot_t & log_format(const std::string & param) noexcept { _log_format = param; return *this; }
     create_bot_t & io_context(std::shared_ptr<asio::io_context> param) noexcept { _io = param; return *this; }
     create_bot_t & logger(std::shared_ptr<spdlog::logger> param) noexcept { _log = param; return *this; }
+    create_bot_t & intents(uint32_t param) noexcept { _intents = param; return *this; }
 private:
     friend aegis::core;
     std::string _token;
+    uint32_t _intents{ intent::guilds | intent::guild_members | intent::guild_bans | intent::guild_emojis | intent::guild_integrations | intent::guild_webhooks | intent::guild_invites | intent::guild_voice_states | intent::guild_messages | intent::guild_message_reactions | intent::direct_messages | intent::direct_message_reactions };
     uint32_t _thread_count{ std::thread::hardware_concurrency() };
     uint32_t _force_shard_count{ 0 };
     bool _file_logging{ false };
@@ -955,6 +976,11 @@ private:
 
     // Bot's token
     std::string _token;
+
+    // Gateway intents
+    // These defaults exclude presence and typing events (for both guilds and DMs)
+    // If you want to turn these on, you should use the create_bot_t class intents() method
+    uint32_t _intents = intent::guilds | intent::guild_members | intent::guild_bans | intent::guild_emojis | intent::guild_integrations | intent::guild_webhooks | intent::guild_invites | intent::guild_voice_states | intent::guild_messages | intent::guild_message_reactions | intent::direct_messages | intent::direct_message_reactions;
 
     bot_status _status = bot_status::uninitialized;
 
