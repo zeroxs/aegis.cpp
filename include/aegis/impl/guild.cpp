@@ -101,6 +101,17 @@ AEGIS_DECL void guild::_load_emoji(const json & obj) noexcept
     _emoji = obj;
 }
 
+AEGIS_DECL void guild::_load_voicestate(const json & obj) noexcept
+{
+    snowflake user_id = obj["user_id"];
+    if(obj["channel_id"].is_null()) {
+        voice_states.erase(user_id);
+    } else {
+        auto & _voicestate = voice_states[user_id];
+        _voicestate = obj;
+    }
+}
+
 AEGIS_DECL void guild::_load_presence(const json & obj) noexcept
 {
     json user = obj["user"];
@@ -486,11 +497,12 @@ AEGIS_DECL void guild::_load(const json & obj, shards::shard * _shard) noexcept
         {
         //??
         }
+        */
 
         for (auto & voicestate : voice_states)
         {
-        //no voice yet
-        }*/
+            _load_voicestate(voicestate);
+        }
 
 
 
