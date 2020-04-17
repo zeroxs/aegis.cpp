@@ -11,7 +11,7 @@ if (Asio_INCLUDE_DIR STREQUAL "Asio_INCLUDE_DIR-NOTFOUND")
   set(Asio_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/asio/asio/include/)
 endif ()
 
-file(READ ${Asio_INCLUDE_DIR}/asio/version.hpp version_hpp)
+file(READ ${Asio_INCLUDE_DIR}asio/version.hpp version_hpp)
 if (NOT version_hpp MATCHES "ASIO_VERSION ([0-9])([0-9][0-9][0-9])([0-9][0-9])")
   message(FATAL_ERROR "Cannot get ASIO_VERSION from version.hpp. ${Asio_INCLUDE_DIR}/asio/version.hpp")
 endif ()
