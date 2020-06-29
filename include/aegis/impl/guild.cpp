@@ -225,6 +225,9 @@ AEGIS_DECL int64_t guild::base_permissions(const user & _member) const noexcept
         int64_t permissions = role_everyone._permission.get_allow_perms();
 
         auto g = _member.get_guild_info_nocreate(guild_id);
+	if (g == nullptr) {
+		return 0;
+	}
 
         for (auto & rl : g->roles)
             permissions |= get_role(rl)._permission.get_allow_perms();

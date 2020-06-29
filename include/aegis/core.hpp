@@ -76,6 +76,27 @@ struct thread_state
     std::function<void(void)> fn;
 };
 
+/// Gateway intents for masking out events on the websocket.
+/// Use as a bitfield with create_bot_t::intents().
+// https://github.com/discordapp/discord-api-docs/pull/1307
+enum intent {
+	Guilds = (1 << 0),
+	GuildMembers = (1 << 1),
+	GuildBans = (1 << 2),
+	GuildEmojis = (1 << 3),
+	GuildIntegrations = (1 << 4),
+	GuildWebhooks = (1 << 5),
+	GuildInvites = (1 << 6),
+	GuildVoiceStates = (1 << 7),
+	GuildPresences = (1 << 8),
+	GuildMessages = (1 << 9),
+	GuildMessageReactions = (1 << 10),
+	GuildMessageTyping = (1 << 11),
+	DirectMessages = (1 << 12),
+	DirectMessageReactions = (1 << 13),
+	DirectMessageTyping = (1 << 14)
+};
+
 struct create_guild_t
 {
     create_guild_t & name(const std::string & param) { _name = param; return *this; }
@@ -97,6 +118,8 @@ struct create_guild_t
     lib::optional<std::vector<std::tuple<std::string, int>>> _channels;
 };
 
+/// Class for fluent definition of bot parameters
+/// The create_bot_t class allows for fluent initialisation of aegis::core objects
 struct create_bot_t
 {
     create_bot_t & token(const std::string & param) noexcept { _token = param; return *this; }
@@ -107,9 +130,19 @@ struct create_bot_t
     create_bot_t & log_format(const std::string & param) noexcept { _log_format = param; return *this; }
     create_bot_t & io_context(std::shared_ptr<asio::io_context> param) noexcept { _io = param; return *this; }
     create_bot_t & logger(std::shared_ptr<spdlog::logger> param) noexcept { _log = param; return *this; }
+    /**
+     * Defines which events your bot will receive, events that you don't set here will be filtered out from the websocket at discord's side.
+     * The default intent mask, if you don't call this method, is:
+     * intent::Guilds | intent::GuildMembers | intent::GuildBans | intent::GuildEmojis | intent::GuildIntegrations | intent::GuildWebhooks | intent::GuildInvites |
+     * intent::GuildVoiceStates | intent::GuildMessages | intent::GuildMessageReactions | intent::DirectMessages | intent::DirectMessageReactions
+     * @param param A bit mask defined by one or more aegis::intents.
+     * @returns reference to self
+     */
+    create_bot_t & intents(uint32_t param) noexcept { _intents = param; return *this; }
 private:
     friend aegis::core;
     std::string _token;
+    uint32_t _intents{ intent::Guilds | intent::GuildMembers | intent::GuildBans | intent::GuildEmojis | intent::GuildIntegrations | intent::GuildWebhooks | intent::GuildInvites | intent::GuildVoiceStates | intent::GuildMessages | intent::GuildMessageReactions | intent::DirectMessages | intent::DirectMessageReactions };
     uint32_t _thread_count{ std::thread::hardware_concurrency() };
     uint32_t _force_shard_count{ 0 };
     bool _file_logging{ false };
@@ -955,6 +988,11 @@ private:
 
     // Bot's token
     std::string _token;
+
+    // Gateway intents
+    // These defaults exclude presence and typing events (for both guilds and DMs)
+    // If you want to turn these on, you should use the create_bot_t class intents() method
+    uint32_t _intents = intent::Guilds | intent::GuildMembers | intent::GuildBans | intent::GuildEmojis | intent::GuildIntegrations | intent::GuildWebhooks | intent::GuildInvites | intent::GuildVoiceStates | intent::GuildMessages | intent::GuildMessageReactions | intent::DirectMessages | intent::DirectMessageReactions;
 
     bot_status _status = bot_status::uninitialized;
 

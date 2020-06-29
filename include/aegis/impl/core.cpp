@@ -126,6 +126,7 @@ AEGIS_DECL core::core(create_bot_t bot_config)
         bot_config._thread_count = 4;
 
     _token = bot_config._token;
+    _intents = bot_config._intents;
     thread_count = bot_config._thread_count;
     file_logging = bot_config._file_logging;
     force_shard_count = bot_config._force_shard_count;
@@ -893,7 +894,8 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                                     },
                                     { "shard", json::array({ _shard->get_id(), _shard_mgr->shard_max_count }) },
                                     { "compress", false },
-                                    { "large_threshold", 250 }
+                                    { "large_threshold", 250 },
+				    { "intents", _intents }
                                 }
                             }
                         };
@@ -1017,12 +1019,13 @@ AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shards::shard 
                             {
                                 { "$os", utility::platform::get_platform() },
                                 { "$browser", "aegis.cpp" },
-                                { "$device", "aegis.cpp" }
+                                { "$device", "aegis.cpp" },
                             }
                         },
                         { "shard", json::array({ _shard->get_id(), _shard_mgr->shard_max_count }) },
                         { "compress", false },
                         { "large_threshold", 250 },
+			{ "intents", _intents },
                         { "presence",
                             {
                                 { "game",
