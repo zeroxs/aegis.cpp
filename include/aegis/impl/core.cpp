@@ -1427,6 +1427,12 @@ AEGIS_DECL void core::ws_voice_state_update(const json & result, shards::shard *
 
     const json & j = result["d"];
 
+    snowflake guild_id = result["d"]["guild_id"];
+
+    auto _guild = guild_create(guild_id, _shard);
+    
+    _guild->_load_voicestate(result["d"]);
+
     if (j.count("guild_id") && !j["guild_id"].is_null())
         obj.guild_id = j["guild_id"];
     obj.channel_id = j["channel_id"];
@@ -1437,6 +1443,8 @@ AEGIS_DECL void core::ws_voice_state_update(const json & result, shards::shard *
     obj.self_deaf = j["self_deaf"];
     obj.self_mute = j["self_mute"];
     obj.suppress = j["suppress"];
+    if(j.count("self_stream") && !j["self_stream"].is_null())
+        obj.self_stream = j["self_stream"];
 
     if (i_voice_state_update)
         i_voice_state_update(obj);
