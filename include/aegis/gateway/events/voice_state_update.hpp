@@ -36,6 +36,7 @@ struct voice_state_update
     bool self_deaf = false;
     bool self_mute = false;
     bool suppress = false;
+    bool self_stream = false;
 };
 
 }

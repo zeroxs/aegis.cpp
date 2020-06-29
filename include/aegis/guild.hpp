@@ -693,6 +693,27 @@ public:
      */
     AEGIS_DECL channel * find_channel(snowflake channel_id) const noexcept;
 
+    /// Obtain a pointer to a channel by name
+    /**
+     * @param channel_name String of channel to search for
+     * @returns Pointer to channel or nullptr
+     */
+    AEGIS_DECL channel * find_channel(std::string channel_name) const noexcept;
+
+    /// Obtain a role by snowflake
+    /**
+     * @param role_name String of role to search for
+     * @returns Pointer to gateway::objects::role or nullptr
+     */
+    AEGIS_DECL lib::optional<gateway::objects::role> find_role(snowflake role_id) const noexcept;
+
+    /// Obtain a role by name
+    /**
+     * @param role_name String of role to search for
+     * @returns Pointer to gateway::objects::role or nullptr
+     */
+    AEGIS_DECL lib::optional<gateway::objects::role> find_role(std::string role_name) const noexcept;
+
     /// Obtain map of channels
     /**
      * @returns unordered_map<snowflake, channel*> COPY of channels
@@ -724,6 +745,17 @@ public:
     {
         std::shared_lock<shared_mutex> l(_m);
         std::unordered_map<snowflake, gateway::objects::role> _list = roles;
+        return std::move(_list);
+    }
+
+    /// Obtain map of voice states
+    /**
+     * @returns std::unordered_map<snowflake, gateway::objects::voice_state> COPY of voice_states
+     */
+    std::unordered_map<snowflake, gateway::objects::voice_state> get_voicestates() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        std::unordered_map<snowflake, gateway::objects::voice_state> _list = voice_states;
         return std::move(_list);
     }
 
@@ -769,6 +801,7 @@ private:
     std::unordered_map<snowflake, user*> members; /**< Map of snowflakes to member objects */
     std::unordered_map<snowflake, gateway::objects::role> roles; /**< Map of snowflakes to role objects */
     std::unordered_map<snowflake, gateway::objects::emoji> emojis; /**< Map of snowflakes to emoji objects */
+    std::unordered_map<snowflake, gateway::objects::voice_state> voice_states; /**< Map of user snowflakes to voice_state objects */
 #endif
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
@@ -785,6 +818,8 @@ private:
     AEGIS_DECL void _load_role(const json & obj) noexcept;
 
     AEGIS_DECL void _remove_role(snowflake role_id) noexcept;
+
+    AEGIS_DECL void _load_voicestate(const json & obj) noexcept;
 #endif
 
     AEGIS_DECL void _load(const json & obj, shards::shard * _shard) noexcept;

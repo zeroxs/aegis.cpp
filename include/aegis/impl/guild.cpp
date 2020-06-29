@@ -101,6 +101,17 @@ AEGIS_DECL void guild::_load_emoji(const json & obj) noexcept
     _emoji = obj;
 }
 
+AEGIS_DECL void guild::_load_voicestate(const json & obj) noexcept
+{
+    snowflake user_id = obj["user_id"];
+    if(obj["channel_id"].is_null()) {
+        voice_states.erase(user_id);
+    } else {
+        auto & _voicestate = voice_states[user_id];
+        _voicestate = obj;
+    }
+}
+
 AEGIS_DECL void guild::_load_presence(const json & obj) noexcept
 {
     json user = obj["user"];
@@ -152,6 +163,14 @@ AEGIS_DECL user * guild::_find_member(snowflake member_id) const noexcept
     return m->second;
 }
 
+AEGIS_DECL channel* guild::_find_channel(snowflake channel_id) const noexcept
+{
+    auto m = channels.find(channel_id);
+    if (m == channels.end())
+        return nullptr;
+    return m->second;
+}
+
 AEGIS_DECL channel * guild::find_channel(snowflake channel_id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_m);
@@ -161,12 +180,31 @@ AEGIS_DECL channel * guild::find_channel(snowflake channel_id) const noexcept
     return m->second;
 }
 
-AEGIS_DECL channel * guild::_find_channel(snowflake channel_id) const noexcept
+AEGIS_DECL channel * guild::find_channel(std::string channel_name) const noexcept
 {
-    auto m = channels.find(channel_id);
-    if (m == channels.end())
-        return nullptr;
-    return m->second;
+    std::shared_lock<shared_mutex> l(_m);
+    for (auto & c : channels)
+        if (c.second->get_name() == channel_name)
+            return c.second;
+    return nullptr;
+}
+
+AEGIS_DECL lib::optional<gateway::objects::role> guild::find_role(snowflake role_id) const noexcept
+{
+    std::shared_lock<shared_mutex> l(_m);
+    auto r = roles.find(role_id);
+    if (r == roles.end())
+        return {};
+    return r->second;
+}
+
+AEGIS_DECL lib::optional<gateway::objects::role> guild::find_role(std::string role_name) const noexcept
+{
+    std::shared_lock<shared_mutex> l(_m);
+    for (auto & r : roles)
+        if (r.second.name == role_name)
+            return r.second;
+    return {};
 }
 
 AEGIS_DECL permission guild::get_permissions(snowflake member_id, snowflake channel_id) const
@@ -198,6 +236,9 @@ AEGIS_DECL int64_t guild::base_permissions(const user & _member) const noexcept
         int64_t permissions = role_everyone._permission.get_allow_perms();
 
         auto g = _member.get_guild_info_nocreate(guild_id);
+	if (g == nullptr) {
+		return 0;
+	}
 
         for (auto & rl : g->roles)
             permissions |= get_role(rl)._permission.get_allow_perms();
@@ -459,11 +500,12 @@ AEGIS_DECL void guild::_load(const json & obj, shards::shard * _shard) noexcept
         {
         //??
         }
+        */
 
         for (auto & voicestate : voice_states)
         {
-        //no voice yet
-        }*/
+            _load_voicestate(voicestate);
+        }
 
 
 
@@ -611,6 +653,7 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_text_channel(c
         }
     }
 
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
     return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() }).then([&](gateway::objects::channel _ch)
     {
         channel * _t_ch = this->get_bot().channel_create(_ch.channel_id);
@@ -624,6 +667,9 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_text_channel(c
         //_t_ch->icon = _ch.icon;
         return _ch;
     });
+#else
+    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
+#endif
 }
 
 AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_voice_channel(const std::string & name,
@@ -652,6 +698,7 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_voice_channel(
         obj["permission_overwrites"].push_back(p_ow);
     }
 
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
     return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() }).then([&](gateway::objects::channel _ch)
     {
         channel * _t_ch = this->get_bot().channel_create(_ch.channel_id);
@@ -665,6 +712,9 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_voice_channel(
         //_t_ch->icon = _ch.icon;
         return _ch;
     });
+#else
+    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
+#endif
 }
 
 AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_category_channel(const std::string & name,
@@ -686,6 +736,7 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_category_chann
         obj["permission_overwrites"].push_back(p_ow);
     }
 
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
     return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() }).then([&](gateway::objects::channel _ch)
     {
         channel * _t_ch = this->get_bot().channel_create(_ch.channel_id);
@@ -697,6 +748,9 @@ AEGIS_DECL aegis::future<gateway::objects::channel> guild::create_category_chann
         //_t_ch->icon = _ch.icon;
         return _ch;
     });
+#else
+    return _bot->get_ratelimit().post_task<gateway::objects::channel>({ fmt::format("/guilds/{}/channels", guild_id), rest::Post, obj.dump() });
+#endif
 }
 
 /**\todo Incomplete. Signature may change

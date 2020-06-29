@@ -561,8 +561,7 @@ public:
         , _global_m(x._global_m)
     {
         std::atomic_thread_fence(std::memory_order_acquire);
-        //std::lock_guard<std::recursive_mutex> gl(internal::_global_m);
-        //TODO: this needs a lock or l2 lock has a chance of segfault
+        std::lock_guard<std::recursive_mutex> gl(*_global_m);
         if (x._future)
         {
             std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
@@ -737,12 +736,13 @@ private:
     future_state<T> * state() noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
+        
+        std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
+        std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
+        std::lock(l, l2);
+        
         if (_promise)
         {
-            std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
-            std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
-            std::lock(l, l2);
-            
             //std::lock_guard<std::recursive_mutex> l(_promise->_m);
             future_state<T> * _st = _promise->_state;
             std::atomic_thread_fence(std::memory_order_release);
@@ -758,12 +758,13 @@ private:
     const future_state<T> * state() const noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
+        
+        std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
+        std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
+        std::lock(l, l2);
+        
         if (_promise)
         {
-            std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
-            std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
-            std::lock(l, l2);
-
             //std::lock_guard<std::recursive_mutex> l(_promise->_m);
             const future_state<T> * _st = _promise->_state;
             std::atomic_thread_fence(std::memory_order_release);
@@ -790,6 +791,7 @@ private:
         }
         else
         {
+            std::lock_guard<std::recursive_mutex> gl(*_global_m);
             std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
             std::unique_lock<std::recursive_mutex> l2(_promise->_m, std::defer_lock);
             std::lock(l, l2);
@@ -805,6 +807,7 @@ private:
         auto st = state();
         if (_promise)
         {
+            std::lock_guard<std::recursive_mutex> gl(*_global_m);
             std::lock_guard<std::recursive_mutex> l(_promise->_m);
             if (!_promise)
                 goto NOTREALLYTHERE;
@@ -859,6 +862,7 @@ public:
         x._promise = nullptr;
         if (_promise)
         {
+            std::lock_guard<std::recursive_mutex> gl(*_global_m);
             std::lock_guard<std::recursive_mutex> l(_promise->_m);
             _promise->_future = this;
         }
@@ -1047,6 +1051,7 @@ public:
         }
         else
         {
+            std::lock_guard<std::recursive_mutex> gl(*_global_m);
             _promise->_future = nullptr;
             *_promise = std::move(pr);
             _promise = nullptr;

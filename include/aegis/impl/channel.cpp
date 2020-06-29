@@ -97,6 +97,21 @@ AEGIS_DECL void channel::_load_with_guild_nolock(guild & _guild, const json & ob
         if (obj.count("permission_overwrites") && !obj["permission_overwrites"].is_null())
         {
             json permission_overwrites = obj["permission_overwrites"];
+
+            // check if override has been deleted
+            auto newOverrides = overrides;
+            for(auto& override : overrides) {
+                bool deleted = true;
+                for(auto permission : permission_overwrites) {
+                    if(permission["id"] == override.second.id)
+                        deleted = false;
+                }
+                if(deleted)
+                    newOverrides.erase(override.first);
+            }
+
+            overrides = newOverrides;
+
             for (auto & permission : permission_overwrites)
             {
                 uint32_t allow = permission["allow"];
