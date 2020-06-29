@@ -678,9 +678,7 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
             mention = ss.str();
         }
 
-        auto m = std::make_unique<user>(user_id);
-        _self = m.get();
-        users.emplace(user_id, std::move(m));
+        _self = user_create(user_id);
         _self->_member_id = user_id;
         _self->_is_bot = true;
         _self->_name = username;
