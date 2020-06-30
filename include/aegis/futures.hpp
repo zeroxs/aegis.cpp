@@ -893,9 +893,9 @@ public:
                 _promise->_future = nullptr;
             }
         }
-        if (failed())
+        /*if (failed())
         {
-        }
+        }*/
         std::atomic_thread_fence(std::memory_order_release);
     }
 
