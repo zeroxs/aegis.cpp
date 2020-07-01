@@ -164,7 +164,7 @@ else ()
 	set_target_properties(aegis_static PROPERTIES OUTPUT_NAME "aegis")
 	set_target_properties(aegis_static PROPERTIES LINKER_LANGUAGE CXX)
 	target_compile_definitions(aegis_static PUBLIC AEGIS_SEPARATE_COMPILATION ${AEGIS_FLAGS})
-	target_link_libraries(aegis_static INTERFACE ${REQUIRED_LIBS})
+	target_link_libraries(aegis_static PUBLIC ${REQUIRED_LIBS})
 	target_include_directories(aegis_static
 	  PUBLIC
 		$<INSTALL_INTERFACE:include>    
