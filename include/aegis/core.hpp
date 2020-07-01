@@ -80,6 +80,7 @@ struct thread_state
 /// Use as a bitfield with create_bot_t::intents().
 // https://github.com/discordapp/discord-api-docs/pull/1307
 enum intent {
+	IntentsDisabled = 0xffffffff,	/* Special case, disables intents if none have been defined */
 	Guilds = (1 << 0),
 	GuildMembers = (1 << 1),
 	GuildBans = (1 << 2),
@@ -132,9 +133,6 @@ struct create_bot_t
     create_bot_t & logger(std::shared_ptr<spdlog::logger> param) noexcept { _log = param; return *this; }
     /**
      * Defines which events your bot will receive, events that you don't set here will be filtered out from the websocket at discord's side.
-     * The default intent mask, if you don't call this method, is:
-     * intent::Guilds | intent::GuildMembers | intent::GuildBans | intent::GuildEmojis | intent::GuildIntegrations | intent::GuildWebhooks | intent::GuildInvites |
-     * intent::GuildVoiceStates | intent::GuildMessages | intent::GuildMessageReactions | intent::DirectMessages | intent::DirectMessageReactions
      * @param param A bit mask defined by one or more aegis::intents.
      * @returns reference to self
      */
@@ -142,7 +140,7 @@ struct create_bot_t
 private:
     friend aegis::core;
     std::string _token;
-    uint32_t _intents{ intent::Guilds | intent::GuildMembers | intent::GuildBans | intent::GuildEmojis | intent::GuildIntegrations | intent::GuildWebhooks | intent::GuildInvites | intent::GuildVoiceStates | intent::GuildMessages | intent::GuildMessageReactions | intent::DirectMessages | intent::DirectMessageReactions };
+    uint32_t _intents{ intent::IntentsDisabled };
     uint32_t _thread_count{ std::thread::hardware_concurrency() };
     uint32_t _force_shard_count{ 0 };
     bool _file_logging{ false };
@@ -990,9 +988,9 @@ private:
     std::string _token;
 
     // Gateway intents
-    // These defaults exclude presence and typing events (for both guilds and DMs)
     // If you want to turn these on, you should use the create_bot_t class intents() method
-    uint32_t _intents = intent::Guilds | intent::GuildMembers | intent::GuildBans | intent::GuildEmojis | intent::GuildIntegrations | intent::GuildWebhooks | intent::GuildInvites | intent::GuildVoiceStates | intent::GuildMessages | intent::GuildMessageReactions | intent::DirectMessages | intent::DirectMessageReactions;
+    // This defaults to a special-case value which causes the intents values to not be sent.
+    uint32_t _intents = intent::IntentsDisabled;
 
     bot_status _status = bot_status::uninitialized;
 

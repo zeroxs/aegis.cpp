@@ -597,9 +597,12 @@ AEGIS_DECL void core::setup_gateway()
 		using json = nlohmann::json;
 
 		json ret = json::parse(res.content);
-		if (ret.count("message"))
+		if (ret.count("message")) {
 			if (ret["message"] == "401: Unauthorized")
 				throw aegis::exception(make_error_code(error::invalid_token));
+			else
+				std::cout << "Unknown error: " << ret;
+		}
 
 		ws_handlers.emplace("PRESENCE_UPDATE", std::bind(&core::ws_presence_update, this, std::placeholders::_1, std::placeholders::_2));
 		ws_handlers.emplace("TYPING_START", std::bind(&core::ws_typing_start, this, std::placeholders::_1, std::placeholders::_2));
@@ -892,11 +895,15 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                                     },
                                     { "shard", json::array({ _shard->get_id(), _shard_mgr->shard_max_count }) },
                                     { "compress", false },
-                                    { "large_threshold", 250 },
-				    { "intents", _intents }
+                                    { "large_threshold", 250 }
                                 }
                             }
                         };
+			// If intents have been specified by create_bot_t, send them
+			// FIXME: We can't use aegis::intent within this lambda!
+			if (_intents != 0xffffffff) {
+				obj["d"]["intents"] = _intents;
+			}
                         _shard_mgr->_last_identify = std::chrono::steady_clock::now();
                         if (!self_presence.empty())
                         {
@@ -1023,7 +1030,6 @@ AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shards::shard 
                         { "shard", json::array({ _shard->get_id(), _shard_mgr->shard_max_count }) },
                         { "compress", false },
                         { "large_threshold", 250 },
-			{ "intents", _intents },
                         { "presence",
                             {
                                 { "game",
@@ -1040,6 +1046,10 @@ AEGIS_DECL void core::on_connect(websocketpp::connection_hdl hdl, shards::shard 
                     }
                 }
             };
+	    // If intents have been specified by create_bot_t, send them
+	    if (_intents != intent::IntentsDisabled) {
+		    obj["d"]["intents"] = _intents;
+	    }
             _shard_mgr->_last_identify = std::chrono::steady_clock::now();
         }
         else

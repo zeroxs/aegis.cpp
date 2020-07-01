@@ -82,6 +82,13 @@ enum error
     /// Provided too many or too few messages for message bulk delete
     bulk_delete_out_of_range,
 
+    /// Invalid intents
+    invalid_intents,
+
+    /// Unauthorized intents
+    disallowed_intents,
+
+    /// Bookend value
     max_errors
 };
 
@@ -139,6 +146,10 @@ public:
                 return "Bad Redis request";
             case error::bulk_delete_out_of_range:
                 return "Bulk delete invalid message amount";
+            case error::invalid_intents:
+                return "Invalid intents";
+            case error::disallowed_intents:
+                return "Disallowed intents";
             default:
                 return "Unknown";
         }
