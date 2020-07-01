@@ -79,7 +79,7 @@ struct thread_state
 /// Gateway intents for masking out events on the websocket.
 /// Use as a bitfield with create_bot_t::intents().
 // https://github.com/discordapp/discord-api-docs/pull/1307
-enum intent {
+enum intent : uint32_t {
 	IntentsDisabled = 0xffffffff,	/* Special case, disables intents if none have been defined */
 	Guilds = (1 << 0),
 	GuildMembers = (1 << 1),
