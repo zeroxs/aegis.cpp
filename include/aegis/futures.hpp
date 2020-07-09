@@ -736,13 +736,12 @@ private:
     future_state<T> * state() noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
-        
-        std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
-        std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
-        std::lock(l, l2);
-        
         if (_promise)
         {
+            std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
+            std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
+            std::lock(l, l2);
+            
             //std::lock_guard<std::recursive_mutex> l(_promise->_m);
             future_state<T> * _st = _promise->_state;
             std::atomic_thread_fence(std::memory_order_release);
@@ -758,13 +757,12 @@ private:
     const future_state<T> * state() const noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
-        
-        std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
-        std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
-        std::lock(l, l2);
-        
         if (_promise)
         {
+            std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
+            std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
+            std::lock(l, l2);
+
             //std::lock_guard<std::recursive_mutex> l(_promise->_m);
             const future_state<T> * _st = _promise->_state;
             std::atomic_thread_fence(std::memory_order_release);
