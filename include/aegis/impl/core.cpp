@@ -107,7 +107,7 @@ AEGIS_DECL void core::setup_shard_mgr()
 {
     _shard_mgr = std::make_shared<shards::shard_mgr>(_token, *_io_context, log);
 
-    _rest = std::make_shared<rest::rest_controller>(_token, "/api/v6", "discordapp.com", &get_io_context());
+    _rest = std::make_shared<rest::rest_controller>(_token, "/api/v6", "discord.com", &get_io_context());
 
     setup_gateway();
 
@@ -789,6 +789,18 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
             if (!result["s"].is_null())
                 _shard->set_sequence(result["s"]);
 
+            /* XXX NOT WORKING
+             
+            if (result["op"] == 7)
+            {
+                //Disconnect and RESUME
+                log->debug("Discord requested reconnect for shard {}", _shard->get_id());
+                //_shard_mgr->close(_shard);
+                _shard->_heartbeat_status = heartbeat_status::waiting;
+                _shard->lastheartbeat = std::chrono::steady_clock::now() - 21s;
+                return;
+            }*/
+
             if (!result["t"].is_null())
             {
                 const std::string & cmd = result["t"];
@@ -899,11 +911,11 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                                 }
                             }
                         };
-			// If intents have been specified by create_bot_t, send them
-			// FIXME: We can't use aegis::intent within this lambda!
-			if (_intents != 0xffffffff) {
-				obj["d"]["intents"] = _intents;
-			}
+                        // If intents have been specified by create_bot_t, send them
+                        // FIXME: We can't use aegis::intent within this lambda!
+                        if (_intents != 0xffffffff) {
+                            obj["d"]["intents"] = _intents;
+                        }
                         _shard_mgr->_last_identify = std::chrono::steady_clock::now();
                         if (!self_presence.empty())
                         {
