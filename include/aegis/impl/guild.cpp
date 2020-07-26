@@ -878,11 +878,9 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::create_guild_ban(snowflake use
 
     std::shared_lock<shared_mutex> l(_m);
 
-    std::string query_params = fmt::format("?delete-message-days={}", delete_message_days);
-    if (!reason.empty())
-        query_params += fmt::format("&reason={}", utility::url_encode(reason));
+    json obj = { { "delete_message_days", delete_message_days }, { "reason", reason } };
 
-    return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/bans/{}", guild_id, user_id), rest::Put, {}, {}, {}, {}, query_params });
+    return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/bans/{}", guild_id, user_id), rest::Put, obj.dump()});
 }
 
 AEGIS_DECL aegis::future<rest::rest_reply> guild::remove_guild_ban(snowflake user_id)
