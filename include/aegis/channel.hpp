@@ -69,14 +69,15 @@ struct get_messages_t
     enum class get_messages_type {
         AROUND,
         BEFORE,
-        AFTER
+        AFTER,
+        LAST
     };
     get_messages_t & message_id(snowflake param) { _message_id = param; return *this; }
     get_messages_t & around() { _type = get_messages_type::AROUND; return *this; }
     get_messages_t & before() { _type = get_messages_type::BEFORE; return *this; }
     get_messages_t & after() { _type = get_messages_type::AFTER; return *this; }
     get_messages_t & limit(int16_t param) { _limit = param; return *this; }
-    get_messages_type _type = get_messages_type::AFTER;
+    get_messages_type _type = get_messages_type::LAST;
     snowflake _message_id;
     int16_t _limit;
 };

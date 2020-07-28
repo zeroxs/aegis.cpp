@@ -203,6 +203,9 @@ AEGIS_DECL aegis::future<gateway::objects::messages> channel::get_messages(get_m
         case get_messages_t::get_messages_type::BEFORE:
             query_params += fmt::format("after={}{}", obj._message_id, limit);
             break;
+        case get_messages_t::get_messages_type::LAST:
+            query_params += fmt::format("{}", limit.substr(1));
+            break;
     }
 
     std::string _endpoint = fmt::format("/channels/{}/messages", channel_id);
