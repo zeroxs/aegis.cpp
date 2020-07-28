@@ -64,6 +64,7 @@ struct user
     snowflake id; /**< snowflake of user */
     snowflake guild_id; /**< snowflake of guild of the event this user is attached to */
     std::string username; /**< username of user */
+    //todo: make discriminator an integer
     std::string discriminator; /**< discriminator of user */
     std::string avatar; /**< Hash of user's avatar */
 private:

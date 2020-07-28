@@ -93,15 +93,15 @@ inline void from_json(const nlohmann::json& j, guild& m)
     if (j.count("id") && !j["id"].is_null())
         m.id = m.guild_id = j["id"];
     if (j.count("name") && !j["name"].is_null())
-        m.name = j["name"];
+        m.name = j["name"].get<std::string>();
     if (j.count("icon") && !j["icon"].is_null())
-        m.icon = j["icon"];
+        m.icon = j["icon"].get<std::string>();
     if (j.count("splash") && !j["splash"].is_null())
-        m.splash = j["splash"];
+        m.splash = j["splash"].get<std::string>();
     if (j.count("owner_id") && !j["owner_id"].is_null())
         m.owner_id = j["owner_id"];
     if (j.count("region") && !j["region"].is_null())
-        m.region = j["region"];
+        m.region = j["region"].get<std::string>();
     if (j.count("afk_channel_id") && !j["afk_channel_id"].is_null())
         m.afk_channel_id = j["afk_channel_id"];
     if (j.count("afk_timeout") && !j["afk_timeout"].is_null())
@@ -117,7 +117,7 @@ inline void from_json(const nlohmann::json& j, guild& m)
     if (j.count("mfa_level") && !j["mfa_level"].is_null())
         m.mfa_level = j["mfa_level"];
     if (j.count("joined_at") && !j["joined_at"].is_null())
-        m.joined_at = j["joined_at"];
+        m.joined_at = j["joined_at"].get<std::string>();
     if (j.count("large") && !j["large"].is_null())
         m.large = j["large"];
     if (j.count("unavailable") && !j["unavailable"].is_null())

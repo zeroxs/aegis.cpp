@@ -49,7 +49,7 @@ struct role
 
     uint32_t color = 0;
     snowflake id;
-    snowflake role_id;
+    snowflake role_id; //<deprecated use role::id instead
     std::string name;
     aegis::permission _permission;
     uint16_t position = 0;
@@ -66,7 +66,7 @@ inline void from_json(const nlohmann::json& j, role& m)
     if (j.count("id") && !j["id"].is_null())
         m.id = m.role_id = j["id"];
     if (j.count("name") && !j["name"].is_null())
-        m.name = j["name"];
+        m.name = j["name"].get<std::string>();
     if (j.count("permissions") && !j["permissions"].is_null())
         m._permission = j["permissions"];
     if (j.count("position") && !j["position"].is_null())

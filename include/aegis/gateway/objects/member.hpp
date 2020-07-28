@@ -62,9 +62,9 @@ inline void from_json(const nlohmann::json& j, member& m)
         for (const auto & _role : j["roles"])
             m.roles.push_back(_role);
     if (j.count("nick") && !j["nick"].is_null())
-        m.nick = j["nick"];
+        m.nick = j["nick"].get<std::string>();
     if (j.count("joined_at") && !j["joined_at"].is_null())
-        m.joined_at = j["joined_at"];
+        m.joined_at = j["joined_at"].get<std::string>();
     if (j.count("mute") && !j["mute"].is_null())
         m.mute = j["mute"];
     if (j.count("deaf") && !j["deaf"].is_null())

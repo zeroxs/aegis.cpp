@@ -1269,6 +1269,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
     }
     else
     {
+        //todo: nullptr should result in nullopt so optional can return has_value correctly
         auto m = find_user(result["d"]["author"]["id"]);
         auto g = &c->get_guild();
         gateway::events::message_create obj{ *_shard, std::ref(*m), std::ref(*c)/*, std::make_optional(std::ref(*g))*/ };

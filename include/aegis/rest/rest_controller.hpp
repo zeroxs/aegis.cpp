@@ -69,7 +69,8 @@ public:
      * @see rest::rest_reply
      * @see rest::request_params
      * @param params A struct of HTTP parameters to perform the request
-     * @returns rest_reply
+     * @returns rest::rest_reply
+     * @throws asio::system_error
      */
     AEGIS_DECL rest_reply execute(rest::request_params && params);
 
@@ -78,7 +79,8 @@ public:
      * @see rest::rest_reply
      * @see rest::request_params
      * @param params A struct of HTTP parameters to perform the request
-     * @returns rest_reply
+     * @returns rest::rest_reply
+     * @throws asio::system_error
      */
     AEGIS_DECL rest_reply execute2(rest::request_params && params);
 

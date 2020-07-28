@@ -35,9 +35,9 @@ struct image
 inline void from_json(const nlohmann::json& j, image& m)
 {
     if (j.count("url") && !j["url"].is_null())
-        m.url = j["url"];
+        m.url = j["url"].get<std::string>();
     if (j.count("proxy_url") && !j["proxy_url"].is_null())
-        m.proxy_url = j["proxy_url"];
+        m.proxy_url = j["proxy_url"].get<std::string>();
     if (j.count("height") && !j["height"].is_null())
         m.height = j["height"];
     if (j.count("width") && !j["width"].is_null())
