@@ -41,6 +41,7 @@ namespace objects
 {
 struct user;
 class message;
+class messages;
 struct channel;
 struct guild;
 struct emoji;

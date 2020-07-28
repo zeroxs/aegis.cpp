@@ -18,6 +18,7 @@
 #include "aegis/rest/rest_reply.hpp"
 #include "aegis/ratelimit/ratelimit.hpp"
 #include "aegis/gateway/objects/message.hpp"
+#include "aegis/gateway/objects/messages.hpp"
 
 namespace aegis
 {
@@ -175,6 +176,37 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::get_message(snowfla
 
     std::string _endpoint = fmt::format("/channels/{}/messages/{}", channel_id, message_id);
     return _ratelimit.post_task<gateway::objects::message>({ _endpoint, rest::Get });
+}
+
+AEGIS_DECL aegis::future<gateway::objects::messages> channel::get_messages(get_messages_t obj)
+{
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (_guild && !perms().can_read_history())
+        return aegis::make_exception_future<gateway::objects::messages>(error::no_permission);
+#endif
+
+    std::shared_lock<shared_mutex> l(_m);
+
+    std::string type_, query_params{ "?" }, limit;
+
+    if (obj._limit >= 1 && obj._limit <= 100)
+        limit = fmt::format("&limit={}", obj._limit);
+
+    switch (obj._type)
+    {
+        case get_messages_t::get_messages_type::AFTER:
+            query_params += fmt::format("after={}{}", obj._message_id, limit);
+            break;
+        case get_messages_t::get_messages_type::AROUND:
+            query_params += fmt::format("after={}{}", obj._message_id, limit);
+            break;
+        case get_messages_t::get_messages_type::BEFORE:
+            query_params += fmt::format("after={}{}", obj._message_id, limit);
+            break;
+    }
+
+    std::string _endpoint = fmt::format("/channels/{}/messages", channel_id);
+    return _ratelimit.post_task<gateway::objects::messages>({ _endpoint, rest::Get, {}, {}, {}, {}, query_params });
 }
 
 AEGIS_DECL aegis::future<aegis::gateway::objects::message> channel::create_message(create_message_t obj)

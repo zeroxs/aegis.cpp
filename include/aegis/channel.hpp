@@ -64,6 +64,23 @@ struct edit_message_t
     json _embed;
 };
 
+struct get_messages_t
+{
+    enum class get_messages_type {
+        AROUND,
+        BEFORE,
+        AFTER
+    };
+    get_messages_t & message_id(snowflake param) { _message_id = param; return *this; }
+    get_messages_t & around() { _type = get_messages_type::AROUND; return *this; }
+    get_messages_t & before() { _type = get_messages_type::BEFORE; return *this; }
+    get_messages_t & after() { _type = get_messages_type::AFTER; return *this; }
+    get_messages_t & limit(int16_t param) { _limit = param; return *this; }
+    get_messages_type _type = get_messages_type::AFTER;
+    snowflake _message_id;
+    int16_t _limit;
+};
+
 struct modify_channel_t
 {
     modify_channel_t & name(const std::string & param) { _name = param; return *this; }
@@ -240,6 +257,15 @@ public:
      * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> get_message(snowflake message_id);
+
+    /// Get multiple messages from this channel
+    /**
+     * @see aegis::get_messages_t
+     * @param obj Struct of the request
+     * @returns aegis::future<gateway::objects::messages>
+     */
+    AEGIS_DECL aegis::future<gateway::objects::messages> get_messages(get_messages_t obj);
+
 
     /// Edit a message in this channel
     /**
