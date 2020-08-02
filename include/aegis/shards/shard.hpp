@@ -12,25 +12,29 @@
 #include "aegis/config.hpp"
 #include "aegis/utility.hpp"
 #include "aegis/fwd.hpp"
-#include <memory>
-#include <map>
-#include <string>
-#include <chrono>
-#include <stdint.h>
-#include <asio/io_context.hpp>
+
 #ifdef WIN32
 # include "aegis/push.hpp"
 #endif
+#include <asio/io_context.hpp>
+#include <websocketpp/connection.hpp>
 #include <websocketpp/config/asio_client.hpp>
 #include <websocketpp/common/connection_hdl.hpp>
 #include <websocketpp/client.hpp>
 #ifdef WIN32
 # include "aegis/pop.hpp"
 #endif
-#include <spdlog/fmt/fmt.h>
+
+#include <memory>
+#include <map>
+#include <string>
+#include <chrono>
+#include <stdint.h>
 #include "aegis/zstr/zstr.hpp"
 #include "aegis/gateway/objects/presence.hpp"
 #include "aegis/gateway/objects/activity.hpp"
+
+#include <spdlog/fmt/fmt.h>
 
 namespace aegis
 {

@@ -8,8 +8,6 @@
 //
 
 #include "aegis/channel.hpp"
-#include <spdlog/spdlog.h>
-#include <asio.hpp>
 #include "aegis/core.hpp"
 #include "aegis/error.hpp"
 #include "aegis/guild.hpp"

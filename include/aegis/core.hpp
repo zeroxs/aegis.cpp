@@ -11,6 +11,18 @@
 
 #include "aegis/fwd.hpp"
 #include "aegis/config.hpp"
+
+#include <asio/io_context.hpp>
+#include <asio/bind_executor.hpp>
+#include <asio/executor_work_guard.hpp>
+
+#ifdef WIN32
+# include "aegis/push.hpp"
+# include "websocketpp/config/asio_client.hpp"
+# include "websocketpp/client.hpp"
+# include "aegis/pop.hpp"
+#endif
+
 #include "aegis/utility.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/futures.hpp"
@@ -23,17 +35,6 @@
 #include "aegis/gateway/objects/channel.hpp"
 #include "aegis/gateway/objects/guild.hpp"
 #include "aegis/gateway/objects/activity.hpp"
-
-#include <asio/io_context.hpp>
-#include <asio/bind_executor.hpp>
-#include <asio/executor_work_guard.hpp>
-
-#ifdef WIN32
-# include "aegis/push.hpp"
-# include "websocketpp/config/asio_client.hpp"
-# include "websocketpp/client.hpp"
-# include "aegis/pop.hpp"
-#endif
 
 #include <spdlog/spdlog.h>
 

@@ -7,12 +7,10 @@
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
 
+#include <nlohmann/json.hpp>
+
 #include "aegis/shards/shard_mgr.hpp"
 #include <string>
-#include <asio/streambuf.hpp>
-#include <asio/connect.hpp>
-
-#include <nlohmann/json.hpp>
 
 namespace aegis
 {

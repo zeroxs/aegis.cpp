@@ -9,11 +9,6 @@
 
 #include "aegis/shards/shard.hpp"
 #include "aegis/error.hpp"
-#ifdef WIN32
-# include "aegis/push.hpp"
-# include <websocketpp/connection.hpp>
-# include "aegis/pop.hpp"
-#endif
 
 namespace aegis
 {

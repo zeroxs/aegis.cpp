@@ -18,8 +18,9 @@
 #include "aegis/user.hpp"
 
 #include <nlohmann/json.hpp>
-#include <spdlog/sinks/sink.h>
-#include <spdlog/sinks/ansicolor_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/async.h>
 
 #pragma region websocket events
 #include "aegis/gateway/events/ready.hpp"
@@ -62,13 +63,11 @@ namespace aegis
 
 AEGIS_DECL void core::setup_logging()
 {
-    std::vector<spdlog::sink_ptr> sinks;
-#ifdef _WIN32
-    auto color_sink = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
-#else
-    auto color_sink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
-#endif
-    sinks.push_back(color_sink);
+    spdlog::init_thread_pool(8192, 2);
+
+    auto stdout_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt >();
+    std::vector<spdlog::sink_ptr> sinks;// { stdout_sink, rotating_sink };
+    sinks.push_back(stdout_sink);
 
     if (file_logging)
     {
@@ -77,8 +76,7 @@ AEGIS_DECL void core::setup_logging()
         sinks.push_back(rotating);
     }
 
-    // Add more sinks here, if needed.
-    log = std::make_shared<spdlog::logger>("aegis", begin(sinks), end(sinks));
+    log = std::make_shared<spdlog::async_logger>("aegis", sinks.begin(), sinks.end(), spdlog::thread_pool(), spdlog::async_overflow_policy::block);
     spdlog::register_logger(log);
 
     log->set_pattern(log_formatting);

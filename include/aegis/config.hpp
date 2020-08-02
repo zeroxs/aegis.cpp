@@ -12,6 +12,12 @@
 #include "aegis/version.hpp"
 #include "aegis/fwd.hpp"
 
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <WinSock2.h>
+#include <windows.h>
+#endif
+
 #if !defined(ASIO_NO_DEPRECATED)
 #define ASIO_NO_DEPRECATED
 #endif

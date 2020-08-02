@@ -10,20 +10,25 @@
 #pragma once
 
 #include "aegis/config.hpp"
+
+#include <asio/streambuf.hpp>
+#include <asio/connect.hpp>
+#include <websocketpp/config/asio_client.hpp>
+#include <websocketpp/common/connection_hdl.hpp>
+#include <websocketpp/client.hpp>
+
 #include "aegis/utility.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/error.hpp"
 #include "aegis/shards/shard.hpp"
-#include <websocketpp/config/asio_client.hpp>
-#include <websocketpp/common/connection_hdl.hpp>
-#include <websocketpp/client.hpp>
-#include "spdlog/spdlog.h"
 
 #include <vector>
 #include <iostream>
 #include <string>
 
 #include <asio/bind_executor.hpp>
+
+#include <spdlog/spdlog.h>
 
 namespace aegis
 {

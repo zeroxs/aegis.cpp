@@ -17,7 +17,6 @@
 #include <queue>
 #include <mutex>
 #include <shared_mutex>
-#include <spdlog/spdlog.h>
 
 namespace aegis
 {
