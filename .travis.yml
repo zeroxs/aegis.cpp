@@ -1,11 +1,20 @@
-sudo: false
 language: cpp
+dist: bionic
+os: linux
 
-matrix:
+jobs:
   include:
+    # GCC 10 C++17
+    - compiler: gcc
+      env:
+        - MATRIX_EVAL="COMPILER=g++-10 && CXX=g++-10 && CXX_STANDARD=17"
+      addons:
+        apt:
+          packages: libcrypto++-dev g++-10
+          sources: &sources
+            - ubuntu-toolchain-r-test
     # GCC 7 C++17
-    - os: linux
-      compiler: gcc
+    - compiler: gcc
       env:
         - MATRIX_EVAL="COMPILER=g++-7 && CXX=g++-7 && CXX_STANDARD=17"
       addons:
@@ -14,8 +23,7 @@ matrix:
           sources: &sources
             - ubuntu-toolchain-r-test
     # GCC 5 C++14
-    - os: linux
-      compiler: gcc
+    - compiler: gcc
       env:
         - MATRIX_EVAL="COMPILER=g++-5 && CXX=g++-5 && CXX_STANDARD=14"
       addons:

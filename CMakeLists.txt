@@ -33,7 +33,7 @@ find_package(Threads REQUIRED)
 
 find_package(Asio 1.12.0 REQUIRED MODULE)
 find_package(JSON 3.1.2 REQUIRED MODULE)
-find_package(Spdlog 0.16.4 REQUIRED MODULE)
+find_package(Spdlog 1.6.0 REQUIRED MODULE)
 find_package(Websocketpp 0.7.0 REQUIRED MODULE)
 find_package(OpenSSL 1.0.1 REQUIRED MODULE)
 find_package(ZLIB REQUIRED MODULE)

@@ -11,13 +11,27 @@ if (Spdlog_INCLUDE_DIR STREQUAL "Spdlog_INCLUDE_DIR-NOTFOUND")
   set(Spdlog_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/spdlog/include)
 endif ()
 
-file(READ ${Spdlog_INCLUDE_DIR}/spdlog/common.h common_h)
-if (NOT common_h MATCHES "SPDLOG_VERSION \"([0-9]+)\\.([0-9]+)\\.([0-9]+)-?(.*)\"")
-  message(FATAL_ERROR "Cannot get SPDLOG_VERSION from common.h.")
+
+file(READ ${Spdlog_INCLUDE_DIR}/spdlog/version.h version_h)
+
+if (NOT version_h MATCHES "#define SPDLOG_VER_MAJOR ([0-9]+)")
+  message(FATAL_ERROR "Cannot get Spdlog version from version.h.")
 endif ()
+
 math(EXPR CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1})
-math(EXPR CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2})
-math(EXPR CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_3})
+
+if (NOT version_h MATCHES "#define SPDLOG_VER_MINOR ([0-9]+)")
+  message(FATAL_ERROR "Cannot get Spdlog version from version.h.")
+endif ()
+
+math(EXPR CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_1})
+
+if (NOT version_h MATCHES "#define SPDLOG_VER_PATCH ([0-9]+)")
+  message(FATAL_ERROR "Cannot get Spdlog version from version.h.")
+endif ()
+
+math(EXPR CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_1})
+
 string(CONCAT PC_Spdlog_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.
                  ${CPACK_PACKAGE_VERSION_PATCH})
 
