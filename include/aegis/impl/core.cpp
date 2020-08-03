@@ -1282,7 +1282,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
                 if (result["d"].count("member") && !result["d"]["member"].is_null())
                 {
                     gateway::objects::member u = result["d"]["member"];
-                    u._user = result["d"]["author"];
+                    u._user = result["d"]["author"].get<gateway::objects::user>();
                     int64_t author_id = u._user->id;
                     m = user_create(author_id);
                     m->_load_nolock(g, u, _shard);
@@ -1300,7 +1300,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
                 if (m->get_username().empty() && result["d"].count("member") && !result["d"]["member"].is_null())
                 {
                     gateway::objects::member u = result["d"]["member"];
-                    u._user = result["d"]["author"];
+                    u._user = result["d"]["author"].get<gateway::objects::user>();
                     m->_load_nolock(g, u, _shard);
                 }
                 obj.user = std::ref(*m);
@@ -1330,7 +1330,7 @@ AEGIS_DECL void core::ws_message_update(const json & result, shards::shard * _sh
         if (m == nullptr)
         {
             gateway::objects::member u = result["d"]["member"];
-            u._user = result["d"]["author"];
+            u._user = result["d"]["author"].get<gateway::objects::user>();
             int64_t author_id = u._user.value().id;
             m = user_create(author_id);
             m->_load_nolock(g, u, _shard);
@@ -1339,7 +1339,7 @@ AEGIS_DECL void core::ws_message_update(const json & result, shards::shard * _sh
         if (m && m->get_username().empty())
         {
             gateway::objects::member u = result["d"]["member"];
-            u._user = result["d"]["author"];
+            u._user = result["d"]["author"].get<gateway::objects::user>();
             m->_load_nolock(g, u, _shard);
         }
 
