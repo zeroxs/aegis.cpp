@@ -1333,32 +1333,31 @@ AEGIS_DECL void core::ws_message_update(const json & result, shards::shard * _sh
     auto _channel = channel_create(result["d"]["channel_id"]);
 
     gateway::events::message_update obj{ *_shard, *_channel };
+
+    obj.user = lib::nullopt;
     
-    if (result["d"].count("author"))
+    if (result["d"].count("author") && result["d"].count("member") && !result["d"]["member"].is_null())
     {
         auto g = &_channel->get_guild();
         auto m = find_user(result["d"]["author"]["id"]);
         if (m == nullptr)
         {
-            if (result["d"].count("member") && !result["d"]["member"].is_null())
-            {
-                gateway::objects::member u = result["d"]["member"];
-                u._user = result["d"]["author"];
-                int64_t author_id = u._user->id;
-                m = user_create(author_id);
-                m->_load_nolock(g, u, _shard);
-            }
+            gateway::objects::member u = result["d"]["member"];
+            u._user = result["d"]["author"];
+            int64_t author_id = u._user->id;
+            m = user_create(author_id);
+            m->_load_nolock(g, u, _shard);
         }
 
-        if (m && m->get_username().empty() && result["d"].count("member") && !result["d"]["member"].is_null())
+        if (m && m->get_username().empty())
         {
             gateway::objects::member u = result["d"]["member"];
             u._user = result["d"]["author"];
             m->_load_nolock(g, u, _shard);
         }
 
-        if (m != nullptr) obj.user = std::ref(*m);
-        else obj.user = lib::nullopt;
+        if (m != nullptr)
+            obj.user = std::ref(*m);
     }
 
     obj.msg = result["d"];
