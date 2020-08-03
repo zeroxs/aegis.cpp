@@ -52,7 +52,7 @@ struct member
     std::vector<objects::role> roles;
     std::string nick; /**< nick of user */
     std::string joined_at;
-    std::optional<user> _user;
+    lib::optional<user> _user;
     bool mute = false;
     bool deaf = false;
 };

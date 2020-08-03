@@ -1310,7 +1310,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
                         i_message_create(obj);
 
                 } else {
-                    gateway::events::message_create obj{ *_shard, std::nullopt, std::ref(*c) };
+                    gateway::events::message_create obj{ *_shard, lib::nullopt, std::ref(*c) };
 
                     obj.msg = result["d"];
                     obj.msg._core = this;
@@ -1358,7 +1358,7 @@ AEGIS_DECL void core::ws_message_update(const json & result, shards::shard * _sh
         }
 
         if (m != nullptr) obj.user = std::ref(*m);
-        else obj.user = std::nullopt;
+        else obj.user = lib::nullopt;
     }
 
     obj.msg = result["d"];
