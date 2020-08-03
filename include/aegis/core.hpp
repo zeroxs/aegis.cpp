@@ -501,22 +501,26 @@ public:
     }
 
     std::unordered_map<snowflake, std::unique_ptr<channel>> channels;
-    std::unordered_map<snowflake, std::unique_ptr<channel>> stale_channels;
+    std::unordered_map<snowflake, std::unique_ptr<channel>> stale_channels; //<\todo do something with stales - clear them?
     std::unordered_map<snowflake, std::unique_ptr<guild>> guilds;
-    std::unordered_map<snowflake, std::unique_ptr<guild>> stale_guilds;
+    std::unordered_map<snowflake, std::unique_ptr<guild>> stale_guilds; //<\todo do something with stales - clear them?
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     std::unordered_map<snowflake, std::unique_ptr<user>> users;
-    std::unordered_map<snowflake, std::unique_ptr<user>> stale_users;
+    std::unordered_map<snowflake, std::unique_ptr<user>> stale_users; //<\todo do something with stales - clear them?
 #endif
     std::map<std::string, uint64_t> message_count;
 
     std::string self_presence;
     uint32_t force_shard_count = 0;
-    uint32_t shard_max_count = 0;
+    uint32_t shard_max_count = 0; //<\deprecated moving into private
     std::string mention;
     bool wsdbg = false;
     std::unique_ptr<asio::io_context::strand> ws_open_strand;
     std::shared_ptr<spdlog::logger> log;
+
+    void bulk_members_on_connect(bool param) { bulk_members_on_connect_ = param; }
+    bool bulk_members_on_connect() { return bulk_members_on_connect_; }
+    int64_t shard_count() { return shard_max_count; }
 
 #if defined(AEGIS_PROFILING)
     using message_end_t = std::function<void(std::chrono::steady_clock::time_point, const std::string&)>;
@@ -535,6 +539,7 @@ public:
     websocket_event_t websocket_event;
 #endif
 
+#pragma region event handlers
     using typing_start_t = std::function<void(gateway::events::typing_start obj)>;
     using message_create_t = std::function<void(gateway::events::message_create obj)>;
     using message_update_t = std::function<void(gateway::events::message_update obj)>;
@@ -718,6 +723,7 @@ public:
     {
         _shard_mgr->i_shard_connect = cb;
     }
+#pragma endregion
 
     /// Send a websocket message to a single shard
     /**
@@ -1056,6 +1062,8 @@ private:
     AEGIS_DECL void remove_member(snowflake member_id) noexcept;
 
     std::chrono::steady_clock::time_point starttime;
+
+    bool bulk_members_on_connect_ = true; //<\todo will eventually default to false
 
     snowflake user_id;
     int16_t discriminator = 0;

@@ -1349,12 +1349,15 @@ AEGIS_DECL void core::ws_guild_create(const json & result, shards::shard * _shar
 
     _guild->_load(result["d"], _shard);
 
-    json chunk;
-    chunk["d"]["guild_id"] = std::to_string(guild_id);
-    chunk["d"]["query"] = "";
-    chunk["d"]["limit"] = 0;
-    chunk["op"] = 8;
-    _shard->send(chunk.dump());
+    if (bulk_members_on_connect())
+    {
+        json chunk;
+        chunk["d"]["guild_id"] = std::to_string(guild_id);
+        chunk["d"]["query"] = "";
+        chunk["d"]["limit"] = 0;
+        chunk["op"] = 8;
+        _shard->send(chunk.dump());
+    }
 
     gateway::events::guild_create obj{ *_shard };
     obj.guild = result["d"];
