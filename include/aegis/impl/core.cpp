@@ -1276,19 +1276,41 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
     }
     else
     {
-        //todo: nullptr should result in nullopt so optional can return has_value correctly
-        auto m = find_user(result["d"]["author"]["id"]);
-        auto g = &c->get_guild();
-        gateway::events::message_create obj{ *_shard, std::ref(*m), std::ref(*c)/*, std::make_optional(std::ref(*g))*/ };
+        if (!result["d"].count("webhook_id"))
+        {
+            auto g = &c->get_guild();
+            auto m = find_user(result["d"]["author"]["id"]);
+            if (m == nullptr)
+            {
+                if (result["d"].count("member") && !result["d"]["member"].is_null())
+                {
+                    gateway::objects::member u = result["d"]["member"];
+                    u._user = result["d"]["author"];
+                    int64_t author_id = u._user->id;
+                    m = user_create(author_id);
+                    m->_load_nolock(g, u, _shard);
+                }
+            }
 
-        obj.msg = result["d"];
-        obj.msg._core = this;
+            //user was previously created via presence update, but presence update only contains id
+            if (m->get_username().empty())
+            {
+                gateway::objects::member u = result["d"]["member"];
+                u._user = result["d"]["author"];
+                m->_load_nolock(g, u, _shard);
+            }
 
-        if (i_message_create_raw)
-            i_message_create_raw(result, _shard);
+            gateway::events::message_create obj{ *_shard, std::ref(*m), std::ref(*c) };
 
-        if (i_message_create)
-            i_message_create(obj);
+            obj.msg = result["d"];
+            obj.msg._core = this;
+
+            if (i_message_create_raw)
+                i_message_create_raw(result, _shard);
+
+            if (i_message_create)
+                i_message_create(obj);
+        }
     }
 }
 

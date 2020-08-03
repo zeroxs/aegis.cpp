@@ -12,6 +12,7 @@
 #include "aegis/config.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/gateway/objects/role.hpp"
+#include "aegis/gateway/objects/user.hpp"
 #include <nlohmann/json.hpp>
 
 namespace aegis
@@ -51,6 +52,7 @@ struct member
     std::vector<objects::role> roles;
     std::string nick; /**< nick of user */
     std::string joined_at;
+    std::optional<user> _user;
     bool mute = false;
     bool deaf = false;
 };
@@ -69,6 +71,8 @@ inline void from_json(const nlohmann::json& j, member& m)
         m.mute = j["mute"];
     if (j.count("deaf") && !j["deaf"].is_null())
         m.deaf = j["deaf"];
+    if (j.count("user") && !j["user"].is_null())
+        m._user = j["user"];
 }
 
 inline void to_json(nlohmann::json& j, const member& m)
@@ -79,6 +83,8 @@ inline void to_json(nlohmann::json& j, const member& m)
     j["joined_at"] = m.joined_at;
     j["mute"] = m.mute;
     j["deaf"] = m.deaf;
+    if (m._user.has_value())
+        j["user"] = m._user.value();
 }
 /// \endcond
 
