@@ -1292,8 +1292,8 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
             //user was previously created via presence update, but presence update only contains id
             gateway::events::message_create obj{ *_shard, lib::nullopt, std::ref(*c) };
             
-            obj.msg._core = this;
             obj.msg = result["d"];
+            obj.msg._core = this;
 
             if (m)
             {

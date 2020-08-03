@@ -12,7 +12,7 @@
 #include "aegis/version.hpp"
 #include "aegis/fwd.hpp"
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <WinSock2.h>
 #include <windows.h>
