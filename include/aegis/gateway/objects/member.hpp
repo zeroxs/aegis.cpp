@@ -87,7 +87,7 @@ inline void from_json(const nlohmann::json& j, member& m)
     if (j.count("deaf") && !j["deaf"].is_null())
         m.deaf = j["deaf"];
     if (j.count("user") && !j["user"].is_null())
-        m._user = j["user"];
+        m._user = j["user"].get<objects::user>();
 }
 
 inline void to_json(nlohmann::json& j, const member& m)
