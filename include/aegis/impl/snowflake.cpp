@@ -42,7 +42,7 @@ AEGIS_DECL void from_json(const nlohmann::json& j, snowflake& s)
 
 AEGIS_DECL void to_json(nlohmann::json& j, const snowflake& s)
 {
-    j = nlohmann::json{ static_cast<int64_t>(s) };
+    j = nlohmann::json( static_cast<int64_t>(s) );
 }
 /// \endcond
 
