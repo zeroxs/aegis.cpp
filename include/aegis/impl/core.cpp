@@ -2,7 +2,7 @@
 // core.cpp
 // ********
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
@@ -787,18 +787,6 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
             if (!result["s"].is_null())
                 _shard->set_sequence(result["s"]);
 
-            /* XXX NOT WORKING
-             
-            if (result["op"] == 7)
-            {
-                //Disconnect and RESUME
-                log->debug("Discord requested reconnect for shard {}", _shard->get_id());
-                //_shard_mgr->close(_shard);
-                _shard->_heartbeat_status = heartbeat_status::waiting;
-                _shard->lastheartbeat = std::chrono::steady_clock::now() - 21s;
-                return;
-            }*/
-
             if (!result["t"].is_null())
             {
                 const std::string & cmd = result["t"];
@@ -938,6 +926,15 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                 }
                 return;
             }
+
+            if (result["op"] == 7)
+            {
+                //reconnect request
+                _shard_mgr->close(_shard, 1001);
+                log->trace("Reconnecting shard {} by op7", _shard->get_id());
+                return;
+            }
+
             if (result["op"] == 1)
             {
                 //requested heartbeat
