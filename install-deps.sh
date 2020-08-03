@@ -4,7 +4,7 @@ set -e
 
 echo "This install script only works with GCC at the moment. Support for other compilers may come later."
 
-if [ -z $CXX ]; then echo "CXX not set. Defaulting to GCC."; CXX=gcc; else echo "CXX set to '$CXX'"; fi
+if [ -z $CXX ]; then echo "CXX not set. Defaulting to GCC."; CXX=g++; else echo "CXX set to '$CXX'"; fi
 
 
 currentver="$(${CXX} -dumpversion)"
@@ -40,7 +40,7 @@ fi
 if [ ! \( -f "/usr/local/include/spdlog/spdlog.h" -a -f "/usr/include/spdlog/spdlog.h" \) ]; then
   echo "Spdlog not found."
   echo "Configuring Spdlog."
-  (cd lib/spdlog && mkdir -p build && cd build && cmake -DSPDLOG_BUILD_TESTING=OFF .. && make install)
+  (cd lib/spdlog && mkdir -p build && cd build && cmake -DSPDLOG_BUILD_TESTS=OFF .. && make install)
 fi
 
 if [ ! \( -f "/usr/local/include/websocketpp/version.hpp" -a -f "/usr/include/websocketpp/version.hpp" \) ]; then
