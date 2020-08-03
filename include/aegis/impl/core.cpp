@@ -930,8 +930,8 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
             if (result["op"] == 7)
             {
                 //reconnect request
-                _shard_mgr->close(_shard, 1001);
-                log->trace("Reconnecting shard {} by op7", _shard->get_id());
+                _shard_mgr->close(_shard, 1003);
+                log->trace("Reconnecting shard {} by op7 - {}", _shard->get_id(), _shard->session_id);
                 return;
             }
 
