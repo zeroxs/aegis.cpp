@@ -52,9 +52,24 @@ struct member
     std::vector<objects::role> roles;
     std::string nick; /**< nick of user */
     std::string joined_at;
-    lib::optional<user> _user;
+    lib::optional<objects::user> _user;
     bool mute = false;
     bool deaf = false;
+
+    bool has_user() const noexcept
+    {
+        return _user.has_value();
+    }
+    objects::user get_user() const
+    {
+        if (has_user())
+            return _user.value();
+#if defined(AEGIS_HAS_BUILTIN_OPTIONAL)
+        throw lib::bad_optional_access("bad optional access");
+#else
+        throw lib::bad_optional_access();
+#endif
+    }
 };
 
 /// \cond TEMPLATES
