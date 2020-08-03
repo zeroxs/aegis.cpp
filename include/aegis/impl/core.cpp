@@ -1290,23 +1290,40 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
             }
 
             //user was previously created via presence update, but presence update only contains id
-            if (m->get_username().empty())
+            if (m && m->get_username().empty())
             {
-                gateway::objects::member u = result["d"]["member"];
-                u._user = result["d"]["author"];
-                m->_load_nolock(g, u, _shard);
+                if (result["d"].count("member") && !result["d"]["member"].is_null())
+                {
+                    gateway::objects::member u = result["d"]["member"];
+                    u._user = result["d"]["author"];
+                    m->_load_nolock(g, u, _shard);
+
+                    gateway::events::message_create obj{ *_shard, std::ref(*m), std::ref(*c) };
+
+                    obj.msg = result["d"];
+                    obj.msg._core = this;
+
+                    if (i_message_create_raw)
+                        i_message_create_raw(result, _shard);
+
+                    if (i_message_create)
+                        i_message_create(obj);
+
+                } else {
+                    gateway::events::message_create obj{ *_shard, std::nullopt, std::ref(*c) };
+
+                    obj.msg = result["d"];
+                    obj.msg._core = this;
+
+                    if (i_message_create_raw)
+                        i_message_create_raw(result, _shard);
+
+                    if (i_message_create)
+                        i_message_create(obj);
+
+                }
             }
 
-            gateway::events::message_create obj{ *_shard, std::ref(*m), std::ref(*c) };
-
-            obj.msg = result["d"];
-            obj.msg._core = this;
-
-            if (i_message_create_raw)
-                i_message_create_raw(result, _shard);
-
-            if (i_message_create)
-                i_message_create(obj);
         }
     }
 }
@@ -1333,14 +1350,15 @@ AEGIS_DECL void core::ws_message_update(const json & result, shards::shard * _sh
             }
         }
 
-        if (m->get_username().empty() && result["d"].count("member") && !result["d"]["member"].is_null())
+        if (m && m->get_username().empty() && result["d"].count("member") && !result["d"]["member"].is_null())
         {
             gateway::objects::member u = result["d"]["member"];
             u._user = result["d"]["author"];
             m->_load_nolock(g, u, _shard);
         }
 
-        obj.user = std::ref(*m);
+        if (m != nullptr) obj.user = std::ref(*m);
+        else obj.user = std::nullopt;
     }
 
     obj.msg = result["d"];
