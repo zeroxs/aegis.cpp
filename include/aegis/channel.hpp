@@ -194,6 +194,16 @@ public:
     AEGIS_DECL guild & get_guild(std::error_code & ec) const noexcept;
 
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
+    /// Get snowflake of the last message sent
+    /**
+     * @returns Snowflake of the last message sent in this channel
+     */
+    snowflake get_last_message_id() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        return last_message_id;
+    }
+
     /// Get channel name
     /**
      * @returns String of channel name
@@ -205,6 +215,27 @@ public:
         return std::move(_name);
     }
 
+    /// Get channel topic
+    /**
+     * @returns String of channel topic
+     */
+    std::string get_topic() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        std::string _topic = topic;
+        return std::move(_topic);
+    }
+
+    /// Get channel position in the guild channel list
+    /**
+     * @returns Position of this channel in the guild channel list
+     */
+    uint32_t get_position() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        return position;
+    }
+
     /// Get the type of this channel
     /**
      * @returns An channel_type enum for this channel
@@ -214,11 +245,42 @@ public:
         return type;
     }
 
+    /// Get bit rate of voice channel
+    /**
+     * @returns Bit rate of voice channel, or 0 if this is not a voice channel
+     */
+    uint16_t get_bitrate() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        return bitrate;
+    }
+
+    /// Get user limit of voice channel
+    /**
+     * @returns User limit of voice channel, or 0 if there is no limit or if this is not a voice channel
+     */
+    uint16_t get_user_limit() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        return user_limit;
+    }
+
     /// Get bot's permission for this channel
     /**
      * @returns Bitmask of current permissions for this channel contained within `permission` object
      */
     AEGIS_DECL permission perms() const noexcept;
+
+    /// Get rate limit per user of this channel
+    /**
+     * Bots and users with the permission to manage messages or manage channel, are unaffected by this rate limit
+     * @returns Amount of seconds a user has to wait before sending another message
+     */
+    uint16_t get_rate_limit_per_user() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        return rate_limit_per_user;
+    }
 #endif
 
     /// Send message to this channel
@@ -626,7 +688,7 @@ private:
     uint16_t bitrate = 0; /**< Bit rate of voice channel */
     uint16_t user_limit = 0; /**< User limit of voice channel */
     std::unordered_map<int64_t, gateway::objects::permission_overwrite> overrides; /**< Snowflake map of user/role to permission overrides */
-    uint16_t rate_limit_per_user = 0; /**< Limit of how many seconds sent messages must have between each */
+    uint16_t rate_limit_per_user = 0; /**< Amount of seconds a user must wait before sending another message */
 #endif
     asio::io_context & _io_context;
     mutable shared_mutex _m;
