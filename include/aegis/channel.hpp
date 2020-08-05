@@ -200,7 +200,6 @@ public:
      */
     snowflake get_last_message_id() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
         return last_message_id;
     }
 
@@ -232,7 +231,6 @@ public:
      */
     uint32_t get_position() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
         return position;
     }
 
@@ -251,7 +249,6 @@ public:
      */
     uint16_t get_bitrate() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
         return bitrate;
     }
 
@@ -261,7 +258,6 @@ public:
      */
     uint16_t get_user_limit() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
         return user_limit;
     }
 
@@ -278,7 +274,6 @@ public:
      */
     uint16_t get_rate_limit_per_user() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
         return rate_limit_per_user;
     }
 #endif
