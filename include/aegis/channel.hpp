@@ -238,7 +238,7 @@ public:
 
     /// Get the type of this channel
     /**
-     * @returns An channel_type enum for this channel
+     * @returns A channel_type enum for this channel
      */
     gateway::objects::channel::channel_type get_type() const noexcept
     {
