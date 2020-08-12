@@ -60,7 +60,7 @@ public:
      */
     AEGIS_DECL std::string get_name(snowflake guild_id) noexcept;
 
-    /// Get the nickname of this user
+    /// Get the name of this user
     /**
     * @returns string of the username
     */
