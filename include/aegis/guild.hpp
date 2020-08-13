@@ -538,6 +538,19 @@ public:
      */
     AEGIS_DECL aegis::future<rest::rest_reply> remove_guild_ban(snowflake user_id);
 
+    /// Get guild bans
+    /**
+     * @returns aegis::future<gateway::objects::bans>
+     */
+    AEGIS_DECL aegis::future<gateway::objects::bans> get_guild_bans();
+
+    /// Get guild ban
+    /**
+     * @param user_id The snowflake of the user to retrieve the ban object for
+     * @returns aegis::future<gateway::objects::ban>
+    */
+    AEGIS_DECL aegis::future<gateway::objects::ban> get_guild_ban(snowflake user_id);
+
     /// Create a guild role
     /**
      * @see aegis::permission
