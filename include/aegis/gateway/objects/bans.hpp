@@ -70,7 +70,7 @@ namespace aegis
                     return _bans.rend();
                 }
 
-                std::vector<aegis::gateway::objects::ban> _bans; /**< array of messages */
+                std::vector<aegis::gateway::objects::ban> _bans; /**< array of bans */
 
             };
 
