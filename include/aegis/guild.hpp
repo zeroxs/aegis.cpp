@@ -17,6 +17,8 @@
 #include "aegis/ratelimit/ratelimit.hpp"
 #include "aegis/gateway/objects/permission_overwrite.hpp"
 #include "aegis/gateway/objects/member.hpp"
+#include "aegis/gateway/objects/ban.hpp"
+#include "aegis/gateway/objects/bans.hpp"
 #include <future>
 #include <asio.hpp>
 #include <shared_mutex>
