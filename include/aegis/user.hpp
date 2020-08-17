@@ -111,9 +111,16 @@ public:
 
     /// Builds a mention for this user
     /**
-    * @returns string of member mention
+    * @returns string of member mention with username
     */
     AEGIS_DECL std::string get_mention() const noexcept;
+
+    /// Builds a nickname mention for this user
+    /**
+    * @returns string of member mention with nickname
+    */
+    AEGIS_DECL std::string get_nickname_mention() const noexcept;
+
     /// Get the member owned guild information object
     /**
      * @param guild_id The snowflake for the guild

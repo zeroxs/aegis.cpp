@@ -47,6 +47,11 @@ struct role
 
     role() noexcept {}
 
+    std::string get_mention() const noexcept
+    {
+        return fmt::format("<@&{}>", id);
+    }
+
     uint32_t color = 0;
     snowflake id;
     snowflake role_id; //<deprecated use role::id instead

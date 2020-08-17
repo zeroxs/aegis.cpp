@@ -212,5 +212,10 @@ AEGIS_DECL std::string user::get_mention() const noexcept
     return fmt::format("<@{}>", _member_id);
 }
 
+AEGIS_DECL std::string user::get_nickname_mention() const noexcept
+{
+    return fmt::format("<@!{}>", _member_id);
+}
+
 }
 #endif

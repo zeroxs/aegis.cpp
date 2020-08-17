@@ -193,6 +193,12 @@ public:
      */
     AEGIS_DECL guild & get_guild(std::error_code & ec) const noexcept;
 
+    /// Builds a mention for this channel
+    /**
+     * @returns string of channel mention
+     */
+    AEGIS_DECL std::string get_mention() const noexcept;
+
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     /// Get snowflake of the last message sent
     /**
