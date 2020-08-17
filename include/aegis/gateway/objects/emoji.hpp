@@ -25,6 +25,15 @@ namespace objects
 /// Discord Emoji Object
 struct emoji
 {
+    /// Formats the emoji for adding to a message
+    /**
+     * @returns string of formatted emoji
+     */
+    std::string format() const noexcept
+    {
+        return id ? fmt::format("<{}:{}:{}>", animated ? "a" : "", name, id) : name;
+    }
+
     snowflake id; /**< Emoji ID */
     std::string name; /**< Emoji Name */
     std::vector<snowflake> roles; /**< Roles this emoji is whitelisted to */
