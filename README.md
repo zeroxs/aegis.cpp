@@ -30,7 +30,7 @@ Libraries used (all are header-only with the exception of zlib and openssl):
 You can access the [documentation here](https://docs.aegisbot.io/). It is a work in progress itself and has some missing parts, but most of the library is now documented.
 
 # Using this library #
-There are multiple ways to make use of this library.
+This library can be used compiled or as header only. All ways require recursive cloning of this repo. Some of the dependencies are version locked.
 
 #### Header only ####
 Including the helper header will automatically include all other files.
