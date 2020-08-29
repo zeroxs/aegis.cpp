@@ -534,6 +534,7 @@ public:
 #endif
 
 #if defined(AEGIS_EVENTS)
+    //@todo make bool to determine ignoring an event
     using websocket_event_t = std::function<void(std::string, aegis::shards::shard&)>;
     void set_on_websocket_event(websocket_event_t cb) { websocket_event = cb; }
     websocket_event_t websocket_event;

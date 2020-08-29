@@ -190,6 +190,7 @@ public:
     /// Get pointer to own member object
     /**
      * @returns Pointer to own member object
+     * @deprecated
      */
     AEGIS_DECL user * self() const;
 
