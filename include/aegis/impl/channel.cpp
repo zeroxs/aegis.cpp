@@ -196,10 +196,10 @@ AEGIS_DECL aegis::future<gateway::objects::messages> channel::get_messages(get_m
             query_params += fmt::format("after={}{}", obj._message_id, limit);
             break;
         case get_messages_t::get_messages_type::AROUND:
-            query_params += fmt::format("after={}{}", obj._message_id, limit);
+            query_params += fmt::format("around={}{}", obj._message_id, limit);
             break;
         case get_messages_t::get_messages_type::BEFORE:
-            query_params += fmt::format("after={}{}", obj._message_id, limit);
+            query_params += fmt::format("before={}{}", obj._message_id, limit);
             break;
         case get_messages_t::get_messages_type::LAST:
             query_params += limit.substr(1);
