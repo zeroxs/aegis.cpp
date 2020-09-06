@@ -50,7 +50,7 @@ namespace aegis
                 ban() noexcept {}
 
                 std::string reason;
-                user user;
+                user _user;
             };
 
             /// \cond TEMPLATES
@@ -59,13 +59,13 @@ namespace aegis
                 if (j.count("reason") && j["reason"].is_string())
                     m.reason = j["reason"];
                 if (j.count("user") && j["user"].is_object())
-                    m.user = j["user"];
+                    m._user = j["user"];
             }
 
             inline void to_json(nlohmann::json& j, const ban& m)
             {
                 j["reason"] = m.reason;
-                j["user"] = m.user;
+                j["user"] = m._user;
             }
             /// \endcond
 
