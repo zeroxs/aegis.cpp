@@ -119,13 +119,13 @@ struct future_state
     using type = T;
     static constexpr bool copy_noexcept = std::is_nothrow_copy_constructible<T>::value;
     static_assert(std::is_nothrow_move_constructible<T>::value,
-        "Types must be no-throw move constructible");
+                  "Types must be no-throw move constructible");
     static_assert(std::is_nothrow_destructible<T>::value,
-        "Types must be no-throw destructible");
+                  "Types must be no-throw destructible");
     static_assert(std::is_nothrow_copy_constructible<std::exception_ptr>::value,
-        "std::exception_ptr's copy constructor must not throw");
+                  "std::exception_ptr's copy constructor must not throw");
     static_assert(std::is_nothrow_move_constructible<std::exception_ptr>::value,
-        "std::exception_ptr's move constructor must not throw");
+                  "std::exception_ptr's move constructor must not throw");
     enum class state
     {
         invalid,
@@ -141,10 +141,10 @@ struct future_state
         T value;
         std::exception_ptr ex;
     } _u;
-    asio::io_context* _io_context = nullptr;
-    std::recursive_mutex* _global_m = nullptr;
+    asio::io_context * _io_context = nullptr;
+    std::recursive_mutex * _global_m = nullptr;
     future_state() noexcept {}
-    future_state(asio::io_context* _io_context, std::recursive_mutex* _global_m) noexcept
+    future_state(asio::io_context * _io_context, std::recursive_mutex * _global_m) noexcept 
         : _state(state::future)
         , _io_context(_io_context)
         , _global_m(_global_m)
@@ -159,20 +159,20 @@ struct future_state
         state _s = _state.load(std::memory_order_acquire);
         switch (_x)
         {
-        case state::future:
-            break;
-        case state::result:
-            new (&_u.value) T(std::move(x._u.value));
-            x._u.value.~T();
-            break;
-        case state::exception:
-            new (&_u.ex) std::exception_ptr(std::move(x._u.ex));
-            x._u.ex.~exception_ptr();
-            break;
-        case state::invalid:
-            break;
-        default:
-            abort();
+            case state::future:
+                break;
+            case state::result:
+                new (&_u.value) T(std::move(x._u.value));
+                x._u.value.~T();
+                break;
+            case state::exception:
+                new (&_u.ex) std::exception_ptr(std::move(x._u.ex));
+                x._u.ex.~exception_ptr();
+                break;
+            case state::invalid:
+                break;
+            default:
+                abort();
         }
         _state.store(_x, std::memory_order_release);
         x._state.store(state::invalid, std::memory_order_release);
@@ -183,18 +183,18 @@ struct future_state
         std::atomic_thread_fence(std::memory_order_acquire);
         switch (_state)
         {
-        case state::invalid:
-            break;
-        case state::future:
-            break;
-        case state::result:
-            _u.value.~T();
-            break;
-        case state::exception:
-            _u.ex.~exception_ptr();
-            break;
-        default:
-            abort();
+            case state::invalid:
+                break;
+            case state::future:
+                break;
+            case state::result:
+                _u.value.~T();
+                break;
+            case state::exception:
+                _u.ex.~exception_ptr();
+                break;
+            default:
+                abort();
         }
         std::atomic_thread_fence(std::memory_order_release);
     }
@@ -279,7 +279,7 @@ struct future_state
         assert(_state == state::result);
         return _u.value;
     }
-    T get()&&
+    T get() &&
     {
         auto _s = _state.load(std::memory_order_acquire);
         assert(_s != state::future);
@@ -334,9 +334,9 @@ struct future_state<void>
 {
     using type = void;
     static_assert(std::is_nothrow_copy_constructible<std::exception_ptr>::value,
-        "std::exception_ptr's copy constructor must not throw");
+                  "std::exception_ptr's copy constructor must not throw");
     static_assert(std::is_nothrow_move_constructible<std::exception_ptr>::value,
-        "std::exception_ptr's move constructor must not throw");
+                  "std::exception_ptr's move constructor must not throw");
     static constexpr bool copy_noexcept = true;
     enum class state : uintptr_t
     {
@@ -353,10 +353,10 @@ struct future_state<void>
         std::exception_ptr ex;
     } _u;
     std::recursive_mutex _m;
-    asio::io_context* _io_context = nullptr;
-    std::recursive_mutex* _global_m = nullptr;
+    asio::io_context * _io_context = nullptr;
+    std::recursive_mutex * _global_m = nullptr;
     future_state() noexcept {}
-    future_state(asio::io_context* _io_context, std::recursive_mutex* _global_m) noexcept
+    future_state(asio::io_context * _io_context, std::recursive_mutex * _global_m) noexcept 
         : _io_context(_io_context)
         , _global_m(_global_m)
     {}    future_state(future_state&& x) noexcept
@@ -411,7 +411,7 @@ struct future_state<void>
         new (&_u.ex) std::exception_ptr(ex);
         assert(_u.st >= state::exception_min);
     }
-    void get()&&
+    void get() &&
     {
         assert(_u.st != state::future);
         if (_u.st >= state::exception_min)
@@ -468,7 +468,7 @@ protected:
     using promise_type = promise<T>;
 public:
     continuation_base() = default;
-    explicit continuation_base(asio::io_context* _io_context, std::recursive_mutex* _global_m)
+    explicit continuation_base(asio::io_context * _io_context, std::recursive_mutex * _global_m)
         : _state(_io_context, _global_m) {}
 
     explicit continuation_base(future_state<T>&& state) : _state(std::move(state)) {}
@@ -500,7 +500,7 @@ protected:
     using promise_type = promise<void>;
 public:
     continuation_base() = default;
-    explicit continuation_base(asio::io_context* _io_context, std::recursive_mutex* _global_m)
+    explicit continuation_base(asio::io_context * _io_context, std::recursive_mutex * _global_m)
         : _state(_io_context, _global_m) {}
     explicit continuation_base(future_state<void>&& state) : _state(std::move(state)) {}
     void set_state(future_state<void>&& state)
@@ -521,7 +521,7 @@ template <typename Func, typename T>
 struct continuation final : continuation_base<T>
 {
     continuation(Func&& func, future_state<T>&& state) : continuation_base<T>(std::move(state)), _func(std::move(func)) {}
-    continuation(Func&& func, asio::io_context* _io_context, std::recursive_mutex* _global_m)
+    continuation(Func&& func, asio::io_context * _io_context, std::recursive_mutex * _global_m)
         : continuation_base<T>(_io_context, _global_m)
         , _func(std::move(func))
     {}
@@ -544,11 +544,11 @@ class promise
     future_state<T>* _state;
     std::unique_ptr<continuation_base<T>> _task;
     std::recursive_mutex _m;
-    asio::io_context* _io_context = nullptr;
-    std::recursive_mutex* _global_m = nullptr;
+    asio::io_context * _io_context = nullptr;
+    std::recursive_mutex * _global_m = nullptr;
     static constexpr bool copy_noexcept = future_state<T>::copy_noexcept;
 public:
-    promise(asio::io_context* _io_context, std::recursive_mutex* _global_m) noexcept
+    promise(asio::io_context * _io_context, std::recursive_mutex * _global_m) noexcept
         : _local_state(future_state<T>(_io_context, _global_m))
         , _state(&_local_state)
         , _io_context(_io_context)
@@ -694,8 +694,8 @@ class future
     promise<T>* _promise;
     future_state<T> _local_state;
     mutable std::recursive_mutex _m;
-    asio::io_context* _io_context = nullptr;
-    std::recursive_mutex* _global_m = nullptr;
+    asio::io_context * _io_context = nullptr;
+    std::recursive_mutex * _global_m = nullptr;
     static constexpr bool copy_noexcept = future_state<T>::copy_noexcept;
 private:
     future(promise<T>* pr) noexcept
@@ -726,7 +726,7 @@ private:
     {
         _local_state.set_exception(std::move(ex));
     }
-    explicit future(future_state<T>&& state, asio::io_context* _io_context, std::recursive_mutex* _global_m) noexcept
+    explicit future(future_state<T>&& state, asio::io_context * _io_context, std::recursive_mutex * _global_m) noexcept
         : _local_state(future_state<T>(_io_context, _global_m))
         , _io_context(_io_context)
         , _global_m(_global_m)
@@ -736,7 +736,7 @@ private:
         _promise = nullptr;
         std::atomic_thread_fence(std::memory_order_release);
     }
-    future_state<T>* state() noexcept
+    future_state<T> * state() noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
         if (_promise)
@@ -744,20 +744,20 @@ private:
             std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
             std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
             std::lock(l, l2);
-
+            
             //std::lock_guard<std::recursive_mutex> l(_promise->_m);
-            future_state<T>* _st = _promise->_state;
+            future_state<T> * _st = _promise->_state;
             std::atomic_thread_fence(std::memory_order_release);
             return _st;
         }
         else
         {
-            future_state<T>* _st = &_local_state;
+            future_state<T> * _st = &_local_state;
             std::atomic_thread_fence(std::memory_order_release);
             return _st;
         }
     }
-    const future_state<T>* state() const noexcept
+    const future_state<T> * state() const noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
 
@@ -773,13 +773,13 @@ private:
         if (_promise && lockedd)
         {
             //std::lock_guard<std::recursive_mutex> l(_promise->_m);
-            const future_state<T>* _st = _promise->_state;
+            const future_state<T> * _st = _promise->_state;
             std::atomic_thread_fence(std::memory_order_release);
             return _st;
         }
         else
         {
-            const future_state<T>* _st = &_local_state;
+            const future_state<T> * _st = &_local_state;
             std::atomic_thread_fence(std::memory_order_release);
             return _st;
         }
@@ -788,7 +788,7 @@ private:
     void schedule(Func&& func)
     {
         std::atomic_thread_fence(std::memory_order_acquire);
-        future_state<T>* _st = state();
+        future_state<T> * _st = state();
         if (state()->available())
         {
             asio::post(*_io_context, [func = std::move(func), _state = std::move(*state())]() mutable
@@ -910,7 +910,7 @@ public:
     {
         {
             std::atomic_thread_fence(std::memory_order_acquire);
-            future_state<T>* _st = state();
+            future_state<T> * _st = state();
             std::atomic_thread_fence(std::memory_order_release);
             if (!_st->available())
             {
@@ -942,7 +942,7 @@ public:
     void wait() const noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
-        const future_state<T>* _st = state();
+        const future_state<T> * _st = state();
         std::atomic_thread_fence(std::memory_order_release);
         if (!_st->available())
         {
@@ -963,7 +963,7 @@ public:
     bool available() const noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
-        const future_state<T>* _st = state();
+        const future_state<T> * _st = state();
         assert(_st);
         auto res = _st->available();
         std::atomic_thread_fence(std::memory_order_release);
@@ -1002,7 +1002,7 @@ public:
         auto fut = pr.get_future();
         try
         {
-            this->schedule([pr = std::move(pr), func = std::forward<Func>(func)](future_state<T>&& state) mutable {
+            this->schedule([pr = std::move(pr), func = std::forward<Func>(func)](future_state<T> && state) mutable {
                 std::atomic_thread_fence(std::memory_order_acquire);
                 if (state.failed())
                 {
@@ -1185,9 +1185,9 @@ inline void promise<T>::make_ready() noexcept
         else
         {
             asio::post(*_io_context, [_task = std::move(_task)]
-                {
-                    _task->run();
-                });
+            {
+                _task->run();
+            });
         }
     }
 }
