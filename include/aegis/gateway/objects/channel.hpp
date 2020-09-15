@@ -131,7 +131,7 @@ inline void to_json(nlohmann::json& j, const channel& m)
     if (m.bitrate)
         j["bitrate"] = m.bitrate;
     if (m.userlimit)
-        j["userlimit"] = m.userlimit;
+        j["user_limit"] = m.userlimit;
     if (!m.icon.empty())
         j["icon"] = m.icon;
     if (m.bitrate)
