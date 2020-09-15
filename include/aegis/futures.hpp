@@ -562,16 +562,13 @@ public:
     {
         std::atomic_thread_fence(std::memory_order_acquire);
         std::lock_guard<std::recursive_mutex> gl(*_global_m);
-
-        bool was_l_locked = false;
-        std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock); // not assigned yet
-        std::unique_lock<std::recursive_mutex> l2(x._future->_m, std::defer_lock); // not assigned yet
-        if (x._future) {
-            std::lock(l, l2);
-            was_l_locked = true;
-        }
-        if (x._future && was_l_locked) // I just want to make sure c._future still exists and it's locked
+        if (x._future)
         {
+            std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
+            std::unique_lock<std::recursive_mutex> l2(x._future->_m, std::defer_lock);
+            std::lock(l, l2);
+            if (!x._future)
+                goto NOTREALLYTHERE;
             _future = x._future;
             _future->_promise = this;
             _state = x._state;
@@ -585,9 +582,9 @@ public:
             x._state = nullptr;
         }
         else
-        { 
-            // release l2 if both locked
-            if (was_l_locked) l2.unlock();
+        {
+        NOTREALLYTHERE:;
+            std::lock_guard<std::recursive_mutex> l(_m);
             _state = x._state;
             _task = std::move(x._task);
             if (_state == &x._local_state)
@@ -760,18 +757,12 @@ private:
     const future_state<T> * state() const noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
-
-        bool lockedd = false;
-        std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
-        std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
-
         if (_promise)
         {
+            std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
+            std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
             std::lock(l, l2);
-            lockedd = true;
-        }
-        if (_promise && lockedd)
-        {
+
             //std::lock_guard<std::recursive_mutex> l(_promise->_m);
             const future_state<T> * _st = _promise->_state;
             std::atomic_thread_fence(std::memory_order_release);
@@ -812,11 +803,10 @@ private:
     future_state<T> get_available_state() noexcept
     {
         auto st = state();
-        std::unique_lock<std::recursive_mutex> gl(*_global_m, std::defer_lock);
-        std::unique_lock<std::recursive_mutex> l(_promise->_m, std::defer_lock);
         if (_promise)
         {
-            std::lock(gl, l);
+            std::lock_guard<std::recursive_mutex> gl(*_global_m);
+            std::lock_guard<std::recursive_mutex> l(_promise->_m);
             if (_promise) {
                 _promise->_future = nullptr;
                 _promise = nullptr;
