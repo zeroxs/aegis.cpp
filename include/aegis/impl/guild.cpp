@@ -381,18 +381,18 @@ AEGIS_DECL void guild::_load(const json & obj, shards::shard * _shard) noexcept
     {
         json voice_states;
 
-        if (!obj["name"].is_null()) name = obj["name"].get<std::string>();
-        if (!obj["icon"].is_null()) icon = obj["icon"].get<std::string>();
-        if (!obj["splash"].is_null()) splash = obj["splash"].get<std::string>();
-        owner_id = obj["owner_id"];
-        region = obj["region"].get<std::string>();
-        if (!obj["afk_channel_id"].is_null()) afk_channel_id = obj["afk_channel_id"];
-        afk_timeout = obj["afk_timeout"];//in seconds
+        if (obj.count("name") && !obj["name"].is_null()) name = obj["name"].get<std::string>();
+        if (obj.count("icon") && !obj["icon"].is_null()) icon = obj["icon"].get<std::string>();
+        if (obj.count("splash") && !obj["splash"].is_null()) splash = obj["splash"].get<std::string>();
+        if (obj.count("owner_id") && !obj["owner_id"].is_null()) owner_id = obj["owner_id"];
+        if (obj.count("region") && !obj["region"].is_null()) region = obj["region"].get<std::string>();
+        if (obj.count("afk_channel_id") && !obj["afk_channel_id"].is_null()) afk_channel_id = obj["afk_channel_id"];
+        if (obj.count("afk_timeout") && !obj["afk_timeout"].is_null()) afk_timeout = obj["afk_timeout"];//in seconds
         if (obj.count("embed_enabled") && !obj["embed_enabled"].is_null()) embed_enabled = obj["embed_enabled"];
         //_guild.embed_channel_id = obj->get("embed_channel_id").convert<uint64_t>();
-        verification_level = obj["verification_level"];
-        default_message_notifications = obj["default_message_notifications"];
-        mfa_level = obj["mfa_level"];
+        if (obj.count("verification_level") && !obj["verification_level"].is_null()) verification_level = obj["verification_level"];
+        if (obj.count("default_message_notifications") && !obj["default_message_notifications"].is_null()) default_message_notifications = obj["default_message_notifications"];
+        if (obj.count("mfa_level") && !obj["mfa_level"].is_null()) mfa_level = obj["mfa_level"];
         if (obj.count("joined_at") && !obj["joined_at"].is_null()) joined_at = obj["joined_at"].get<std::string>();
         if (obj.count("large") && !obj["large"].is_null()) large = obj["large"];
         if (obj.count("unavailable") && !obj["unavailable"].is_null())
