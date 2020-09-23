@@ -513,6 +513,12 @@ AEGIS_DECL void guild::_load(const json & obj, shards::shard * _shard) noexcept
     catch (std::exception&e)
     {
         spdlog::get("aegis")->error("Shard#{} : Error processing guild[{}] {}", _shard->get_id(), g_id, (std::string)e.what());
+        throw 1;
+    }
+    catch (...)
+    {
+        spdlog::get("aegis")->error("Shard#{} : Error processing guild[{}]", _shard->get_id(), g_id);
+        throw 1;
     }
 }
 #else
