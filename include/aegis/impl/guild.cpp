@@ -901,6 +901,30 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::remove_guild_ban(snowflake use
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/bans/{}", guild_id, user_id), rest::Delete });
 }
 
+AEGIS_DECL aegis::future<gateway::objects::bans> guild::get_guild_bans()
+{
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (!perms().can_ban())
+        return aegis::make_exception_future<gateway::objects::bans>(error::no_permission);
+#endif
+
+    std::shared_lock<shared_mutex> l(_m);
+
+    return _bot->get_ratelimit().post_task<gateway::objects::bans>({ fmt::format("/guilds/{}/bans", guild_id), rest::Get });
+}
+
+AEGIS_DECL aegis::future<gateway::objects::ban> guild::get_guild_ban(snowflake user_id)
+{
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (!perms().can_ban())
+        return aegis::make_exception_future<gateway::objects::ban>(error::no_permission);
+#endif
+
+    std::shared_lock<shared_mutex> l(_m);
+
+    return _bot->get_ratelimit().post_task<gateway::objects::ban>({ fmt::format("/guilds/{}/bans/{}", guild_id, user_id), rest::Get });
+}
+
 AEGIS_DECL aegis::future<gateway::objects::role> guild::create_guild_role(const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
