@@ -246,6 +246,14 @@ AEGIS_DECL user * core::find_user(snowflake id) const noexcept
     return it->second.get();
 }
 
+AEGIS_DECL user* core::find_user_nolock(snowflake id) const noexcept
+{
+    auto it = users.find(id);
+    if (it == users.end())
+        return nullptr;
+    return it->second.get();
+}
+
 AEGIS_DECL user * core::user_create(snowflake id) noexcept
 {
     std::unique_lock<shared_mutex> l(_user_m);
@@ -346,6 +354,14 @@ AEGIS_DECL channel * core::find_channel(snowflake id) const noexcept
     return it->second.get();
 }
 
+AEGIS_DECL channel* core::find_channel_nolock(snowflake id) const noexcept
+{
+    auto it = channels.find(id);
+    if (it == channels.end())
+        return nullptr;
+    return it->second.get();
+}
+
 AEGIS_DECL channel * core::channel_create(snowflake id) noexcept
 {
     std::unique_lock<shared_mutex> l(_channel_m);
@@ -363,6 +379,14 @@ AEGIS_DECL channel * core::channel_create(snowflake id) noexcept
 AEGIS_DECL guild * core::find_guild(snowflake id) const noexcept
 {
     std::shared_lock<shared_mutex> l(_guild_m);
+    auto it = guilds.find(id);
+    if (it == guilds.end())
+        return nullptr;
+    return it->second.get();
+}
+
+AEGIS_DECL guild* core::find_guild_nolock(snowflake id) const noexcept
+{
     auto it = guilds.find(id);
     if (it == guilds.end())
         return nullptr;
@@ -1848,7 +1872,7 @@ AEGIS_DECL void core::ws_guild_member_remove(const json & result, shards::shard 
     std::unique_lock<shared_mutex> l(_guild_m);
 
     auto _member = find_user(member_id);
-    auto _guild = find_guild(guild_id);
+    auto _guild = find_guild_nolock(guild_id);
 
     if (_guild != nullptr)
     {

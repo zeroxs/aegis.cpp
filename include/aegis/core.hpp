@@ -379,6 +379,13 @@ public:
      */
     AEGIS_DECL user * find_user(snowflake id) const noexcept;
 
+    /// Obtain a pointer to a user by snowflake without locking - for interal user
+    /**
+     * @param id Snowflake of user to search for
+     * @returns Pointer to user or nullptr
+     */
+    AEGIS_DECL user * find_user_nolock(snowflake id) const noexcept;
+
     /// Obtain a pointer to a user by snowflake. If none exists, creates the object.
     /**
      * @param id Snowflake of user to search for
@@ -403,6 +410,13 @@ public:
      */
     AEGIS_DECL channel * find_channel(snowflake id) const noexcept;
 
+    /// Obtain a pointer to a channel by snowflake without locking - for internal use
+    /**
+     * @param id Snowflake of channel to search for
+     * @returns Pointer to channel or nullptr
+     */
+    AEGIS_DECL channel * find_channel_nolock(snowflake id) const noexcept;
+
     /// Obtain a pointer to a channel by snowflake. If none exists, creates the object.
     /**
      * @param id Snowflake of channel to search for
@@ -416,6 +430,13 @@ public:
      * @returns Pointer to guild or nullptr
      */
     AEGIS_DECL guild * find_guild(snowflake id) const noexcept;
+
+    /// Obtain a pointer to a guild by snowflake without locking - for internal use
+    /**
+     * @param id Snowflake of guild to search for
+     * @returns Pointer to guild or nullptr
+     */
+    AEGIS_DECL guild * find_guild_nolock(snowflake id) const noexcept;
 
     /// Obtain a pointer to a guild by snowflake. If none exists, creates the object.
     /**
