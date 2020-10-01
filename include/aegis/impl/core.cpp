@@ -1845,6 +1845,8 @@ AEGIS_DECL void core::ws_guild_member_remove(const json & result, shards::shard 
     snowflake member_id = result["d"]["user"]["id"];
     snowflake guild_id = result["d"]["guild_id"];
 
+    std::unique_lock<shared_mutex> l(_guild_m);
+
     auto _member = find_user(member_id);
     auto _guild = find_guild(guild_id);
 
