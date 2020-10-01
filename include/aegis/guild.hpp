@@ -838,7 +838,7 @@ private:
     AEGIS_DECL void _load_voicestate(const json & obj) noexcept;
 #endif
 
-    AEGIS_DECL void _load(const json & obj, shards::shard * _shard) noexcept;
+    AEGIS_DECL void _load(const json & obj, shards::shard * _shard);
 
     /// non-locking version for internal use
     AEGIS_DECL user * _find_member(snowflake member_id) const noexcept;

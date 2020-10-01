@@ -367,7 +367,7 @@ AEGIS_DECL int32_t guild::get_member_count() const noexcept
     return static_cast<int32_t>(members.size());
 }
 
-AEGIS_DECL void guild::_load(const json & obj, shards::shard * _shard) noexcept
+AEGIS_DECL void guild::_load(const json & obj, shards::shard * _shard)
 {
     std::unique_lock<shared_mutex> l(_m);
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
@@ -513,12 +513,12 @@ AEGIS_DECL void guild::_load(const json & obj, shards::shard * _shard) noexcept
     catch (std::exception&e)
     {
         spdlog::get("aegis")->error("Shard#{} : Error processing guild[{}] {}", _shard->get_id(), g_id, (std::string)e.what());
-        throw 1;
+        std::rethrow_exception(std::current_exception());
     }
     catch (...)
     {
         spdlog::get("aegis")->error("Shard#{} : Error processing guild[{}]", _shard->get_id(), g_id);
-        throw 1;
+        std::rethrow_exception(std::current_exception());
     }
 }
 #else
