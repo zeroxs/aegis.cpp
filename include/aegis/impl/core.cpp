@@ -842,6 +842,8 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                         catch (...)
                         {
                             log->error("Failed to process object: Unknown error");
+                            log->error(res.dump());
+
                             debug_trace(_shard);
                         }
                     });
@@ -977,6 +979,8 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
     catch (...)
     {
         log->error("Failed to process object: Unknown error");
+        log->error(msg);
+
         debug_trace(_shard);
     }
 }

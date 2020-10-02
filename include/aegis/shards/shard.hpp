@@ -156,7 +156,7 @@ public:
         return utility::uptime_str(_ready_time);
     }
 
-    /// Return shard uptime as {days hours minutes seconds}
+    /// Return shard uptime as an int64
     /**
      * @returns Time in milliseconds since shard received ready
      */

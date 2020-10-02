@@ -62,8 +62,8 @@ public:
 
     /// Get the username of this user
     /**
-    * @returns string of the username
-    */
+     * @returns string of the username
+     */
     std::string get_username() const noexcept
     {
         std::shared_lock<shared_mutex> l(_m);
@@ -73,8 +73,8 @@ public:
 
     /// Get the discriminator of this user
     /**
-    * @returns string of the discriminator
-    */
+     * @returns string of the discriminator
+     */
     uint16_t get_discriminator() const noexcept
     {
         return _discriminator;
@@ -82,8 +82,8 @@ public:
 
     /// Get the avatar hash of this user
     /**
-    * @returns string of the avatar hash
-    */
+     * @returns string of the avatar hash
+     */
     std::string get_avatar() const noexcept
     {
         std::shared_lock<shared_mutex> l(_m);
@@ -93,8 +93,8 @@ public:
 
     /// Check whether user is a bot
     /**
-    * @returns bool of bot status
-    */
+     * @returns bool of bot status
+     */
     bool is_bot() const noexcept
     {
         return _is_bot;
@@ -102,8 +102,8 @@ public:
 
     /// Get the status of multi factor authentication
     /**
-    * @returns bool of mfa status
-    */
+     * @returns bool of mfa status
+     */
     bool is_mfa_enabled() const noexcept
     {
         return _mfa_enabled;
@@ -111,9 +111,16 @@ public:
 
     /// Builds a mention for this user
     /**
-    * @returns string of member mention
-    */
+     * @returns string of member mention with username
+     */
     AEGIS_DECL std::string get_mention() const noexcept;
+
+    /// Builds a nickname mention for this user
+    /**
+     * @returns string of member mention with nickname
+     */
+    AEGIS_DECL std::string get_nickname_mention() const noexcept;
+
     /// Get the member owned guild information object
     /**
      * @param guild_id The snowflake for the guild

@@ -49,6 +49,11 @@ AEGIS_DECL guild & channel::get_guild(std::error_code & ec) const noexcept
     return *_guild;
 }
 
+AEGIS_DECL std::string channel::get_mention() const noexcept
+{
+    return fmt::format("<#{}>", channel_id);
+}
+
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 AEGIS_DECL permission channel::perms() const noexcept
 {
@@ -638,4 +643,3 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::group_dm_remove_recipient(sn
 }
 
 }
-

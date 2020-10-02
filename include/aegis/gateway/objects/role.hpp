@@ -47,15 +47,24 @@ struct role
 
     role() noexcept {}
 
-    uint32_t color = 0;
-    snowflake id;
+    /// Builds a mention for this user
+    /**
+     * @returns string of role mention
+     */
+    std::string get_mention() const noexcept
+    {
+        return fmt::format("<@&{}>", id);
+    }
+
+    uint32_t color = 0; /**< RGB color value */
+    snowflake id; /**< Snowflake ID of this role */
     snowflake role_id; //<deprecated use role::id instead
-    std::string name;
-    aegis::permission _permission;
-    uint16_t position = 0;
-    bool hoist = false;
-    bool managed = false;
-    bool mentionable = false;
+    std::string name; /**< Name of this role */
+    aegis::permission _permission; /**< Permissions given by this role */
+    uint16_t position = 0; /**< Sorting position of the role */
+    bool hoist = false; /**< Whether this role should be displayed separately in the sidebar */
+    bool managed = false; /**< Whether this role is managed */
+    bool mentionable = false; /**< Whether this role should be mentionable */
 };
 
 /// \cond TEMPLATES

@@ -367,7 +367,7 @@ AEGIS_DECL int32_t guild::get_member_count() const noexcept
     return static_cast<int32_t>(members.size());
 }
 
-AEGIS_DECL void guild::_load(const json & obj, shards::shard * _shard) noexcept
+AEGIS_DECL void guild::_load(const json & obj, shards::shard * _shard)
 {
     std::unique_lock<shared_mutex> l(_m);
     //uint64_t application_id = obj->get("application_id").convert<uint64_t>();
@@ -381,18 +381,18 @@ AEGIS_DECL void guild::_load(const json & obj, shards::shard * _shard) noexcept
     {
         json voice_states;
 
-        if (!obj["name"].is_null()) name = obj["name"].get<std::string>();
-        if (!obj["icon"].is_null()) icon = obj["icon"].get<std::string>();
-        if (!obj["splash"].is_null()) splash = obj["splash"].get<std::string>();
-        owner_id = obj["owner_id"];
-        region = obj["region"].get<std::string>();
-        if (!obj["afk_channel_id"].is_null()) afk_channel_id = obj["afk_channel_id"];
-        afk_timeout = obj["afk_timeout"];//in seconds
+        if (obj.count("name") && !obj["name"].is_null()) name = obj["name"].get<std::string>();
+        if (obj.count("icon") && !obj["icon"].is_null()) icon = obj["icon"].get<std::string>();
+        if (obj.count("splash") && !obj["splash"].is_null()) splash = obj["splash"].get<std::string>();
+        if (obj.count("owner_id") && !obj["owner_id"].is_null()) owner_id = obj["owner_id"];
+        if (obj.count("region") && !obj["region"].is_null()) region = obj["region"].get<std::string>();
+        if (obj.count("afk_channel_id") && !obj["afk_channel_id"].is_null()) afk_channel_id = obj["afk_channel_id"];
+        if (obj.count("afk_timeout") && !obj["afk_timeout"].is_null()) afk_timeout = obj["afk_timeout"];//in seconds
         if (obj.count("embed_enabled") && !obj["embed_enabled"].is_null()) embed_enabled = obj["embed_enabled"];
         //_guild.embed_channel_id = obj->get("embed_channel_id").convert<uint64_t>();
-        verification_level = obj["verification_level"];
-        default_message_notifications = obj["default_message_notifications"];
-        mfa_level = obj["mfa_level"];
+        if (obj.count("verification_level") && !obj["verification_level"].is_null()) verification_level = obj["verification_level"];
+        if (obj.count("default_message_notifications") && !obj["default_message_notifications"].is_null()) default_message_notifications = obj["default_message_notifications"];
+        if (obj.count("mfa_level") && !obj["mfa_level"].is_null()) mfa_level = obj["mfa_level"];
         if (obj.count("joined_at") && !obj["joined_at"].is_null()) joined_at = obj["joined_at"].get<std::string>();
         if (obj.count("large") && !obj["large"].is_null()) large = obj["large"];
         if (obj.count("unavailable") && !obj["unavailable"].is_null())
@@ -513,6 +513,12 @@ AEGIS_DECL void guild::_load(const json & obj, shards::shard * _shard) noexcept
     catch (std::exception&e)
     {
         spdlog::get("aegis")->error("Shard#{} : Error processing guild[{}] {}", _shard->get_id(), g_id, (std::string)e.what());
+        std::rethrow_exception(std::current_exception());
+    }
+    catch (...)
+    {
+        spdlog::get("aegis")->error("Shard#{} : Error processing guild[{}]", _shard->get_id(), g_id);
+        std::rethrow_exception(std::current_exception());
     }
 }
 #else
@@ -893,6 +899,30 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::remove_guild_ban(snowflake use
     std::shared_lock<shared_mutex> l(_m);
 
     return _bot->get_ratelimit().post_task({ fmt::format("/guilds/{}/bans/{}", guild_id, user_id), rest::Delete });
+}
+
+AEGIS_DECL aegis::future<gateway::objects::bans> guild::get_guild_bans()
+{
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (!perms().can_ban())
+        return aegis::make_exception_future<gateway::objects::bans>(error::no_permission);
+#endif
+
+    std::shared_lock<shared_mutex> l(_m);
+
+    return _bot->get_ratelimit().post_task<gateway::objects::bans>({ fmt::format("/guilds/{}/bans", guild_id), rest::Get });
+}
+
+AEGIS_DECL aegis::future<gateway::objects::ban> guild::get_guild_ban(snowflake user_id)
+{
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (!perms().can_ban())
+        return aegis::make_exception_future<gateway::objects::ban>(error::no_permission);
+#endif
+
+    std::shared_lock<shared_mutex> l(_m);
+
+    return _bot->get_ratelimit().post_task<gateway::objects::ban>({ fmt::format("/guilds/{}/bans/{}", guild_id, user_id), rest::Get });
 }
 
 AEGIS_DECL aegis::future<gateway::objects::role> guild::create_guild_role(const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable)
