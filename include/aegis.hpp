@@ -25,14 +25,18 @@
 #include "aegis/ratelimit/ratelimit.hpp"
 #include "aegis/rest/rest_controller.hpp"
 #include "aegis/shards/shard_mgr.hpp"
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
 #include "aegis/user.hpp"
 #include "aegis/channel.hpp"
+#endif
 #include "aegis/guild.hpp"
 #include "aegis/core.hpp"
 
 #include "aegis/impl/core.cpp"
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
 #include "aegis/impl/user.cpp"
 #include "aegis/impl/channel.cpp"
+#endif
 #include "aegis/impl/guild.cpp"
 
 #else

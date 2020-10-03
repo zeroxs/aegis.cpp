@@ -24,6 +24,7 @@ public:
     constexpr snowflake() noexcept : _id(0) {}
     constexpr snowflake(int64_t _snowflake) noexcept : _id(_snowflake) {}
     constexpr snowflake(const snowflake & _snowflake) noexcept : _id(_snowflake._id) {}
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
     explicit snowflake(const char * _snowflake) noexcept : _id(std::stoll(std::string(_snowflake))) {}
     explicit snowflake(const std::string & _snowflake) noexcept : _id(std::stoll(_snowflake)) {}
 #if defined(AEGIS_CXX17)
@@ -37,6 +38,7 @@ public:
     AEGIS_DECL snowflake(const aegis::gateway::objects::message & _message) noexcept;
     AEGIS_DECL snowflake(const aegis::gateway::objects::emoji & _emoji) noexcept;
     AEGIS_DECL snowflake(const aegis::gateway::objects::attachment & _attachment) noexcept;
+#endif
 
     constexpr operator int64_t() const noexcept
     {
