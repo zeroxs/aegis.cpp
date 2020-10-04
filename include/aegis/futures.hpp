@@ -947,7 +947,7 @@ private:
         // maybe execute something in the asio queue?
 
         while (!available())
-            std::this_thread::sleep_for(std::chrono::nanoseconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
 public:
