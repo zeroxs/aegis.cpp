@@ -4,6 +4,8 @@
 #include <functional>
 #include <any>
 
+#define TIMEOUT_MS 20000 // timeout if get() gets stuck for too long
+
 namespace LSW {
 	namespace v5 {
 		namespace Tools {
@@ -57,7 +59,7 @@ namespace LSW {
 			};
 
 
-			template<typename T>
+			template<typename T = void>
 			class Future : std::future<T> {
 				std::shared_ptr<then_block<T>> next = std::make_shared<then_block<T>>(); // internally a Promise<any> (thistype)
 				fake<T> later_value;
@@ -82,16 +84,21 @@ namespace LSW {
 				T get();
 				template<typename Q = T, std::enable_if_t<std::is_void_v<Q>, int> = 0>
 				void get();
+				// wait is a get with no timeout. You can get() later.
+				template<typename Q = T, std::enable_if_t<!std::is_void_v<Q>, int> = 0>
+				void wait();
+				template<typename Q = T, std::enable_if_t<std::is_void_v<Q>, int> = 0>
+				void wait();
 				// if got, true, if not and if it has to wait, false.
 				bool get_ready(unsigned = 0);
 
-				template<typename Q = T, std::enable_if_t<!std::is_void_v<Q> && !std::is_void_v<T>, int> = 0>
+				template<typename Q = void, std::enable_if_t<!std::is_void_v<Q> && !std::is_void_v<T>, int> = 0>
 				Future<Q> then(std::function<Q(T)>);
-				template<typename Q = T, std::enable_if_t<std::is_void_v<Q> && !std::is_void_v<T>, int> = 0>
+				template<typename Q = void, std::enable_if_t<std::is_void_v<Q> && !std::is_void_v<T>, int> = 0>
 				Future<Q> then(std::function<void(T)>);
-				template<typename Q = T, std::enable_if_t<!std::is_void_v<Q>&& std::is_void_v<T>, int> = 0>
+				template<typename Q = void, std::enable_if_t<!std::is_void_v<Q>&& std::is_void_v<T>, int> = 0>
 				Future<Q> then(std::function<Q(T)>);
-				template<typename Q = T, std::enable_if_t<std::is_void_v<Q>&& std::is_void_v<T>, int> = 0>
+				template<typename Q = void, std::enable_if_t<std::is_void_v<Q>&& std::is_void_v<T>, int> = 0>
 				Future<Q> then(std::function<void(T)>);
 
 				template<typename R, std::enable_if_t<!std::is_void_v<R>, int> = 0>
@@ -105,7 +112,7 @@ namespace LSW {
 
 
 
-			template<typename T>
+			template<typename T = void>
 			class Promise : std::promise<T> {
 				bool got_future = false;
 				std::function<T(void)> task_to_do;
@@ -166,8 +173,7 @@ namespace LSW {
 			template<typename Q, std::enable_if_t<!std::is_void_v<Q>, int>>
 			T Future<T>::get() {
 				if (std::future<T>::valid()) {
-					for (size_t p = 0; p < 100 && !get_ready(100); p++); // 10 sec min
-					if (!get_ready()) throw std::exception("Blocked for too long! Variable can't be set!"); // if invalid after 10 sec, cancel?
+					if (!get_ready(TIMEOUT_MS)) throw std::exception("Blocked for too long! Variable can't be set!"); // if invalid after 20 sec, cancel yeah?
 					*later_value.var = std::future<T>::get();
 					if (next->has_future_task()) next->run_if_not_yet(*later_value.var, false);
 					got_value_already = true;
@@ -178,9 +184,28 @@ namespace LSW {
 			template<typename Q, std::enable_if_t<std::is_void_v<Q>, int>>
 			void Future<T>::get() {
 				if (std::future<T>::valid()) {
-					for (size_t p = 0; p < 100 && !get_ready(100); p++); // 10 sec min
-					if (!get_ready()) throw std::exception("Blocked for too long! Variable can't be set!"); // if invalid after 10 sec, cancel?
+					if (!get_ready(TIMEOUT_MS)) throw std::exception("Blocked for too long! Variable can't be set!"); // if invalid after 20 sec, cancel yeah?
 					std::future<T>::get();
+					if (next->has_future_task()) next->run_if_not_yet(false);
+					got_value_already = true;
+				}
+			}
+
+			template<typename T>
+			template<typename Q, std::enable_if_t<!std::is_void_v<Q>, int>>
+			void Future<T>::wait() {
+				if (std::future<T>::valid()) {
+					*later_value.var = std::future<T>::get(); // just wait in get
+					if (next->has_future_task()) next->run_if_not_yet(*later_value.var, false);
+					got_value_already = true;
+				}
+				return *later_value.var;
+			}
+			template<typename T>
+			template<typename Q, std::enable_if_t<std::is_void_v<Q>, int>>
+			void Future<T>::wait() {
+				if (std::future<T>::valid()) {
+					std::future<T>::get(); // just wait in get
 					if (next->has_future_task()) next->run_if_not_yet(false);
 					got_value_already = true;
 				}
