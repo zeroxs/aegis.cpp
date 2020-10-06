@@ -152,6 +152,12 @@ struct create_bot_t
      * @returns reference to self
      */
     create_bot_t & intents(uint32_t param) noexcept { _intents = param; return *this; }
+    /**
+     * Sets the base name of the log file.
+     * If this is not called, the default is "aegis.log"
+     * @param log_name The name of the log to create. Will be created in a subdfolder called "log"
+     */
+    create_bot_t & log_name(const std::string &log_name) noexcept { _log_name = log_name; return *this; }
 private:
     friend aegis::core;
     std::string _token;
@@ -161,6 +167,7 @@ private:
     uint32_t _cluster_id { 0 };
     uint32_t _max_clusters { 0 };
     bool _file_logging{ false };
+    std::string _log_name { "aegis.log" };
     spdlog::level::level_enum _log_level{ spdlog::level::level_enum::info };
     std::string _log_format{ "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v" };
     std::shared_ptr<asio::io_context> _io;
@@ -1138,6 +1145,7 @@ private:
     bool external_io_context = true;
     std::size_t thread_count = 0;
     std::string log_formatting;
+    std::string _log_name = "aegis.log";
     bool state_valid = true;
 
 

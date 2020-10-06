@@ -72,7 +72,7 @@ AEGIS_DECL void core::setup_logging()
     if (file_logging)
     {
         // 5MB max filesize and 10 max log files
-        auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt>("log/aegis.log", 1024 * 1024 * 5, 10);
+        auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(fmt::format("log/{}", _log_name), 1024 * 1024 * 5, 10);
         sinks.push_back(rotating);
     }
 
@@ -129,6 +129,7 @@ AEGIS_DECL core::core(create_bot_t bot_config)
     file_logging = bot_config._file_logging;
     force_shard_count = bot_config._force_shard_count;
     log_formatting = bot_config._log_format;
+    _log_name = bot_config._log_name;
     _loglevel = bot_config._log_level;
     _cluster_id = bot_config._cluster_id;
     _max_clusters = bot_config._max_clusters;
