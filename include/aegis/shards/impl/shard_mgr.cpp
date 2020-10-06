@@ -18,13 +18,15 @@ namespace aegis
 namespace shards
 {
 
-AEGIS_DECL shard_mgr::shard_mgr(std::string token, asio::io_context & _io, std::shared_ptr<spdlog::logger> log)
+AEGIS_DECL shard_mgr::shard_mgr(std::string token, asio::io_context & _io, std::shared_ptr<spdlog::logger> log, uint32_t cluster_id, uint32_t max_clusters)
     : _io_context(_io)
     , force_shard_count(0)
     , shard_max_count(0)
     , log(log)
     , _connecting_shard(nullptr)
     , _token(token)
+    , _cluster_id(cluster_id)
+    , _max_clusters(max_clusters)
 {
     websocket_o.init_asio(&_io_context);
 
@@ -56,16 +58,26 @@ AEGIS_DECL void shard_mgr::start()
         throw exception(error::get_gateway);
 
     starttime = std::chrono::steady_clock::now();
-    
-    log->info("Starting bot with {} shards", shard_max_count);
+
+    int shard_start = 0;
+    int shard_end = shard_max_count;
+
+    std::string cluster;
+    if (_max_clusters) {
+	    cluster = fmt::format(" (cluster ID {}, max clusters: {})", _cluster_id, _max_clusters);
+    }
+   
+    log->info("Starting bot with {} shards{}", shard_max_count, cluster);
     {
         log->info("Websocket[s] connecting");
-        for (uint32_t k = 0; k < shard_max_count; ++k)
+        for (uint32_t k = shard_start; k < shard_end; ++k)
         {
-            auto _shard = std::make_unique<aegis::shards::shard>(_io_context, websocket_o, k);
-            AEGIS_DEBUG(log, "Shard#{}: added to connect list", _shard->get_id());
-            _shards_to_connect.push_back(_shard.get());
-            _shards.push_back(std::move(_shard));
+	    if (!_max_clusters || (k % _max_clusters == _cluster_id)) {
+       	        auto _shard = std::make_unique<aegis::shards::shard>(_io_context, websocket_o, k);
+       	        AEGIS_DEBUG(log, "Shard#{}: added to connect list", _shard->get_id());
+	        _shards_to_connect.push_back(_shard.get());
+                _shards.push_back(std::move(_shard));
+	    }
         }
 
         ws_timer = websocket_o.set_timer(100, std::bind(&shard_mgr::ws_status, this, std::placeholders::_1));

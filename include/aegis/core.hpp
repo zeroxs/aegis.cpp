@@ -131,7 +131,21 @@ struct create_bot_t
     create_bot_t & log_level(const spdlog::level::level_enum param) noexcept { _log_level = param; return *this; }
     create_bot_t & log_format(const std::string & param) noexcept { _log_format = param; return *this; }
     create_bot_t & io_context(std::shared_ptr<asio::io_context> param) noexcept { _io = param; return *this; }
+    /**
+     * Defines logging parameters
+     * @param param A shard pointer to a custom spdlog::logger object
+     */
     create_bot_t & logger(std::shared_ptr<spdlog::logger> param) noexcept { _log = param; return *this; }
+    /**
+     * Sets up clustering for large bots.
+     * Clustering splits the bot's shards across multiple process, where each process takes on an equal subset of the bot's shard count.
+     * For example if max_clusters is set to 2 on an 8 shard bot, then cluster_id 0 will contain shards 0, 2, 4 and 6 while cluster_id 1
+     * would contain shards 1, 3, 5 and 7. It is the responsibility of your bot to marshall information across clusters if needed, (for
+     * example using redis, SQL, etc ) as aegis will only see the shards that are part of the cluster for which it is authoritative.
+     * @param cluster_id The cluster ID of this bot, zero-based
+     * @param max_clusters The number of clusters that the bot has
+     */
+    create_bot_t & clustering(uint32_t cluster_id, uint32_t max_clusters) noexcept { _cluster_id = cluster_id; _max_clusters = max_clusters; return *this; }
     /**
      * Defines which events your bot will receive, events that you don't set here will be filtered out from the websocket at discord's side.
      * @param param A bit mask defined by one or more aegis::intents.
@@ -144,6 +158,8 @@ private:
     uint32_t _intents{ intent::IntentsDisabled };
     uint32_t _thread_count{ std::thread::hardware_concurrency() };
     uint32_t _force_shard_count{ 0 };
+    uint32_t _cluster_id { 0 };
+    uint32_t _max_clusters { 0 };
     bool _file_logging{ false };
     spdlog::level::level_enum _log_level{ spdlog::level::level_enum::info };
     std::string _log_format{ "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v" };
@@ -1099,6 +1115,9 @@ private:
     // If you want to turn these on, you should use the create_bot_t class intents() method
     // This defaults to a special-case value which causes the intents values to not be sent.
     uint32_t _intents = intent::IntentsDisabled;
+
+    uint32_t _cluster_id = 0;
+    uint32_t _max_clusters = 0;
 
     bot_status _status = bot_status::uninitialized;
 

@@ -103,7 +103,7 @@ AEGIS_DECL void core::setup_context()
 
 AEGIS_DECL void core::setup_shard_mgr()
 {
-    _shard_mgr = std::make_shared<shards::shard_mgr>(_token, *_io_context, log);
+    _shard_mgr = std::make_shared<shards::shard_mgr>(_token, *_io_context, log, _cluster_id, _max_clusters);
 
     _rest = std::make_shared<rest::rest_controller>(_token, "/api/v6", "discord.com", &get_io_context());
 
@@ -130,6 +130,8 @@ AEGIS_DECL core::core(create_bot_t bot_config)
     force_shard_count = bot_config._force_shard_count;
     log_formatting = bot_config._log_format;
     _loglevel = bot_config._log_level;
+    _cluster_id = bot_config._cluster_id;
+    _max_clusters = bot_config._max_clusters;
 
     if (bot_config._log)
         log = bot_config._log;
