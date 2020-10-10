@@ -97,8 +97,8 @@ inline void from_json(const nlohmann::json& j, channel& m)
         m.last_message_id = j["last_message_id"];
     if (j.count("bitrate") && !j["bitrate"].is_null())
         m.bitrate = j["bitrate"];
-    if (j.count("userlimit") && !j["userlimit"].is_null())
-        m.userlimit = j["userlimit"];
+    if (j.count("user_limit") && !j["user_limit"].is_null())
+        m.userlimit = j["user_limit"];
     if (j.count("icon") && !j["icon"].is_null())
         m.icon = j["icon"].get<std::string>();
     if (j.count("owner_id") && !j["owner_id"].is_null())
@@ -131,7 +131,7 @@ inline void to_json(nlohmann::json& j, const channel& m)
     if (m.bitrate)
         j["bitrate"] = m.bitrate;
     if (m.userlimit)
-        j["userlimit"] = m.userlimit;
+        j["user_limit"] = m.userlimit;
     if (!m.icon.empty())
         j["icon"] = m.icon;
     if (m.bitrate)
