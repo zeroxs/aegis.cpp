@@ -64,20 +64,20 @@ AEGIS_DECL void shard_mgr::start()
 
     std::string cluster;
     if (_max_clusters) {
-	    cluster = fmt::format(" (cluster ID {}, max clusters: {})", _cluster_id, _max_clusters);
+            cluster = fmt::format(" (cluster ID {}, max clusters: {})", _cluster_id, _max_clusters);
     }
-   
+    
     log->info("Starting bot with {} shards{}", shard_max_count, cluster);
     {
         log->info("Websocket[s] connecting");
-        for (uint32_t k = shard_start; k < shard_end; ++k)
+        for (uint32_t k = 0; k < shard_max_count; ++k)
         {
-	    if (!_max_clusters || (k % _max_clusters == _cluster_id)) {
-       	        auto _shard = std::make_unique<aegis::shards::shard>(_io_context, websocket_o, k);
-       	        AEGIS_DEBUG(log, "Shard#{}: added to connect list", _shard->get_id());
-	        _shards_to_connect.push_back(_shard.get());
+            if (!_max_clusters || (k % _max_clusters == _cluster_id)) {
+                auto _shard = std::make_unique<aegis::shards::shard>(_io_context, websocket_o, k);
+                AEGIS_DEBUG(log, "Shard#{}: added to connect list", _shard->get_id());
+                _shards_to_connect.push_back(_shard.get());
                 _shards.push_back(std::move(_shard));
-	    }
+            }
         }
 
         ws_timer = websocket_o.set_timer(100, std::bind(&shard_mgr::ws_status, this, std::placeholders::_1));

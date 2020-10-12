@@ -807,12 +807,11 @@ private:
         {
             std::lock_guard<std::recursive_mutex> gl(*_global_m);
             std::lock_guard<std::recursive_mutex> l(_promise->_m);
-            if (!_promise)
-                goto NOTREALLYTHERE;
-            _promise->_future = nullptr;
-            _promise = nullptr;
+            if (_promise) {
+                _promise->_future = nullptr;
+                _promise = nullptr;
+            }
         }
-    NOTREALLYTHERE:;
         return std::move(*st);
     }
 
@@ -852,18 +851,18 @@ public:
         std::unique_lock<std::recursive_mutex> l2(x._m, std::defer_lock);
         std::lock(l, l2);
 
-        _promise = x._promise;
-        if (!_promise)
-        {
-            _local_state = std::move(x._local_state);
-        }
-        x._promise = nullptr;
-        if (_promise)
-        {
-            std::lock_guard<std::recursive_mutex> gl(*_global_m);
-            std::lock_guard<std::recursive_mutex> l(_promise->_m);
+        if (_promise = x._promise) {
+            x._promise = nullptr;
+            std::unique_lock<std::recursive_mutex> gl(*_global_m, std::defer_lock);
+            std::unique_lock<std::recursive_mutex> l3(_promise->_m, std::defer_lock);
+            std::lock(gl, l3);
             _promise->_future = this;
         }
+        else {
+            x._promise = nullptr;
+            _local_state = std::move(x._local_state);
+        }
+
         std::atomic_thread_fence(std::memory_order_release);
     }
     future(const future&) = delete;
@@ -947,7 +946,7 @@ private:
         // maybe execute something in the asio queue?
 
         while (!available())
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::nanoseconds(1));
     }
 
 public:
