@@ -2,18 +2,13 @@
 // shard.cpp
 // *********
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
 
 #include "aegis/shards/shard.hpp"
 #include "aegis/error.hpp"
-#ifdef WIN32
-# include "aegis/push.hpp"
-# include <websocketpp/connection.hpp>
-# include "aegis/pop.hpp"
-#endif
 
 namespace aegis
 {

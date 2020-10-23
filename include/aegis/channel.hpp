@@ -2,7 +2,7 @@
 // channel.hpp
 // ***********
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -62,6 +62,24 @@ struct edit_message_t
     snowflake _message_id;
     std::string _content;
     json _embed;
+};
+
+struct get_messages_t
+{
+    enum class get_messages_type {
+        AROUND,
+        BEFORE,
+        AFTER,
+        LAST
+    };
+    get_messages_t & message_id(snowflake param) { _message_id = param; return *this; }
+    get_messages_t & around() { _type = get_messages_type::AROUND; return *this; }
+    get_messages_t & before() { _type = get_messages_type::BEFORE; return *this; }
+    get_messages_t & after() { _type = get_messages_type::AFTER; return *this; }
+    get_messages_t & limit(int16_t param) { _limit = param; return *this; }
+    get_messages_type _type = get_messages_type::LAST;
+    snowflake _message_id;
+    int16_t _limit;
 };
 
 struct modify_channel_t
@@ -175,7 +193,22 @@ public:
      */
     AEGIS_DECL guild & get_guild(std::error_code & ec) const noexcept;
 
+    /// Builds a mention for this channel
+    /**
+     * @returns string of channel mention
+     */
+    AEGIS_DECL std::string get_mention() const noexcept;
+
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
+    /// Get snowflake of the last message sent
+    /**
+     * @returns Snowflake of the last message sent in this channel
+     */
+    snowflake get_last_message_id() const noexcept
+    {
+        return last_message_id;
+    }
+
     /// Get channel name
     /**
      * @returns String of channel name
@@ -187,13 +220,51 @@ public:
         return std::move(_name);
     }
 
+    /// Get channel topic
+    /**
+     * @returns String of channel topic
+     */
+    std::string get_topic() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        std::string _topic = topic;
+        return std::move(_topic);
+    }
+
+    /// Get channel position in the guild channel list
+    /**
+     * @returns Position of this channel in the guild channel list
+     */
+    uint32_t get_position() const noexcept
+    {
+        return position;
+    }
+
     /// Get the type of this channel
     /**
-     * @returns An channel_type enum for this channel
+     * @returns A channel_type enum for this channel
      */
     gateway::objects::channel::channel_type get_type() const noexcept
     {
         return type;
+    }
+
+    /// Get bit rate of voice channel
+    /**
+     * @returns Bit rate of voice channel, or 0 if this is not a voice channel
+     */
+    uint16_t get_bitrate() const noexcept
+    {
+        return bitrate;
+    }
+
+    /// Get user limit of voice channel
+    /**
+     * @returns User limit of voice channel, or 0 if there is no limit or if this is not a voice channel
+     */
+    uint16_t get_user_limit() const noexcept
+    {
+        return user_limit;
     }
 
     /// Get bot's permission for this channel
@@ -201,6 +272,16 @@ public:
      * @returns Bitmask of current permissions for this channel contained within `permission` object
      */
     AEGIS_DECL permission perms() const noexcept;
+
+    /// Get rate limit per user of this channel
+    /**
+     * Bots and users with the permission to manage messages or manage channel, are unaffected by this rate limit
+     * @returns Amount of seconds a user has to wait before sending another message
+     */
+    uint16_t get_rate_limit_per_user() const noexcept
+    {
+        return rate_limit_per_user;
+    }
 #endif
 
     /// Send message to this channel
@@ -240,6 +321,15 @@ public:
      * @returns aegis::future<gateway::objects::message>
      */
     AEGIS_DECL aegis::future<gateway::objects::message> get_message(snowflake message_id);
+
+    /// Get multiple messages from this channel
+    /**
+     * @see aegis::get_messages_t
+     * @param obj Struct of the request
+     * @returns aegis::future<gateway::objects::messages>
+     */
+    AEGIS_DECL aegis::future<gateway::objects::messages> get_messages(get_messages_t obj);
+
 
     /// Edit a message in this channel
     /**
@@ -599,7 +689,7 @@ private:
     uint16_t bitrate = 0; /**< Bit rate of voice channel */
     uint16_t user_limit = 0; /**< User limit of voice channel */
     std::unordered_map<int64_t, gateway::objects::permission_overwrite> overrides; /**< Snowflake map of user/role to permission overrides */
-    uint16_t rate_limit_per_user = 0; /**< Limit of how many seconds sent messages must have between each */
+    uint16_t rate_limit_per_user = 0; /**< Amount of seconds a user must wait before sending another message */
 #endif
     asio::io_context & _io_context;
     mutable shared_mutex _m;

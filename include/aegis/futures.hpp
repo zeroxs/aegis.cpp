@@ -2,7 +2,7 @@
 // futures.hpp
 // ***********
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
@@ -736,13 +736,12 @@ private:
     future_state<T> * state() noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
-        
-        std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
-        std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
-        std::lock(l, l2);
-        
         if (_promise)
         {
+            std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
+            std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
+            std::lock(l, l2);
+            
             //std::lock_guard<std::recursive_mutex> l(_promise->_m);
             future_state<T> * _st = _promise->_state;
             std::atomic_thread_fence(std::memory_order_release);
@@ -758,13 +757,12 @@ private:
     const future_state<T> * state() const noexcept
     {
         std::atomic_thread_fence(std::memory_order_acquire);
-        
-        std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
-        std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
-        std::lock(l, l2);
-        
         if (_promise)
         {
+            std::unique_lock<std::recursive_mutex> l(_m, std::defer_lock);
+            std::unique_lock<std::recursive_mutex> l2(*_global_m, std::defer_lock);
+            std::lock(l, l2);
+
             //std::lock_guard<std::recursive_mutex> l(_promise->_m);
             const future_state<T> * _st = _promise->_state;
             std::atomic_thread_fence(std::memory_order_release);
@@ -893,9 +891,9 @@ public:
                 _promise->_future = nullptr;
             }
         }
-        if (failed())
+        /*if (failed())
         {
-        }
+        }*/
         std::atomic_thread_fence(std::memory_order_release);
     }
 
@@ -949,7 +947,7 @@ private:
         // maybe execute something in the asio queue?
 
         while (!available())
-            std::this_thread::sleep_for(std::chrono::nanoseconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
 public:

@@ -2,7 +2,7 @@
 // user.cpp
 // ********
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -17,7 +17,6 @@
 #include <queue>
 #include <mutex>
 #include <shared_mutex>
-#include <spdlog/spdlog.h>
 
 namespace aegis
 {
@@ -81,7 +80,12 @@ AEGIS_DECL void user::_load_nolock(guild * _guild, const json & obj, shards::sha
 
                 json roles = obj["roles"];
                 for (auto & r : roles)
-                    g_info->roles.emplace_back(std::stoull(r.get<std::string>()));
+                {
+                    if (r.is_object())
+                        g_info->roles.emplace_back(std::stoull(r["id"].get<std::string>()));
+                    else if (r.is_string())
+                        g_info->roles.emplace_back(std::stoull(r.get<std::string>()));
+                }
             }
 
             if (obj.count("nick") && !obj["nick"].is_null())
@@ -206,6 +210,11 @@ AEGIS_DECL void user::_load_data(gateway::objects::user mbr)
 AEGIS_DECL std::string user::get_mention() const noexcept
 {
     return fmt::format("<@{}>", _member_id);
+}
+
+AEGIS_DECL std::string user::get_nickname_mention() const noexcept
+{
+    return fmt::format("<@!{}>", _member_id);
 }
 
 }

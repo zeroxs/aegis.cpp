@@ -2,7 +2,7 @@
 // core.hpp
 // ********
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
@@ -11,6 +11,18 @@
 
 #include "aegis/fwd.hpp"
 #include "aegis/config.hpp"
+
+#include <asio/io_context.hpp>
+#include <asio/bind_executor.hpp>
+#include <asio/executor_work_guard.hpp>
+
+#ifdef WIN32
+# include "aegis/push.hpp"
+# include "websocketpp/config/asio_client.hpp"
+# include "websocketpp/client.hpp"
+# include "aegis/pop.hpp"
+#endif
+
 #include "aegis/utility.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/futures.hpp"
@@ -23,17 +35,6 @@
 #include "aegis/gateway/objects/channel.hpp"
 #include "aegis/gateway/objects/guild.hpp"
 #include "aegis/gateway/objects/activity.hpp"
-
-#include <asio/io_context.hpp>
-#include <asio/bind_executor.hpp>
-#include <asio/executor_work_guard.hpp>
-
-#ifdef WIN32
-# include "aegis/push.hpp"
-# include "websocketpp/config/asio_client.hpp"
-# include "websocketpp/client.hpp"
-# include "aegis/pop.hpp"
-#endif
 
 #include <spdlog/spdlog.h>
 
@@ -79,7 +80,8 @@ struct thread_state
 /// Gateway intents for masking out events on the websocket.
 /// Use as a bitfield with create_bot_t::intents().
 // https://github.com/discordapp/discord-api-docs/pull/1307
-enum intent {
+enum intent : uint32_t {
+	IntentsDisabled = 0xffffffff,	/* Special case, disables intents if none have been defined */
 	Guilds = (1 << 0),
 	GuildMembers = (1 << 1),
 	GuildBans = (1 << 2),
@@ -129,23 +131,43 @@ struct create_bot_t
     create_bot_t & log_level(const spdlog::level::level_enum param) noexcept { _log_level = param; return *this; }
     create_bot_t & log_format(const std::string & param) noexcept { _log_format = param; return *this; }
     create_bot_t & io_context(std::shared_ptr<asio::io_context> param) noexcept { _io = param; return *this; }
+    /**
+     * Defines logging parameters
+     * @param param A shard pointer to a custom spdlog::logger object
+     */
     create_bot_t & logger(std::shared_ptr<spdlog::logger> param) noexcept { _log = param; return *this; }
     /**
+     * Sets up clustering for large bots.
+     * Clustering splits the bot's shards across multiple process, where each process takes on an equal subset of the bot's shard count.
+     * For example if max_clusters is set to 2 on an 8 shard bot, then cluster_id 0 will contain shards 0, 2, 4 and 6 while cluster_id 1
+     * would contain shards 1, 3, 5 and 7. It is the responsibility of your bot to marshall information across clusters if needed, (for
+     * example using redis, SQL, etc ) as aegis will only see the shards that are part of the cluster for which it is authoritative.
+     * @param cluster_id The cluster ID of this bot, zero-based
+     * @param max_clusters The number of clusters that the bot has
+     */
+    create_bot_t & clustering(uint32_t cluster_id, uint32_t max_clusters) noexcept { _cluster_id = cluster_id; _max_clusters = max_clusters; return *this; }
+    /**
      * Defines which events your bot will receive, events that you don't set here will be filtered out from the websocket at discord's side.
-     * The default intent mask, if you don't call this method, is:
-     * intent::Guilds | intent::GuildMembers | intent::GuildBans | intent::GuildEmojis | intent::GuildIntegrations | intent::GuildWebhooks | intent::GuildInvites |
-     * intent::GuildVoiceStates | intent::GuildMessages | intent::GuildMessageReactions | intent::DirectMessages | intent::DirectMessageReactions
      * @param param A bit mask defined by one or more aegis::intents.
      * @returns reference to self
      */
     create_bot_t & intents(uint32_t param) noexcept { _intents = param; return *this; }
+    /**
+     * Sets the base name of the log file.
+     * If this is not called, the default is "aegis.log"
+     * @param log_name The name of the log to create. Will be created in a subdfolder called "log"
+     */
+    create_bot_t & log_name(const std::string &log_name) noexcept { _log_name = log_name; return *this; }
 private:
     friend aegis::core;
     std::string _token;
-    uint32_t _intents{ intent::Guilds | intent::GuildMembers | intent::GuildBans | intent::GuildEmojis | intent::GuildIntegrations | intent::GuildWebhooks | intent::GuildInvites | intent::GuildVoiceStates | intent::GuildMessages | intent::GuildMessageReactions | intent::DirectMessages | intent::DirectMessageReactions };
+    uint32_t _intents{ intent::IntentsDisabled };
     uint32_t _thread_count{ std::thread::hardware_concurrency() };
     uint32_t _force_shard_count{ 0 };
+    uint32_t _cluster_id { 0 };
+    uint32_t _max_clusters { 0 };
     bool _file_logging{ false };
+    std::string _log_name { "aegis.log" };
     spdlog::level::level_enum _log_level{ spdlog::level::level_enum::info };
     std::string _log_format{ "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v" };
     std::shared_ptr<asio::io_context> _io;
@@ -380,6 +402,13 @@ public:
      */
     AEGIS_DECL user * find_user(snowflake id) const noexcept;
 
+    /// Obtain a pointer to a user by snowflake without locking - for interal user
+    /**
+     * @param id Snowflake of user to search for
+     * @returns Pointer to user or nullptr
+     */
+    AEGIS_DECL user * find_user_nolock(snowflake id) const noexcept;
+
     /// Obtain a pointer to a user by snowflake. If none exists, creates the object.
     /**
      * @param id Snowflake of user to search for
@@ -404,6 +433,13 @@ public:
      */
     AEGIS_DECL channel * find_channel(snowflake id) const noexcept;
 
+    /// Obtain a pointer to a channel by snowflake without locking - for internal use
+    /**
+     * @param id Snowflake of channel to search for
+     * @returns Pointer to channel or nullptr
+     */
+    AEGIS_DECL channel * find_channel_nolock(snowflake id) const noexcept;
+
     /// Obtain a pointer to a channel by snowflake. If none exists, creates the object.
     /**
      * @param id Snowflake of channel to search for
@@ -417,6 +453,13 @@ public:
      * @returns Pointer to guild or nullptr
      */
     AEGIS_DECL guild * find_guild(snowflake id) const noexcept;
+
+    /// Obtain a pointer to a guild by snowflake without locking - for internal use
+    /**
+     * @param id Snowflake of guild to search for
+     * @returns Pointer to guild or nullptr
+     */
+    AEGIS_DECL guild * find_guild_nolock(snowflake id) const noexcept;
 
     /// Obtain a pointer to a guild by snowflake. If none exists, creates the object.
     /**
@@ -502,22 +545,26 @@ public:
     }
 
     std::unordered_map<snowflake, std::unique_ptr<channel>> channels;
-    std::unordered_map<snowflake, std::unique_ptr<channel>> stale_channels;
+    std::unordered_map<snowflake, std::unique_ptr<channel>> stale_channels; //<\todo do something with stales - clear them?
     std::unordered_map<snowflake, std::unique_ptr<guild>> guilds;
-    std::unordered_map<snowflake, std::unique_ptr<guild>> stale_guilds;
+    std::unordered_map<snowflake, std::unique_ptr<guild>> stale_guilds; //<\todo do something with stales - clear them?
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     std::unordered_map<snowflake, std::unique_ptr<user>> users;
-    std::unordered_map<snowflake, std::unique_ptr<user>> stale_users;
+    std::unordered_map<snowflake, std::unique_ptr<user>> stale_users; //<\todo do something with stales - clear them?
 #endif
     std::map<std::string, uint64_t> message_count;
 
     std::string self_presence;
     uint32_t force_shard_count = 0;
-    uint32_t shard_max_count = 0;
+    uint32_t shard_max_count = 0; //<\deprecated moving into private
     std::string mention;
     bool wsdbg = false;
     std::unique_ptr<asio::io_context::strand> ws_open_strand;
     std::shared_ptr<spdlog::logger> log;
+
+    void bulk_members_on_connect(bool param) { bulk_members_on_connect_ = param; }
+    bool bulk_members_on_connect() { return bulk_members_on_connect_; }
+    int64_t shard_count() { return shard_max_count; }
 
 #if defined(AEGIS_PROFILING)
     using message_end_t = std::function<void(std::chrono::steady_clock::time_point, const std::string&)>;
@@ -531,11 +578,13 @@ public:
 #endif
 
 #if defined(AEGIS_EVENTS)
+    //@todo make bool to determine ignoring an event
     using websocket_event_t = std::function<void(std::string, aegis::shards::shard&)>;
     void set_on_websocket_event(websocket_event_t cb) { websocket_event = cb; }
     websocket_event_t websocket_event;
 #endif
 
+#pragma region event handlers
     using typing_start_t = std::function<void(gateway::events::typing_start obj)>;
     using message_create_t = std::function<void(gateway::events::message_create obj)>;
     using message_update_t = std::function<void(gateway::events::message_update obj)>;
@@ -570,107 +619,143 @@ public:
     using voice_server_update_t = std::function<void(gateway::events::voice_server_update obj)>;
     using webhooks_update_t = std::function<void(gateway::events::webhooks_update obj)>;
 
+    using raw_event_t = std::function<void(json obj, shards::shard * _shard)>;
+
     /// TYPING_START callback
     void set_on_typing_start(typing_start_t cb) { i_typing_start = cb; }
+    void set_on_typing_start_raw(raw_event_t cb) { i_typing_start_raw = cb; }
 
     /// MESSAGE_CREATE callback
     void set_on_message_create(message_create_t cb) { i_message_create = cb; }
+    void set_on_message_create_raw(raw_event_t cb) { i_message_create_raw = cb; }
 
     /// MESSAGE_CREATE callback for direct messages
     void set_on_message_create_dm(message_create_t cb) { i_message_create_dm = cb; }
+    void set_on_message_create_dm_raw(raw_event_t cb) { i_message_create_dm_raw = cb; }
 
     /// MESSAGE_UPDATE callback
     void set_on_message_update(message_update_t cb) { i_message_update = cb; }
+    void set_on_message_update_raw(raw_event_t cb) { i_message_update_raw = cb; }
 
     /// MESSAGE_DELETE callback
     void set_on_message_delete(message_delete_t cb) { i_message_delete = cb; }
+    void set_on_message_delete_raw(raw_event_t cb) { i_message_delete_raw = cb; }
 
     /// MESSAGE_DELETE_BULK callback
     void set_on_message_delete_bulk(message_delete_bulk_t cb) { i_message_delete_bulk = cb; }
+    void set_on_message_delete_bulk_raw(raw_event_t cb) { i_message_delete_bulk_raw = cb; }
 
     /// GUILD_CREATE callback
     void set_on_guild_create(guild_create_t cb) { i_guild_create = cb; }
+    void set_on_guild_create_raw(raw_event_t cb) { i_guild_create_raw = cb; }
 
     /// GUILD_UPDATE callback
     void set_on_guild_update(guild_update_t cb) { i_guild_update = cb; }
+    void set_on_guild_update_raw(raw_event_t cb) { i_guild_update_raw = cb; }
 
     /// GUILD_DELETE callback
     void set_on_guild_delete(guild_delete_t cb) { i_guild_delete = cb; }
+    void set_on_guild_delete_raw(raw_event_t cb) { i_guild_delete_raw = cb; }
 
     /// MESSAGE_REACTION_ADD callback
     void set_on_message_reaction_add(message_reaction_add_t cb) { i_message_reaction_add = cb; }
+    void set_on_message_reaction_add_raw(raw_event_t cb) { i_message_reaction_add_raw = cb; }
 
     /// MESSAGE_REACTION_REMOVE callback
     void set_on_message_reaction_remove(message_reaction_remove_t cb) { i_message_reaction_remove = cb; }
+    void set_on_message_reaction_remove_raw(raw_event_t cb) { i_message_reaction_remove_raw = cb; }
 
     /// MESSAGE_REACTION_REMOVE_ALL callback
     void set_on_message_reaction_remove_all(message_reaction_remove_all_t cb) { i_message_reaction_remove_all = cb; }
+    void set_on_message_reaction_remove_all_raw(raw_event_t cb) { i_message_reaction_remove_all_raw = cb; }
 
     /// USER_UPDATE callback
     void set_on_user_update(user_update_t cb) { i_user_update = cb; }
+    void set_on_user_update_raw(raw_event_t cb) { i_user_update_raw = cb; }
 
     /// READY callback
     void set_on_ready(ready_t cb) { i_ready = cb; }
+    void set_on_ready_raw(raw_event_t cb) { i_ready_raw = cb; }
 
     /// RESUME callback
     void set_on_resumed(resumed_t cb) { i_resumed = cb; }
+    void set_on_resumed_raw(raw_event_t cb) { i_resumed_raw = cb; }
 
     /// CHANNEL_CREATE callback
     void set_on_channel_create(channel_create_t cb) { i_channel_create = cb; }
+    void set_on_channel_create_raw(raw_event_t cb) { i_channel_create_raw = cb; }
 
     /// CHANNEL_UPDATE callback
     void set_on_channel_update(channel_update_t cb) { i_channel_update = cb; }
+    void set_on_channel_update_raw(raw_event_t cb) { i_channel_update_raw = cb; }
 
     /// CHANNEL_DELETE callback
     void set_on_channel_delete(channel_delete_t cb) { i_channel_delete = cb; }
+    void set_on_channel_delete_raw(raw_event_t cb) { i_channel_delete_raw = cb; }
 
     /// CHANNEL_PINS_UPDATE callback
     void set_on_channel_pins_update(channel_pins_update_t cb) { i_channel_pins_update = cb; }
+    void set_on_channel_pins_update_raw(raw_event_t cb) { i_channel_pins_update_raw = cb; }
 
     /// GUILD_BAN_ADD callback
     void set_on_guild_ban_add(guild_ban_add_t cb) { i_guild_ban_add = cb; }
+    void set_on_guild_ban_add_raw(raw_event_t cb) { i_guild_ban_add_raw = cb; }
 
     /// GUILD_BAN_REMOVE callback
     void set_on_guild_ban_remove(guild_ban_remove_t cb) { i_guild_ban_remove = cb; }
+    void set_on_guild_ban_remove_raw(raw_event_t cb) { i_guild_ban_remove_raw = cb; }
 
     /// GUILD_EMOJIS_UPDATE callback
     void set_on_guild_emojis_update(guild_emojis_update_t cb) { i_guild_emojis_update = cb; }
+    void set_on_guild_emojis_update_raw(raw_event_t cb) { i_guild_emojis_update_raw = cb; }
 
     /// GUILD_INTEGRATIONS_UPDATE callback
     void set_on_guild_integrations_update(guild_integrations_update_t cb) { i_guild_integrations_update = cb; }
+    void set_on_guild_integrations_update_raw(raw_event_t cb) { i_guild_integrations_update_raw = cb; }
 
     /// GUILD_MEMBER_ADD callback
     void set_on_guild_member_add(guild_member_add_t cb) { i_guild_member_add = cb; }
+    void set_on_guild_member_add_raw(raw_event_t cb) { i_guild_member_add_raw = cb; }
 
     /// GUILD_MEMBER_REMOVE callback
     void set_on_guild_member_remove(guild_member_remove_t cb) { i_guild_member_remove = cb; }
+    void set_on_guild_member_remove_raw(raw_event_t cb) { i_guild_member_remove_raw = cb; }
 
     /// GUILD_MEMBER_UPDATE callback
     void set_on_guild_member_update(guild_member_update_t cb) { i_guild_member_update = cb; }
+    void set_on_guild_member_update_raw(raw_event_t cb) { i_guild_member_update_raw = cb; }
 
     /// GUILD_MEMBERS_CHUNK callback
     void set_on_guild_member_chunk(guild_members_chunk_t cb) { i_guild_members_chunk = cb; }
+    void set_on_guild_member_chunk_raw(raw_event_t cb) { i_guild_members_chunk_raw = cb; }
 
     /// GUILD_ROLE_CREATE callback
     void set_on_guild_role_create(guild_role_create_t cb) { i_guild_role_create = cb; }
+    void set_on_guild_role_create_raw(raw_event_t cb) { i_guild_role_create_raw = cb; }
 
     /// GUILD_ROLE_UPDATE callback
     void set_on_guild_role_update(guild_role_update_t cb) { i_guild_role_update = cb; }
+    void set_on_guild_role_update_raw(raw_event_t cb) { i_guild_role_update_raw = cb; }
 
     /// GUILD_ROLE_DELETE callback
     void set_on_guild_role_delete(guild_role_delete_t cb) { i_guild_role_delete = cb; }
+    void set_on_guild_role_delete_raw(raw_event_t cb) { i_guild_role_delete_raw = cb; }
 
     /// PRESENCE_UPDATE callback
     void set_on_presence_update(presence_update_t cb) { i_presence_update = cb; }
+    void set_on_presence_update_raw(raw_event_t cb) { i_presence_update_raw = cb; }
 
     /// VOICE_STATE_UPDATE callback
     void set_on_voice_state_update(voice_state_update_t cb) { i_voice_state_update = cb; }
+    void set_on_voice_state_update_raw(raw_event_t cb) { i_voice_state_update_raw = cb; }
 
     /// VOICE_SERVER_UPDATE callback
     void set_on_voice_server_update(voice_server_update_t cb) { i_voice_server_update = cb; }
+    void set_on_voice_server_update_raw(raw_event_t cb) { i_voice_server_update_raw = cb; }
 
     /// WEBHOOKS_UPDATE callback
     void set_on_webhooks_update(webhooks_update_t cb) { i_webhooks_update = cb; }
+    void set_on_webhooks_update_raw(raw_event_t cb) { i_webhooks_update_raw = cb; }
 
     /// Shard disconnect callback
     void set_on_shard_disconnect(std::function<void(aegis::shards::shard*)> cb)
@@ -683,6 +768,7 @@ public:
     {
         _shard_mgr->i_shard_connect = cb;
     }
+#pragma endregion
 
     /// Send a websocket message to a single shard
     /**
@@ -884,6 +970,8 @@ private:
 
     AEGIS_DECL void _thread_track(thread_state * t_state);
 
+#pragma region event handlers
+    //preprocessed object events
     typing_start_t i_typing_start;
     message_create_t i_message_create;
     message_create_t i_message_create_dm;
@@ -919,6 +1007,78 @@ private:
     voice_server_update_t i_voice_server_update;
     webhooks_update_t i_webhooks_update;
 
+    //raw json events
+    raw_event_t i_typing_start_raw;
+    raw_event_t i_message_create_raw;
+    raw_event_t i_message_create_dm_raw;
+    raw_event_t i_message_update_raw;
+    raw_event_t i_message_delete_raw;
+    raw_event_t i_message_delete_bulk_raw;
+    raw_event_t i_guild_create_raw;
+    raw_event_t i_guild_update_raw;
+    raw_event_t i_guild_delete_raw;
+    raw_event_t i_message_reaction_add_raw;
+    raw_event_t i_message_reaction_remove_raw;
+    raw_event_t i_message_reaction_remove_all_raw;
+    raw_event_t i_user_update_raw;
+    raw_event_t i_ready_raw;
+    raw_event_t i_resumed_raw;
+    raw_event_t i_channel_create_raw;
+    raw_event_t i_channel_update_raw;
+    raw_event_t i_channel_delete_raw;
+    raw_event_t i_channel_pins_update_raw;
+    raw_event_t i_guild_ban_add_raw;
+    raw_event_t i_guild_ban_remove_raw;
+    raw_event_t i_guild_emojis_update_raw;
+    raw_event_t i_guild_integrations_update_raw;
+    raw_event_t i_guild_member_add_raw;
+    raw_event_t i_guild_member_remove_raw;
+    raw_event_t i_guild_member_update_raw;
+    raw_event_t i_guild_members_chunk_raw;
+    raw_event_t i_guild_role_create_raw;
+    raw_event_t i_guild_role_update_raw;
+    raw_event_t i_guild_role_delete_raw;
+    raw_event_t i_presence_update_raw;
+    raw_event_t i_voice_state_update_raw;
+    raw_event_t i_voice_server_update_raw;
+    raw_event_t i_webhooks_update_raw;
+
+
+    AEGIS_DECL void ws_presence_update(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_typing_start(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_message_create(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_message_update(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_guild_create(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_guild_update(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_guild_delete(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_message_reaction_add(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_message_reaction_remove(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_message_reaction_remove_all(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_message_delete(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_message_delete_bulk(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_user_update(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_resumed(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_ready(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_channel_create(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_channel_update(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_channel_delete(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_channel_pins_update(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_guild_ban_add(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_guild_ban_remove(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_guild_emojis_update(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_guild_integrations_update(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_guild_member_add(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_guild_member_remove(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_guild_member_update(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_guild_members_chunk(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_guild_role_create(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_guild_role_update(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_guild_role_delete(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_voice_server_update(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_voice_state_update(const json& result, shards::shard* _shard);
+    AEGIS_DECL void ws_webhooks_update(const json& result, shards::shard* _shard);
+#pragma endregion
+
     AEGIS_DECL void setup_gateway();
     AEGIS_DECL void keep_alive(const asio::error_code & error, const std::chrono::milliseconds ms, shards::shard * _shard);
 
@@ -931,39 +1091,6 @@ private:
     friend class channel;
     //friend class shard;
 
-    AEGIS_DECL void ws_presence_update(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_typing_start(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_message_create(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_message_update(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_guild_create(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_guild_update(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_guild_delete(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_message_reaction_add(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_message_reaction_remove(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_message_reaction_remove_all(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_message_delete(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_message_delete_bulk(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_user_update(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_resumed(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_ready(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_channel_create(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_channel_update(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_channel_delete(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_channel_pins_update(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_guild_ban_add(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_guild_ban_remove(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_guild_emojis_update(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_guild_integrations_update(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_guild_member_add(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_guild_member_remove(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_guild_member_update(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_guild_members_chunk(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_guild_role_create(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_guild_role_update(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_guild_role_delete(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_voice_server_update(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_voice_state_update(const json & result, shards::shard * _shard);
-    AEGIS_DECL void ws_webhooks_update(const json & result, shards::shard * _shard);
 
     AEGIS_DECL void on_message(websocketpp::connection_hdl hdl, std::string msg, shards::shard * _shard);
     AEGIS_DECL void on_connect(websocketpp::connection_hdl hdl, shards::shard * _shard);
@@ -981,6 +1108,8 @@ private:
 
     std::chrono::steady_clock::time_point starttime;
 
+    bool bulk_members_on_connect_ = true; //<\todo will eventually default to false
+
     snowflake user_id;
     int16_t discriminator = 0;
     std::string username;
@@ -990,9 +1119,12 @@ private:
     std::string _token;
 
     // Gateway intents
-    // These defaults exclude presence and typing events (for both guilds and DMs)
     // If you want to turn these on, you should use the create_bot_t class intents() method
-    uint32_t _intents = intent::Guilds | intent::GuildMembers | intent::GuildBans | intent::GuildEmojis | intent::GuildIntegrations | intent::GuildWebhooks | intent::GuildInvites | intent::GuildVoiceStates | intent::GuildMessages | intent::GuildMessageReactions | intent::DirectMessages | intent::DirectMessageReactions;
+    // This defaults to a special-case value which causes the intents values to not be sent.
+    uint32_t _intents = intent::IntentsDisabled;
+
+    uint32_t _cluster_id = 0;
+    uint32_t _max_clusters = 0;
 
     bot_status _status = bot_status::uninitialized;
 
@@ -1013,6 +1145,7 @@ private:
     bool external_io_context = true;
     std::size_t thread_count = 0;
     std::string log_formatting;
+    std::string _log_name = "aegis.log";
     bool state_valid = true;
 
 

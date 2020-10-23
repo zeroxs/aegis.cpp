@@ -2,30 +2,12 @@
 // rest_controller.cpp
 // *******************
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
 
-#include "aegis/config.hpp"
-#include "aegis/fwd.hpp"
-
 #include "aegis/rest/rest_controller.hpp"
-
-#ifdef WIN32
-# include "aegis/push.hpp"
-#endif
-#include <asio/connect.hpp>
-#include <asio/streambuf.hpp>
-#include <asio/ssl.hpp>
-#include <asio/read.hpp>
-#include <asio/read_until.hpp>
-#include <websocketpp/http/request.hpp>
-#include <websocketpp/http/parser.hpp>
-#include <websocketpp/http/response.hpp>
-#ifdef WIN32
-# include "aegis/pop.hpp"
-#endif
 
 namespace aegis
 {

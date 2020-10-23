@@ -2,7 +2,7 @@
 // channel.hpp
 // ***********
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -88,9 +88,9 @@ inline void from_json(const nlohmann::json& j, channel& m)
         for (const auto & i : j["permission_overwrites"])
             m.permission_overwrites.push_back(i);
     if (j.count("name") && !j["name"].is_null())
-        m.name = j["name"];
+        m.name = j["name"].get<std::string>();
     if (j.count("topic") && !j["topic"].is_null())
-        m.topic = j["topic"];
+        m.topic = j["topic"].get<std::string>();
     if (j.count("nsfw") && !j["nsfw"].is_null())
         m.nsfw = j["nsfw"];
     if (j.count("last_message_id") && !j["last_message_id"].is_null())
@@ -100,7 +100,7 @@ inline void from_json(const nlohmann::json& j, channel& m)
     if (j.count("userlimit") && !j["userlimit"].is_null())
         m.userlimit = j["userlimit"];
     if (j.count("icon") && !j["icon"].is_null())
-        m.icon = j["icon"];
+        m.icon = j["icon"].get<std::string>();
     if (j.count("owner_id") && !j["owner_id"].is_null())
         m.owner_id = j["owner_id"];
     if (j.count("application_id") && !j["application_id"].is_null())

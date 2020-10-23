@@ -33,7 +33,7 @@ find_package(Threads REQUIRED)
 
 find_package(Asio 1.12.0 REQUIRED MODULE)
 find_package(JSON 3.1.2 REQUIRED MODULE)
-find_package(Spdlog 0.16.4 REQUIRED MODULE)
+find_package(Spdlog 1.6.0 REQUIRED MODULE)
 find_package(Websocketpp 0.7.0 REQUIRED MODULE)
 find_package(OpenSSL 1.0.1 REQUIRED MODULE)
 find_package(ZLIB REQUIRED MODULE)
@@ -164,7 +164,7 @@ else ()
 	set_target_properties(aegis_static PROPERTIES OUTPUT_NAME "aegis")
 	set_target_properties(aegis_static PROPERTIES LINKER_LANGUAGE CXX)
 	target_compile_definitions(aegis_static PUBLIC AEGIS_SEPARATE_COMPILATION ${AEGIS_FLAGS})
-	target_link_libraries(aegis_static INTERFACE ${REQUIRED_LIBS})
+	target_link_libraries(aegis_static PUBLIC ${REQUIRED_LIBS})
 	target_include_directories(aegis_static
 	  PUBLIC
 		$<INSTALL_INTERFACE:include>    

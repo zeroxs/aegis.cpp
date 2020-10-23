@@ -2,7 +2,7 @@
 // config.hpp
 // **********
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
@@ -11,6 +11,12 @@
 
 #include "aegis/version.hpp"
 #include "aegis/fwd.hpp"
+
+#if defined(_WIN32) || defined(WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <WinSock2.h>
+#include <windows.h>
+#endif
 
 #if !defined(ASIO_NO_DEPRECATED)
 #define ASIO_NO_DEPRECATED

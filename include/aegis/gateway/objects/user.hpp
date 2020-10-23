@@ -2,7 +2,7 @@
 // user.hpp
 // ********
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -64,6 +64,7 @@ struct user
     snowflake id; /**< snowflake of user */
     snowflake guild_id; /**< snowflake of guild of the event this user is attached to */
     std::string username; /**< username of user */
+    //todo: make discriminator an integer
     std::string discriminator; /**< discriminator of user */
     std::string avatar; /**< Hash of user's avatar */
 private:

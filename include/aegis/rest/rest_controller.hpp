@@ -2,7 +2,7 @@
 // rest_controller.hpp
 // *******************
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
@@ -11,9 +11,26 @@
 
 #include "aegis/config.hpp"
 #include "aegis/fwd.hpp"
-#include "aegis/rest/rest_reply.hpp"
+
+#ifdef WIN32
+# include "aegis/push.hpp"
+#endif
 #include <asio/ip/basic_resolver.hpp>
 #include <asio/ip/tcp.hpp>
+#include <asio/connect.hpp>
+#include <asio/streambuf.hpp>
+#include <asio/ssl.hpp>
+#include <asio/read.hpp>
+#include <asio/read_until.hpp>
+#include <websocketpp/http/request.hpp>
+#include <websocketpp/http/parser.hpp>
+#include <websocketpp/http/response.hpp>
+#ifdef WIN32
+# include "aegis/pop.hpp"
+#endif
+
+#include "aegis/rest/rest_reply.hpp"
+
 #include <string>
 #include <map>
 #include <functional>
@@ -69,7 +86,8 @@ public:
      * @see rest::rest_reply
      * @see rest::request_params
      * @param params A struct of HTTP parameters to perform the request
-     * @returns rest_reply
+     * @returns rest::rest_reply
+     * @throws asio::system_error
      */
     AEGIS_DECL rest_reply execute(rest::request_params && params);
 
@@ -78,7 +96,8 @@ public:
      * @see rest::rest_reply
      * @see rest::request_params
      * @param params A struct of HTTP parameters to perform the request
-     * @returns rest_reply
+     * @returns rest::rest_reply
+     * @throws asio::system_error
      */
     AEGIS_DECL rest_reply execute2(rest::request_params && params);
 

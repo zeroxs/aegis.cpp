@@ -2,7 +2,7 @@
 // message.cpp
 // ***********
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -150,7 +150,7 @@ AEGIS_DECL void message::populate_self()
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!is_webhook())
     {
-        if ((_user == nullptr) && (_author_id > 0))
+        if (_user == nullptr)
             _user = _core->find_user(_author_id);
         if (_user == nullptr)
         {

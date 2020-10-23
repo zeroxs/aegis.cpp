@@ -2,7 +2,7 @@
 // guild_member.hpp
 // ****************
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -41,14 +41,14 @@ inline void from_json(const nlohmann::json& j, guild_member& m)
 {
     m._user = j["user"];
     if (j.count("nick") && !j["nick"].is_null())
-        m.nick = j["nick"];
+        m.nick = j["nick"].get<std::string>();
     if (j.count("guild_id") && !j["guild_id"].is_null())
         m.guild_id = j["guild_id"];
     if (j.count("roles") && !j["roles"].is_null())
         for (const auto & _role : j["roles"])
             m.roles.push_back(_role);
     if (j.count("joined_at"))
-        m.joined_at = j["joined_at"];
+        m.joined_at = j["joined_at"].get<std::string>();
     if (j.count("deaf"))
         m.deaf = j["deaf"];
     if (j.count("mute"))

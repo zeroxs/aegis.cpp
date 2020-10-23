@@ -2,7 +2,7 @@
 // snowflake.cpp
 // *************
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -42,7 +42,7 @@ AEGIS_DECL void from_json(const nlohmann::json& j, snowflake& s)
 
 AEGIS_DECL void to_json(nlohmann::json& j, const snowflake& s)
 {
-    j = nlohmann::json{ static_cast<int64_t>(s) };
+    j = nlohmann::json( static_cast<int64_t>(s) );
 }
 /// \endcond
 

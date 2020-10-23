@@ -2,7 +2,7 @@
 // guild.hpp
 // *********
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
@@ -17,6 +17,8 @@
 #include "aegis/ratelimit/ratelimit.hpp"
 #include "aegis/gateway/objects/permission_overwrite.hpp"
 #include "aegis/gateway/objects/member.hpp"
+#include "aegis/gateway/objects/ban.hpp"
+#include "aegis/gateway/objects/bans.hpp"
 #include <future>
 #include <asio.hpp>
 #include <shared_mutex>
@@ -190,6 +192,7 @@ public:
     /// Get pointer to own member object
     /**
      * @returns Pointer to own member object
+     * @deprecated
      */
     AEGIS_DECL user * self() const;
 
@@ -538,6 +541,19 @@ public:
      */
     AEGIS_DECL aegis::future<rest::rest_reply> remove_guild_ban(snowflake user_id);
 
+    /// Get guild bans
+    /**
+     * @returns aegis::future<gateway::objects::bans>
+     */
+    AEGIS_DECL aegis::future<gateway::objects::bans> get_guild_bans();
+
+    /// Get guild ban
+    /**
+     * @param user_id The snowflake of the user to retrieve the ban object for
+     * @returns aegis::future<gateway::objects::ban>
+    */
+    AEGIS_DECL aegis::future<gateway::objects::ban> get_guild_ban(snowflake user_id);
+
     /// Create a guild role
     /**
      * @see aegis::permission
@@ -822,7 +838,7 @@ private:
     AEGIS_DECL void _load_voicestate(const json & obj) noexcept;
 #endif
 
-    AEGIS_DECL void _load(const json & obj, shards::shard * _shard) noexcept;
+    AEGIS_DECL void _load(const json & obj, shards::shard * _shard);
 
     /// non-locking version for internal use
     AEGIS_DECL user * _find_member(snowflake member_id) const noexcept;

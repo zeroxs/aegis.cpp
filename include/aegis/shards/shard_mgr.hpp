@@ -2,7 +2,7 @@
 // shard_mgr.hpp
 // *************
 //
-// Copyright (c) 2019 Sharon W (sharon at aegis dot gg)
+// Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
 // Distributed under the MIT License. (See accompanying file LICENSE)
 // 
@@ -10,20 +10,25 @@
 #pragma once
 
 #include "aegis/config.hpp"
+
+#include <asio/streambuf.hpp>
+#include <asio/connect.hpp>
+#include <websocketpp/config/asio_client.hpp>
+#include <websocketpp/common/connection_hdl.hpp>
+#include <websocketpp/client.hpp>
+
 #include "aegis/utility.hpp"
 #include "aegis/snowflake.hpp"
 #include "aegis/error.hpp"
 #include "aegis/shards/shard.hpp"
-#include <websocketpp/config/asio_client.hpp>
-#include <websocketpp/common/connection_hdl.hpp>
-#include <websocketpp/client.hpp>
-#include "spdlog/spdlog.h"
 
 #include <vector>
 #include <iostream>
 #include <string>
 
 #include <asio/bind_executor.hpp>
+
+#include <spdlog/spdlog.h>
 
 namespace aegis
 {
@@ -59,8 +64,15 @@ public:
      * @param token A string of the authentication token
      * @param _io Reference to asio::io_context
      * @param log std::shared_ptr of spdlog::logger
+     * @param cluster_id The current cluster id. If set along with max_clusters,
+     * indicates that this bot should only connect to a subset of shards whos
+     * ID is modulus max_clusters. The cluster_id value indicates which subset of shards to connect.
+     * If max_clusters is zero, this value is ignored.
+     * @param max_clusters If non-zero, the number of clusters that the bot's shards should be split into.
+     * This bot will only connect to a subset of shards if this is non-zero, where the number of shards
+     * is modulus this value.
      */
-    AEGIS_DECL shard_mgr(std::string token, asio::io_context & _io, std::shared_ptr<spdlog::logger> log);
+    AEGIS_DECL shard_mgr(std::string token, asio::io_context & _io, std::shared_ptr<spdlog::logger> log, uint32_t cluster_id = 0, uint32_t max_clusters = 0);
 
     /// Destroys the shards, stops the asio::work object, destroys the websocket object, and attempts to join the rest_thread thread
     AEGIS_DECL ~shard_mgr();
@@ -321,6 +333,9 @@ private:
     std::shared_ptr<asio::steady_timer> ws_timer;
     std::shared_ptr<asio::steady_timer> ws_connect_timer;
     std::deque<shard*> _shards_to_connect;
+
+    uint32_t _cluster_id { 0 };
+    uint32_t _max_clusters { 0 };
 };
 
 }
