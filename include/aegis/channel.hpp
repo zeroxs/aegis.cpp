@@ -529,6 +529,8 @@ public:
     {
         return edit_channel_permissions(obj._overwrite_id, obj._allow, obj._deny, obj._type);
     }
+    
+    #if !defined(AEGIS_DISABLE_ALL_CACHE)
 
     /// Get permission overwrites for this channel
     /**
@@ -538,7 +540,7 @@ public:
     {
         return overrides;
     }
-
+    
     /// Get permission overwrites for this channel
     /**
     * @returns A reference to an unordered map of permission overwrites for this channel
@@ -547,6 +549,8 @@ public:
     {
         return overrides;
     }
+
+    #endif
 
     /// Get active channel invites
     /**
