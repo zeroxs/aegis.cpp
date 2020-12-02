@@ -15,8 +15,10 @@
 #include "aegis/ratelimit/ratelimit.hpp"
 #include "aegis/permission.hpp"
 #include "aegis/snowflake.hpp"
+#include "aegis/gateway/objects/messages.hpp"
 #include "aegis/gateway/objects/permission_overwrite.hpp"
 #include "aegis/gateway/objects/channel.hpp"
+
 #include <shared_mutex>
 #include "aegis/futures.hpp"
 
@@ -526,6 +528,24 @@ public:
     AEGIS_DECL aegis::future<rest::rest_reply> edit_channel_permissions(edit_channel_permissions_t obj)
     {
         return edit_channel_permissions(obj._overwrite_id, obj._allow, obj._deny, obj._type);
+    }
+
+    /// Get permission overwrites for this channel
+    /**
+    * @returns COPY OF an unordered map of permission overwrites for this channel
+    */
+    std::unordered_map<int64_t, gateway::objects::permission_overwrite> get_overwrites()
+    {
+        return overrides;
+    }
+
+    /// Get permission overwrites for this channel
+    /**
+    * @returns A reference to an unordered map of permission overwrites for this channel
+    */
+    const std::unordered_map<int64_t, gateway::objects::permission_overwrite>& get_overwrites_nocopy()
+    {
+        return overrides;
     }
 
     /// Get active channel invites
