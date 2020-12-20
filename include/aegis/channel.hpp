@@ -18,7 +18,6 @@
 #include "aegis/gateway/objects/messages.hpp"
 #include "aegis/gateway/objects/permission_overwrite.hpp"
 #include "aegis/gateway/objects/channel.hpp"
-
 #include <shared_mutex>
 #include "aegis/futures.hpp"
 
