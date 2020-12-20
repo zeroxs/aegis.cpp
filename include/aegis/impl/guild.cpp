@@ -114,9 +114,9 @@ AEGIS_DECL void guild::_load_voicestate(const json & obj) noexcept
 
 AEGIS_DECL void guild::_load_presence(const json & obj) noexcept
 {
-    json user = obj["user"];
+    json _user = obj["user"];
 
-    auto _member = _find_member(user["id"]);
+    auto _member = _find_member(_user["id"]);
     if (_member == nullptr)
         return;
 
@@ -236,9 +236,8 @@ AEGIS_DECL int64_t guild::base_permissions(const user & _member) const noexcept
         int64_t permissions = role_everyone._permission.get_allow_perms();
 
         auto g = _member.get_guild_info_nocreate(guild_id);
-	if (g == nullptr) {
-		return 0;
-	}
+        if (g == nullptr)
+            return 0;
 
         for (auto & rl : g->roles)
             permissions |= get_role(rl)._permission.get_allow_perms();
@@ -429,26 +428,26 @@ AEGIS_DECL void guild::_load(const json & obj, shards::shard * _shard)
                     auto & g_info = _member->_join(guild_id);
 
 
-                    if (obj.count("deaf") && !obj["deaf"].is_null()) g_info.deaf = obj["deaf"];
-                    if (obj.count("mute") && !obj["mute"].is_null()) g_info.mute = obj["mute"];
+                    if (member.count("deaf") && !member["deaf"].is_null()) g_info.deaf = member["deaf"];
+                    if (member.count("mute") && !member["mute"].is_null()) g_info.mute = member["mute"];
 
-                    if (obj.count("joined_at") && !obj["joined_at"].is_null())// g_info.value()->joined_at = obj["joined_at"];
+                    if (member.count("joined_at") && !member["joined_at"].is_null())// g_info.value()->joined_at = obj["joined_at"];
                     {
-                        g_info.joined_at = utility::from_iso8601(obj["joined_at"]).time_since_epoch().count();
+                        g_info.joined_at = utility::from_iso8601(member["joined_at"]).time_since_epoch().count();
                     }
 
-                    if (obj.count("roles") && !obj["roles"].is_null())
+                    if (member.count("roles") && !member["roles"].is_null())
                     {
                         g_info.roles.clear();
                         g_info.roles.emplace_back(guild_id);//default everyone role
 
-                        json roles = obj["roles"];
+                        json roles = member["roles"];
                         for (auto & r : roles)
                             g_info.roles.emplace_back(std::stoull(r.get<std::string>()));
                     }
 
-                    if (obj.count("nick") && !obj["nick"].is_null())
-                        g_info.nickname = obj["nick"].get<std::string>();
+                    if (member.count("nick") && !member["nick"].is_null())
+                        g_info.nickname = member["nick"].get<std::string>();
                 }
 
             }
