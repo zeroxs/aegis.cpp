@@ -85,12 +85,7 @@ public:
     * @returns name of permission
     */
     static const std::string& perm_str(int64_t perm) {
-        try {
-            return perm_strs.at(perm);
-        }
-        catch (std::out_of_range) {
-            return "Invalid permission.";
-        }
+        return perm_strs.at(perm);
     }
 
     int64_t get_allow_perms() const noexcept { return _allow_permissions; }
