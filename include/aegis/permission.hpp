@@ -12,6 +12,7 @@
 #include "aegis/config.hpp"
 #include "aegis/fwd.hpp"
 #include <stdint.h>
+#include <unordered_map>
 
 namespace aegis
 {
@@ -76,6 +77,20 @@ public:
             if ((_allow_permissions & pair.first) > 0) out.push_back(pair.second);
         }
         return out;
+    }
+
+    /// Gets the name of a permission
+    /**
+    * @param perm bitmap value of perm
+    * @returns name of permission
+    */
+    static const std::string& perm_str(int64_t perm) {
+        try {
+            return perm_strs.at(perm);
+        }
+        catch (std::out_of_range) {
+            return "Invalid permission.";
+        }
     }
 
     int64_t get_allow_perms() const noexcept { return _allow_permissions; }
