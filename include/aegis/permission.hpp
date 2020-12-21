@@ -8,6 +8,8 @@
 //
 
 #pragma once
+#ifndef _perm_incl_
+#define _perm_incl_
 
 #include "aegis/config.hpp"
 #include "aegis/fwd.hpp"
@@ -197,4 +199,6 @@ AEGIS_DECL void to_json(nlohmann::json& j, const permission& s);
 
 #if defined(AEGIS_HEADER_ONLY)
 #include "aegis/impl/permission.cpp"
+#endif
+
 #endif
