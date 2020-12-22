@@ -12,6 +12,7 @@
 #include "aegis/config.hpp"
 #include "aegis/fwd.hpp"
 #include <stdint.h>
+#include <unordered_map>
 
 namespace aegis
 {
@@ -64,6 +65,27 @@ public:
     operator int64_t() const noexcept
     {
         return _allow_permissions;
+    }
+
+    /// Gets the names of allowed permissions
+    /**
+    * @returns string vector of allowed permissions' names
+    */
+    std::vector<std::string> perms_to_strs() {
+        std::vector<std::string> out;
+        for (auto& pair : perm_strs) {
+            if ((_allow_permissions & pair.first) > 0) out.push_back(pair.second);
+        }
+        return out;
+    }
+
+    /// Gets the name of a permission
+    /**
+    * @param perm bitmap value of perm
+    * @returns name of permission
+    */
+    static const std::string& perm_str(int64_t perm) {
+        return perm_strs.at(perm);
     }
 
     int64_t get_allow_perms() const noexcept { return _allow_permissions; }
@@ -130,6 +152,7 @@ public:
 
 private:
     int64_t _allow_permissions = 0;
+    static const std::unordered_map<int64_t, const std::string> perm_strs;
 };
 
 /// \cond TEMPLATES
