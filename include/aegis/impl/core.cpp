@@ -1218,11 +1218,13 @@ AEGIS_DECL void core::ws_presence_update(const json & result, shards::shard * _s
     {
         log->warn("Shard#{}: member without guild M:{} G:{} null:{}", _shard->get_id(), member_id, guild_id, _member == nullptr);
         return;
+    }    
+    {
+        std::unique_lock<shared_mutex> l(_member->mtx(), std::defer_lock);
+        std::unique_lock<shared_mutex> l2(_guild->mtx(), std::defer_lock);
+        std::lock(l, l2);
+        _member->_load_nolock(_guild, result["d"], _shard, true, false);
     }
-    std::unique_lock<shared_mutex> l(_member->mtx(), std::defer_lock);
-    std::unique_lock<shared_mutex> l2(_guild->mtx(), std::defer_lock);
-    std::lock(l, l2);
-    _member->_load_nolock(_guild, result["d"], _shard, true, false);
 
     using user_status = aegis::gateway::objects::presence::user_status;
 
@@ -1872,15 +1874,17 @@ AEGIS_DECL void core::ws_guild_member_remove(const json & result, shards::shard 
     snowflake member_id = result["d"]["user"]["id"];
     snowflake guild_id = result["d"]["guild_id"];
 
-    std::unique_lock<shared_mutex> l(_guild_m);
-
-    auto _member = find_user(member_id);
-    auto _guild = find_guild_nolock(guild_id);
-
-    if (_guild != nullptr)
     {
-        //if user was self, guild may already be deleted
-        _guild->_remove_member(member_id);
+        std::unique_lock<shared_mutex> l(_guild_m);
+
+        auto _member = find_user(member_id);
+        auto _guild = find_guild_nolock(guild_id);
+
+        if (_guild != nullptr)
+        {
+            //if user was self, guild may already be deleted
+            _guild->_remove_member(member_id);
+        }
     }
 #endif
 
@@ -1934,10 +1938,12 @@ AEGIS_DECL void core::ws_guild_member_update(const json & result, shards::shard 
         return;
     }
 
-    std::unique_lock<shared_mutex> l(_member->mtx(), std::defer_lock);
-    std::unique_lock<shared_mutex> l2(_guild->mtx(), std::defer_lock);
-    std::lock(l, l2);
-    _member->_load_nolock(_guild, result["d"], _shard, true, false);
+    {
+        std::unique_lock<shared_mutex> l(_member->mtx(), std::defer_lock);
+        std::unique_lock<shared_mutex> l2(_guild->mtx(), std::defer_lock);
+        std::lock(l, l2);
+        _member->_load_nolock(_guild, result["d"], _shard, true, false);
+    }
 #endif
 
     gateway::events::guild_member_update obj{ *_shard };
