@@ -26,7 +26,7 @@ AEGIS_DECL void from_json(const nlohmann::json& j, permission& s)
 
 AEGIS_DECL void to_json(nlohmann::json& j, const permission& s)
 {
-    j = nlohmann::json{ static_cast<int64_t>(s) };
+    j = std::to_string(static_cast<int64_t>(s));
 }
 /// \endcond
 
