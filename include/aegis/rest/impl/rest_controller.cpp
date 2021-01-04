@@ -115,7 +115,7 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
             request_stream << "Content-Length: " << ss.str().length() << "\r\n\r\n";
             request_stream << ss.str();
         }
-        else if (!params.body.empty())
+        else if (!params.body.empty() || params.method == Post || params.method == Put || params.method == Patch)
         {
             request_stream << "Content-Length: " << params.body.size() << "\r\n";
             request_stream << "Connection: close\r\n";
@@ -232,7 +232,7 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
             for (auto & h : params.headers)
                 request_stream << h << "\r\n";
 
-            if (!params.body.empty())
+            if (!params.body.empty() || params.method == Post || params.method == Put || params.method == Patch)
             {
                 request_stream << "Connection: close\r\n";
                 request_stream << "Content-Length: " << params.body.size() << "\r\n";
@@ -275,7 +275,7 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
             for (auto & h : params.headers)
                 request_stream << h << "\r\n";
           
-            if (!params.body.empty())
+            if (!params.body.empty() || params.method == Post || params.method == Put || params.method == Patch)
             {
                 request_stream << "Connection: close\r\n";
                 request_stream << "Content-Length: " << params.body.size() << "\r\n";
