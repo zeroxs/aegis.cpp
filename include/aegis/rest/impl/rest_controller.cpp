@@ -94,7 +94,6 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
         request_stream << "Accept: */*\r\n";
         request_stream << "Authorization: Bot " << _token << "\r\n";
         request_stream << "User-Agent: DiscordBot (https://github.com/zeroxs/aegis.cpp, " << AEGIS_VERSION_LONG << ")\r\n";
-        request_stream << "Connection: close\r\n";
 
         if (params.file.has_value())
         {
@@ -106,6 +105,7 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
 
             ss << "--" << boundary << "\r\n";
             ss << R"(Content-Disposition: form-data; name="file"; filename=")" << utility::escape_quotes(file.name) << "\"\r\n";
+            request_stream << "Connection: close\r\n";
             ss << "Content-Type: text/plain\r\n\r\n";
             ss.write(file.data.data(), file.data.size());
             ss << "\r\n";
@@ -118,9 +118,12 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
         else if (!params.body.empty())
         {
             request_stream << "Content-Length: " << params.body.size() << "\r\n";
+            request_stream << "Connection: close\r\n";
             request_stream << "Content-Type: application/json\r\n\r\n";
             request_stream << params.body;
         }
+        else
+            request_stream << "Connection: close\r\n\r\n";
 
         asio::write(socket, request);
         asio::streambuf response;
@@ -228,14 +231,16 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
             request_stream << "Accept: */*\r\n";
             for (auto & h : params.headers)
                 request_stream << h << "\r\n";
-            request_stream << "Connection: close\r\n";
 
             if (!params.body.empty())
             {
+                request_stream << "Connection: close\r\n";
                 request_stream << "Content-Length: " << params.body.size() << "\r\n";
                 request_stream << "Content-Type: application/json\r\n\r\n";
                 request_stream << params.body;
             }
+            else
+                request_stream << "Connection: close\r\n\r\n";
 
             asio::write(socket, request);
             asio::streambuf response;
@@ -269,15 +274,16 @@ AEGIS_DECL rest_reply rest_controller::execute2(rest::request_params && params)
             request_stream << "Accept: */*\r\n";
             for (auto & h : params.headers)
                 request_stream << h << "\r\n";
-
-            request_stream << "Connection: close\r\n";
           
             if (!params.body.empty())
             {
+                request_stream << "Connection: close\r\n";
                 request_stream << "Content-Length: " << params.body.size() << "\r\n";
                 request_stream << "Content-Type: application/json\r\n\r\n";
                 request_stream << params.body;
             }
+            else
+                request_stream << "Connection: close\r\n\r\n";
 
             asio::write(socket, request);
             asio::streambuf response;
