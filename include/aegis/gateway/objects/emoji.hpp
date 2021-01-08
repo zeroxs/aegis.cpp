@@ -55,6 +55,15 @@ struct emoji
         return id ? fmt::format("<{}:{}:{}>", animated ? "a" : "", name, id) : name;
     }
 
+    /// Formats the emoji for use as a reaction
+    /**
+    * @returns string of reaction-formatted emoji
+    */
+    std::string reaction() const noexcept
+    {
+        return id ? fmt::format("{}:{}", name, id) : name;
+    }
+
     snowflake id; /**< Emoji ID */
     std::string name; /**< Emoji Name */
     std::vector<snowflake> roles; /**< Roles this emoji is whitelisted to */
