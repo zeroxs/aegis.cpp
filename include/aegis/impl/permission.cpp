@@ -30,7 +30,7 @@ AEGIS_DECL void to_json(nlohmann::json& j, const permission& s)
 }
 /// \endcond
 
-inline const std::unordered_map<int64_t, const std::string> permission::perm_strs {
+const std::unordered_map<int64_t, const std::string> permission::perm_strs {
     {0x1, "Create invites"},
     {0x2, "Kick members"},
     {0x4, "Ban members"},
