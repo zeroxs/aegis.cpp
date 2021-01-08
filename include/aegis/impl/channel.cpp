@@ -438,7 +438,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::create_reaction(snowflake me
 
     std::shared_lock<shared_mutex> l(_m);
 
-    std::string _endpoint = fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text);
+    std::string _endpoint = fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, utility::url_encode(emoji_text));
     std::string _bucket = fmt::format("/guilds/{}/reactions", guild_id);
 	_ratelimit.get_bucket(_bucket).reset_bypass = 250;
     return _ratelimit.post_task(_bucket, { _endpoint, rest::Put });
@@ -453,7 +453,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_own_reaction(snowflak
 
     std::shared_lock<shared_mutex> l(_m);
 
-    std::string _endpoint = fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, emoji_text);
+    std::string _endpoint = fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, utility::url_encode(emoji_text));
     std::string _bucket = fmt::format("/guilds/{}/reactions", guild_id);
 	_ratelimit.get_bucket(_bucket).reset_bypass = 250;
     return _ratelimit.post_task(_bucket, { _endpoint, rest::Delete });
@@ -469,7 +469,7 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_user_reaction(snowfla
 
     std::shared_lock<shared_mutex> l(_m);
 
-    std::string _endpoint = fmt::format("/channels/{}/messages/{}/reactions/{}/{}", channel_id, message_id, emoji_text, member_id);
+    std::string _endpoint = fmt::format("/channels/{}/messages/{}/reactions/{}/{}", channel_id, message_id, utility::url_encode(emoji_text), member_id);
 	std::string _bucket = fmt::format("/channels/{}/messages/_/reactions/", channel_id);
 	return _ratelimit.post_task(_bucket, { _endpoint, rest::Delete });
 }
