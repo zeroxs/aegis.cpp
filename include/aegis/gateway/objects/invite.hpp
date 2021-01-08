@@ -63,7 +63,7 @@ struct invite
     snowflake _channel; /**< Channel this invite is for */
     snowflake inviter; /**< User that created the invite */
     snowflake target_user; /**< Target user for this invite */
-    target_user_type target_user_type = STREAM; /**< Type of user target for this invite */
+    target_user_type target_type = STREAM; /**< Type of user target for this invite */
     int32_t approximate_presence_count = 0; /**< Approximate count of online members of guild, requires target_user be set */
     int32_t approximate_member_count = 0; /**< Approximate count of total members of guild */
     invite_metadata_t metadata; /**< Extra information about invite */
