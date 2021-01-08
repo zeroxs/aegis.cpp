@@ -82,7 +82,7 @@ inline void from_json(const nlohmann::json& j, invite& m)
     if (j.count("target_user") && !j["target_user"].is_null())
         m.target_user = j["target_user"]["id"];
     if (j.count("target_user_type") && !j["target_user_type"].is_null())
-        m.target_user_type = j["target_user_type"];
+        m.target_type = j["target_user_type"];
     if (j.count("approximate_presence_count") && !j["approximate_presence_count"].is_null())
         m.approximate_presence_count = j["approximate_presence_count"];
     if (j.count("approximate_member_count") && !j["approximate_member_count"].is_null())
@@ -108,7 +108,7 @@ inline void to_json(nlohmann::json& j, const invite& m)
     j["channel"] = m._channel;
     j["inviter"] = m.inviter;
     j["target_user"] = m.target_user;
-    j["target_user_type"] = m.target_user_type;
+    j["target_user_type"] = m.target_type;
     j["approximate_presence_count"] = m.approximate_presence_count;
     j["approximate_member_count"] = m.approximate_member_count;
     
