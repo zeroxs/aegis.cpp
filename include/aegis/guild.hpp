@@ -19,6 +19,8 @@
 #include "aegis/gateway/objects/member.hpp"
 #include "aegis/gateway/objects/ban.hpp"
 #include "aegis/gateway/objects/bans.hpp"
+#include "aegis/gateway/objects/invite.hpp"
+#include "aegis/gateway/objects/invites.hpp"
 #include <future>
 #include <asio.hpp>
 #include <shared_mutex>
@@ -633,11 +635,25 @@ public:
      */
     AEGIS_DECL aegis::future<rest::rest_reply> begin_guild_prune(int16_t days);
 
+    /// Get active guild invite
+    /**
+    * @param invite_code The invite code of the invite to retrieve
+    * @returns aegis::future<gateway::objects::invite>
+    */
+    AEGIS_DECL aegis::future<gateway::objects::invite> get_guild_invite(std::string invite_code);
+
     /// Get active guild invites
     /**
-     * @returns aegis::future<rest::rest_reply>
-     */
-    AEGIS_DECL aegis::future<rest::rest_reply> get_guild_invites();
+    * @returns aegis::future<gateway::objects::invites>
+    */
+    AEGIS_DECL aegis::future<gateway::objects::invites> get_guild_invites();
+
+    /// Delete active guild invite
+    /**
+    * @param invite_code The invite code of the invite to delete
+    * @returns aegis::future<rest::rest_reply>
+    */
+    AEGIS_DECL aegis::future<rest::rest_reply> delete_guild_invite(std::string invite_code);
 
     /// Get guild integrations
     /**
@@ -775,6 +791,17 @@ public:
         return std::move(_list);
     }
 
+    /// Obtain map of emojis
+    /**
+    * @returns std::unordered_map<snowflake, gateway::objects::emoji> COPY of emojis
+    */
+    std::unordered_map<snowflake, gateway::objects::emoji> get_emojis() const noexcept
+    {
+        std::shared_lock<shared_mutex> l(_m);
+        std::unordered_map<snowflake, gateway::objects::emoji> _list = emojis;
+        return std::move(_list);
+    }
+
     /// Obtain map of members - caller must lock guild._m to ensure no race conditions
     /**
      * @returns unordered_map<snowflake, user*> of members
@@ -791,6 +818,15 @@ public:
     const std::unordered_map<snowflake, gateway::objects::role> & get_roles_nocopy() const noexcept
     {
         return roles;
+    }
+
+    /// Obtain map of emojis - caller must lock guild._m to ensure no race conditions
+    /**
+    * @returns unordered_map<snowflake, gateway::objects::emoji> of emojis
+    */
+    const std::unordered_map<snowflake, gateway::objects::emoji>& get_emojis_nocopy() const noexcept
+    {
+        return emojis;
     }
 #endif
 

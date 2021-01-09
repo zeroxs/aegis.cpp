@@ -22,9 +22,30 @@ namespace gateway
 namespace objects
 {
 
+struct emoji;
+
+/// \cond TEMPLATES
+void from_json(const nlohmann::json& j, emoji& m);
+void to_json(nlohmann::json& j, const emoji& m);
+/// \endcond
+
 /// Discord Emoji Object
 struct emoji
 {
+    emoji(const std::string& _json, aegis::core* bot) noexcept
+    {
+        from_json(nlohmann::json::parse(_json), *this);
+    }
+
+    emoji(const nlohmann::json& _json, aegis::core* bot) noexcept
+    {
+        from_json(_json, *this);
+    }
+
+    emoji(aegis::core* bot) noexcept {}
+
+    emoji() noexcept {}
+
     /// Formats the emoji for adding to a message
     /**
      * @returns string of formatted emoji
@@ -32,6 +53,15 @@ struct emoji
     std::string format() const noexcept
     {
         return id ? fmt::format("<{}:{}:{}>", animated ? "a" : "", name, id) : name;
+    }
+
+    /// Formats the emoji for use as a reaction
+    /**
+    * @returns string of reaction-formatted emoji
+    */
+    std::string reaction() const noexcept
+    {
+        return id ? fmt::format("{}:{}", name, id) : name;
     }
 
     snowflake id; /**< Emoji ID */

@@ -999,16 +999,34 @@ AEGIS_DECL aegis::future<rest::rest_reply> guild::begin_guild_prune(int16_t days
     return aegis::make_exception_future(error::not_implemented);
 }
 
-/**\todo Incomplete. Signature may change
- */
-AEGIS_DECL aegis::future<rest::rest_reply> guild::get_guild_invites()
+AEGIS_DECL aegis::future<gateway::objects::invite> guild::get_guild_invite(std::string invite_code)
+{
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (!perms().can_manage_guild())
+        return aegis::make_exception_future<gateway::objects::invite>(error::no_permission);
+#endif
+
+    return _bot->get_ratelimit().post_task<gateway::objects::invite>({ fmt::format("/invites/{}", invite_code), rest::Get });
+}
+
+AEGIS_DECL aegis::future<gateway::objects::invites> guild::get_guild_invites()
+{
+#if !defined(AEGIS_DISABLE_ALL_CACHE)
+    if (!perms().can_manage_guild())
+        return aegis::make_exception_future<gateway::objects::invites>(error::no_permission);
+#endif
+
+    return _bot->get_ratelimit().post_task<gateway::objects::invites>({ fmt::format("/guilds/{}/invites", guild_id), rest::Get });
+}
+
+AEGIS_DECL aegis::future<rest::rest_reply> guild::delete_guild_invite(std::string invite_code)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (!perms().can_manage_guild())
         return aegis::make_exception_future(error::no_permission);
 #endif
 
-    return aegis::make_exception_future(error::not_implemented);
+    return _bot->get_ratelimit().post_task({ fmt::format("/invites/{}", invite_code), rest::Delete });
 }
 
 /**\todo Incomplete. Signature may change
