@@ -1,6 +1,6 @@
 //
 // invites.hpp
-// ********
+// ***********
 //
 // Copyright (c) 2020 Sharon Fox (sharon at xandium dot io)
 //
