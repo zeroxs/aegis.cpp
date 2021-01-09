@@ -18,7 +18,6 @@
 #include "aegis/gateway/objects/reaction.hpp"
 #include "aegis/gateway/objects/user.hpp"
 #include <nlohmann/json.hpp>
-#include "aegis/futures.hpp"
 
 namespace aegis
 {
@@ -300,52 +299,52 @@ public:
 
     /// Delete this message
     /**
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> delete_message();
+    AEGIS_DECL async::task<rest::rest_reply> delete_message();
 
     /// Edit this message
     /**
      * @param content String to set the new content to
-     * @returns aegis::future<message>
+     * @returns async::task<message>
      */
-    AEGIS_DECL aegis::future<message> edit(const std::string & content);
+    AEGIS_DECL async::task<message> edit(const std::string & content);
 
     /// Edit this message
     /**
      * @see edit_message_t
      * @param obj Struct of the edit message request
-     * @returns aegis::future<message>
+     * @returns async::task<message>
      */
-    AEGIS_DECL aegis::future<message> edit(edit_message_t & obj);
+    AEGIS_DECL async::task<message> edit(edit_message_t & obj);
 
     /// Add a reaction to this message
     /**
      * @param content String of the emoji to add. Unicode emoji or `emojiname:emoji_id`
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_reaction(const std::string & content);
+    AEGIS_DECL async::task<rest::rest_reply> create_reaction(const std::string & content);
 
     /// Delete your reaction to this message
     /**
      * @param content String of the emoji to set. Unicode emoji or `emojiname:emoji_id`
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> delete_own_reaction(const std::string & content);
+    AEGIS_DECL async::task<rest::rest_reply> delete_own_reaction(const std::string & content);
 
     /// Delete other user reaction to this message (not available for DMs)
     /**
      * @param content String of the emoji to set. Unicode emoji or `emojiname:emoji_id`
      * @param member_id Snowflake of the member to delete the reaction for
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> delete_user_reaction(const std::string & content, const snowflake member_id);
+    AEGIS_DECL async::task<rest::rest_reply> delete_user_reaction(const std::string & content, const snowflake member_id);
 
     /// Delete all reactions on this message (not available for DMs)
     /**
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> delete_all_reactions();
+    AEGIS_DECL async::task<rest::rest_reply> delete_all_reactions();
 
     /// Obtain the relevant snowflakes related to this message
     /**

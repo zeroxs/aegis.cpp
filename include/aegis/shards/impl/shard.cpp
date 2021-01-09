@@ -9,6 +9,7 @@
 
 #include "aegis/shards/shard.hpp"
 #include "aegis/error.hpp"
+#include "aegis/async++.hpp"
 
 namespace aegis
 {
@@ -40,7 +41,7 @@ AEGIS_DECL void shard::do_reset(shard_status _status) noexcept
         ++counters.reconnects;
         return;
     }
-    asio::post(asio::bind_executor(*_connection->get_strand(), [this, _status]()
+    async::spawn([this, _status]()
     {
         try
         {
@@ -75,7 +76,7 @@ AEGIS_DECL void shard::do_reset(shard_status _status) noexcept
         {
             std::cout << "error in shard::do_reset()\n";
         }
-    }));
+    });
 }
 
 AEGIS_DECL void shard::_reset()
@@ -98,7 +99,7 @@ AEGIS_DECL void shard::connect()
     if (!state_valid())
         return;
 
-    asio::post(asio::bind_executor(*_strand, [this]()
+    async::spawn([this]()
     {
         try
         {
@@ -120,7 +121,7 @@ AEGIS_DECL void shard::connect()
         {
             std::cout << "error in shard::connect()\n";
         }
-    }));
+    });
 }
 
 AEGIS_DECL void shard::set_connected()
@@ -178,14 +179,14 @@ AEGIS_DECL void shard::start_heartbeat(int32_t heartbeat) noexcept
         return;
 
     keepalivetimer.expires_after(std::chrono::milliseconds(heartbeat));
-    keepalivetimer.async_wait(asio::bind_executor(*_strand, [=](const asio::error_code & ec)
+    keepalivetimer.async_wait([=](const asio::error_code & ec)
     {
         if (ec == asio::error::operation_aborted)
             return;
 
         keepalivefunc(ec, std::chrono::milliseconds(heartbeat), this);
         start_heartbeat(heartbeat);
-    }));
+    });
 }
 
 AEGIS_DECL void shard::send(const std::string & payload, websocketpp::frame::opcode::value op)
@@ -194,10 +195,10 @@ AEGIS_DECL void shard::send(const std::string & payload, websocketpp::frame::opc
         return;
     if (!is_connected())
         return;
-    asio::post(asio::bind_executor(*_strand, [=]()
+    async::spawn([=]()
     {
         write_queue.push(std::make_tuple(payload, op));
-    }));
+    });
 }
 
 AEGIS_DECL void shard::send_now(const std::string & payload, websocketpp::frame::opcode::value op)
@@ -206,13 +207,13 @@ AEGIS_DECL void shard::send_now(const std::string & payload, websocketpp::frame:
         return;
     if (!is_connected())
         return;
-    asio::post(asio::bind_executor(*_connection->get_strand(), [=]()
+    async::spawn([=]()
     {
         last_ws_write = std::chrono::steady_clock::now();
         if (!_connection)
             return;
         _connection->send(payload, op);
-    }));
+    });
 }
 
 AEGIS_DECL void shard::process_writes(const asio::error_code & ec)

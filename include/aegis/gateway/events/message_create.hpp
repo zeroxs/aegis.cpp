@@ -14,6 +14,7 @@
 #include "aegis/snowflake.hpp"
 #include "aegis/gateway/objects/message.hpp"
 #include "aegis/error.hpp"
+#include <optional>
 
 namespace aegis
 {
@@ -29,7 +30,7 @@ namespace events
 struct message_create
 {
     shards::shard & shard; /**< Reference to shard object this message came from */
-    lib::optional<std::reference_wrapper<aegis::user>> user; /**< Reference to object of user that sent this message */
+    std::optional<std::reference_wrapper<aegis::user>> user; /**< Reference to object of user that sent this message */
     aegis::channel & channel; /**< Reference to channel object this message was sent in */
     objects::message msg; /**< Message object */
 
@@ -42,9 +43,9 @@ struct message_create
         if (has_user())
             return user.value().get();
 #if defined(AEGIS_HAS_BUILTIN_OPTIONAL)
-		throw lib::bad_optional_access("bad optional access");
+		throw std::bad_optional_access("bad optional access");
 #else
-		throw lib::bad_optional_access();
+		throw std::bad_optional_access();
 #endif
     }
 };

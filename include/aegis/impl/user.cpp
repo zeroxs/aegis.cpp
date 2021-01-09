@@ -23,14 +23,14 @@ namespace aegis
 
 AEGIS_DECL std::string user::get_full_name() const noexcept
 {
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     return fmt::format("{}#{:0=4}", std::string(_name), _discriminator);
 }
 
 AEGIS_DECL void user::_load(guild * _guild, const json & obj, shards::shard * _shard, bool self_add)
 {
-    std::unique_lock<shared_mutex> l(_m);
+    std::unique_lock<std::shared_mutex> l(_m);
     _load_nolock(_guild, obj, _shard, self_add);
 }
 
@@ -105,7 +105,7 @@ AEGIS_DECL void user::_load_nolock(guild * _guild, const json & obj, shards::sha
 
 AEGIS_DECL user::guild_info & user::get_guild_info(snowflake guild_id) noexcept
 {
-    std::unique_lock<shared_mutex> l(_m);
+    std::unique_lock<std::shared_mutex> l(_m);
 
     auto g = std::find_if(std::begin(guilds), std::end(guilds), [&guild_id](const std::unique_ptr<guild_info> & gi)
     {
@@ -115,11 +115,7 @@ AEGIS_DECL user::guild_info & user::get_guild_info(snowflake guild_id) noexcept
     });
     if (g == guilds.end())
     {
-#if defined(AEGIS_CXX17)
         return *guilds.emplace_back(std::make_unique<guild_info>(guild_id));
-#else
-        return **guilds.insert(guilds.end(), std::make_unique<guild_info>(guild_id));
-#endif
     }
     return **g;
 }
@@ -134,18 +130,14 @@ AEGIS_DECL user::guild_info & user::get_guild_info_nolock(snowflake guild_id) no
     });
     if (g == guilds.end())
     {
-#if defined(AEGIS_CXX17)
         return *guilds.emplace_back(std::make_unique<guild_info>(guild_id));
-#else
-        return **guilds.insert(guilds.end(), std::make_unique<guild_info>(guild_id));
-#endif
     }
     return **g;
 }
 
 AEGIS_DECL user::guild_info * user::get_guild_info_nocreate(snowflake guild_id) const noexcept
 {
-    std::unique_lock<shared_mutex> l(_m);
+    std::unique_lock<std::shared_mutex> l(_m);
 
     auto g = std::find_if(std::begin(guilds), std::end(guilds), [&guild_id](const std::unique_ptr<guild_info> & gi)
     {
@@ -162,7 +154,7 @@ AEGIS_DECL user::guild_info * user::get_guild_info_nocreate(snowflake guild_id) 
 
 AEGIS_DECL std::string user::get_name(snowflake guild_id) noexcept
 {
-    std::unique_lock<shared_mutex> l(_m);
+    std::unique_lock<std::shared_mutex> l(_m);
 
     const auto & def = get_guild_info_nolock(guild_id).nickname;
     return def.has_value() ? def.value() : "";
@@ -170,7 +162,7 @@ AEGIS_DECL std::string user::get_name(snowflake guild_id) noexcept
 
 AEGIS_DECL user::guild_info & user::_join(snowflake guild_id)
 {
-    std::unique_lock<shared_mutex> l(_m);
+    std::unique_lock<std::shared_mutex> l(_m);
     return _join_nolock(guild_id);
 }
 
@@ -184,18 +176,14 @@ AEGIS_DECL user::guild_info & user::_join_nolock(snowflake guild_id)
     });
     if (g == guilds.end())
     {
-#if defined(AEGIS_CXX17)
         return *guilds.emplace_back(std::make_unique<guild_info>(guild_id));
-#else
-        return **guilds.insert(guilds.end(), std::make_unique<guild_info>(guild_id));
-#endif
     }
     return **g;
 }
 
 AEGIS_DECL void user::_load_data(gateway::objects::user mbr)
 {
-    std::unique_lock<shared_mutex> l(_m);
+    std::unique_lock<std::shared_mutex> l(_m);
 
     if (!mbr.avatar.empty())
         _avatar = mbr.avatar;

@@ -233,7 +233,7 @@ private:
 
     bool state_valid()
     {
-        if (_connection == nullptr || _strand == nullptr)
+        if (_connection == nullptr)
             return false;
         return true;
     }
@@ -263,7 +263,6 @@ private:
     // Websocket++ socket connection
     websocketpp::connection_hdl hdl;
     std::vector<std::string> _trace;
-    std::shared_ptr<asio::io_context::strand> _strand;
 
     heartbeat_status _heartbeat_status = heartbeat_status::normal;
 };

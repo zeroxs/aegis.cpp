@@ -11,6 +11,7 @@
 
 #include "aegis/shards/shard_mgr.hpp"
 #include <string>
+#include "aegis/async++.hpp"
 
 namespace aegis
 {
@@ -59,8 +60,8 @@ AEGIS_DECL void shard_mgr::start()
 
     starttime = std::chrono::steady_clock::now();
 
-    int shard_start = 0;
-    int shard_end = shard_max_count;
+    uint32_t shard_start = 0;
+    uint32_t shard_end = shard_max_count;
 
     std::string cluster;
     if (_max_clusters) {
@@ -162,7 +163,7 @@ AEGIS_DECL void shard_mgr::_on_message(websocketpp::connection_hdl hdl, message_
             if (_shard->zlib_ctx == nullptr)
             {
                 log->error("Shard#{}: zlib failure. Context null.", _shard->get_id());
-                close(*_shard, 1001, "", aegis::shard_status::reconnecting);
+                close(*_shard, 1003, "", aegis::shard_status::reconnecting);
                 return;
             }
             _shard->zlib_ctx->clear();
@@ -175,7 +176,7 @@ AEGIS_DECL void shard_mgr::_on_message(websocketpp::connection_hdl hdl, message_
         catch (std::exception & e)
         {
             log->error("Shard#{}: zlib failure. Context invalid. {}", _shard->get_id(), e.what());
-            close(*_shard, 1001, "", aegis::shard_status::reconnecting);
+            close(*_shard, 1003, "", aegis::shard_status::reconnecting);
             return;
         }
     }
@@ -379,7 +380,6 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
 
                         asio::error_code ec;
                         _shard->_connection = websocket_o.get_connection(gateway_url, ec);
-                        _shard->_strand = _shard->_connection->get_strand();
                         if (ec)
                             throw ec;
 
@@ -414,7 +414,7 @@ AEGIS_DECL void shard_mgr::ws_status(const asio::error_code & ec)
 
 AEGIS_DECL void shard_mgr::connect(shard * _shard) noexcept
 {
-    asio::post(asio::bind_executor(*_shard->_connection->get_strand(), [this, _shard]()
+    async::spawn([this, _shard]()
     {
         setup_callbacks(_shard);
         _shard->connection_state = shard_status::connecting;
@@ -424,11 +424,12 @@ AEGIS_DECL void shard_mgr::connect(shard * _shard) noexcept
             _shard->lastwsevent =
             std::chrono::steady_clock::now();
         _shard->connect();
-    }));
+    });
 }
 
 AEGIS_DECL void shard_mgr::queue_reconnect(shard * _shard) noexcept
 {
+    AEGIS_DEBUG(log, "Shard#{}: queue_reconnect()", _shard->get_id());
     auto it = std::find(_shards_to_connect.cbegin(), _shards_to_connect.cend(), _shard);
     if (it != _shards_to_connect.cend())
     {
@@ -485,6 +486,7 @@ AEGIS_DECL shard & shard_mgr::get_shard(uint16_t shard_id)
 
 AEGIS_DECL void shard_mgr::close(shard * _shard, int32_t code, const std::string & reason, shard_status connection_state) noexcept
 {
+    AEGIS_DEBUG(log, "Shard#{}: close()", _shard->get_id());
     _shard->connection_state = connection_state;
     _shard->closing_time = std::chrono::steady_clock::now();
     if (_shard->_connection != nullptr)

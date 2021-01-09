@@ -52,7 +52,7 @@ struct member
     std::vector<objects::role> roles;
     std::string nick; /**< nick of user */
     std::string joined_at;
-    lib::optional<objects::user> _user;
+    std::optional<objects::user> _user;
     bool mute = false;
     bool deaf = false;
 
@@ -65,9 +65,9 @@ struct member
         if (has_user())
             return _user.value();
 #if defined(AEGIS_HAS_BUILTIN_OPTIONAL)
-        throw lib::bad_optional_access("bad optional access");
+        throw std::bad_optional_access("bad optional access");
 #else
-        throw lib::bad_optional_access();
+        throw std::bad_optional_access();
 #endif
     }
 };

@@ -62,72 +62,72 @@ AEGIS_DECL aegis::user & message::get_user()
 }
 #endif
 
-AEGIS_DECL aegis::future<rest::rest_reply> message::delete_message()
+AEGIS_DECL async::task<rest::rest_reply> message::delete_message()
 {
     populate_self();
     assert(_channel != nullptr);
     if (_channel == nullptr)
-        return aegis::make_exception_future<rest::rest_reply>(std::make_exception_ptr(aegis::exception(make_error_code(error::channel_error))));
+        throw aegis::exception(make_error_code(error::channel_error));
 
     return get_channel().delete_message(_message_id);
 }
 
-AEGIS_DECL aegis::future<message> message::edit(const std::string & content)
+AEGIS_DECL async::task<message> message::edit(const std::string & content)
 {
     populate_self();
     assert(_channel != nullptr);
     if (_channel == nullptr)
-        return aegis::make_exception_future<message>(std::make_exception_ptr(aegis::exception(make_error_code(error::channel_error))));
+        throw aegis::exception(make_error_code(error::channel_error));
 
     return get_channel().edit_message(_message_id, content);
 }
 
-AEGIS_DECL aegis::future<message> message::edit(edit_message_t & obj)
+AEGIS_DECL async::task<message> message::edit(edit_message_t & obj)
 {
     populate_self();
     assert(_channel != nullptr);
     if (_channel == nullptr)
-        return aegis::make_exception_future<message>(std::make_exception_ptr(aegis::exception(make_error_code(error::channel_error))));
+        throw aegis::exception(make_error_code(error::channel_error));
 
     return get_channel().edit_message(obj.message_id(_message_id));
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> message::create_reaction(const std::string & content)
+AEGIS_DECL async::task<rest::rest_reply> message::create_reaction(const std::string & content)
 {
     populate_self();
     assert(_channel != nullptr);
     if (_channel == nullptr)
-        return aegis::make_exception_future<rest::rest_reply>(std::make_exception_ptr(aegis::exception(make_error_code(error::channel_error))));
+        throw aegis::exception(make_error_code(error::channel_error));
 
     return get_channel().create_reaction(_message_id, content);
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> message::delete_own_reaction(const std::string & content)
+AEGIS_DECL async::task<rest::rest_reply> message::delete_own_reaction(const std::string & content)
 {
     populate_self();
     assert(_channel != nullptr);
     if (_channel == nullptr)
-        return aegis::make_exception_future<rest::rest_reply>(std::make_exception_ptr(aegis::exception(make_error_code(error::channel_error))));
+        throw aegis::exception(make_error_code(error::channel_error));
 
     return get_channel().delete_own_reaction(_message_id, content);
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> message::delete_user_reaction(const std::string & content, const snowflake member_id)
+AEGIS_DECL async::task<rest::rest_reply> message::delete_user_reaction(const std::string & content, const snowflake member_id)
 {
     populate_self();
     assert(_channel != nullptr);
     if (_channel == nullptr)
-        return aegis::make_exception_future<rest::rest_reply>(std::make_exception_ptr(aegis::exception(make_error_code(error::channel_error))));
+        throw aegis::exception(make_error_code(error::channel_error));
 
     return get_channel().delete_user_reaction(_message_id, content, member_id);
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> message::delete_all_reactions()
+AEGIS_DECL async::task<rest::rest_reply> message::delete_all_reactions()
 {
     populate_self();
     assert(_channel != nullptr);
     if (_channel == nullptr)
-        return aegis::make_exception_future<rest::rest_reply>(std::make_exception_ptr(aegis::exception(make_error_code(error::channel_error))));
+        throw aegis::exception(make_error_code(error::channel_error));
 
     return get_channel().delete_all_reactions(_message_id);
 }

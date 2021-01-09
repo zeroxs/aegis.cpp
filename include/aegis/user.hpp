@@ -21,15 +21,10 @@
 #include <memory>
 #include <set>
 #include <shared_mutex>
+#include <optional>
 
 namespace aegis
 {
-
-#if (AEGIS_HAS_STD_SHARED_MUTEX == 1)
-using shared_mutex = std::shared_mutex;
-#else
-using shared_mutex = std::shared_timed_mutex;
-#endif
 
 using json = nlohmann::json;
 
@@ -47,7 +42,7 @@ public:
         guild_info(snowflake _id) : id(_id) {};
         snowflake id;/**< Snowflake of the guild for this data */
         std::vector<snowflake> roles;
-		lib::optional<std::string> nickname;/**< Nickname of the user in this guild */
+		std::optional<std::string> nickname;/**< Nickname of the user in this guild */
         uint64_t joined_at = 0;/**< Unix timestamp of when member joined this guild */
         bool deaf = false;/**< Whether member is deafened in a voice channel */
         bool mute = false;/**< Whether member is muted in a voice channel */
@@ -66,7 +61,7 @@ public:
      */
     std::string get_username() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
+        std::shared_lock<std::shared_mutex> l(_m);
         std::string _username = _name;
         return std::move(_username);
     }
@@ -86,7 +81,7 @@ public:
      */
     std::string get_avatar() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
+        std::shared_lock<std::shared_mutex> l(_m);
         std::string t_avatar = _avatar;
         return std::move(t_avatar);
     }
@@ -177,9 +172,9 @@ public:
 
     /// 
     /**
-     * @returns shared_mutex The mutex for the user
+     * @returns std::shared_mutex The mutex for the user
      */
-    shared_mutex & mtx() noexcept
+    std::shared_mutex & mtx() noexcept
     {
         return _m;
     }
@@ -200,7 +195,7 @@ private:
     bool _is_bot = false; /**< true if member is a bot */
     bool _mfa_enabled = false; /**< true if member has Two-factor authentication enabled */
     std::vector<std::unique_ptr<guild_info>> guilds; /**< Vector of snowflakes to member owned guild information */
-    mutable shared_mutex _m;
+    mutable std::shared_mutex _m;
 
     /// requires the caller to handle locking
     AEGIS_DECL void _load(guild * _guild, const json & obj, shards::shard * _shard, bool self_add = true);
@@ -217,7 +212,7 @@ private:
     /// remove this member from the specified guild
     void leave(snowflake guild_id)
     {
-        std::unique_lock<shared_mutex> l(mtx());
+        std::unique_lock<std::shared_mutex> l(mtx());
         guilds.erase(std::find_if(std::begin(guilds), std::end(guilds), [&guild_id](const std::unique_ptr<guild_info> & gi)
         {
             if (gi->id == guild_id)

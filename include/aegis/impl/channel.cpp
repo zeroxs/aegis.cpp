@@ -62,7 +62,7 @@ AEGIS_DECL permission channel::perms() const noexcept
 
 AEGIS_DECL void channel::_load_with_guild(guild & _guild, const json & obj, shards::shard * _shard)
 {
-    std::unique_lock<shared_mutex> l(_m);
+    std::unique_lock<std::shared_mutex> l(_m);
 
     _load_with_guild_nolock(_guild, obj, _shard);
 }
@@ -143,21 +143,21 @@ AEGIS_DECL void channel::_load_with_guild_nolock(guild & _guild, const json & ob
 #else
 AEGIS_DECL void channel::_load_with_guild(guild & _guild, const json & obj, shards::shard * _shard)
 {
-    std::unique_lock<shared_mutex> l(_m);
+    std::unique_lock<std::shared_mutex> l(_m);
 
     channel_id = obj["id"];
     guild_id = _guild.get_id();
 }
 #endif
 
-AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message(const std::string & content, int64_t nonce)
+AEGIS_DECL async::task<gateway::objects::message> channel::create_message(const std::string & content, int64_t nonce)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild && !perms().can_send_messages())
-        return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     json obj;
     obj["content"] = content;
@@ -168,27 +168,27 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message(cons
 	return _ratelimit.post_task<gateway::objects::message>({ _endpoint, rest::Post, obj.dump(-1, ' ', true) });
 }
 
-AEGIS_DECL aegis::future<gateway::objects::message> channel::get_message(snowflake message_id)
+AEGIS_DECL async::task<gateway::objects::message> channel::get_message(snowflake message_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild && !perms().can_read_history())
-        return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/messages/{}", channel_id, message_id);
     return _ratelimit.post_task<gateway::objects::message>({ _endpoint, rest::Get });
 }
 
-AEGIS_DECL aegis::future<gateway::objects::messages> channel::get_messages(get_messages_t obj)
+AEGIS_DECL async::task<gateway::objects::messages> channel::get_messages(get_messages_t obj)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild && !perms().can_read_history())
-        return aegis::make_exception_future<gateway::objects::messages>(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string type_, query_params{ "?" }, limit;
 
@@ -215,16 +215,16 @@ AEGIS_DECL aegis::future<gateway::objects::messages> channel::get_messages(get_m
     return _ratelimit.post_task<gateway::objects::messages>({ _endpoint, rest::Get, {}, {}, {}, {}, query_params });
 }
 
-AEGIS_DECL aegis::future<aegis::gateway::objects::message> channel::create_message(create_message_t obj)
+AEGIS_DECL async::task<aegis::gateway::objects::message> channel::create_message(create_message_t obj)
 {
     if (obj._file.has_value())
     {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
         if (_guild && (!perms().can_send_messages() || !perms().can_attach_files()))
-            return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
+            throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-        std::shared_lock<shared_mutex> l(_m);
+        std::shared_lock<std::shared_mutex> l(_m);
 
         json jobj;
         if (!obj._content.empty())
@@ -241,14 +241,14 @@ AEGIS_DECL aegis::future<aegis::gateway::objects::message> channel::create_messa
         return create_message_embed(obj._content, obj._embed, obj._nonce);
 };
 
-AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embed(const std::string & content, const json & embed, int64_t nonce)
+AEGIS_DECL async::task<gateway::objects::message> channel::create_message_embed(const std::string & content, const json & embed, int64_t nonce)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild && !perms().can_send_messages())
-        return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     json obj;
     if (!content.empty())
@@ -262,19 +262,19 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embe
 	return _ratelimit.post_task<gateway::objects::message>({ _endpoint, rest::Post, obj.dump(-1, ' ', true) });
 }
 
-AEGIS_DECL aegis::future<gateway::objects::message> channel::create_message_embed(create_message_t obj)
+AEGIS_DECL async::task<gateway::objects::message> channel::create_message_embed(create_message_t obj)
 {
     return create_message_embed(obj._content, obj._embed, obj._nonce);
 }
 
-AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message(edit_message_t obj)
+AEGIS_DECL async::task<gateway::objects::message> channel::edit_message(edit_message_t obj)
 {
     return edit_message_embed(obj);
 }
 
-AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message(snowflake message_id, const std::string & content)
+AEGIS_DECL async::task<gateway::objects::message> channel::edit_message(snowflake message_id, const std::string & content)
 {
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     json obj;
     obj["content"] = content;
@@ -284,18 +284,18 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message(snowfl
 	return _ratelimit.post_task<gateway::objects::message>(_bucket, { _endpoint, rest::Patch, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message_embed(edit_message_t obj)
+AEGIS_DECL async::task<gateway::objects::message> channel::edit_message_embed(edit_message_t obj)
 {
     return edit_message_embed(obj._message_id, obj._content, obj._embed);
 }
 
-AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message_embed(snowflake message_id, const std::string & content, const json & embed)
+AEGIS_DECL async::task<gateway::objects::message> channel::edit_message_embed(snowflake message_id, const std::string & content, const json & embed)
 {
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     json obj;
     if (content.empty() && embed.empty())
-        return aegis::make_exception_future<gateway::objects::message>(error::bad_request);
+        throw aegis::exception(make_error_code(error::bad_request));
     if (!content.empty())
         obj["content"] = content;
     if (!embed.empty())
@@ -310,31 +310,31 @@ AEGIS_DECL aegis::future<gateway::objects::message> channel::edit_message_embed(
  * can delete your own messages freely - provide separate function or keep history of messages?
  * message::delete() can determine if author is bot for self-delete
  */
-AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_message(snowflake message_id)
+AEGIS_DECL async::task<rest::rest_reply> channel::delete_message(snowflake message_id)
 {
     //@todo check if bot owns message before denying delete
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild && !perms().can_manage_messages())
-        return aegis::make_exception_future(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/messages/{}", channel_id, message_id);
 	std::string _bucket = fmt::format("/channels/{}/messages/_/delete", channel_id);
 	return _ratelimit.post_task(_bucket, { _endpoint, rest::Delete });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const std::vector<int64_t> & messages)
+AEGIS_DECL async::task<rest::rest_reply> channel::bulk_delete_message(const std::vector<int64_t> & messages)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild && !perms().can_manage_messages())
-        return aegis::make_exception_future(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
     if (messages.size() < 2 || messages.size() > 100)
-        return aegis::make_exception_future(error::bulk_delete_out_of_range);
+        throw aegis::exception(make_error_code(error::bulk_delete_out_of_range));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     json obj;
     json & msgs = obj["messages"];
@@ -345,16 +345,16 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const st
 	return _ratelimit.post_task({ _endpoint, rest::Post, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const std::vector<snowflake> & messages)
+AEGIS_DECL async::task<rest::rest_reply> channel::bulk_delete_message(const std::vector<snowflake> & messages)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild && !perms().can_manage_messages())
-        return aegis::make_exception_future(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
     if (messages.size() < 2 || messages.size() > 100)
-        return aegis::make_exception_future(error::bulk_delete_out_of_range);
+        throw aegis::exception(make_error_code(error::bulk_delete_out_of_range));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     json obj;
     json & msgs = obj["messages"];
@@ -365,15 +365,16 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::bulk_delete_message(const st
 	return _ratelimit.post_task({ _endpoint, rest::Post, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<gateway::objects::channel> channel::modify_channel(lib::optional<std::string> _name, lib::optional<int> _position, lib::optional<std::string> _topic,
-                                    lib::optional<bool> _nsfw, lib::optional<int> _bitrate, lib::optional<int> _user_limit,
-                                    lib::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites, lib::optional<snowflake> _parent_id,
-                                    lib::optional<int> _rate_limit_per_user)
+AEGIS_DECL async::task<gateway::objects::channel> channel::modify_channel(std::optional<std::string> _name, std::optional<int> _position, std::optional<std::string> _topic,
+                                    std::optional<bool> _nsfw, std::optional<int> _bitrate, std::optional<int> _user_limit,
+                                    std::optional<std::vector<gateway::objects::permission_overwrite>> _permission_overwrites, std::optional<snowflake> _parent_id,
+                                    std::optional<int> _rate_limit_per_user)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!_guild) return aegis::make_exception_future<gateway::objects::channel>(error::guild_error);
+    if (!_guild)
+        throw aegis::exception(make_error_code(error::guild_error));
     if (!perms().can_manage_channels())
-        return aegis::make_exception_future<gateway::objects::channel>(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
     json obj;
@@ -410,33 +411,33 @@ AEGIS_DECL aegis::future<gateway::objects::channel> channel::modify_channel(lib:
     if (_rate_limit_per_user.has_value())
         obj["rate_limit_per_user"] = _rate_limit_per_user.value();
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}", channel_id);
 	return _ratelimit.post_task<gateway::objects::channel>({ _endpoint, rest::Patch, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_channel()
+AEGIS_DECL async::task<rest::rest_reply> channel::delete_channel()
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild && !perms().can_manage_channels())
-        return aegis::make_exception_future(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}", channel_id);
 	return _ratelimit.post_task({ _endpoint, rest::Delete });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::create_reaction(snowflake message_id, const std::string & emoji_text)
+AEGIS_DECL async::task<rest::rest_reply> channel::create_reaction(snowflake message_id, const std::string & emoji_text)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild && !perms().can_add_reactions())
-        return aegis::make_exception_future(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, utility::url_encode(emoji_text));
     std::string _bucket = fmt::format("/guilds/{}/reactions", guild_id);
@@ -444,14 +445,14 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::create_reaction(snowflake me
     return _ratelimit.post_task(_bucket, { _endpoint, rest::Put });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_own_reaction(snowflake message_id, const std::string & emoji_text)
+AEGIS_DECL async::task<rest::rest_reply> channel::delete_own_reaction(snowflake message_id, const std::string & emoji_text)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild && !perms().can_add_reactions())
-        return aegis::make_exception_future(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/messages/{}/reactions/{}/@me", channel_id, message_id, utility::url_encode(emoji_text));
     std::string _bucket = fmt::format("/guilds/{}/reactions", guild_id);
@@ -459,15 +460,16 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_own_reaction(snowflak
     return _ratelimit.post_task(_bucket, { _endpoint, rest::Delete });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_user_reaction(snowflake message_id, const std::string & emoji_text, snowflake member_id)
+AEGIS_DECL async::task<rest::rest_reply> channel::delete_user_reaction(snowflake message_id, const std::string & emoji_text, snowflake member_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!_guild) return aegis::make_exception_future(error::guild_error);
+    if (!_guild)
+        throw aegis::exception(make_error_code(error::guild_error));
     if (!perms().can_manage_messages())
-        return aegis::make_exception_future(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/messages/{}/reactions/{}/{}", channel_id, message_id, utility::url_encode(emoji_text), member_id);
 	std::string _bucket = fmt::format("/channels/{}/messages/_/reactions/", channel_id);
@@ -477,39 +479,41 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_user_reaction(snowfla
 /**\todo Support query parameters
  *  \todo before[snowflake], after[snowflake], limit[int]
  */
-AEGIS_DECL aegis::future<rest::rest_reply> channel::get_reactions(snowflake message_id, const std::string & emoji_text)
+AEGIS_DECL async::task<rest::rest_reply> channel::get_reactions(snowflake message_id, const std::string & emoji_text)
 {
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/messages/{}/reactions/{}", channel_id, message_id, emoji_text);
 	std::string _bucket = fmt::format("/channels/{}/messages/_/reactions/", channel_id);
 	return _ratelimit.post_task(_bucket, { _endpoint, rest::Get });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_all_reactions(snowflake message_id)
+AEGIS_DECL async::task<rest::rest_reply> channel::delete_all_reactions(snowflake message_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!_guild) return aegis::make_exception_future(error::guild_error);
+    if (!_guild)
+        throw aegis::exception(make_error_code(error::guild_error));
     if (!perms().can_manage_messages())
-        return aegis::make_exception_future(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/messages/{}/reactions", channel_id, message_id);
 	std::string _bucket = fmt::format("/channels/{}/messages/_/reactions", channel_id);
 	return _ratelimit.post_task(_bucket, { _endpoint, rest::Delete });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::edit_channel_permissions(snowflake _overwrite_id, int64_t _allow, int64_t _deny, const std::string & _type)
+AEGIS_DECL async::task<rest::rest_reply> channel::edit_channel_permissions(snowflake _overwrite_id, int64_t _allow, int64_t _deny, const std::string & _type)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!_guild) return aegis::make_exception_future(error::guild_error);
+    if (!_guild)
+        throw aegis::exception(make_error_code(error::guild_error));
     if (!perms().can_manage_roles())
-        return aegis::make_exception_future(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     json obj;
     obj["allow"] = _allow;
@@ -521,29 +525,31 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::edit_channel_permissions(sno
 	return _ratelimit.post_task(_bucket, { _endpoint, rest::Put, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::get_channel_invites()
+AEGIS_DECL async::task<rest::rest_reply> channel::get_channel_invites()
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!_guild) return aegis::make_exception_future(error::guild_error);
+    if (!_guild)
+        throw aegis::exception(make_error_code(error::guild_error));
     if (!perms().can_manage_channels())
-        return aegis::make_exception_future(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/invites", channel_id);
 	return _ratelimit.post_task({ _endpoint, rest::Get });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::create_channel_invite(lib::optional<int> max_age, lib::optional<int> max_uses, lib::optional<bool> temporary, lib::optional<bool> unique)
+AEGIS_DECL async::task<rest::rest_reply> channel::create_channel_invite(std::optional<int> max_age, std::optional<int> max_uses, std::optional<bool> temporary, std::optional<bool> unique)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!_guild) return aegis::make_exception_future(error::guild_error);
+    if (!_guild)
+        throw aegis::exception(make_error_code(error::guild_error));
     if (!perms().can_invite())
-        return aegis::make_exception_future(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     json obj;
     if (max_age.has_value())
@@ -559,59 +565,60 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::create_channel_invite(lib::o
 	return _ratelimit.post_task({ _endpoint, rest::Post, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_channel_permission(snowflake overwrite_id)
+AEGIS_DECL async::task<rest::rest_reply> channel::delete_channel_permission(snowflake overwrite_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
-    if (!_guild) return aegis::make_exception_future(error::guild_error);
+    if (!_guild)
+        throw aegis::exception(make_error_code(error::guild_error));
     if (!perms().can_manage_roles())
-        return aegis::make_exception_future(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/permissions/{}", channel_id, overwrite_id);
 	std::string _bucket = fmt::format("/channels/{}/permissions/", channel_id);
 	return _ratelimit.post_task(_bucket, { _endpoint, rest::Delete });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::trigger_typing_indicator()
+AEGIS_DECL async::task<rest::rest_reply> channel::trigger_typing_indicator()
 {
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/typing", channel_id);
 	return _ratelimit.post_task({ _endpoint });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::get_pinned_messages()
+AEGIS_DECL async::task<rest::rest_reply> channel::get_pinned_messages()
 {
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/pins", channel_id);
 	return _ratelimit.post_task({ _endpoint, rest::Get });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::add_pinned_channel_message(snowflake message_id)
+AEGIS_DECL async::task<rest::rest_reply> channel::add_pinned_channel_message(snowflake message_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild && !perms().can_manage_messages())
-        return aegis::make_exception_future(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/pins/{}", channel_id, message_id);
 	std::string _bucket = fmt::format("/channels/{}/pins/", channel_id);
 	return _ratelimit.post_task(_bucket, { _endpoint, rest::Put });
 }
 
-AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_pinned_channel_message(snowflake message_id)
+AEGIS_DECL async::task<rest::rest_reply> channel::delete_pinned_channel_message(snowflake message_id)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     if (_guild && !perms().can_manage_messages())
-        return aegis::make_exception_future(error::no_permission);
+        throw aegis::exception(make_error_code(error::no_permission));
 #endif
 
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/pins/{}", channel_id, message_id);
 	std::string _bucket = fmt::format("/channels/{}/pins/", channel_id);
@@ -621,9 +628,9 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::delete_pinned_channel_messag
 /**\todo Will likely move to aegis class
  * requires OAuth permissions to perform
  */
-AEGIS_DECL aegis::future<rest::rest_reply> channel::group_dm_add_recipient(snowflake user_id)//will go in aegis::aegis
+AEGIS_DECL async::task<rest::rest_reply> channel::group_dm_add_recipient(snowflake user_id)//will go in aegis::aegis
 {
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/recipients/{}", channel_id, user_id);
 	std::string _bucket = fmt::format("/channels/{}/recipients/", channel_id);
@@ -633,9 +640,9 @@ AEGIS_DECL aegis::future<rest::rest_reply> channel::group_dm_add_recipient(snowf
 /**\todo Will likely move to aegis class
  * requires OAuth permissions to perform
  */
-AEGIS_DECL aegis::future<rest::rest_reply> channel::group_dm_remove_recipient(snowflake user_id)//will go in aegis::aegis
+AEGIS_DECL async::task<rest::rest_reply> channel::group_dm_remove_recipient(snowflake user_id)//will go in aegis::aegis
 {
-    std::shared_lock<shared_mutex> l(_m);
+    std::shared_lock<std::shared_mutex> l(_m);
 
     std::string _endpoint = fmt::format("/channels/{}/recipients/{}", channel_id, user_id);
 	std::string _bucket = fmt::format("/channels/{}/recipients/", channel_id);

@@ -4,7 +4,7 @@
 Aegis Library
 =======
 
-C++14/17 library for interfacing with the [Discord API](https://discordapp.com/developers/docs/intro)
+C++17 library for interfacing with the [Discord API](https://discordapp.com/developers/docs/intro)
 
 # License #
 
@@ -72,8 +72,7 @@ You can also add `-DBUILD_EXAMPLES=1` and it will build 3 examples within the ./
 ## Compiler Options ##
 You can pass these flags to CMake to change what it builds<br />
 `-DBUILD_EXAMPLES=1` will build the examples<br />
-`-DCMAKE_CXX_COMPILER=g++-7` will let you select the compiler used<br />
-`-DCMAKE_CXX_STANDARD=17` will let you select C++14 (default) or C++17
+`-DCMAKE_CXX_COMPILER=g++-7` will let you select the compiler used
 
 ##### Library #####
 You can pass these flags to your compiler (and/or CMake) to alter how the library is built<br />
@@ -93,10 +92,10 @@ Options above, as well as:
 ## CMake misc ##
 If configured with CMake, it will create a pkg-config file that may help with compiling your own project.<br />
 It can be used as such:<br />
-`g++ -std=c++14 myfile.cpp $(pkg-config --cflags --libs aegis)`<br />
+`g++ -std=c++17 myfile.cpp $(pkg-config --cflags --libs aegis)`<br />
 to link to the shared object
 
-`g++ -std=c++14 myfile.cpp $(pkg-config --cflags --libs aegis_static)`<br />
+`g++ -std=c++17 myfile.cpp $(pkg-config --cflags --libs aegis_static)`<br />
 to link to the static object<br />
 
 You can also use this library within your own CMake project by adding `find_package(Aegis REQUIRED)` to your `CMakeLists.txt`.

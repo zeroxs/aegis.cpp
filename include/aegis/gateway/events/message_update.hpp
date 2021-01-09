@@ -29,7 +29,7 @@ struct message_update
 {
     shards::shard & shard; /**< Reference to shard object this message came from */
     aegis::channel & channel; /**< Reference to channel object this message came from */
-    lib::optional<std::reference_wrapper<aegis::user>> user; /**< Cached user object */
+    std::optional<std::reference_wrapper<aegis::user>> user; /**< Cached user object */
     objects::message msg; /**< Message object */
 };
 

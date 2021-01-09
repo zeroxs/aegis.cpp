@@ -34,6 +34,7 @@
 #include <string>
 #include <map>
 #include <functional>
+#include <optional>
 
 namespace aegis
 {
@@ -66,7 +67,7 @@ struct request_params
     std::string port = "443";
     std::vector<std::string> headers;
     std::string _path_ex;
-    lib::optional<aegis_file> file;
+    std::optional<aegis_file> file;
 };
 
 class rest_controller
