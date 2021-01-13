@@ -92,6 +92,17 @@ AEGIS_DECL void shard_mgr::setup_callbacks(shard * _shard) noexcept
         std::bind(&shard_mgr::_on_connect, this, std::placeholders::_1, _shard));
     _shard->_connection->set_close_handler(
         std::bind(&shard_mgr::_on_close, this, std::placeholders::_1, _shard));
+
+    _shard->_connection->set_pong_timeout(3000);
+
+    _shard->_connection->set_pong_timeout_handler([&, _shard](websocketpp::connection_hdl hdl, std::string str)
+    {
+        auto now = std::chrono::steady_clock::now();
+        log->warn("Shard#{}: Timeout called - lastheartbeat({}) lastwsevent({}) lastheartbeatack({}) ms ago\n", _shard->get_id(), utility::to_ms(now - _shard->lastheartbeat),
+            utility::to_ms(now - _shard->lastwsevent),
+            utility::to_ms(now - _shard->heartbeat_ack));
+        close(_shard, 1003, "");
+    });
 }
 
 AEGIS_DECL void shard_mgr::shutdown()

@@ -17,6 +17,8 @@ namespace aegis
 namespace shards
 {
 
+using namespace std::chrono_literals;
+
 AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp::config::asio_tls_client> & _ws, int32_t id)
     : keepalivetimer(_io)
     , delayedauth(_io)
@@ -29,11 +31,36 @@ AEGIS_DECL shard::shard(asio::io_context & _io, websocketpp::client<websocketpp:
     , transfer_bytes(0)
     , transfer_bytes_u(0)
     , _websocket(_ws)
+    , ping_timer(_io)
 {
+    ping_timer.expires_after(20000ms);
+
+    ping_timer.async_wait(std::bind(&shard::do_the_ping, this, std::placeholders::_1));
+}
+
+AEGIS_DECL void shard::do_the_ping(const asio::error_code & ec)
+{
+    if (ec == asio::error::operation_aborted)
+        return;
+
+    try
+    {
+        if (connection_state == shard_status::online && _connection)
+            _connection->ping("ping-a-ling");
+    }
+    catch (std::exception ex)
+    {
+        std::cout << ex.what() << '\n';
+    }
+
+    ping_timer.expires_after(3000ms);
+
+    ping_timer.async_wait(std::bind(&shard::do_the_ping, this, std::placeholders::_1));
 }
 
 AEGIS_DECL void shard::do_reset(shard_status _status) noexcept
 {
+    ping_timer.cancel();
     if (!state_valid())
     {
         connection_state = _status;
@@ -106,21 +133,21 @@ AEGIS_DECL void shard::connect()
             //_reset();
             _websocket.connect(_connection);
             connection_state = shard_status::connecting;
+            return;
         }
         catch (std::exception & e)
         {
             std::cout << "Shard#" << get_id() << ": worst happened connect() - std::exception " << e.what() << '\n';
-            _reset();
         }
         catch (asio::error_code & e)
         {
             std::cout << "Shard#" << get_id() << ": worst happened connect() - asio::error_code " << e.value() << ':' << e.message() << '\n';
-            _reset();
         }
         catch (...)
         {
             std::cout << "error in shard::connect()\n";
         }
+        do_reset();
     });
 }
 
@@ -129,15 +156,29 @@ AEGIS_DECL void shard::set_connected()
     if (!state_valid())
         return;
     using namespace std::chrono_literals;
+
+    if (ping_timer.expiry() > std::chrono::steady_clock::now())
+        ping_timer.cancel();
+
+    ping_timer.expires_after(20000ms);
+
+    ping_timer.async_wait(std::bind(&shard::do_the_ping, this, std::placeholders::_1));
+
     if (zlib_ctx)
     {
         //already has an existing context
-        throw aegis::exception("set_connected() zlib context already exists");
+        //throw aegis::exception("set_connected() zlib context already exists");
+        std::cout << "set_connected() zlib context already exists\n";
+        do_reset();
+        return;
     }
     if (_connection == nullptr)
     {
         //error
-        throw aegis::exception("set_connected() connection = nullptr");
+        //throw aegis::exception("set_connected() connection = nullptr");
+        std::cout << "set_connected() connection = nullptr\n";
+        do_reset();
+        return;
     }
     ws_buffer.str("");
     zlib_ctx = std::make_unique<zstr::istream>(ws_buffer);

@@ -178,6 +178,10 @@ public:
     asio::steady_timer keepalivetimer;
     asio::steady_timer delayedauth;
     asio::steady_timer write_timer;
+    asio::steady_timer ping_timer;
+    std::mutex parse_mutex;
+
+    AEGIS_DECL void do_the_ping(const asio::error_code & ec);
 
     std::queue<std::tuple<std::string, websocketpp::frame::opcode::value>> write_queue;
 
