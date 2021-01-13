@@ -355,8 +355,8 @@ AEGIS_DECL void guild::_remove_role(snowflake role_id) noexcept
                             g.roles.erase(it);
                         break;
                     }
-          	}
-	    }
+                }
+            }
         }
         roles.erase(role_id);
     }
