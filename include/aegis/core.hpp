@@ -41,6 +41,7 @@
 #include <thread>
 #include <condition_variable>
 #include <shared_mutex>
+#include <set>
 
 using namespace std::chrono_literals;
 
@@ -845,31 +846,8 @@ public:
      * @param f Function to run async
      * @returns async::task<V>
      */
-    template<typename T, typename V = std::result_of_t<T()>, typename = std::enable_if_t<!std::is_void<V>::value>>
-    async::task<V> async(T f) noexcept
-    {
-        return async::spawn(f);
-    }
-
-    /// Run async task
-    /**
-     * This function will queue your task (a lambda or std::function) within Asio for execution at a later time
-     * This version will return an async::task<void> that will still allow chaining continuations on
-     *
-     * Example:
-     * @code{.cpp}
-     * async::task<std::string> message = async([]{
-     *     return;
-     * }).then([](){
-     *     return std::string("continuation executed");
-     * });
-     * @endcode
-     *
-     * @param f Function to run async
-     * @returns async::task<V>
-     */
-    template<typename T, typename V = std::enable_if_t<std::is_void<std::result_of_t<T()>>::value>>
-    async::task<V> async(T f) noexcept
+    template<typename T>
+    decltype(async::spawn(::async::default_scheduler(), std::declval<T>())) async(T f) noexcept
     {
         return async::spawn(f);
     }
@@ -929,6 +907,76 @@ public:
      */
     std::unordered_map<snowflake, std::unique_ptr<user>> & get_user_map() { return users; };
 #endif
+
+
+
+    struct aegis_timer
+    {
+        aegis_timer(asio::io_context & _io) : timer(_io) {}
+        uint64_t id;
+        asio::steady_timer timer;
+        std::function <void(void)> fn;
+        std::chrono::duration<long long, std::nano> interval;
+    };
+
+    std::set<std::shared_ptr<aegis_timer>> timers;
+    std::mutex timer_m;
+    uint64_t timer_count = 1;
+
+    template <typename ratio = std::milli>
+    uint64_t set_timeout(std::function <void(void)> fn, const std::chrono::duration<long long, ratio> & t)
+    {
+        std::unique_lock<std::mutex> l(timer_m);
+        std::shared_ptr<aegis_timer> tmr = std::make_shared<aegis_timer>(*io_context_);
+        tmr->id = timer_count++;
+        tmr->fn = fn;
+        tmr->timer.async_wait(std::bind(&core::timer_cb, this, tmr));
+        timers.insert(tmr);
+        tmr->timer.expires_after(t);
+        return tmr->id;
+    }
+
+    template <typename ratio = std::milli>
+    uint64_t set_interval(std::function <void(void)> fn, const std::chrono::duration<long long, ratio> & t)
+    {
+        std::unique_lock<std::mutex> l(timer_m);
+        std::shared_ptr<aegis_timer> tmr = std::make_shared<aegis_timer>(*io_context_);
+        tmr->id = timer_count++;
+        tmr->fn = fn;
+        tmr->interval = t;
+        tmr->timer.async_wait(std::bind(&core::interval_cb, this, tmr));
+        timers.insert(tmr);
+        tmr->timer.expires_after(t);
+        return tmr->id;
+    }
+
+    void clear_timeout(uint64_t t)
+    {
+        std::unique_lock<std::mutex> l(timer_m);
+        for (const auto & timer : timers)
+        {
+            if (timer->id == t)
+            {
+                timers.erase(timer);
+                return;
+            }
+        }
+    }
+
+    void timer_cb(std::shared_ptr<aegis_timer> tmr)
+    {
+        std::unique_lock<std::mutex> l(timer_m);
+        timers.erase(tmr);
+        tmr->fn();
+    }
+
+    void interval_cb(std::shared_ptr<aegis_timer> tmr)
+    {
+        std::unique_lock<std::mutex> l(timer_m);
+        tmr->fn();
+        tmr->timer.async_wait(std::bind(&core::interval_cb, this, tmr));
+        tmr->timer.expires_after(tmr->interval);
+    }
 
 private:
 
