@@ -87,49 +87,104 @@ public:
     template<typename ResultType, typename V = std::enable_if_t<!std::is_same<ResultType, rest::rest_reply>::value>>
     async::task<ResultType> post_task(rest::request_params params) noexcept
     {
+        current_queue++;
         return _bot->async([=]() -> ResultType
         {
-            auto & bkt = get_bucket(params.path);
-            auto res = bkt.perform(params);
-            if (res.reply_code < rest::ok || res.reply_code >= rest::multiple_choices)//error
-                throw aegis::exception(fmt::format("REST Reply Code: {}", static_cast<int>(res.reply_code)), bad_request);
-            return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
+            try
+            {
+                auto & bkt = get_bucket(params.path);
+                auto res = bkt.perform(params);
+                if (res.reply_code < rest::ok || res.reply_code >= rest::multiple_choices)//error
+                {
+                    current_queue--;
+                    throw aegis::exception(fmt::format("REST Reply Code: {}", static_cast<int>(res.reply_code)), bad_request);
+                }
+                current_queue--;
+                return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
+            }
+            catch (...)
+            {
+                current_queue--;
+                return {};
+            }
         });
     }
 
     async::task<rest::rest_reply> post_task(rest::request_params params) noexcept
     {
+        current_queue++;
         return _bot->async([=]() -> rest::rest_reply
         {
-            auto & bkt = get_bucket(params.path);
-            return bkt.perform(params);
+            try
+            {
+                auto & bkt = get_bucket(params.path);
+                current_queue--;
+                return bkt.perform(params);
+            }
+            catch (...)
+            {
+                current_queue--;
+                return {};
+            }
         });
     }
 
     template<typename ResultType, typename V = std::enable_if_t<!std::is_same<ResultType, rest::rest_reply>::value>>
     async::task<ResultType> post_task(std::string _bucket, rest::request_params params) noexcept
     {
+        current_queue++;
         return _bot->async([=]() -> ResultType
         {
-            auto & bkt = get_bucket(_bucket);
-            auto res = bkt.perform(params);
-            if (res.reply_code < rest::ok || res.reply_code >= rest::multiple_choices)//error
-                throw aegis::exception(fmt::format("REST Reply Code: {}", static_cast<int>(res.reply_code)), bad_request);
-            return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
+            try
+            {
+                auto & bkt = get_bucket(_bucket);
+                auto res = bkt.perform(params);
+                if (res.reply_code < rest::ok || res.reply_code >= rest::multiple_choices)//error
+                {
+                    current_queue--;
+                    throw aegis::exception(fmt::format("REST Reply Code: {}", static_cast<int>(res.reply_code)), bad_request);
+                }
+                current_queue--;
+                return res.content.empty() ? ResultType(_bot) : ResultType(res.content, _bot);
+            }
+            catch (...)
+            {
+                current_queue--;
+                return {};
+            }
         });
     }
 
     async::task<rest::rest_reply> post_task(std::string _bucket, rest::request_params params) noexcept
     {
+        current_queue++;
         return _bot->async([=]() -> rest::rest_reply
         {
-            auto & bkt = get_bucket(_bucket);
-            return bkt.perform(params);
+            try
+            {
+                auto & bkt = get_bucket(_bucket);
+                current_queue--;
+                return bkt.perform(params);
+            }
+            catch (...)
+            {
+                current_queue--;
+                return {};
+            }
         });
+    }
+
+    uint64_t get_current_queue() const noexcept
+    {
+        return current_queue.load();
     }
 
 private:
     friend class bucket;
+    friend class shard;
+    friend class shard_mgr;
+
+    std::atomic<uint64_t> current_queue; /**< Current count of outgoing requests awaiting processing */
 
     std::atomic<int64_t> global_limit; /**< Timestamp in seconds when global ratelimit expires */
 
