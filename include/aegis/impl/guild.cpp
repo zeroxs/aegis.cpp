@@ -343,16 +343,20 @@ AEGIS_DECL void guild::_remove_role(snowflake role_id) noexcept
         for (auto & kv : members)
         {
             auto g = kv.second->get_guild_info(guild_id);
-            for (auto & rl : g.roles)
-            {
-                if (rl == role_id)
+	    /* Fix: Somehow there are null pointers in this map */
+	    if (kv.second)
+	    {
+                for (auto & rl : g.roles)
                 {
-                    auto it = std::find(g.roles.begin(), g.roles.end(), role_id);
-                    if (it != g.roles.end())
-                        g.roles.erase(it);
-                    break;
-                }
-            }
+                    if (rl == role_id)
+                    {
+                        auto it = std::find(g.roles.begin(), g.roles.end(), role_id);
+                        if (it != g.roles.end())
+                            g.roles.erase(it);
+                        break;
+                    }
+          	}
+	    }
         }
         roles.erase(role_id);
     }

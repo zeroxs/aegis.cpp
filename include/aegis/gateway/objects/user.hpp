@@ -88,11 +88,11 @@ inline void from_json(const nlohmann::json& j, user& m)
     if (j.count("avatar") && !j["avatar"].is_null())
         m.avatar = j["avatar"].get<std::string>();
     if (j.count("bot") &&  !j["bot"].is_null())
-        m._is_bot = j["bot"];
+        m._is_bot = j["bot"].get<bool>();
     if (j.count("mfa_enabled") && !j["mfa_enabled"].is_null())
         m.mfa_enabled = j["mfa_enabled"];
     if (j.count("verified") && !j["verified"].is_null())
-        m.verified = j["verified"];
+        m.verified = j["verified"].get<bool>();
 }
 /// \endcond
 

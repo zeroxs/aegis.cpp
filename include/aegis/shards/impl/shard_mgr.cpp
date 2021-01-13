@@ -416,14 +416,18 @@ AEGIS_DECL void shard_mgr::connect(shard * _shard) noexcept
 {
     asio::post(asio::bind_executor(*_shard->_connection->get_strand(), [this, _shard]()
     {
-        setup_callbacks(_shard);
-        _shard->connection_state = shard_status::connecting;
-        _shard->heartbeat_ack = std::chrono::steady_clock::time_point();
-        _shard->lastheartbeat = 
-            _shard->last_status_time =
-            _shard->lastwsevent =
-            std::chrono::steady_clock::now();
-        _shard->connect();
+        if (_shard->_connection) {
+            setup_callbacks(_shard);
+            _shard->connection_state = shard_status::connecting;
+            _shard->heartbeat_ack = std::chrono::steady_clock::time_point();
+            _shard->lastheartbeat = 
+                _shard->last_status_time =
+                _shard->lastwsevent =
+                std::chrono::steady_clock::now();
+            _shard->connect();
+        } else {
+            queue_reconnect(_shard);
+        }
     }));
 }
 
