@@ -42,8 +42,6 @@
 #include <condition_variable>
 #include <shared_mutex>
 
-#include "async++.hpp"
-
 using namespace std::chrono_literals;
 
 namespace aegis

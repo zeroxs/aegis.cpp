@@ -64,9 +64,8 @@ AEGIS_DECL void shard_mgr::start()
     uint32_t shard_end = shard_max_count;
 
     std::string cluster;
-    if (_max_clusters) {
+    if (_max_clusters)
 	    cluster = fmt::format(" (cluster ID {}, max clusters: {})", _cluster_id, _max_clusters);
-    }
    
     log->info("Starting bot with {} shards{}", shard_max_count, cluster);
     {
@@ -416,6 +415,12 @@ AEGIS_DECL void shard_mgr::connect(shard * _shard) noexcept
 {
     async::spawn([this, _shard]()
     {
+        if (_shard->get_connection() == nullptr)
+        {
+            _shard->do_reset();
+            return;
+        }
+
         setup_callbacks(_shard);
         _shard->connection_state = shard_status::connecting;
         _shard->heartbeat_ack = std::chrono::steady_clock::time_point();
@@ -429,7 +434,7 @@ AEGIS_DECL void shard_mgr::connect(shard * _shard) noexcept
 
 AEGIS_DECL void shard_mgr::queue_reconnect(shard * _shard) noexcept
 {
-    AEGIS_DEBUG(log, "Shard#{}: queue_reconnect()", _shard->get_id());
+    //AEGIS_DEBUG(log, "Shard#{}: queue_reconnect()", _shard->get_id());
     auto it = std::find(_shards_to_connect.cbegin(), _shards_to_connect.cend(), _shard);
     if (it != _shards_to_connect.cend())
     {

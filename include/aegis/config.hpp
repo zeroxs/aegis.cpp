@@ -18,6 +18,8 @@
 #include <windows.h>
 #endif
 
+#include "async++.hpp"
+
 #if !defined(ASIO_NO_DEPRECATED)
 #define ASIO_NO_DEPRECATED
 #endif

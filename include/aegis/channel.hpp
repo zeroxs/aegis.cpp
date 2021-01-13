@@ -18,16 +18,9 @@
 #include "aegis/gateway/objects/permission_overwrite.hpp"
 #include "aegis/gateway/objects/channel.hpp"
 #include <shared_mutex>
-#include "aegis/futures.hpp"
 
 namespace aegis
 {
-
-#if (AEGIS_HAS_STD_SHARED_MUTEX == 1)
-using shared_mutex = std::shared_mutex;
-#else
-using shared_mutex = std::shared_timed_mutex;
-#endif
 
 using json = nlohmann::json;
 
