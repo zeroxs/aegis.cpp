@@ -908,11 +908,9 @@ public:
     std::unordered_map<snowflake, std::unique_ptr<user>> & get_user_map() { return users; };
 #endif
 
-
-
     struct aegis_timer
     {
-        aegis_timer(asio::io_context & _io) : timer(_io) {}
+        aegis_timer(asio::io_context & _io) : timer(_io), id(0), interval(0) {}
         uint64_t id;
         asio::steady_timer timer;
         std::function <void(void)> fn;
@@ -927,12 +925,12 @@ public:
     uint64_t set_timeout(std::function <void(void)> fn, const std::chrono::duration<long long, ratio> & t)
     {
         std::unique_lock<std::mutex> l(timer_m);
-        std::shared_ptr<aegis_timer> tmr = std::make_shared<aegis_timer>(*io_context_);
+        std::shared_ptr<aegis_timer> tmr = std::make_shared<aegis_timer>(*_io_context);
         tmr->id = timer_count++;
         tmr->fn = fn;
+        tmr->timer.expires_after(t);
         tmr->timer.async_wait(std::bind(&core::timer_cb, this, tmr));
         timers.insert(tmr);
-        tmr->timer.expires_after(t);
         return tmr->id;
     }
 
@@ -940,13 +938,13 @@ public:
     uint64_t set_interval(std::function <void(void)> fn, const std::chrono::duration<long long, ratio> & t)
     {
         std::unique_lock<std::mutex> l(timer_m);
-        std::shared_ptr<aegis_timer> tmr = std::make_shared<aegis_timer>(*io_context_);
+        std::shared_ptr<aegis_timer> tmr = std::make_shared<aegis_timer>(*_io_context);
         tmr->id = timer_count++;
         tmr->fn = fn;
         tmr->interval = t;
+        tmr->timer.expires_after(t);
         tmr->timer.async_wait(std::bind(&core::interval_cb, this, tmr));
         timers.insert(tmr);
-        tmr->timer.expires_after(t);
         return tmr->id;
     }
 
@@ -974,8 +972,8 @@ public:
     {
         std::unique_lock<std::mutex> l(timer_m);
         tmr->fn();
-        tmr->timer.async_wait(std::bind(&core::interval_cb, this, tmr));
         tmr->timer.expires_after(tmr->interval);
+        tmr->timer.async_wait(std::bind(&core::interval_cb, this, tmr));
     }
 
 private:
