@@ -184,6 +184,10 @@ inline std::chrono::system_clock::time_point from_http_date(const std::string & 
 
 inline std::string url_encode(const std::string & value)
 {
+    if (value.find('%') != std::string::npos) { // already encoded
+        return value;
+    }
+
     std::ostringstream escaped;
     escaped.fill('0');
     escaped << std::hex;
