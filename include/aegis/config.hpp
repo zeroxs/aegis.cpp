@@ -18,6 +18,8 @@
 #include <windows.h>
 #endif
 
+#include "async++.hpp"
+
 #if !defined(ASIO_NO_DEPRECATED)
 #define ASIO_NO_DEPRECATED
 #endif
@@ -83,97 +85,14 @@
 
 // Workaround for Microsoft Visual C++ __cplusplus value
 #if defined(AEGIS_MSVC)
-# if (_MSVC_LANG < 201402)
-#  error AegisLib requires C++14 or greater
+# if (_MSVC_LANG < 201703)
+#  error AegisLib requires C++17 or greater
 # endif
 #else
-# if (__cplusplus < 201402)
-#  error AegisLib requires C++14 or greater
+# if (__cplusplus < 201703)
+#  error AegisLib requires C++17 or greater
 # endif
 #endif
-
-#if (__cplusplus >= 201703) || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703) || (defined(_HAS_CXX17) && _HAS_CXX17 != 0)
-# define AEGIS_CXX17
-#endif // (__cplusplus >= 201703) || (_MSVC_LANG >= 201703)
-
-// Support for std::optional over built-in
-#if !defined(AEGIS_HAS_STD_OPTIONAL)
-# if (__cplusplus >= 201703)
-#  if __has_include(<optional>)
-#   include <optional>
-namespace aegis::lib
-{
-template<typename T> using optional = std::optional<T>;
-constexpr auto nullopt = std::nullopt;
-using bad_optional_access = std::bad_optional_access;
-}
-#   define AEGIS_HAS_STD_OPTIONAL 1
-#  elif __has_include(<experimental/optional>)
-#   include <experimental/optional>
-namespace aegis::lib
-{
-template<typename T> using optional = std::experimental::optional<T>;
-constexpr auto nullopt = std::experimental::nullopt;
-using bad_optional_access = std::experimental::bad_optional_access;
-}
-#   define AEGIS_HAS_STD_OPTIONAL 1
-#  endif // __has_include(<optional>)
-# elif (__cplusplus >= 201402) // c++14
-#  include "aegis/optional.hpp"
-namespace aegis
-{
-namespace lib
-{
-template<typename T> using optional = std::experimental::optional<T>;
-constexpr auto nullopt = std::experimental::nullopt;
-using bad_optional_access = std::experimental::bad_optional_access;
-}
-}
-#  define AEGIS_HAS_STD_OPTIONAL 1
-#  define AEGIS_HAS_BUILTIN_OPTIONAL 1
-# endif // (__cplusplus >= 201703)
-# if defined(AEGIS_MSVC)
-#  if (_MSVC_LANG < 201703)
-#   include "aegis/optional.hpp"
-namespace aegis
-{
-namespace lib
-{
-template<typename T> using optional = std::experimental::optional<T>;
-constexpr auto nullopt = std::experimental::nullopt;
-using bad_optional_access = std::experimental::bad_optional_access;
-}
-}
-#   define AEGIS_HAS_STD_OPTIONAL 1
-#   define AEGIS_HAS_BUILTIN_OPTIONAL 1
-#  else
-#   include <optional>
-namespace aegis::lib
-{
-template<typename T> using optional = std::optional<T>;
-constexpr auto nullopt = std::nullopt;
-using bad_optional_access = std::bad_optional_access;
-}
-#   define AEGIS_HAS_STD_OPTIONAL 1
-#  endif // (_MSC_VER >= 1910 && _HAS_CXX17)
-# endif // defined(AEGIS_MSVC)
-#endif // !defined(AEGIS_HAS_STD_OPTIONAL)
-
-#if !defined(AEGIS_HAS_STD_OPTIONAL)
-# error Could not find a suitable optional library.
-#endif
-
-// use std::shared_timed_mutex on C++14 or shared_mutex on C++17
-#if !defined(AEGIS_HAS_STD_SHARED_MUTEX)
-# if !defined(AEGIS_DISABLE_STD_SHARED_MUTEX)
-#  if (__cplusplus >= 201703) || (_MSVC_LANG >= 201703)
-#   define AEGIS_HAS_STD_SHARED_MUTEX 1
-#  endif // (__cplusplus >= 201703) || (_MSVC_LANG >= 201703)
-# endif // !defined(AEGIS_DISABLE_STD_SHARED_MUTEX)
-# if !defined(AEGIS_HAS_STD_SHARED_MUTEX)
-#  define AEGIS_HAS_STD_SHARED_MUTEX 0
-# endif // !defined(AEGIS_HAS_STD_SHARED_MUTEX)
-#endif // !defined(AEGIS_HAS_STD_SHARED_MUTEX)
 
 #if !defined(NDEBUG)
 #include <cassert>

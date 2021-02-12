@@ -97,6 +97,7 @@ public:
     bool can_manage_guild() const noexcept { return (_allow_permissions & 0x20) > 0; }
     bool can_add_reactions() const noexcept { return (_allow_permissions & 0x40) > 0; }
     bool can_view_audit_logs() const noexcept { return (_allow_permissions & 0x80) > 0; }
+    bool has_priority_speaker() const noexcept { return (_allow_permissions & 0x100) > 0; }
     bool can_read_messages() const noexcept { return (_allow_permissions & 0x400) > 0; }
     bool can_send_messages() const noexcept { return (_allow_permissions & 0x800) > 0; }
     bool can_tts() const noexcept { return (_allow_permissions & 0x1000) > 0; }
@@ -118,7 +119,6 @@ public:
     bool can_voice_deafen() const noexcept { return (_allow_permissions & 0x800000) > 0; }
     bool can_voice_move() const noexcept { return (_allow_permissions & 0x1000000) > 0; }
     bool can_voice_activity() const noexcept { return (_allow_permissions & 0x2000000) > 0; }
-    bool has_priority_speaker() const noexcept { return (_allow_permissions & 0x100) > 0; }
 
     void set_invite() noexcept { _allow_permissions = (_allow_permissions & 0x1); }
     void set_kick() noexcept { _allow_permissions = (_allow_permissions & 0x2); }
@@ -128,6 +128,7 @@ public:
     void set_manage_guild() noexcept { _allow_permissions = (_allow_permissions & 0x20); }
     void set_add_reactions() noexcept { _allow_permissions = (_allow_permissions & 0x40); }
     void set_view_audit_logs() noexcept { _allow_permissions = (_allow_permissions & 0x80); }
+    void set_priority_speaker() noexcept { _allow_permissions = (_allow_permissions & 0x100); }
     void set_read_messages() noexcept { _allow_permissions = (_allow_permissions & 0x400); }
     void set_send_messages() noexcept { _allow_permissions = (_allow_permissions & 0x800); }
     void set_tts() noexcept { _allow_permissions = (_allow_permissions & 0x1000); }
@@ -152,7 +153,37 @@ public:
 
 private:
     int64_t _allow_permissions = 0;
-    AEGIS_DECL static const std::unordered_map<int64_t, const std::string> perm_strs;
+    static inline const std::unordered_map<int64_t, const std::string> perm_strs = {
+        { 0x1, "Create invites" },
+        { 0x2, "Kick members" },
+        { 0x4, "Ban members" },
+        { 0x8, "Administrator" },
+        { 0x10, "Manage channels" },
+        { 0x20, "Manage server" },
+        { 0x40, "Add reactions" },
+        { 0x80, "View audit log" },
+        { 0x100, "Priority speaker" },
+        { 0x400, "Read messages" },
+        { 0x800, "Send messages" },
+        { 0x1000, "Use TTS" },
+        { 0x2000, "Manage messages" },
+        { 0x4000, "Send embeds" },
+        { 0x8000, "Attach files" },
+        { 0x10000, "Read message history" },
+        { 0x20000, "Mention everyone" },
+        { 0x40000, "Use external emoji" },
+        { 0x4000000, "Change nickname" },
+        { 0x8000000, "Manage nicknames" },
+        { 0x10000000, "Manage roles" },
+        { 0x20000000, "Manage webhooks" },
+        { 0x40000000, "Manage emojis" },
+        { 0x100000, "Connect to VC" },
+        { 0x400000, "Server mute" },
+        { 0x200000, "Speak in VC" },
+        { 0x800000, "Server deafen" },
+        { 0x1000000, "Move VC members" },
+        { 0x2000000, "Use voice activity" }
+    };
 };
 
 /// \cond TEMPLATES

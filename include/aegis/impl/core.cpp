@@ -218,7 +218,7 @@ AEGIS_DECL core::~core()
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 AEGIS_DECL int64_t core::get_member_count() const noexcept
 {
-    std::shared_lock<shared_mutex> l(_guild_m);
+    std::shared_lock<std::shared_mutex> l(_guild_m);
     int64_t count = 0;
     for (auto & kv : guilds)
         count += kv.second->get_member_count();
@@ -242,7 +242,7 @@ AEGIS_DECL int64_t core::get_guild_count() const noexcept
 
 AEGIS_DECL user * core::find_user(snowflake id) const noexcept
 {
-    std::shared_lock<shared_mutex> l(_user_m);
+    std::shared_lock<std::shared_mutex> l(_user_m);
     auto it = users.find(id);
     if (it == users.end())
         return nullptr;
@@ -259,7 +259,7 @@ AEGIS_DECL user* core::find_user_nolock(snowflake id) const noexcept
 
 AEGIS_DECL user * core::user_create(snowflake id) noexcept
 {
-    std::unique_lock<shared_mutex> l(_user_m);
+    std::unique_lock<std::shared_mutex> l(_user_m);
     auto it = users.find(id);
     if (it == users.end())
     {
@@ -272,13 +272,13 @@ AEGIS_DECL user * core::user_create(snowflake id) noexcept
 }
 #endif
 
-AEGIS_DECL aegis::future<gateway::objects::message> core::create_dm_message(snowflake member_id, const std::string & content, int64_t nonce)
+AEGIS_DECL async::task<gateway::objects::message> core::create_dm_message(snowflake member_id, const std::string & content, int64_t nonce)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     channel * c = nullptr;
     auto m = find_user(member_id);
     if (!m)
-        return aegis::make_exception_future<gateway::objects::message>(aegis::error::member_error);
+        throw aegis::exception(make_error_code(error::member_error));
     if (m->get_dm_id())
         c = channel_create(m->get_dm_id());
     if (c)
@@ -291,7 +291,8 @@ AEGIS_DECL aegis::future<gateway::objects::message> core::create_dm_message(snow
             .then([=](gateway::objects::channel && reply)
             {
                 auto c = channel_create(reply.id);
-                if (!c) throw aegis::exception(make_error_code(error::member_error));
+                if (!c)
+                    throw aegis::exception(make_error_code(error::member_error));
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
                 m->set_dm_id(reply.id);
 #endif
@@ -300,13 +301,13 @@ AEGIS_DECL aegis::future<gateway::objects::message> core::create_dm_message(snow
     }
 }
 
-AEGIS_DECL aegis::future<gateway::objects::message> core::create_dm_message(const create_message_t & obj)
+AEGIS_DECL async::task<gateway::objects::message> core::create_dm_message(const create_message_t & obj)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     channel * c = nullptr;
     auto m = find_user(obj._user_id);
     if (!m)
-        return aegis::make_exception_future<gateway::objects::message>(aegis::error::member_error);
+        throw aegis::exception(make_error_code(error::member_error));
     if (m->get_dm_id())
         c = channel_create(m->get_dm_id());
     if (c)
@@ -319,7 +320,8 @@ AEGIS_DECL aegis::future<gateway::objects::message> core::create_dm_message(cons
             .then([=](gateway::objects::channel && reply)
         {
             auto c = channel_create(reply.id);
-            if (!c) throw aegis::exception(make_error_code(error::member_error));
+            if (!c)
+                throw aegis::exception(make_error_code(error::member_error));
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
             m->set_dm_id(reply.id);
 #endif
@@ -350,7 +352,7 @@ AEGIS_DECL aegis::rest::rest_reply core::call(rest::request_params && params)
 
 AEGIS_DECL channel * core::find_channel(snowflake id) const noexcept
 {
-    std::shared_lock<shared_mutex> l(_channel_m);
+    std::shared_lock<std::shared_mutex> l(_channel_m);
     auto it = channels.find(id);
     if (it == channels.end())
         return nullptr;
@@ -367,7 +369,7 @@ AEGIS_DECL channel* core::find_channel_nolock(snowflake id) const noexcept
 
 AEGIS_DECL channel * core::channel_create(snowflake id) noexcept
 {
-    std::unique_lock<shared_mutex> l(_channel_m);
+    std::unique_lock<std::shared_mutex> l(_channel_m);
     auto it = channels.find(id);
     if (it == channels.end())
     {
@@ -381,7 +383,7 @@ AEGIS_DECL channel * core::channel_create(snowflake id) noexcept
 
 AEGIS_DECL guild * core::find_guild(snowflake id) const noexcept
 {
-    std::shared_lock<shared_mutex> l(_guild_m);
+    std::shared_lock<std::shared_mutex> l(_guild_m);
     auto it = guilds.find(id);
     if (it == guilds.end())
         return nullptr;
@@ -398,7 +400,7 @@ AEGIS_DECL guild* core::find_guild_nolock(snowflake id) const noexcept
 
 AEGIS_DECL guild * core::guild_create(snowflake id, shards::shard * _shard) noexcept
 {
-    std::unique_lock<shared_mutex> l(_guild_m);
+    std::unique_lock<std::shared_mutex> l(_guild_m);
     auto it = guilds.find(id);
     if (it == guilds.end())
     {
@@ -412,7 +414,7 @@ AEGIS_DECL guild * core::guild_create(snowflake id, shards::shard * _shard) noex
 
 AEGIS_DECL void core::remove_guild(snowflake guild_id) noexcept
 {
-    std::unique_lock<shared_mutex> l(_guild_m);
+    std::unique_lock<std::shared_mutex> l(_guild_m);
     auto it = guilds.find(guild_id);
     if (it == guilds.end())
     {
@@ -437,7 +439,7 @@ AEGIS_DECL void core::remove_guild_nolock(snowflake guild_id) noexcept
 
 AEGIS_DECL void core::remove_channel(snowflake channel_id) noexcept
 {
-    std::unique_lock<shared_mutex> l(_channel_m);
+    std::unique_lock<std::shared_mutex> l(_channel_m);
     auto it = channels.find(channel_id);
     if (it == channels.end())
     {
@@ -463,7 +465,7 @@ AEGIS_DECL void core::remove_channel_nolock(snowflake channel_id) noexcept
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
 AEGIS_DECL void core::remove_member(snowflake user_id) noexcept
 {
-    std::unique_lock<shared_mutex> l(_user_m);
+    std::unique_lock<std::shared_mutex> l(_user_m);
     auto it = users.find(user_id);
     if (it == users.end())
     {
@@ -731,7 +733,7 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
 
         if (!unavailable)
         {
-            std::unique_lock<shared_mutex> l(_guild->mtx());
+            std::unique_lock<std::shared_mutex> l(_guild->mtx());
             _guild->_load(guildobj, _shard);
             AEGIS_DEBUG(log, "Shard#{} : CREATED Guild: {} [T:{}] [{}]"
                       , _shard->get_id()
@@ -742,28 +744,28 @@ AEGIS_DECL void core::process_ready(const json & d, shards::shard * _shard)
     }
 }
 
-AEGIS_DECL aegis::future<gateway::objects::guild> core::create_guild(create_guild_t obj)
+AEGIS_DECL async::task<gateway::objects::guild> core::create_guild(create_guild_t obj)
 {
     return create_guild(obj._name, obj._voice_region, obj._verification_level, obj._default_message_notifications,
                         obj._explicit_content_filter, obj._icon, obj._roles, obj._channels);
 }
 
-AEGIS_DECL aegis::future<gateway::objects::member> core::modify_bot_username(const std::string & username)
+AEGIS_DECL async::task<gateway::objects::member> core::modify_bot_username(const std::string & username)
 {
     if (!username.empty())
     {
-        return make_ready_future<gateway::objects::member>();
+        return async::task<gateway::objects::member>();
     }
-    return make_ready_future<gateway::objects::member>();
+    return async::task<gateway::objects::member>();
 }
 
-AEGIS_DECL aegis::future<gateway::objects::member> core::modify_bot_avatar(const std::string & avatar)
+AEGIS_DECL async::task<gateway::objects::member> core::modify_bot_avatar(const std::string & avatar)
 {
     if (!avatar.empty())
     {
-        return make_ready_future<gateway::objects::member>();
+        return async::task<gateway::objects::member>();
     }
-    return make_ready_future<gateway::objects::member>();
+    return async::task<gateway::objects::member>();
 }
 
 ///\todo
@@ -774,7 +776,7 @@ AEGIS_DECL channel * core::dm_channel_create(const json & obj, shards::shard * _
 
     try
     {
-        std::unique_lock<shared_mutex> l(_channel->mtx());
+        std::unique_lock<std::shared_mutex> l(_channel->mtx());
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
         AEGIS_DEBUG(log, "Shard#{} : Channel[{}] created for DirectMessage", _shard->get_id(), channel_id);
         if (obj.count("name") && !obj["name"].is_null()) _channel->name = obj["name"].get<std::string>();
@@ -844,7 +846,7 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
                 {
                     //message id found
                     ++message_count[cmd];
-                    asio::post(*_io_context, [=, res = std::move(result)]()
+                    async([=, res = std::move(result)]()
                     {
                         if (get_state() == aegis::bot_status::shutdown)
                             return;
@@ -959,8 +961,8 @@ AEGIS_DECL void core::on_message(websocketpp::connection_hdl hdl, std::string ms
             if (result["op"] == 7)
             {
                 //reconnect request
-                _shard_mgr->close(_shard, 1003);
                 log->trace("Reconnecting shard {} by op7 - {}", _shard->get_id(), _shard->session_id);
+                _shard_mgr->close(_shard, 1003);
                 return;
             }
 
@@ -1187,7 +1189,7 @@ AEGIS_DECL std::size_t core::add_run_thread() noexcept
 AEGIS_DECL void core::reduce_threads(std::size_t count) noexcept
 {
     for (uint32_t i = 0; i < count; ++i)
-        asio::post(*_io_context, []
+        async([]
         {
             throw 1;
         });
@@ -1220,8 +1222,8 @@ AEGIS_DECL void core::ws_presence_update(const json & result, shards::shard * _s
         return;
     }    
     {
-        std::unique_lock<shared_mutex> l(_member->mtx(), std::defer_lock);
-        std::unique_lock<shared_mutex> l2(_guild->mtx(), std::defer_lock);
+        std::unique_lock<std::shared_mutex> l(_member->mtx(), std::defer_lock);
+        std::unique_lock<std::shared_mutex> l2(_guild->mtx(), std::defer_lock);
         std::lock(l, l2);
         _member->_load_nolock(_guild, result["d"], _shard, true, false);
     }
@@ -1323,7 +1325,7 @@ AEGIS_DECL void core::ws_message_create(const json & result, shards::shard * _sh
             }
 
             //user was previously created via presence update, but presence update only contains id
-            gateway::events::message_create obj{ *_shard, lib::nullopt, std::ref(*c) };
+            gateway::events::message_create obj{ *_shard, std::nullopt, std::ref(*c) };
             
             obj.msg = result["d"];
             obj.msg._core = this;
@@ -1354,7 +1356,7 @@ AEGIS_DECL void core::ws_message_update(const json & result, shards::shard * _sh
 
     gateway::events::message_update obj{ *_shard, *_channel };
 
-    obj.user = lib::nullopt;
+    obj.user = std::nullopt;
     
     if (result["d"].count("author") && result["d"].count("member") && !result["d"]["member"].is_null())
     {
@@ -1487,7 +1489,7 @@ AEGIS_DECL void core::ws_guild_delete(const json & result, shards::shard * _shar
         if (i_guild_delete)
             i_guild_delete(obj);
 
-        std::unique_lock<shared_mutex> l(_guild_m);
+        std::unique_lock<std::shared_mutex> l(_guild_m);
         //kicked or left
         //websocket_o.set_timer(5000, [this, id, _shard](const asio::error_code & ec)
         //{
@@ -1664,9 +1666,9 @@ AEGIS_DECL void core::ws_channel_create(const json & result, shards::shard * _sh
         if (_guild == nullptr)//TODO: errors
             return;
         auto _channel = channel_create(channel_id);
-        std::unique_lock<shared_mutex> l(_channel->mtx(), std::defer_lock);
-        std::unique_lock<shared_mutex> l2(_channel_m, std::defer_lock);
-        std::unique_lock<shared_mutex> l3(_guild->mtx(), std::defer_lock);
+        std::unique_lock<std::shared_mutex> l(_channel->mtx(), std::defer_lock);
+        std::unique_lock<std::shared_mutex> l2(_channel_m, std::defer_lock);
+        std::unique_lock<std::shared_mutex> l3(_guild->mtx(), std::defer_lock);
         std::lock(l, l2, l3);
         _channel->_load_with_guild_nolock(*_guild, result["d"], _shard);
         _guild->channels.emplace(channel_id, _channel);
@@ -1716,8 +1718,8 @@ AEGIS_DECL void core::ws_channel_update(const json & result, shards::shard * _sh
         if (_guild == nullptr)//TODO: errors
             return;
         auto _channel = channel_create(channel_id);
-        std::unique_lock<shared_mutex> l(_channel->mtx(), std::defer_lock);
-        std::unique_lock<shared_mutex> l2(_channel_m, std::defer_lock);
+        std::unique_lock<std::shared_mutex> l(_channel->mtx(), std::defer_lock);
+        std::unique_lock<std::shared_mutex> l2(_channel_m, std::defer_lock);
         std::lock(l, l2);
         _channel->_load_with_guild_nolock(*_guild, result["d"], _shard);
         _guild->channels.emplace(channel_id, _channel);
@@ -1755,8 +1757,8 @@ AEGIS_DECL void core::ws_channel_delete(const json & result, shards::shard * _sh
         auto _channel = find_channel(channel_id);
         if (_channel == nullptr)//TODO: errors
             return;
-        std::unique_lock<shared_mutex> l(_channel->mtx(), std::defer_lock);
-        std::unique_lock<shared_mutex> l2(_channel_m, std::defer_lock);
+        std::unique_lock<std::shared_mutex> l(_channel->mtx(), std::defer_lock);
+        std::unique_lock<std::shared_mutex> l2(_channel_m, std::defer_lock);
         std::lock(l, l2);
         _guild->_remove_channel(channel_id);
         remove_channel_nolock(channel_id);
@@ -1849,8 +1851,8 @@ AEGIS_DECL void core::ws_guild_member_add(const json & result, shards::shard * _
     auto _member = user_create(member_id);
     auto _guild = find_guild(guild_id);
 
-    std::unique_lock<shared_mutex> l(_member->mtx(), std::defer_lock);
-    std::unique_lock<shared_mutex> l2(_guild->mtx(), std::defer_lock);
+    std::unique_lock<std::shared_mutex> l(_member->mtx(), std::defer_lock);
+    std::unique_lock<std::shared_mutex> l2(_guild->mtx(), std::defer_lock);
     std::lock(l, l2);
     _member->_load_nolock(_guild, result["d"], _shard, true, false);
 #endif
@@ -1875,7 +1877,7 @@ AEGIS_DECL void core::ws_guild_member_remove(const json & result, shards::shard 
     snowflake guild_id = result["d"]["guild_id"];
 
     {
-        std::unique_lock<shared_mutex> l(_guild_m);
+        std::unique_lock<std::shared_mutex> l(_guild_m);
 
         auto _member = find_user(member_id);
         auto _guild = find_guild_nolock(guild_id);
@@ -1939,8 +1941,8 @@ AEGIS_DECL void core::ws_guild_member_update(const json & result, shards::shard 
     }
 
     {
-        std::unique_lock<shared_mutex> l(_member->mtx(), std::defer_lock);
-        std::unique_lock<shared_mutex> l2(_guild->mtx(), std::defer_lock);
+        std::unique_lock<std::shared_mutex> l(_member->mtx(), std::defer_lock);
+        std::unique_lock<std::shared_mutex> l2(_guild->mtx(), std::defer_lock);
         std::lock(l, l2);
         _member->_load_nolock(_guild, result["d"], _shard, true, false);
     }
@@ -1982,8 +1984,8 @@ AEGIS_DECL void core::ws_guild_members_chunk(const json & result, shards::shard 
 
             auto _member_ptr = user_create(member_id);
 
-            std::unique_lock<shared_mutex> l(_member_ptr->mtx(), std::defer_lock);
-            std::unique_lock<shared_mutex> l2(_guild->mtx(), std::defer_lock);
+            std::unique_lock<std::shared_mutex> l(_member_ptr->mtx(), std::defer_lock);
+            std::unique_lock<std::shared_mutex> l2(_guild->mtx(), std::defer_lock);
             std::lock(l, l2);
             _member_ptr->_load_nolock(_guild, _member, _shard, true, false);
         }
@@ -2189,11 +2191,11 @@ AEGIS_DECL void core::ws_webhooks_update(const json & result, shards::shard * _s
         i_webhooks_update(obj);
 }
 
-AEGIS_DECL aegis::future<gateway::objects::guild> core::create_guild(
-    std::string name, lib::optional<std::string> voice_region, lib::optional<int> verification_level,
-    lib::optional<int> default_message_notifications, lib::optional<int> explicit_content_filter,
-    lib::optional<std::string> icon, lib::optional<std::vector<gateway::objects::role>> roles,
-    lib::optional<std::vector<std::tuple<std::string, int>>> channels
+AEGIS_DECL async::task<gateway::objects::guild> core::create_guild(
+    std::string name, std::optional<std::string> voice_region, std::optional<int> verification_level,
+    std::optional<int> default_message_notifications, std::optional<int> explicit_content_filter,
+    std::optional<std::string> icon, std::optional<std::vector<gateway::objects::role>> roles,
+    std::optional<std::vector<std::tuple<std::string, int>>> channels
 )
 {
     json obj;
@@ -2214,10 +2216,10 @@ AEGIS_DECL aegis::future<gateway::objects::guild> core::create_guild(
         for (auto & c : channels.value())
             obj["channels"].push_back(json({ { "name", std::get<0>(c) }, { "type", std::get<1>(c) } }));
 
-    return aegis::make_ready_future(gateway::objects::guild(json::parse(get_ratelimit().post_task({ "/guilds", rest::Post, obj.dump() }).get().content)));
+    return async::make_task(gateway::objects::guild(json::parse(get_ratelimit().post_task({ "/guilds", rest::Post, obj.dump() }).get().content)));
 }
 
-AEGIS_DECL aegis::future<gateway::objects::message> core::create_message(snowflake channel_id, const std::string & msg, int64_t nonce, bool perform_lookup) noexcept
+AEGIS_DECL async::task<gateway::objects::message> core::create_message(snowflake channel_id, const std::string & msg, int64_t nonce, bool perform_lookup)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     channel* _channel = nullptr;
@@ -2226,12 +2228,12 @@ AEGIS_DECL aegis::future<gateway::objects::message> core::create_message(snowfla
     {
         auto it = channels.find(channel_id);
         if (it == channels.end())
-            return aegis::make_exception_future<gateway::objects::message>(error::channel_not_found);
+            throw aegis::exception(make_error_code(error::channel_not_found));
         _channel = it->second.get();
         _guild = &it->second->get_guild();
         if (_guild != nullptr)//probably a DM
             if (!_channel->perms().can_send_messages())
-                return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
+                throw aegis::exception(make_error_code(error::no_permission));
     }
 #endif
 
@@ -2244,7 +2246,7 @@ AEGIS_DECL aegis::future<gateway::objects::message> core::create_message(snowfla
     return get_ratelimit().post_task<gateway::objects::message>({ fmt::format("/channels/{}/messages", channel_id), rest::Post, obj.dump() });
 }
 
-AEGIS_DECL aegis::future<gateway::objects::message> core::create_message_embed(snowflake channel_id, const std::string& msg, const json& _obj, int64_t nonce, bool perform_lookup) noexcept
+AEGIS_DECL async::task<gateway::objects::message> core::create_message_embed(snowflake channel_id, const std::string& msg, const json& _obj, int64_t nonce, bool perform_lookup)
 {
 #if !defined(AEGIS_DISABLE_ALL_CACHE)
     channel* _channel = nullptr;
@@ -2253,12 +2255,12 @@ AEGIS_DECL aegis::future<gateway::objects::message> core::create_message_embed(s
     {
         auto it = channels.find(channel_id);
         if (it == channels.end())
-            return aegis::make_exception_future<gateway::objects::message>(error::channel_not_found);
+            throw aegis::exception(make_error_code(error::channel_not_found));
         _channel = it->second.get();
         _guild = &it->second->get_guild();
         if (_guild != nullptr)//probably a DM
             if (!_channel->perms().can_send_messages())
-                return aegis::make_exception_future<gateway::objects::message>(error::no_permission);
+                throw aegis::exception(make_error_code(error::no_permission));
     }
 #endif
 

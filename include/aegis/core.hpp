@@ -41,15 +41,13 @@
 #include <thread>
 #include <condition_variable>
 #include <shared_mutex>
+#include <set>
+
+using namespace std::chrono_literals;
 
 namespace aegis
 {
 using namespace nlohmann;
-#if (AEGIS_HAS_STD_SHARED_MUTEX == 1)
-using shared_mutex = std::shared_mutex;
-#else
-using shared_mutex = std::shared_timed_mutex;
-#endif
 
 struct create_message_t;
 
@@ -111,13 +109,13 @@ struct create_guild_t
     create_guild_t & channels(const std::vector<std::tuple<std::string, int>> & param)
     { _channels = param; return *this; }
     std::string _name;
-    lib::optional<std::string> _voice_region;
-    lib::optional<int> _verification_level;
-    lib::optional<int> _default_message_notifications;
-    lib::optional<int> _explicit_content_filter;
-    lib::optional<std::string> _icon;
-    lib::optional<std::vector<gateway::objects::role>> _roles;
-    lib::optional<std::vector<std::tuple<std::string, int>>> _channels;
+    std::optional<std::string> _voice_region;
+    std::optional<int> _verification_level;
+    std::optional<int> _default_message_notifications;
+    std::optional<int> _explicit_content_filter;
+    std::optional<std::string> _icon;
+    std::optional<std::vector<gateway::objects::role>> _roles;
+    std::optional<std::vector<std::tuple<std::string, int>>> _channels;
 };
 
 /// Class for fluent definition of bot parameters
@@ -269,13 +267,13 @@ public:
      * 
      * @param roles vector of roles to create
      * @param channels vector of channels to create
-     * @returns aegis::future<gateway::objects::guild>
+     * @returns async::task<gateway::objects::guild>
      */
-    AEGIS_DECL aegis::future<gateway::objects::guild> create_guild(
-        std::string name, lib::optional<std::string> voice_region = {}, lib::optional<int> verification_level = {},
-        lib::optional<int> default_message_notifications = {}, lib::optional<int> explicit_content_filter = {},
-        lib::optional<std::string> icon = {}, lib::optional<std::vector<gateway::objects::role>> roles = {},
-        lib::optional<std::vector<std::tuple<std::string, int>>> channels = {}
+    AEGIS_DECL async::task<gateway::objects::guild> create_guild(
+        std::string name, std::optional<std::string> voice_region = {}, std::optional<int> verification_level = {},
+        std::optional<int> default_message_notifications = {}, std::optional<int> explicit_content_filter = {},
+        std::optional<std::string> icon = {}, std::optional<std::vector<gateway::objects::role>> roles = {},
+        std::optional<std::vector<std::tuple<std::string, int>>> channels = {}
     );
 
     /// Create new guild - Unique case. Does not belong to any ratelimit bucket so it is run
@@ -284,23 +282,23 @@ public:
     /**
      * @see aegis::create_guild_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<gateway::objects::guild>
+     * @returns async::task<gateway::objects::guild>
      */
-    AEGIS_DECL aegis::future<gateway::objects::guild> create_guild(create_guild_t obj);
+    AEGIS_DECL async::task<gateway::objects::guild> create_guild(create_guild_t obj);
 
     /// Changes bot's username (not implemented yet. username can be changed in developer panel)
     /**
      * @param username String of the username to set
-     * @returns aegis::future<gateway::objects::member>
+     * @returns async::task<gateway::objects::member>
      */
-    AEGIS_DECL aegis::future<gateway::objects::member> modify_bot_username(const std::string & username);
+    AEGIS_DECL async::task<gateway::objects::member> modify_bot_username(const std::string & username);
 
     /// Changes bot's avatar (not implemented yet. avatar can be changed in developer panel)
     /**
      * @param avatar String of the avatar to set
-     * @returns aegis::future<gateway::objects::member>
+     * @returns async::task<gateway::objects::member>
      */
-    AEGIS_DECL aegis::future<gateway::objects::member> modify_bot_avatar(const std::string & avatar);
+    AEGIS_DECL async::task<gateway::objects::member> modify_bot_avatar(const std::string & avatar);
 
     /// Starts the shard manager, creates the shards, and connects to the gateway
     AEGIS_DECL void run();
@@ -482,17 +480,17 @@ public:
      * @param id Snowflake of member to message
      * @param content string of message to send
      * @param nonce Unique id to track when message verifies (can be omitted)
-     * @returns aegis::future<gateway::objects::message>
+     * @returns async::task<gateway::objects::message>
      */
-    AEGIS_DECL aegis::future<gateway::objects::message> create_dm_message(snowflake member_id, const std::string & content, int64_t nonce = 0);
+    AEGIS_DECL async::task<gateway::objects::message> create_dm_message(snowflake member_id, const std::string & content, int64_t nonce = 0);
 
     /// Send a direct message to a user
     /**
      * @see aegis::create_message_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<gateway::objects::message>
+     * @returns async::task<gateway::objects::message>
      */
-    AEGIS_DECL aegis::future<gateway::objects::message> create_dm_message(const create_message_t & obj);
+    AEGIS_DECL async::task<gateway::objects::message> create_dm_message(const create_message_t & obj);
 
     /// Return bot uptime as {days hours minutes seconds}
     /**
@@ -826,19 +824,19 @@ public:
      */
     AEGIS_DECL void reduce_threads(std::size_t count) noexcept;
 
-    AEGIS_DECL aegis::future<gateway::objects::message> create_message(snowflake channel_id, const std::string& msg, int64_t nonce = 0, bool perform_lookup = false) noexcept;
+    AEGIS_DECL async::task<gateway::objects::message> create_message(snowflake channel_id, const std::string& msg, int64_t nonce = 0, bool perform_lookup = false);
 
-    AEGIS_DECL aegis::future<gateway::objects::message> create_message_embed(snowflake channel_id, const std::string& msg, const json& _obj, int64_t nonce = 0, bool perform_lookup = false) noexcept;
+    AEGIS_DECL async::task<gateway::objects::message> create_message_embed(snowflake channel_id, const std::string& msg, const json& _obj, int64_t nonce = 0, bool perform_lookup = false);
 
     /// Run async task
     /**
      * This function will queue your task (a lambda or std::function) within Asio for execution at a later time
-     * This version will return an aegis::future of your type that the passed function returns that you may
+     * This version will return an async::task of your type that the passed function returns that you may
      * chain a continuation onto and receive that value within in
      *
      * Example:
      * @code{.cpp}
-     * aegis::future<std::string> message = async([]{
+     * async::task<std::string> message = async([]{
      *     return 5;
      * }).then([](int value){
      *     return std::string("result received");
@@ -846,78 +844,22 @@ public:
      * @endcode
      *
      * @param f Function to run async
-     * @returns aegis::future<V>
+     * @returns async::task<V>
      */
-    template<typename T, typename V = std::result_of_t<T()>, typename = std::enable_if_t<!std::is_void<V>::value>>
-    aegis::future<V> async(T f) noexcept
+    template<typename T>
+    decltype(async::spawn(::async::default_scheduler(), std::declval<T>())) async(T f) noexcept
     {
-        std::atomic_thread_fence(std::memory_order_acquire);
-        aegis::promise<V> pr(_io_context.get(), &_global_m);
-        auto fut = pr.get_future();
-
-        asio::post(*_io_context, [pr = std::move(pr), f = std::move(f)]() mutable
-        {
-            try
-            {
-                pr.set_value(f());
-            }
-            catch (std::exception &)
-            {
-                pr.set_exception(std::current_exception());
-            }
-        });
-        std::atomic_thread_fence(std::memory_order_release);
-        return fut;
-    }
-
-    /// Run async task
-    /**
-     * This function will queue your task (a lambda or std::function) within Asio for execution at a later time
-     * This version will return an aegis::future<void> that will still allow chaining continuations on
-     *
-     * Example:
-     * @code{.cpp}
-     * aegis::future<std::string> message = async([]{
-     *     return;
-     * }).then([](){
-     *     return std::string("continuation executed");
-     * });
-     * @endcode
-     *
-     * @param f Function to run async
-     * @returns aegis::future<V>
-     */
-    template<typename T, typename V = std::enable_if_t<std::is_void<std::result_of_t<T()>>::value>>
-    aegis::future<V> async(T f) noexcept
-    {
-        std::atomic_thread_fence(std::memory_order_acquire);
-        aegis::promise<V> pr(_io_context.get(), &_global_m);
-        auto fut = pr.get_future();
-
-        asio::post(*_io_context, [pr = std::move(pr), f = std::move(f)]() mutable
-        {
-            try
-            {
-                f();
-                pr.set_value();
-            }
-            catch (std::exception & e)
-            {
-                pr.set_exception(std::current_exception());
-            }
-        });
-        std::atomic_thread_fence(std::memory_order_release);
-        return fut;
+        return async::spawn(f);
     }
 
     /// Get the internal guild mutex
-    shared_mutex & get_guild_mutex() { return _guild_m; }
+    std::shared_mutex & get_guild_mutex() { return _guild_m; }
 
     /// Get the internal channel mutex
-    shared_mutex & get_channel_mutex() { return _channel_m; }
+    std::shared_mutex & get_channel_mutex() { return _channel_m; }
 
     /// Get the internal user mutex
-    shared_mutex & get_user_mutex() { return _user_m; }
+    std::shared_mutex & get_user_mutex() { return _user_m; }
 
     /// Get the guild map
     /**
@@ -927,7 +869,7 @@ public:
      * 
      * Example:
      * @code{.cpp}
-     * std::shared_lock<aegis::shared_mutex> l(get_guild_mutex());
+     * std::shared_lock<std::shared_mutex> l(get_guild_mutex());
      * @endcode
      * 
      * @returns std::unordered_map<snowflake, std::unique_ptr<guild>>
@@ -942,7 +884,7 @@ public:
      *
      * Example:
      * @code{.cpp}
-     * std::shared_lock<aegis::shared_mutex> l(get_channel_mutex());
+     * std::shared_lock<std::shared_mutex> l(get_channel_mutex());
      * @endcode
      *
      * @returns std::unordered_map<snowflake, std::unique_ptr<channel>>
@@ -958,13 +900,81 @@ public:
      *
      * Example:
      * @code{.cpp}
-     * std::shared_lock<aegis::shared_mutex> l(get_user_mutex());
+     * std::shared_lock<std::shared_mutex> l(get_user_mutex());
      * @endcode
      *
      * @returns std::unordered_map<snowflake, std::unique_ptr<user>>
      */
     std::unordered_map<snowflake, std::unique_ptr<user>> & get_user_map() { return users; };
 #endif
+
+    struct aegis_timer
+    {
+        aegis_timer(asio::io_context & _io) : timer(_io), id(0), interval(0) {}
+        uint64_t id;
+        asio::steady_timer timer;
+        std::function <void(void)> fn;
+        std::chrono::duration<long long, std::nano> interval;
+    };
+
+    std::set<std::shared_ptr<aegis_timer>> timers;
+    std::mutex timer_m;
+    uint64_t timer_count = 1;
+
+    template <typename ratio = std::milli>
+    uint64_t set_timeout(std::function <void(void)> fn, const std::chrono::duration<long long, ratio> & t)
+    {
+        std::unique_lock<std::mutex> l(timer_m);
+        std::shared_ptr<aegis_timer> tmr = std::make_shared<aegis_timer>(*_io_context);
+        tmr->id = timer_count++;
+        tmr->fn = fn;
+        tmr->timer.expires_after(t);
+        tmr->timer.async_wait(std::bind(&core::timer_cb, this, tmr));
+        timers.insert(tmr);
+        return tmr->id;
+    }
+
+    template <typename ratio = std::milli>
+    uint64_t set_interval(std::function <void(void)> fn, const std::chrono::duration<long long, ratio> & t)
+    {
+        std::unique_lock<std::mutex> l(timer_m);
+        std::shared_ptr<aegis_timer> tmr = std::make_shared<aegis_timer>(*_io_context);
+        tmr->id = timer_count++;
+        tmr->fn = fn;
+        tmr->interval = t;
+        tmr->timer.expires_after(t);
+        tmr->timer.async_wait(std::bind(&core::interval_cb, this, tmr));
+        timers.insert(tmr);
+        return tmr->id;
+    }
+
+    void clear_timeout(uint64_t t)
+    {
+        std::unique_lock<std::mutex> l(timer_m);
+        for (const auto & timer : timers)
+        {
+            if (timer->id == t)
+            {
+                timers.erase(timer);
+                return;
+            }
+        }
+    }
+
+    void timer_cb(std::shared_ptr<aegis_timer> tmr)
+    {
+        std::unique_lock<std::mutex> l(timer_m);
+        timers.erase(tmr);
+        tmr->fn();
+    }
+
+    void interval_cb(std::shared_ptr<aegis_timer> tmr)
+    {
+        std::unique_lock<std::mutex> l(timer_m);
+        tmr->fn();
+        tmr->timer.expires_after(tmr->interval);
+        tmr->timer.async_wait(std::bind(&core::interval_cb, this, tmr));
+    }
 
 private:
 
@@ -1136,10 +1146,10 @@ private:
 
     std::unordered_map<std::string, std::function<void(const json &, shards::shard *)>> ws_handlers;
     spdlog::level::level_enum _loglevel = spdlog::level::level_enum::info;
-    mutable shared_mutex _shard_m;
-    mutable shared_mutex _guild_m;
-    mutable shared_mutex _channel_m;
-    mutable shared_mutex _user_m;
+    mutable std::shared_mutex _shard_m;
+    mutable std::shared_mutex _guild_m;
+    mutable std::shared_mutex _channel_m;
+    mutable std::shared_mutex _user_m;
 
     bool file_logging = false;
     bool external_io_context = true;

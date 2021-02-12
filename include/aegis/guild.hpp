@@ -24,16 +24,9 @@
 #include <future>
 #include <asio.hpp>
 #include <shared_mutex>
-#include "aegis/futures.hpp"
 
 namespace aegis
 {
-
-#if (AEGIS_HAS_STD_SHARED_MUTEX == 1)
-using shared_mutex = std::shared_mutex;
-#else
-using shared_mutex = std::shared_timed_mutex;
-#endif
 
 using json = nlohmann::json;
 
@@ -51,16 +44,16 @@ struct modify_guild_t
     modify_guild_t & owner_id(snowflake param) { _owner_id = param; return *this; }
     modify_guild_t & splash(const std::string & param) { _splash = param; return *this; }
 
-    lib::optional<std::string> _name;
-    lib::optional<std::string> _voice_region;
-    lib::optional<int> _verification_level;
-    lib::optional<int> _default_message_notifications;
-    lib::optional<int> _explicit_content_filter;
-    lib::optional<snowflake> _afk_channel_id;
-    lib::optional<int> _afk_timeout;
-    lib::optional<std::string> _icon;
-    lib::optional<snowflake> _owner_id;
-    lib::optional<std::string> _splash;
+    std::optional<std::string> _name;
+    std::optional<std::string> _voice_region;
+    std::optional<int> _verification_level;
+    std::optional<int> _default_message_notifications;
+    std::optional<int> _explicit_content_filter;
+    std::optional<snowflake> _afk_channel_id;
+    std::optional<int> _afk_timeout;
+    std::optional<std::string> _icon;
+    std::optional<snowflake> _owner_id;
+    std::optional<std::string> _splash;
 };
 
 struct create_text_channel_t
@@ -111,11 +104,11 @@ struct modify_guild_member_t
     modify_guild_member_t & roles(const std::vector<snowflake> & param) { _roles = param; return *this; }
     modify_guild_member_t & channel_id(snowflake param) { _channel_id = param; return *this; }
     snowflake _user_id;
-    lib::optional<std::string> _nick;
-    lib::optional<bool> _mute;
-    lib::optional<bool> _deaf;
-    lib::optional<std::vector<snowflake>> _roles;
-    lib::optional<snowflake> _channel_id;
+    std::optional<std::string> _nick;
+    std::optional<bool> _mute;
+    std::optional<bool> _deaf;
+    std::optional<std::vector<snowflake>> _roles;
+    std::optional<snowflake> _channel_id;
 };
 
 struct create_guild_ban_t
@@ -204,7 +197,7 @@ public:
      */
     std::string get_name() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
+        std::shared_lock<std::shared_mutex> l(_m);
         std::string _name = name;
         return std::move(_name);
     }
@@ -215,7 +208,7 @@ public:
      */
     std::string get_icon() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
+        std::shared_lock<std::shared_mutex> l(_m);
         std::string _icon = icon;
         return std::move(_icon);
     }
@@ -226,7 +219,7 @@ public:
      */
     std::string get_splash() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
+        std::shared_lock<std::shared_mutex> l(_m);
         std::string _splash = splash;
         return std::move(_splash);
     }
@@ -237,7 +230,7 @@ public:
      */
     std::string get_region() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
+        std::shared_lock<std::shared_mutex> l(_m);
         std::string _region = region;
         return std::move(_region);
     }
@@ -278,7 +271,7 @@ public:
      */
     int64_t base_permissions() const
     {
-        std::shared_lock<shared_mutex> l(_m);
+        std::shared_lock<std::shared_mutex> l(_m);
         return base_permissions(self());
     }
 
@@ -288,7 +281,7 @@ public:
  */
     int64_t base_permissions(const user * _member) const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
+        std::shared_lock<std::shared_mutex> l(_m);
         return base_permissions(*_member);
     }
 
@@ -339,9 +332,9 @@ public:
 
     /// Get guild information
     /**
-     * @returns aegis::future<gateway::objects::guild>
+     * @returns async::task<gateway::objects::guild>
      */
-    AEGIS_DECL aegis::future<gateway::objects::guild> get_guild();
+    AEGIS_DECL async::task<gateway::objects::guild> get_guild();
 
     /// Modify guild information
     /**
@@ -357,24 +350,24 @@ public:
      * @param icon Set icon \todo
      * @param owner_id Transfer owner to someone else
      * @param splash \todo
-     * @returns aegis::future<gateway::objects::guild>
+     * @returns async::task<gateway::objects::guild>
      */
-    AEGIS_DECL aegis::future<gateway::objects::guild> modify_guild(
-        lib::optional<std::string> name = {},
-        lib::optional<std::string> voice_region = {}, lib::optional<int> verification_level = {},
-        lib::optional<int> default_message_notifications = {}, lib::optional<int> explicit_content_filter = {},
-        lib::optional<snowflake> afk_channel_id = {}, lib::optional<int> afk_timeout = {},
-        lib::optional<std::string> icon = {}, lib::optional<snowflake> owner_id = {},
-        lib::optional<std::string> splash = {}
+    AEGIS_DECL async::task<gateway::objects::guild> modify_guild(
+        std::optional<std::string> name = {},
+        std::optional<std::string> voice_region = {}, std::optional<int> verification_level = {},
+        std::optional<int> default_message_notifications = {}, std::optional<int> explicit_content_filter = {},
+        std::optional<snowflake> afk_channel_id = {}, std::optional<int> afk_timeout = {},
+        std::optional<std::string> icon = {}, std::optional<snowflake> owner_id = {},
+        std::optional<std::string> splash = {}
     );
 
     /// Modify guild information
     /**
      * @see aegis::modify_guild_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<gateway::objects::guild>
+     * @returns async::task<gateway::objects::guild>
      */
-    AEGIS_DECL aegis::future<gateway::objects::guild> modify_guild(modify_guild_t obj)
+    AEGIS_DECL async::task<gateway::objects::guild> modify_guild(modify_guild_t obj)
     {
         return modify_guild(obj._name, obj._voice_region, obj._verification_level, obj._default_message_notifications,
                             obj._explicit_content_filter, obj._afk_channel_id, obj._afk_timeout, obj._icon,
@@ -383,9 +376,9 @@ public:
 
     /// Delete a guild
     /**
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> delete_guild();
+    AEGIS_DECL async::task<rest::rest_reply> delete_guild();
 
     /// Create a text channel
     /**
@@ -393,18 +386,18 @@ public:
      * @param parent_id The channel or category to place this channel below
      * @param nsfw Whether the channel will be labeled as not safe for work
      * @param permission_overwrites Array of permission overwrites to apply to the channel
-     * @returns aegis::future<gateway::objects::channel>
+     * @returns async::task<gateway::objects::channel>
      */
-    AEGIS_DECL aegis::future<gateway::objects::channel> create_text_channel(const std::string & name, int64_t parent_id = 0, bool nsfw = false,
+    AEGIS_DECL async::task<gateway::objects::channel> create_text_channel(const std::string & name, int64_t parent_id = 0, bool nsfw = false,
                                             const std::vector<gateway::objects::permission_overwrite> & permission_overwrites = {});
     
     /// Create a text channel
     /**
      * @see aegis::create_text_channel_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<gateway::objects::channel>
+     * @returns async::task<gateway::objects::channel>
      */
-    AEGIS_DECL aegis::future<gateway::objects::channel> create_text_channel(create_text_channel_t obj)
+    AEGIS_DECL async::task<gateway::objects::channel> create_text_channel(create_text_channel_t obj)
     {
         return create_text_channel(obj._name, obj._parent_id, obj._nsfw, obj._permission_overwrites);
     }
@@ -417,18 +410,18 @@ public:
      * @param parent_id The channel or category to place this channel below
      * @param nsfw Whether the channel will be labeled as not safe for work
      * @param permission_overwrites Array of permission overwrites to apply to the channel
-     * @returns aegis::future<gateway::objects::channel>
+     * @returns async::task<gateway::objects::channel>
      */
-    AEGIS_DECL aegis::future<gateway::objects::channel> create_voice_channel(const std::string & name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
+    AEGIS_DECL async::task<gateway::objects::channel> create_voice_channel(const std::string & name, int32_t bitrate = 0, int32_t user_limit = 0, int64_t parent_id = 0,
                                              const std::vector<gateway::objects::permission_overwrite> & permission_overwrites = {});
 
     /// Create a voice channel
     /**
      * @see aegis::create_voice_channel_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<gateway::objects::channel>
+     * @returns async::task<gateway::objects::channel>
      */
-    AEGIS_DECL aegis::future<gateway::objects::channel> create_voice_channel(create_voice_channel_t obj)
+    AEGIS_DECL async::task<gateway::objects::channel> create_voice_channel(create_voice_channel_t obj)
     {
         return create_voice_channel(obj._name, obj._bitrate, obj._user_limit, obj._parent_id, obj._permission_overwrites);
     }
@@ -438,27 +431,27 @@ public:
      * @param name String of the name for the channel
      * @param parent_id The channel or category to place this channel below
      * @param permission_overwrites Array of permission overwrites to apply to the channel
-     * @returns aegis::future<gateway::objects::channel>
+     * @returns async::task<gateway::objects::channel>
      */
-    AEGIS_DECL aegis::future<gateway::objects::channel> create_category_channel(const std::string & name, int64_t parent_id,
+    AEGIS_DECL async::task<gateway::objects::channel> create_category_channel(const std::string & name, int64_t parent_id,
                                                 const std::vector<gateway::objects::permission_overwrite> & permission_overwrites);
 
     /// Create a category
     /**
      * @see aegis::create_category_channel_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<gateway::objects::channel>
+     * @returns async::task<gateway::objects::channel>
      */
-    AEGIS_DECL aegis::future<gateway::objects::channel> create_category_channel(create_category_channel_t obj)
+    AEGIS_DECL async::task<gateway::objects::channel> create_category_channel(create_category_channel_t obj)
     {
         return create_category_channel(obj._name, obj._parent_id, obj._permission_overwrites);
     }
 
     /// Modify positions of channels
     /**
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> modify_channel_positions();
+    AEGIS_DECL async::task<rest::rest_reply> modify_channel_positions();
 
     /// Modify a member
     /// All fields are optional
@@ -469,20 +462,20 @@ public:
      * @param deaf Whether or not to voice deafen the member
      * @param roles Array of roles to apply to the member
      * @param channel_id Snowflake of the channel to move user to
-     * @returns aegis::future<gateway::objects::member>
+     * @returns async::task<gateway::objects::member>
      */
-    AEGIS_DECL aegis::future<gateway::objects::member> modify_guild_member(snowflake user_id, lib::optional<std::string> nick, lib::optional<bool> mute,
-                                            lib::optional<bool> deaf, lib::optional<std::vector<snowflake>> roles,
-                                            lib::optional<snowflake> channel_id);
+    AEGIS_DECL async::task<gateway::objects::member> modify_guild_member(snowflake user_id, std::optional<std::string> nick, std::optional<bool> mute,
+                                            std::optional<bool> deaf, std::optional<std::vector<snowflake>> roles,
+                                            std::optional<snowflake> channel_id);
 
     /// Modify a member
     /// All fields are optional
     /**
      * @see aegis::modify_guild_member_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<gateway::objects::member>
+     * @returns async::task<gateway::objects::member>
      */
-    AEGIS_DECL aegis::future<gateway::objects::member> modify_guild_member(modify_guild_member_t obj)
+    AEGIS_DECL async::task<gateway::objects::member> modify_guild_member(modify_guild_member_t obj)
     {
         return modify_guild_member(obj._user_id, obj._nick, obj._mute, obj._deaf, obj._roles, obj._channel_id);
     }
@@ -490,48 +483,48 @@ public:
     /// Modify own nickname
     /**
      * @param newname String of the new nickname to apply
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> modify_my_nick(const std::string & newname);
+    AEGIS_DECL async::task<rest::rest_reply> modify_my_nick(const std::string & newname);
 
     /// Add a role to guild member
     /**
      * @param user_id The snowflake of the user to add new role
      * @param role_id The snowflake of the role to add to member
-     * @returns aegis::future<gateway::objects::role>
+     * @returns async::task<gateway::objects::role>
      */
-    AEGIS_DECL aegis::future<gateway::objects::role> add_guild_member_role(snowflake user_id, snowflake role_id);
+    AEGIS_DECL async::task<gateway::objects::role> add_guild_member_role(snowflake user_id, snowflake role_id);
 
     /// Remove a role from guild member
     /**
      * @param user_id The snowflake of the user to remove role
      * @param role_id The snowflake of the role to remove from member
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> remove_guild_member_role(snowflake user_id, snowflake role_id);
+    AEGIS_DECL async::task<rest::rest_reply> remove_guild_member_role(snowflake user_id, snowflake role_id);
 
     /// Remove guild member (kick)
     /**
      * @param user_id The snowflake of the member to kick
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> remove_guild_member(snowflake user_id);
+    AEGIS_DECL async::task<rest::rest_reply> remove_guild_member(snowflake user_id);
 
     /// Create a new guild ban
     /**
      * @param user_id The snowflake of the member to ban
      * @param delete_message_days How many days to delete member message history (0-7)
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_guild_ban(snowflake user_id, int8_t delete_message_days = 0, const std::string & reason = "");
+    AEGIS_DECL async::task<rest::rest_reply> create_guild_ban(snowflake user_id, int8_t delete_message_days = 0, const std::string & reason = "");
 
     /// Create a new guild ban
     /**
      * @see aegis::create_guild_ban_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_guild_ban(create_guild_ban_t obj)
+    AEGIS_DECL async::task<rest::rest_reply> create_guild_ban(create_guild_ban_t obj)
     {
         return create_guild_ban(obj._user_id, obj._delete_message_days, obj._reason);
     }
@@ -539,22 +532,22 @@ public:
     /// Remove a guild ban
     /**
      * @param user_id The snowflake of the member to unban
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> remove_guild_ban(snowflake user_id);
+    AEGIS_DECL async::task<rest::rest_reply> remove_guild_ban(snowflake user_id);
 
     /// Get guild bans
     /**
-     * @returns aegis::future<gateway::objects::bans>
+     * @returns async::task<gateway::objects::bans>
      */
-    AEGIS_DECL aegis::future<gateway::objects::bans> get_guild_bans();
+    AEGIS_DECL async::task<gateway::objects::bans> get_guild_bans();
 
     /// Get guild ban
     /**
      * @param user_id The snowflake of the user to retrieve the ban object for
-     * @returns aegis::future<gateway::objects::ban>
+     * @returns async::task<gateway::objects::ban>
     */
-    AEGIS_DECL aegis::future<gateway::objects::ban> get_guild_ban(snowflake user_id);
+    AEGIS_DECL async::task<gateway::objects::ban> get_guild_ban(snowflake user_id);
 
     /// Create a guild role
     /**
@@ -564,18 +557,18 @@ public:
      * @param color 32bit integer of the color
      * @param hoist Whether the role should be separated from other roles
      * @param mentionable Whether the role can be specifically mentioned
-     * @returns aegis::future<gateway::objects::role>
+     * @returns async::task<gateway::objects::role>
      */
-    AEGIS_DECL aegis::future<gateway::objects::role> create_guild_role(const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable);
+    AEGIS_DECL async::task<gateway::objects::role> create_guild_role(const std::string & name, permission _perms, int32_t color, bool hoist, bool mentionable);
 
     /// Create a guild role
     /**
      * @see aegis::permission
      * @see aegis::create_guild_role_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<gateway::objects::role>
+     * @returns async::task<gateway::objects::role>
      */
-    AEGIS_DECL aegis::future<gateway::objects::role> create_guild_role(create_guild_role_t obj)
+    AEGIS_DECL async::task<gateway::objects::role> create_guild_role(create_guild_role_t obj)
     {
         return create_guild_role(obj._name, obj._perms, obj._color, obj._hoist, obj._mentionable);
     }
@@ -584,9 +577,9 @@ public:
     /**
      * @param role_id Snowflake of role to change position
      * @param position Index of position to change role to
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> modify_guild_role_positions(snowflake role_id, int16_t position);
+    AEGIS_DECL async::task<rest::rest_reply> modify_guild_role_positions(snowflake role_id, int16_t position);
 
     /// Modify a guild role
     /**
@@ -597,9 +590,9 @@ public:
      * @param color 32bit integer of the color
      * @param hoist Whether the role should be separated from other roles
      * @param mentionable Whether the role can be specifically mentioned
-     * @returns aegis::future<gateway::objects::role>
+     * @returns async::task<gateway::objects::role>
      */
-    AEGIS_DECL aegis::future<gateway::objects::role> modify_guild_role(snowflake role_id, const std::string & name, permission _perms, int32_t color,
+    AEGIS_DECL async::task<gateway::objects::role> modify_guild_role(snowflake role_id, const std::string & name, permission _perms, int32_t color,
                                           bool hoist, bool mentionable);
 
     /// Modify a guild role
@@ -607,9 +600,9 @@ public:
      * @see aegis::permission
      * @see aegis::modify_guild_role_t
      * @param obj Struct of the contents of the request
-     * @returns aegis::future<gateway::objects::role>
+     * @returns async::task<gateway::objects::role>
      */
-    AEGIS_DECL aegis::future<gateway::objects::role> modify_guild_role(modify_guild_role_t obj)
+    AEGIS_DECL async::task<gateway::objects::role> modify_guild_role(modify_guild_role_t obj)
     {
         return modify_guild_role(obj._role_id, obj._name, obj._perms, obj._color, obj._hoist, obj._mentionable);
     }
@@ -617,91 +610,91 @@ public:
     /// Delete a guild role
     /**
      * @param role_id The snowflake of the role to delete
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> delete_guild_role(snowflake role_id);
+    AEGIS_DECL async::task<rest::rest_reply> delete_guild_role(snowflake role_id);
 
     /// Get a count of members that would be pruned
     /**
      * @param days The days of inactivity to prune the member
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> get_guild_prune_count(int16_t days);
+    AEGIS_DECL async::task<rest::rest_reply> get_guild_prune_count(int16_t days);
 
     /// Perform a guild prune
     /**
      * @param days The days of inactivity to prune the member
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> begin_guild_prune(int16_t days);
+    AEGIS_DECL async::task<rest::rest_reply> begin_guild_prune(int16_t days);
 
     /// Get active guild invite
     /**
-    * @param invite_code The invite code of the invite to retrieve
-    * @returns aegis::future<gateway::objects::invite>
-    */
-    AEGIS_DECL aegis::future<gateway::objects::invite> get_guild_invite(std::string invite_code);
+     * @param invite_code The invite code of the invite to retrieve
+     * @returns async::task<gateway::objects::invite>
+     */
+    AEGIS_DECL async::task<gateway::objects::invite> get_guild_invite(std::string invite_code);
 
     /// Get active guild invites
     /**
-    * @returns aegis::future<gateway::objects::invites>
-    */
-    AEGIS_DECL aegis::future<gateway::objects::invites> get_guild_invites();
+     * @returns async::task<gateway::objects::invites>
+     */
+    AEGIS_DECL async::task<gateway::objects::invites> get_guild_invites();
 
     /// Delete active guild invite
     /**
     * @param invite_code The invite code of the invite to delete
     * @returns aegis::future<rest::rest_reply>
     */
-    AEGIS_DECL aegis::future<rest::rest_reply> delete_guild_invite(std::string invite_code);
+    AEGIS_DECL async::task<rest::rest_reply> delete_guild_invite(std::string invite_code);
 
     /// Get guild integrations
     /**
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> get_guild_integrations();
+    AEGIS_DECL async::task<rest::rest_reply> get_guild_integrations();
 
     /// Create a new guild integration
     /**
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> create_guild_integration();
+    AEGIS_DECL async::task<rest::rest_reply> create_guild_integration();
 
     /// Modify a guild integration
     /**
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> modify_guild_integration();
+    AEGIS_DECL async::task<rest::rest_reply> modify_guild_integration();
 
     /// Delete a guild integration
     /**
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> delete_guild_integration();
+    AEGIS_DECL async::task<rest::rest_reply> delete_guild_integration();
 
     /// Get the guild integrations
     /**
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> sync_guild_integration();
+    AEGIS_DECL async::task<rest::rest_reply> sync_guild_integration();
 
     /// Get the guild embed settings
     /**
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> get_guild_embed();
+    AEGIS_DECL async::task<rest::rest_reply> get_guild_embed();
 
     /// Modify the guild embed settings
     /**
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> modify_guild_embed();
+    AEGIS_DECL async::task<rest::rest_reply> modify_guild_embed();
 
     /// Leave the guild this object is associated with
     /**
-     * @returns aegis::future<rest::rest_reply>
+     * @returns async::task<rest::rest_reply>
      */
-    AEGIS_DECL aegis::future<rest::rest_reply> leave();
+    AEGIS_DECL async::task<rest::rest_reply> leave();
 
     /// Gets the Bot object
     /**
@@ -737,14 +730,14 @@ public:
      * @param role_name String of role to search for
      * @returns Pointer to gateway::objects::role or nullptr
      */
-    AEGIS_DECL lib::optional<gateway::objects::role> find_role(snowflake role_id) const noexcept;
+    AEGIS_DECL std::optional<gateway::objects::role> find_role(snowflake role_id) const noexcept;
 
     /// Obtain a role by name
     /**
      * @param role_name String of role to search for
      * @returns Pointer to gateway::objects::role or nullptr
      */
-    AEGIS_DECL lib::optional<gateway::objects::role> find_role(std::string role_name) const noexcept;
+    AEGIS_DECL std::optional<gateway::objects::role> find_role(std::string role_name) const noexcept;
 
     /// Obtain map of channels
     /**
@@ -752,7 +745,7 @@ public:
      */
     std::unordered_map<snowflake, channel*> get_channels() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
+        std::shared_lock<std::shared_mutex> l(_m);
         std::unordered_map<snowflake, channel*> _list = channels;
         return std::move(_list);
     }
@@ -764,7 +757,7 @@ public:
      */
     std::unordered_map<snowflake, user*> get_members() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
+        std::shared_lock<std::shared_mutex> l(_m);
         std::unordered_map<snowflake, user*> _list = members;
         return std::move(_list);
     }
@@ -775,7 +768,7 @@ public:
      */
     std::unordered_map<snowflake, gateway::objects::role> get_roles() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
+        std::shared_lock<std::shared_mutex> l(_m);
         std::unordered_map<snowflake, gateway::objects::role> _list = roles;
         return std::move(_list);
     }
@@ -786,7 +779,7 @@ public:
      */
     std::unordered_map<snowflake, gateway::objects::voice_state> get_voicestates() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
+        std::shared_lock<std::shared_mutex> l(_m);
         std::unordered_map<snowflake, gateway::objects::voice_state> _list = voice_states;
         return std::move(_list);
     }
@@ -797,7 +790,7 @@ public:
     */
     std::unordered_map<snowflake, gateway::objects::emoji> get_emojis() const noexcept
     {
-        std::shared_lock<shared_mutex> l(_m);
+        std::shared_lock<std::shared_mutex> l(_m);
         std::unordered_map<snowflake, gateway::objects::emoji> _list = emojis;
         return std::move(_list);
     }
@@ -839,7 +832,7 @@ public:
         return channels;
     }
 
-    shared_mutex & mtx()
+    std::shared_mutex & mtx()
     {
         return _m;
     }
@@ -906,7 +899,7 @@ private:
 #endif
     core * _bot;
     asio::io_context & _io_context;
-    mutable shared_mutex _m;
+    mutable std::shared_mutex _m;
 };
 
 }
