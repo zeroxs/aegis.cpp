@@ -2006,6 +2006,10 @@ AEGIS_DECL void core::ws_guild_role_create(const json & result, shards::shard * 
     snowflake guild_id = result["d"]["guild_id"];
 
     auto _guild = find_guild(guild_id);
+    if (!_guild) {
+        return;
+    }
+
     _guild->_load_role(result["d"]["role"]);
 #endif
 
@@ -2029,6 +2033,9 @@ AEGIS_DECL void core::ws_guild_role_update(const json & result, shards::shard * 
     snowflake guild_id = result["d"]["guild_id"];
 
     auto _guild = find_guild(guild_id);
+    if (!_guild) {
+	    return;
+    }
     _guild->_load_role(result["d"]["role"]);
 #endif
 
