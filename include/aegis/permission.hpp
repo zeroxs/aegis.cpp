@@ -152,7 +152,7 @@ public:
 
 private:
     int64_t _allow_permissions = 0;
-    AEGIS_DECL static const std::unordered_map<int64_t, const std::string> perm_strs;
+    static const std::unordered_map<int64_t, const std::string> perm_strs;
 };
 
 /// \cond TEMPLATES
