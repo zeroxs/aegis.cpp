@@ -7,28 +7,28 @@ jobs:
     # GCC 10 C++17
     - compiler: gcc
       env:
-        - MATRIX_EVAL="COMPILER=g++-10 && CXX=g++-10 && CXX_STANDARD=17"
+        - MATRIX_EVAL="CXX=g++-10"
       addons:
         apt:
           packages: libcrypto++-dev g++-10
           sources: &sources
             - ubuntu-toolchain-r-test
+    # GCC 8 C++17
+    - compiler: gcc
+      env:
+        - MATRIX_EVAL="CXX=g++-8"
+      addons:
+        apt:
+          packages: libcrypto++-dev g++-8
+          sources: &sources
+            - ubuntu-toolchain-r-test
     # GCC 7 C++17
     - compiler: gcc
       env:
-        - MATRIX_EVAL="COMPILER=g++-7 && CXX=g++-7 && CXX_STANDARD=17"
+        - MATRIX_EVAL="CXX=g++-7"
       addons:
         apt:
           packages: libcrypto++-dev g++-7
-          sources: &sources
-            - ubuntu-toolchain-r-test
-    # GCC 5 C++14
-    - compiler: gcc
-      env:
-        - MATRIX_EVAL="COMPILER=g++-5 && CXX=g++-5 && CXX_STANDARD=14"
-      addons:
-        apt:
-          packages: libcrypto++-dev g++-5
           sources: &sources
             - ubuntu-toolchain-r-test
 
@@ -38,5 +38,5 @@ before_install:
 script:
   - mkdir -p build
   - cd build
-  - cmake -DBUILD_EXAMPLES=1 -DCMAKE_CXX_COMPILER=${COMPILER} -DCXX_STANDARD=${CXX_STANDARD} ..
+  - cmake -DBUILD_EXAMPLES=1 -DCMAKE_CXX_COMPILER=${CXX} ..
   - make

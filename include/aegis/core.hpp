@@ -33,7 +33,15 @@ public:
      */
     explicit core(create_bot_t bot_config);
 
+    void shutdown();
+
+    void setup_logging();
+
     std::shared_ptr<spdlog::logger> log;
+
+
+private:
+    create_bot_t config;
 };
 
 }

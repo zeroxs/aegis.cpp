@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "spdlog/cfg/log_levels.h"
+#include "aegis/vendor/spdlog/cfg/log_levels.h"
 
 namespace spdlog
 {

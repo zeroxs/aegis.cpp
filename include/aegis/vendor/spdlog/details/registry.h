@@ -8,8 +8,8 @@
 // If user requests a non existing logger, nullptr will be returned
 // This class is thread safe
 
-#include "spdlog/common.h"
-#include "spdlog/cfg/log_levels.h"
+#include "aegis/vendor/spdlog/common.h"
+#include "aegis/vendor/spdlog/cfg/log_levels.h"
 
 #include <chrono>
 #include <functional>

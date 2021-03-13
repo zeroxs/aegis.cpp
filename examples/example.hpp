@@ -7,7 +7,7 @@
 // Distributed under the MIT License. (See accompanying file LICENSE)
 //
 
-#include "aegis.hpp"
+#include "aegis/core.hpp"
 
 namespace example
 {

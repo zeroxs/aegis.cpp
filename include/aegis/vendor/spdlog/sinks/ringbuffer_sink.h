@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "spdlog/sinks/base_sink.h"
-#include "spdlog/details/circular_q.h"
-#include "spdlog/details/log_msg_buffer.h"
-#include "spdlog/details/null_mutex.h"
+#include "aegis/vendor/spdlog/sinks/base_sink.h"
+#include "aegis/vendor/spdlog/details/circular_q.h"
+#include "aegis/vendor/spdlog/details/log_msg_buffer.h"
+#include "aegis/vendor/spdlog/details/null_mutex.h"
 
 #include <mutex>
 #include <string>

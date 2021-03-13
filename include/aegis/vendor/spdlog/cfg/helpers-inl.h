@@ -4,12 +4,12 @@
 #pragma once
 
 #ifndef SPDLOG_HEADER_ONLY
-#include "spdlog/cfg/helpers.h"
+#include "aegis/vendor/spdlog/cfg/helpers.h"
 #endif
 
-#include "spdlog/spdlog.h"
-#include "spdlog/details/os.h"
-#include "spdlog/details/registry.h"
+#include "aegis/vendor/spdlog/spdlog.h"
+#include "aegis/vendor/spdlog/details/os.h"
+#include "aegis/vendor/spdlog/details/registry.h"
 
 #include <string>
 #include <utility>

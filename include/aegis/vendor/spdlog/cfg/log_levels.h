@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "spdlog/common.h"
+#include "aegis/vendor/spdlog/common.h"
 #include <string>
 #include <unordered_map>
 

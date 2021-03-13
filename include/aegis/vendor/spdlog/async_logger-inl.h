@@ -4,11 +4,11 @@
 #pragma once
 
 #ifndef SPDLOG_HEADER_ONLY
-#include "spdlog/async_logger.h"
+#include "aegis/vendor/spdlog/async_logger.h"
 #endif
 
-#include "spdlog/sinks/sink.h"
-#include "spdlog/details/thread_pool.h"
+#include "aegis/vendor/spdlog/sinks/sink.h"
+#include "aegis/vendor/spdlog/details/thread_pool.h"
 
 #include <memory>
 #include <string>

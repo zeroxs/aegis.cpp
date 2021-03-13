@@ -5,8 +5,8 @@
 
 #define WIN32_LEAN_AND_MEAN
 // tcp client helper
-#include "spdlog/common.h"
-#include "spdlog/details/os.h"
+#include "aegis/vendor/spdlog/common.h"
+#include "aegis/vendor/spdlog/details/os.h"
 
 #include <windows.h>
 #include <winsock2.h>

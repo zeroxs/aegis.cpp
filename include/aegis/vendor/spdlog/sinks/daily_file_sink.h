@@ -3,14 +3,14 @@
 
 #pragma once
 
-#include "spdlog/common.h"
-#include "spdlog/details/file_helper.h"
-#include "spdlog/details/null_mutex.h"
-#include "spdlog/fmt/fmt.h"
-#include "spdlog/sinks/base_sink.h"
-#include "spdlog/details/os.h"
-#include "spdlog/details/circular_q.h"
-#include "spdlog/details/synchronous_factory.h"
+#include "aegis/vendor/spdlog/common.h"
+#include "aegis/vendor/spdlog/details/file_helper.h"
+#include "aegis/vendor/spdlog/details/null_mutex.h"
+#include "aegis/vendor/spdlog/fmt/fmt.h"
+#include "aegis/vendor/spdlog/sinks/base_sink.h"
+#include "aegis/vendor/spdlog/details/os.h"
+#include "aegis/vendor/spdlog/details/circular_q.h"
+#include "aegis/vendor/spdlog/details/synchronous_factory.h"
 
 #include <chrono>
 #include <cstdio>

@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "spdlog/common.h"
-#include "spdlog/details/log_msg.h"
-#include "spdlog/details/os.h"
-#include "spdlog/formatter.h"
+#include "aegis/vendor/spdlog/common.h"
+#include "aegis/vendor/spdlog/details/log_msg.h"
+#include "aegis/vendor/spdlog/details/os.h"
+#include "aegis/vendor/spdlog/formatter.h"
 
 #include <chrono>
 #include <ctime>

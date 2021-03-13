@@ -13,21 +13,19 @@
 #include <iostream>
 //using json = nlohmann::json;
 
-#include "aegis/vendor/spdlog/sinks/stdout_color_sinks.h"
-#include "aegis/vendor/spdlog/sinks/rotating_file_sink.h"
-#include "aegis/vendor/spdlog/async.h"
+#include <ixwebsocket/IXNetSystem.h>
+#include <ixwebsocket/IXWebSocket.h>
+
+#include "aegis/vendor/spdlog/spdlog.h"
+#define CPPHTTPLIB_ZLIB_SUPPORT
+#include "aegis/vendor/httplib/httplib.hpp"
 
 int main(int argc, char * argv[])
 {
     using namespace std::chrono_literals;
     try
     {
-        aegis::core bot;
 
-        example::example commands(&bot);
-
-        //bot.run();
-        //bot.yield();
 
         std::cout << "Press any key to continue...\n";
         std::cin.ignore();

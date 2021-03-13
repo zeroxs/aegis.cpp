@@ -3,13 +3,13 @@
 
 #pragma once
 
-#include "spdlog/common.h"
-#include "spdlog/sinks/base_sink.h"
-#include "spdlog/details/null_mutex.h"
+#include "aegis/vendor/spdlog/common.h"
+#include "aegis/vendor/spdlog/sinks/base_sink.h"
+#include "aegis/vendor/spdlog/details/null_mutex.h"
 #ifdef _WIN32
-#include "spdlog/details/tcp_client-windows.h"
+#include "aegis/vendor/spdlog/details/tcp_client-windows.h"
 #else
-#include "spdlog/details/tcp_client.h"
+#include "aegis/vendor/spdlog/details/tcp_client.h"
 #endif
 
 #include <mutex>

@@ -9,9 +9,9 @@
 // implementers..
 //
 
-#include "spdlog/common.h"
-#include "spdlog/details/log_msg.h"
-#include "spdlog/sinks/sink.h"
+#include "aegis/vendor/spdlog/common.h"
+#include "aegis/vendor/spdlog/details/log_msg.h"
+#include "aegis/vendor/spdlog/sinks/sink.h"
 
 namespace spdlog
 {

@@ -8,8 +8,8 @@
 #endif
 
 // tcp client helper
-#include "spdlog/common.h"
-#include "spdlog/details/os.h"
+#include "aegis/vendor/spdlog/common.h"
+#include "aegis/vendor/spdlog/details/os.h"
 
 #include <sys/socket.h>
 #include <arpa/inet.h>

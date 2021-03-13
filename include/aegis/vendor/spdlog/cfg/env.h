@@ -2,9 +2,9 @@
 // Distributed under the MIT License (http://opensource.org/licenses/MIT)
 
 #pragma once
-#include "spdlog/cfg/helpers.h"
-#include "spdlog/details/registry.h"
-#include "spdlog/details/os.h"
+#include "aegis/vendor/spdlog/cfg/helpers.h"
+#include "aegis/vendor/spdlog/details/registry.h"
+#include "aegis/vendor/spdlog/details/os.h"
 
 //
 // Init levels and patterns from env variables SPDLOG_LEVEL

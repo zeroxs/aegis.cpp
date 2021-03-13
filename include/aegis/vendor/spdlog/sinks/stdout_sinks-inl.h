@@ -4,11 +4,11 @@
 #pragma once
 
 #ifndef SPDLOG_HEADER_ONLY
-#include "spdlog/sinks/stdout_sinks.h"
+#include "aegis/vendor/spdlog/sinks/stdout_sinks.h"
 #endif
 
-#include "spdlog/details/console_globals.h"
-#include "spdlog/pattern_formatter.h"
+#include "aegis/vendor/spdlog/details/console_globals.h"
+#include "aegis/vendor/spdlog/pattern_formatter.h"
 #include <memory>
 
 namespace spdlog

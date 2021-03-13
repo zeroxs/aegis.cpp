@@ -4,14 +4,14 @@
 #pragma once
 
 #ifndef SPDLOG_HEADER_ONLY
-#include "spdlog/pattern_formatter.h"
+#include "aegis/vendor/spdlog/pattern_formatter.h"
 #endif
 
-#include "spdlog/details/fmt_helper.h"
-#include "spdlog/details/log_msg.h"
-#include "spdlog/details/os.h"
-#include "spdlog/fmt/fmt.h"
-#include "spdlog/formatter.h"
+#include "aegis/vendor/spdlog/details/fmt_helper.h"
+#include "aegis/vendor/spdlog/details/log_msg.h"
+#include "aegis/vendor/spdlog/details/os.h"
+#include "aegis/vendor/spdlog/fmt/fmt.h"
+#include "aegis/vendor/spdlog/formatter.h"
 
 #include <array>
 #include <chrono>

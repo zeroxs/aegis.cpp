@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "spdlog/tweakme.h"
-#include "spdlog/details/null_mutex.h"
+#include "aegis/vendor/spdlog/tweakme.h"
+#include "aegis/vendor/spdlog/details/null_mutex.h"
 
 #include <atomic>
 #include <chrono>
@@ -33,7 +33,7 @@
 #define SPDLOG_INLINE inline
 #endif // #ifdef SPDLOG_COMPILED_LIB
 
-#include "spdlog/fmt/fmt.h"
+#include "aegis/vendor/spdlog/fmt/fmt.h"
 
 // visual studio upto 2013 does not support noexcept nor constexpr
 #if defined(_MSC_VER) && (_MSC_VER < 1900)

@@ -17,6 +17,7 @@
 #include <cstdint>
 
 #include "defines.hpp"
+#include "aegis/vendor/spdlog/common.h"
 
 namespace aegis
 {
@@ -58,9 +59,15 @@ struct create_bot_t
     create_bot_t & thread_count(const uint32_t param) noexcept { _thread_count = param; return *this; }
     create_bot_t & force_shard_count(const uint32_t param) noexcept { _force_shard_count = param; return *this; }
     create_bot_t & file_logging(const bool param) noexcept { _file_logging = param; return *this; }
-    // create_bot_t & log_level(const spdlog::level::level_enum param) noexcept { _log_level = param; return *this; }
+    create_bot_t & bulk_members_on_connect(const bool param) noexcept { _bulk_members_on_connect = param; return *this; }
+    create_bot_t & log_level(const spdlog::level::level_enum param) noexcept { _log_level = param; return *this; }
     create_bot_t & log_format(const std::string & param) noexcept { _log_format = param; return *this; }
-    // create_bot_t & logger(std::shared_ptr<spdlog::logger> param) noexcept { _log = param; return *this; }
+    /**
+     * Sets the base name of the log file.
+     * If this is not called, the default is "aegis.log"
+     * @param log_name The name of the log to create. Will be created in a subdfolder called "log"
+     */
+    create_bot_t & log_name(const std::string & param) noexcept { _log_name = param; return *this; }
     /**
      * Sets up clustering for large bots.
      * Clustering splits the bot's shards across multiple process, where each process takes on an equal subset of the bot's shard count.
@@ -77,12 +84,6 @@ struct create_bot_t
      * @returns reference to self
      */
     create_bot_t & intents(uint32_t param) noexcept { _intents = param; return *this; }
-    /**
-     * Sets the base name of the log file.
-     * If this is not called, the default is "aegis.log"
-     * @param log_name The name of the log to create. Will be created in a subdfolder called "log"
-     */
-    create_bot_t & log_name(const std::string & log_name) noexcept { _log_name = log_name; return *this; }
 private:
     friend aegis::core;
     std::string _token;
@@ -91,11 +92,11 @@ private:
     uint32_t _force_shard_count{ 0 };
     uint32_t _cluster_id{ 0 };
     uint32_t _max_clusters{ 0 };
+    bool _bulk_members_on_connect{ false };
     bool _file_logging{ false };
     std::string _log_name{ "aegis.log" };
-    // spdlog::level::level_enum _log_level{ spdlog::level::level_enum::info };
+    spdlog::level::level_enum _log_level{ spdlog::level::level_enum::info };
     std::string _log_format{ "%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v" };
-    // std::shared_ptr<spdlog::logger> _log;
 };
 
 }

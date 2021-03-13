@@ -43,7 +43,7 @@
 // Use only if your code never modifies a logger's log levels concurrently by
 // different threads.
 //
-// #define SPDLOG_NO_ATOMIC_LEVELS
+#define SPDLOG_NO_ATOMIC_LEVELS
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -96,7 +96,7 @@
 // Uncomment to disable default logger creation.
 // This might save some (very) small initialization time if no default logger is needed.
 //
-// #define SPDLOG_DISABLE_DEFAULT_LOGGER
+#define SPDLOG_DISABLE_DEFAULT_LOGGER
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -112,5 +112,5 @@
 // __PRETTY_FUNCTION__ might be nicer in clang/gcc, and __FUNCTION__ in msvc.
 // Defaults to __FUNCTION__ (should work on all compilers) if not defined.
 //
-// #define SPDLOG_FUNCTION __PRETTY_FUNCTION__
+#define SPDLOG_FUNCTION __PRETTY_FUNCTION__
 ///////////////////////////////////////////////////////////////////////////////

@@ -15,6 +15,9 @@ string(CONCAT AEGIS_VERSION ${AEGIS_VERSION_MAJOR}.${AEGIS_VERSION_MINOR}.${AEGI
 
 message(STATUS "aegis.cpp version: ${AEGIS_VERSION} release date ${AEGIS_VERSION_BUILD}")
 
+set(USE_TLS TRUE)
+set(USE_OPEN_SSL TRUE)
+
 set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "-Wl,--no-undefined")
 set(AEGIS_CFLAGS -Wno-sign-compare -Wno-unknown-pragmas -Wno-unused-variable -Wno-noexcept-type -Wno-unused-result -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-missing-field-initializers)
 add_compile_options("$<$<CONFIG:RELEASE>:-O2>")
@@ -34,6 +37,8 @@ find_package(Threads REQUIRED)
 find_package(OpenSSL 1.1.0 REQUIRED MODULE)
 find_package(ZLIB REQUIRED MODULE)
 
+add_subdirectory(lib/ixwebsocket)
+
 set(REQUIRED_LIBS OpenSSL::SSL ZLIB::ZLIB dl Threads::Threads)
 
 option(BUILD_SHARED_LIBS "Build the shared library" ON)
@@ -46,6 +51,7 @@ set(CMAKE_BUILD_TYPE Release)
 
 set(AEGIS_FILES
 src/aegis.cpp
+src/core.cpp
 )
 
 set(AEGIS_PACKAGE_INCLUDE_DIRS
@@ -101,7 +107,7 @@ if (BUILD_SHARED_LIBS)
 	)
 
 	SET(PKG_CONFIG_LIBS
-		"-L\${libdir} -laegis -lssl -lcrypto -lpthread -lz -ldl"
+		"-L\${libdir} -laegis -l:libixwebsocket.a -lssl -lcrypto -lpthread -lz -ldl"
 	)
 	SET(PKG_CONFIG_CFLAGS
 		"-I/usr/include -I\${includedir} -I${ZLIB_INCLUDE_DIR} -DAEGIS_DYN_LINK"
@@ -141,7 +147,7 @@ else ()
 	)
 
 	SET(PKG_CONFIG_STATIC_LIBS
-		"-L\${libdir} -l:libaegis.a -lssl -lcrypto -lpthread -lz -ldl"
+		"-L\${libdir} -l:libaegis.a -l:libixwebsocket.a -lssl -lcrypto -lpthread -lz -ldl"
 	)
 	SET(PKG_CONFIG_STATIC_CFLAGS
 		"-I/usr/include -I\${includedir} -I${ZLIB_INCLUDE_DIR} -DAEGIS_SEPARATE_COMPILATION"
@@ -202,8 +208,9 @@ export(PACKAGE Aegis)
 
 if (BUILD_EXAMPLES)
 
-	add_executable(aegis_example src/example.cpp)
+	add_executable(aegis_example examples/example.cpp)
 
+	set_target_properties(aegis_example PROPERTIES LINKER_LANGUAGE CXX)
 	set_property(TARGET aegis_example PROPERTY CXX_STANDARD 17)
 	set_property(TARGET aegis_example PROPERTY CXX_STANDARD_REQUIRED ON)
 	target_link_libraries(aegis_example PRIVATE Aegis::aegis ${REQUIRED_LIBS})
