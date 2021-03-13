@@ -57,6 +57,7 @@ src/core.cpp
 set(AEGIS_PACKAGE_INCLUDE_DIRS
     $<BUILD_INTERFACE:${OpenSSL_INCLUDE_DIR}>
     $<BUILD_INTERFACE:${ZLIB_INCLUDE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/ixwebsocket>
 )
 
 include(GNUInstallDirs)
@@ -219,6 +220,6 @@ if (BUILD_EXAMPLES)
 	  PUBLIC
 		$<INSTALL_INTERFACE:include>    
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/ixwebsocket>
 	)
-
 endif ()
