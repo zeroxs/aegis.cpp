@@ -4,7 +4,6 @@ on: push
 jobs:
   build:
     runs-on: ubuntu-20.04
-    if: github.event_name == 'push'
     env:
       WITH_TLS: 1
 
@@ -25,4 +24,3 @@ jobs:
           cc: gcc
           cxx: g++
           build-type: Release
-          parallel: 2

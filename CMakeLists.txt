@@ -47,18 +47,11 @@ FetchContent_Populate(ixws
   GIT_TAG  v11.2.4
   SOURCE_DIR ext/ixwebsocket
 )
-#ExternalProject_Get_Property(ixws SOURCE_DIR BINARY_DIR)
 
 add_subdirectory(${ixws_SOURCE_DIR} ${ixws_BINARY_DIR})
 
 message("ixwebsocket source directory: ${ixws_SOURCE_DIR}")
 message("ixwebsocket binary directory: ${ixws_BINARY_DIR}")
-#set(ixwebsocket_SOURCE_DIR ${SOURCE_DIR})
-#set(ixwebsocket_LIB_DIR ${BINARY_DIR})
-#set(ixwebsocket_INCLUDE_DIR ${ixwebsocket_SOURCE_DIR}/ixwebsocket)
-
-#add_library(ixwebsocket SHARED IMPORTED)
-#set_target_properties(ixwebsocket PROPERTIES IMPORTED_LOCATION ${ixwebsocket_LIB_DIR}/libixwebsocket.a)
 
 set(REQUIRED_LIBS ixwebsocket OpenSSL::SSL ZLIB::ZLIB dl Threads::Threads)
 
