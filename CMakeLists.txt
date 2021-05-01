@@ -3,6 +3,7 @@ message(STATUS "CMake version: ${CMAKE_VERSION}")
 cmake_minimum_required(VERSION 3.14)
 
 include(FetchContent)
+include(ExternalProject)
 
 file(READ ${CMAKE_CURRENT_SOURCE_DIR}/include/aegis/version.hpp version_hpp)
 if (NOT version_hpp MATCHES "AEGIS_VERSION_LONG \"([0-9]+)\.([0-9]+)\.([0-9]+) ([0-9]+\/[0-9]+\/[0-9]+)\"")
@@ -41,18 +42,23 @@ find_package(Threads REQUIRED)
 find_package(OpenSSL 1.1.1 REQUIRED MODULE)
 find_package(ZLIB REQUIRED MODULE)
 
-FetchContent_Declare(
-	ixwebsocket
+ExternalProject_Add(ixws
   GIT_REPOSITORY https://github.com/machinezone/IXWebSocket.git
   GIT_TAG  v11.2.4
 )
+ExternalProject_Get_Property(ixws SOURCE_DIR BINARY_DIR)
 
-FetchContent_GetProperties(ixwebsocket)
-if (NOT ixwebsocket_POPULATED)
-    FetchContent_Populate(ixwebsocket)
-endif ()
+message("ixwebsocket source directory: ${SOURCE_DIR}")
+message("ixwebsocket binary directory: ${BINARY_DIR}")
+set(ixwebsocket_SOURCE_DIR ${SOURCE_DIR})
+set(ixwebsocket_LIB_DIR ${BINARY_DIR})
 
-set(REQUIRED_LIBS ixwebsocket OpenSSL::SSL ZLIB::ZLIB dl Threads::Threads)
+#add_library(ixwebsocket SHARED IMPORTED)
+#set_target_properties(ixwebsocket PROPERTIES IMPORTED_LOCATION ${ixwebsocket_LIB_DIR}/libixwebsocket.a)
+
+find_package(ixwebsocket REQUIRED)
+
+set(REQUIRED_LIBS ixwebsocket::ixwebsocket OpenSSL::SSL ZLIB::ZLIB dl Threads::Threads)
 
 option(BUILD_SHARED_LIBS "Build the shared library" ON)
 option(BUILD_EXAMPLES "Build example programs" OFF)
@@ -66,13 +72,13 @@ set(AEGIS_FLAGS )
 set(AEGIS_FILES
 src/aegis.cpp
 src/core.cpp
-src/vendor/simdjson/simdjson.cpp
+include/aegis/vendor/simdjson/simdjson.cpp
 )
 
 set(AEGIS_PACKAGE_INCLUDE_DIRS
     $<BUILD_INTERFACE:${OpenSSL_INCLUDE_DIR}>
     $<BUILD_INTERFACE:${ZLIB_INCLUDE_DIR}>
-    $<BUILD_INTERFACE:${ixwebsocket_SOURCE_DIR}/ixwebsocket>
+    $<BUILD_INTERFACE:${ixwebsocket_SOURCE_DIR}>
 )
 
 include(GNUInstallDirs)
@@ -88,6 +94,8 @@ if (BUILD_SHARED_LIBS)
 
 	add_library(aegis SHARED ${AEGIS_FILES})
 	add_library(Aegis::aegis ALIAS aegis)
+	add_dependencies(aegis ixws)
+
 
 	set_target_properties(aegis PROPERTIES POSITION_INDEPENDENT_CODE 1)
 	set_target_properties(aegis PROPERTIES SOVERSION ${AEGIS_VERSION_MAJOR})
@@ -102,6 +110,7 @@ if (BUILD_SHARED_LIBS)
 		$<INSTALL_INTERFACE:include>    
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 		${AEGIS_PACKAGE_INCLUDE_DIRS}
+		${IXWEBSOCKET_INCLUDE_DIRS}
 	)
 
 	target_compile_features(aegis PUBLIC cxx_std_17)
@@ -134,6 +143,8 @@ else ()
 
 	add_library(aegis_static STATIC ${AEGIS_FILES})
 	add_library(Aegis::aegis ALIAS aegis_static)
+	add_dependencies(aegis ixws)
+
 	set_target_properties(aegis_static PROPERTIES OUTPUT_NAME "aegis")
 	set_target_properties(aegis_static PROPERTIES LINKER_LANGUAGE CXX)
 	target_compile_definitions(aegis_static PUBLIC ${AEGIS_FLAGS})
@@ -227,6 +238,6 @@ if (BUILD_EXAMPLES)
 	  PUBLIC
 		$<INSTALL_INTERFACE:include>    
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    	$<BUILD_INTERFACE:${ixwebsocket_SOURCE_DIR}/ixwebsocket>
+    	$<BUILD_INTERFACE:${ixwebsocket_SOURCE_DIR}>
 	)
 endif ()

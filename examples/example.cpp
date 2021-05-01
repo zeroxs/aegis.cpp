@@ -14,8 +14,8 @@
 #include <sstream>
 //using json = nlohmann::json;
 
-#include "aegis/vendor/ixwebsocket/IXNetSystem.h"
-#include "aegis/vendor/ixwebsocket/IXWebSocket.h"
+#include "ixwebsocket/IXNetSystem.h"
+#include "ixwebsocket/IXWebSocket.h"
 
 #include "aegis/vendor/spdlog/spdlog.h"
 #include "aegis/vendor/zstr/zstr.hpp"
