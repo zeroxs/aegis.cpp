@@ -14,6 +14,9 @@
 #include "aegis/vendor/spdlog/sinks/rotating_file_sink.h"
 #include "aegis/vendor/spdlog/async.h"
 
+#define CPPHTTPLIB_OPENSSL_SUPPORT
+#include "aegis/vendor/httplib/httplib.hpp"
+
 namespace aegis
 {
 

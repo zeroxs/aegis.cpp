@@ -1,0 +1,42 @@
+name: Test
+on:
+  push:
+    paths:
+      - cmake/**
+      - src/**
+      - examples/**
+      - include/**
+      - CMakeLists.txt
+
+  pull_request:
+    paths:
+      - cmake/**
+      - src/**
+      - examples/**
+      - include/**
+      - CMakeLists.txt
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push'
+    env: WITH_TLS=1
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: >
+          sudo apt-get install git cmake build-essential libcrypto++-dev libssl-dev zlib1g-dev
+
+      - name: Build with cmake
+        uses: ashutoshvarma/action-cmake-build@master
+        with:
+          build-dir: ${{ runner.workspace }}/build
+          cc: gcc
+          cxx: g++
+          build-type: Release
+          parallel: 2

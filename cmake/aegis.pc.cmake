@@ -1,6 +1,5 @@
 prefix=${CMAKE_INSTALL_PREFIX}
 includedir=${PKG_CONFIG_INCLUDEDIR}
-libdir=${PKG_CONFIG_LIBDIR}
 
 Name: Aegis Library
 Description: Aegis C++ Discord Library

@@ -1,6 +1,6 @@
 /* auto-generated on 2021-02-10 16:52:04 -0500. Do not edit! */
 /* begin file src/simdjson.cpp */
-#include "simdjson.hpp"
+#include "aegis/vendor/simdjson/simdjson.hpp"
 
 SIMDJSON_PUSH_DISABLE_WARNINGS
 SIMDJSON_DISABLE_UNDESIRED_WARNINGS

@@ -11,15 +11,16 @@ This project is licensed under the MIT license. See [LICENSE](https://github.com
 Dependencies used:
 
 - [async++](https://github.com/Amanieu/asyncplusplus)
-- [cpp-httplib](https://github.com/yhirose/cpp-httplib)
 - [IXWebSocket](https://github.com/machinezone/IXWebSocket)
 - [JSON for Modern C++](https://github.com/nlohmann/json)
+- [OpenSSL 1.0.2](https://www.openssl.org)
 - [simdjson](https://github.com/simdjson/simdjson)
 - [spdlog](https://github.com/gabime/spdlog) (by extension, [fmtlib](https://github.com/fmtlib/fmt))
-- [OpenSSL 1.0.2](https://www.openssl.org)
 - [zlib](https://zlib.net)
 - [zstr](https://github.com/mateidavid/zstr)
 
-# Documentation
+# Building
 
-TODO
+CMake 3.14+ is required to use the cmake process.
+
+

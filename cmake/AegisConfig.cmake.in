@@ -4,10 +4,6 @@ include(CMakeFindDependencyMacro)
 list(APPEND CMAKE_MODULE_PATH ${Aegis_CMAKE_DIR})
 
 find_dependency(Threads REQUIRED)
-find_dependency(Asio 1.12.0 REQUIRED MODULE)
-find_dependency(JSON 3.1.2 REQUIRED MODULE)
-find_dependency(Spdlog 1.6.0 REQUIRED MODULE)
-find_dependency(Websocketpp 0.7.0 REQUIRED MODULE)
 find_dependency(OpenSSL 1.0.2 REQUIRED MODULE)
 find_dependency(ZLIB REQUIRED MODULE)
 

@@ -1,6 +1,8 @@
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.14)
+
+include(FetchContent)
 
 file(READ ${CMAKE_CURRENT_SOURCE_DIR}/include/aegis/version.hpp version_hpp)
 if (NOT version_hpp MATCHES "AEGIS_VERSION_LONG \"([0-9]+)\.([0-9]+)\.([0-9]+) ([0-9]+\/[0-9]+\/[0-9]+)\"")
@@ -19,6 +21,8 @@ set(USE_TLS TRUE)
 set(USE_OPEN_SSL TRUE)
 
 set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "-Wl,--no-undefined")
+set(CXX_STANDARD 17)
+set(CXX_STANDARD_REQUIRED ON)
 set(AEGIS_CFLAGS -Wno-sign-compare -Wno-unknown-pragmas -Wno-unused-variable -Wno-noexcept-type -Wno-unused-result -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-missing-field-initializers)
 add_compile_options("$<$<CONFIG:RELEASE>:-O2>")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -34,12 +38,21 @@ list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-find_package(OpenSSL 1.1.0 REQUIRED MODULE)
+find_package(OpenSSL 1.1.1 REQUIRED MODULE)
 find_package(ZLIB REQUIRED MODULE)
 
-add_subdirectory(lib/ixwebsocket)
+FetchContent_Declare(
+	ixwebsocket
+  GIT_REPOSITORY https://github.com/machinezone/IXWebSocket.git
+  GIT_TAG  v11.2.4
+)
 
-set(REQUIRED_LIBS OpenSSL::SSL ZLIB::ZLIB dl Threads::Threads)
+FetchContent_GetProperties(ixwebsocket)
+if (NOT ixwebsocket_POPULATED)
+    FetchContent_Populate(ixwebsocket)
+endif ()
+
+set(REQUIRED_LIBS ixwebsocket OpenSSL::SSL ZLIB::ZLIB dl Threads::Threads)
 
 option(BUILD_SHARED_LIBS "Build the shared library" ON)
 option(BUILD_EXAMPLES "Build example programs" OFF)
@@ -48,16 +61,18 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 set(CMAKE_BUILD_TYPE Release)
+set(AEGIS_FLAGS )
 
 set(AEGIS_FILES
 src/aegis.cpp
 src/core.cpp
+src/vendor/simdjson/simdjson.cpp
 )
 
 set(AEGIS_PACKAGE_INCLUDE_DIRS
     $<BUILD_INTERFACE:${OpenSSL_INCLUDE_DIR}>
     $<BUILD_INTERFACE:${ZLIB_INCLUDE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/ixwebsocket>
+    $<BUILD_INTERFACE:${ixwebsocket_SOURCE_DIR}/ixwebsocket>
 )
 
 include(GNUInstallDirs)
@@ -65,10 +80,6 @@ set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Aegis)
 
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-#SET(PKG_CONFIG_REQUIRES )
-SET(PKG_CONFIG_LIBDIR
-    "\${prefix}/lib"
-)
 SET(PKG_CONFIG_INCLUDEDIR
     "\${prefix}/include"
 )
@@ -94,8 +105,6 @@ if (BUILD_SHARED_LIBS)
 	)
 
 	target_compile_features(aegis PUBLIC cxx_std_17)
-	set_target_properties(aegis PROPERTIES CXX_STANDARD 17)
-	set_target_properties(aegis PROPERTIES CXX_STANDARD_REQUIRED ON)
 
 	target_compile_options(aegis PRIVATE ${AEGIS_CFLAGS})
 
@@ -108,10 +117,10 @@ if (BUILD_SHARED_LIBS)
 	)
 
 	SET(PKG_CONFIG_LIBS
-		"-L\${libdir} -laegis -l:libixwebsocket.a -lssl -lcrypto -lpthread -lz -ldl"
+		"-L\${libdir} -laegis -lssl -lcrypto -lpthread -lz -ldl"
 	)
 	SET(PKG_CONFIG_CFLAGS
-		"-I/usr/include -I\${includedir} -I${ZLIB_INCLUDE_DIR} -DAEGIS_DYN_LINK"
+		"-I/usr/include -I\${includedir}"
 	)
 
 	CONFIGURE_FILE(
@@ -127,7 +136,7 @@ else ()
 	add_library(Aegis::aegis ALIAS aegis_static)
 	set_target_properties(aegis_static PROPERTIES OUTPUT_NAME "aegis")
 	set_target_properties(aegis_static PROPERTIES LINKER_LANGUAGE CXX)
-	target_compile_definitions(aegis_static PUBLIC AEGIS_SEPARATE_COMPILATION ${AEGIS_FLAGS})
+	target_compile_definitions(aegis_static PUBLIC ${AEGIS_FLAGS})
 	target_link_libraries(aegis_static PUBLIC ${REQUIRED_LIBS})
 	target_include_directories(aegis_static
 	  PUBLIC
@@ -136,8 +145,6 @@ else ()
 		${AEGIS_PACKAGE_INCLUDE_DIRS}
 	)
 	target_compile_features(aegis_static PUBLIC cxx_std_17)
-	set_target_properties(aegis_static PROPERTIES CXX_STANDARD 17)
-	set_target_properties(aegis_static PROPERTIES CXX_STANDARD_REQUIRED ON)
 
 	target_compile_options(aegis_static PRIVATE ${AEGIS_CFLAGS})
 
@@ -148,10 +155,10 @@ else ()
 	)
 
 	SET(PKG_CONFIG_STATIC_LIBS
-		"-L\${libdir} -l:libaegis.a -l:libixwebsocket.a -lssl -lcrypto -lpthread -lz -ldl"
+		"-L\${libdir} -l:libaegis.a -lssl -lcrypto -lpthread -lz -ldl"
 	)
 	SET(PKG_CONFIG_STATIC_CFLAGS
-		"-I/usr/include -I\${includedir} -I${ZLIB_INCLUDE_DIR} -DAEGIS_SEPARATE_COMPILATION"
+		"-I/usr/include -I\${includedir}"
 	)
 
 	CONFIGURE_FILE(
@@ -220,6 +227,6 @@ if (BUILD_EXAMPLES)
 	  PUBLIC
 		$<INSTALL_INTERFACE:include>    
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/ixwebsocket>
+    	$<BUILD_INTERFACE:${ixwebsocket_SOURCE_DIR}/ixwebsocket>
 	)
 endif ()
