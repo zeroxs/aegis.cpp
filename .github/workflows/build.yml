@@ -1,20 +1,5 @@
 name: Test
-on:
-  push:
-    paths:
-      - cmake/**
-      - src/**
-      - examples/**
-      - include/**
-      - CMakeLists.txt
-
-  pull_request:
-    paths:
-      - cmake/**
-      - src/**
-      - examples/**
-      - include/**
-      - CMakeLists.txt
+on: push
 
 jobs:
   build:
