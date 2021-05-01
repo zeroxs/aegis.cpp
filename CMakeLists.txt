@@ -42,23 +42,15 @@ find_package(Threads REQUIRED)
 find_package(OpenSSL 1.1.1 REQUIRED MODULE)
 find_package(ZLIB REQUIRED MODULE)
 
-ExternalProject_Add(ixws
+FetchContent_Populate(ixws
   GIT_REPOSITORY https://github.com/machinezone/IXWebSocket.git
   GIT_TAG  v11.2.4
+  SOURCE_DIR ext/ixwebsocket
 )
-ExternalProject_Get_Property(ixws SOURCE_DIR BINARY_DIR)
 
-message("ixwebsocket source directory: ${SOURCE_DIR}")
-message("ixwebsocket binary directory: ${BINARY_DIR}")
-set(ixwebsocket_SOURCE_DIR ${SOURCE_DIR})
-set(ixwebsocket_LIB_DIR ${BINARY_DIR})
+add_subdirectory(${ixws_SOURCE_DIR})
 
-#add_library(ixwebsocket SHARED IMPORTED)
-#set_target_properties(ixwebsocket PROPERTIES IMPORTED_LOCATION ${ixwebsocket_LIB_DIR}/libixwebsocket.a)
-
-find_package(ixwebsocket REQUIRED)
-
-set(REQUIRED_LIBS ixwebsocket::ixwebsocket OpenSSL::SSL ZLIB::ZLIB dl Threads::Threads)
+set(REQUIRED_LIBS ixwebsocket OpenSSL::SSL ZLIB::ZLIB dl Threads::Threads)
 
 option(BUILD_SHARED_LIBS "Build the shared library" ON)
 option(BUILD_EXAMPLES "Build example programs" OFF)
@@ -94,7 +86,7 @@ if (BUILD_SHARED_LIBS)
 
 	add_library(aegis SHARED ${AEGIS_FILES})
 	add_library(Aegis::aegis ALIAS aegis)
-	add_dependencies(aegis ixws)
+	add_dependencies(aegis ixwebsocket)
 
 
 	set_target_properties(aegis PROPERTIES POSITION_INDEPENDENT_CODE 1)
@@ -119,7 +111,7 @@ if (BUILD_SHARED_LIBS)
 
 	set_target_properties(aegis PROPERTIES EXPORT_NAME Aegis)
 
-	install(TARGETS aegis
+	install(TARGETS aegis ixwebsocket
 		EXPORT aegis-targets
 		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -143,7 +135,7 @@ else ()
 
 	add_library(aegis_static STATIC ${AEGIS_FILES})
 	add_library(Aegis::aegis ALIAS aegis_static)
-	add_dependencies(aegis ixws)
+	add_dependencies(aegis_static ixwebsocket)
 
 	set_target_properties(aegis_static PROPERTIES OUTPUT_NAME "aegis")
 	set_target_properties(aegis_static PROPERTIES LINKER_LANGUAGE CXX)
@@ -159,7 +151,7 @@ else ()
 
 	target_compile_options(aegis_static PRIVATE ${AEGIS_CFLAGS})
 
-	install(TARGETS aegis_static
+	install(TARGETS aegis_static ixwebsocket
 		EXPORT aegis-targets
 		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
