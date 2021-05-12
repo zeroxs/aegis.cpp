@@ -106,7 +106,14 @@ AEGIS_DECL rest_reply rest_controller::execute(rest::request_params && params)
             ss << "--" << boundary << "\r\n";
             ss << R"(Content-Disposition: form-data; name="file"; filename=")" << utility::escape_quotes(file.name) << "\"\r\n";
             request_stream << "Connection: close\r\n";
-            ss << "Content-Type: text/plain\r\n\r\n";
+            if (!file.content_type.empty())
+            {
+                ss << "Content-Type: " << file.content_type << "\r\n\r\n";
+            }
+            else
+            {
+                ss << "Content-Type: " << utility::guess_mime_type(file.name) << "\r\n\r\n";
+            }
             ss.write(file.data.data(), file.data.size());
             ss << "\r\n";
 

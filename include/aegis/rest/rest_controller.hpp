@@ -55,6 +55,7 @@ struct aegis_file
 {
     std::string name;
     std::vector<char> data;
+    std::string content_type = "";
 };
 
 struct request_params

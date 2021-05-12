@@ -281,6 +281,51 @@ inline std::string format_bytes(uint64_t size)
     return fmt::format("{} B", size);
 }
 
+inline std::string guess_mime_type(const std::string & filename)
+{
+    std::size_t pos = filename.find_last_of('.');
+    if (pos == std::string::npos || pos == filename.length())
+    {
+        return "text/plain";
+    }
+    std::string ext = filename.substr(pos + 1);
+    if (ext == "txt")
+        return "image/txt";
+    if (ext == "png")
+        return "image/png";
+    if (ext == "jpg" || ext == "jpeg")
+        return "image/jpeg";
+    if (ext == "gif")
+        return "image/gif";
+    if (ext == "webp")
+        return "image/webp";
+    if (ext == "mp4")
+        return "video/mp4";
+    if (ext == "ogg")
+        return "audio/ogg";
+    if (ext == "wav")
+        return "audio/wav";
+    if (ext == "mpg" || ext == "mpeg")
+        return "video/mpeg";
+    if (ext == "mp3")
+        return "audio/mp3";
+    if (ext == "flac")
+        return "audio/flac";
+    if (ext == "aac")
+        return "audio/acc";
+    if (ext == "3gp")
+        return "audio/3gpp";
+    if (ext == "js")
+        return "text/javascript";
+    if (ext == "json")
+        return "text/json";
+    if (ext == "htm" || ext == "html")
+        return "text/html";
+    if (ext == "css")
+        return "text/css";
+    return "application/octet-stream";
+}
+
 namespace platform
 {
 
