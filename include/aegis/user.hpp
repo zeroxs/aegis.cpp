@@ -21,6 +21,7 @@
 #include <memory>
 #include <set>
 #include <shared_mutex>
+#include <mutex>
 
 namespace aegis
 {
