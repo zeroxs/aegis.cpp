@@ -1,4 +1,4 @@
-Library is discontinued. Due to Discord's lack of communication and out-of-touch attitude towards library developers, this library is no longer being maintained.
+Library is discontinued. Due to Discord's lack of communication and out-of-touch attitude towards library developers, this library is no longer being maintained. Recommended alternative: https://github.com/brainboxdotcc/DPP - designed similarly to how aegis was and created by users of aegis and a far more complete library than aegis (or any other C++ library) ever was.
 
 [![Build Status](https://travis-ci.org/zeroxs/aegis.cpp.svg?branch=master)](https://travis-ci.org/zeroxs/aegis.cpp) [![Discord](https://discordapp.com/api/guilds/287048029524066334/widget.png)](https://discord.gg/w7Y3Bb8) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/zeroxs/aegis.cpp/blob/master/LICENSE)
 
