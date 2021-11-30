@@ -17,6 +17,7 @@
 #include <chrono>
 #include <queue>
 #include <atomic>
+#include <thread>
 #include <spdlog/spdlog.h>
 
 namespace aegis
